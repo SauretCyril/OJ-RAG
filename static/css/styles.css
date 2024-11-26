@@ -1,0 +1,62 @@
+.sidebar {
+    min-width: 150px;
+    padding: 10px;
+    background-color: #f4f4f4;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    margin: 10px;
+}
+
+.sidebar-left {
+    float: left;
+}
+
+.sidebar-right {
+    float: right;
+}
+.container_job {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+
+    padding: 20px;
+  }
+
+.job-content {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 20px;
+  }
+  .job-section {
+    margin-bottom: 30px;
+    padding: 20px;
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+  .job-title {
+    color: #2c3e50;
+    border-bottom: 2px solid #3498db;
+    padding-bottom: 10px;
+    margin-bottom: 20px;
+  }
+  .section-title {
+    color: #2980b9;
+  }
+  .skills-list {
+    columns: 2;
+    column-gap: 40px;
+    list-style-type: none;
+    padding: 0;
+  }
+  .skills-list li {
+    margin-bottom: 8px;
+    position: relative;
+    padding-left: 20px;
+  }
+  .skills-list li:before {
+    content: "•";
+    color: #3498db;
+    position: absolute;
+    left: 0;
+  }
