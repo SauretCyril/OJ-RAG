@@ -1,3 +1,15 @@
+.header {
+    background-color: #d0e7ff;
+    padding: 20px;
+    text-align: center;
+    position: relative;
+}
+
+.header-title {
+    margin: 0;
+    color: #2c3e50;
+}
+
 .sidebar {
     min-width: 150px;
     padding: 10px;
@@ -9,54 +21,113 @@
 
 .sidebar-left {
     float: left;
+    min-width: 10%;
+    background-color: #f4f4f4;
+    height: 100vh; /* Full height */
 }
 
 .sidebar-right {
     float: right;
+    min-width: 10%;
+    background-color: #f4f4f4;
+    height: 100vh; /* Full height */
+    padding-top: 20px; /* Ensure the menu is at the top */
 }
+
+.sidebar-menu {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+}
+
+.sidebar-menu ul {
+    list-style-type: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    top:0;
+}
+
+.sidebar-menu ul ul {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    background-color: #d0e7ff;
+    padding: 10px;
+    border-radius: 4px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    padding-left: 20px;
+}
+
+.sidebar-menu ul li {
+    position: relative;
+    margin-right: 20px;
+}
+
+.sidebar-menu ul li:hover > ul {
+    display: block;
+}
+
+.sidebar-menu a {
+    text-decoration: none;
+    color: #2c3e50;
+    padding: 10px;
+    display: block;
+}
+
+.sidebar-menu a:hover {
+    text-decoration: underline;
+}
+
 .container_job {
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-
     padding: 20px;
-  }
+}
 
 .job-content {
     max-width: 800px;
     margin: 0 auto;
     padding: 20px;
-  }
-  .job-section {
+}
+
+.job-section {
     margin-bottom: 30px;
     padding: 20px;
     background-color: #fff;
     border-radius: 8px;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  }
-  .job-title {
+}
+
+.job-title {
     color: #2c3e50;
     border-bottom: 2px solid #3498db;
     padding-bottom: 10px;
     margin-bottom: 20px;
-  }
-  .section-title {
+}
+
+.section-title {
     color: #2980b9;
-  }
-  .skills-list {
+}
+
+.skills-list {
     columns: 2;
     column-gap: 40px;
     list-style-type: none;
     padding: 0;
-  }
-  .skills-list li {
+}
+
+.skills-list li {
     margin-bottom: 8px;
     position: relative;
     padding-left: 20px;
-  }
-  .skills-list li:before {
+}
+
+.skills-list li:before {
     content: "•";
     color: #3498db;
     position: absolute;
     left: 0;
-  }
+}

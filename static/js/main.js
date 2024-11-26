@@ -84,8 +84,43 @@ document.getElementById('uploadForm').addEventListener('submit', async function(
     }
 });
 
-document.addEventListener('DOMContentLoaded', function() {
-    // ...existing code...
-});
+document.getElementById('uploadCVForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData();
+    const cvFile = document.getElementById('cvFile').files[0];
+    
+    if (!cvFile) {
+        alert('Veuillez sélectionner les fichiers requis.');
+        return;
+    }
 
+    formData.append('cv_file', cvFile, cvFile.name); // Ensure the file is appended correctly with the correct name
+    
+    // Log the FormData content for debugging
+    for (let pair of formData.entries()) {
+        console.log(pair[0]+ ': ' + pair[1]);
+    }
+    
+    try {
+        // Afficher le spinner
+        document.getElementById('loading').style.display = 'block';
+        
+        // Upload des fichiers
+        const uploadResponse = await fetch('/upload', {
+            method: 'POST',
+            body: formData
+        });
 
+        if (!uploadResponse.ok) {
+            const errorText = await uploadResponse.text();
+            console.error('Upload response error:', errorText);
+            throw new Error('Erreur lors du téléchargement des fichiers');
+        }
+
+        const paths = await uploadResponse.json();
+        const num_cv = paths.cv_file_dir;
+        document.getElementById('CV_NUM').textContent = num_cv;
+        console.log('num_cv', num_cv);
+
+        // Extraction rapide du texte du CV

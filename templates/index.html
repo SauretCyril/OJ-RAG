@@ -13,56 +13,68 @@
     />
   </head>
   <body class="bg-light">
-    <div class="card mb-4">
-      <div class="card-body">
-        <form id="uploadForm" method="POST" enctype="multipart/form-data">
-          <!--<div class="mb-3">-->
-          <!--<label for="cvFile" class="form-label">CV (PDF)</label> -->
-
-          <!--<input type="file" class="form-control" id="cvFile" accept=".pdf" />-->
-          <!-- </div>-->
-          <div class="mb-3">
-            <label for="jobFile" class="form-label">Job File (PDF)</label>
-            <input
-              type="file"
-              class="form-control"
-              id="jobFile"
-              name="job_file"
-              accept=".pdf"
-            />
+    <header class="header">
+      <h1 class="header-title">Détails de l'Offre d'Emploi</h1>
+      <nav class="sidebar-menu">
+        <ul>
+          <li>
+            Documents
+            <ul>
+              <li><a href="#">Job</a></li>
+              <li><a href="#">CV</a></li>
+            </ul>
+          </li>
+        </ul>
+      </nav>
+    </header>
+    <div class="container">
+      <div class="row">
+        <div class="col-1 sidebar-left"></div>
+        <div class="col-10" id="File_choose">
+          <div class="card mb-4">
+            <div class="card-body">
+              <form id="uploadForm" method="POST" enctype="multipart/form-data">
+                <div class="mb-3">
+                  <label for="jobFile" class="form-label">Job File (PDF)</label>
+                  <input
+                    type="file"
+                    class="form-control"
+                    id="jobFile"
+                    name="job_file"
+                    accept=".pdf"
+                  />
+                </div>
+                <button type="submit" class="btn btn-primary">Upload</button>
+              </form>
+            </div>
           </div>
-          <button type="submit" class="btn btn-primary">Upload</button>
-        </form>
-      </div>
-    </div>
-    <div id="loading" style="display: none">Loading...</div>
-    <div class="job-content">
-      <div class="job-section">
-        <h2 id="NUM">Numéro de l'annonce</h2>
-
-        <!--<h1 class="job-title">Titre de l'annonce</h1>-->
-
-        <h1 class="job-title" id="jobTitle">Détails de l'Offre d'Emploi</h1>
-
-        <div class="content-block">
-          <h3 class="section-title">Description du Poste</h3>
-          <div id="formattedJobDescription" class="highlight"></div>
+          <div id="loading" style="display: none">Loading...</div>
+          <div class="job-content">
+            <div class="job-section">
+              <h2 id="NUM">Numéro de l'annonce</h2>
+              <h1 class="job-title" id="jobTitle">
+                Détails de l'Offre d'Emploi
+              </h1>
+              <div class="content-block">
+                <h3 class="section-title">Description du Poste</h3>
+                <div id="formattedJobDescription" class="highlight"></div>
+              </div>
+              <div class="content-block">
+                <h3 class="section-title">Prérequis</h3>
+                <ul class="skills-list" id="formattedRequirements"></ul>
+              </div>
+              <div class="content-block">
+                <h3 class="section-title">Compétences Recherchées</h3>
+                <ul class="skills-list" id="formattedSkills"></ul>
+              </div>
+              <div class="content-block">
+                <h3 class="section-title">Informations Complémentaires</h3>
+                <div id="formattedAdditional" class="highlight"></div>
+              </div>
+            </div>
+          </div>
         </div>
-
-        <div class="content-block">
-          <h3 class="section-title">Prérequis</h3>
-          <ul class="skills-list" id="formattedRequirements"></ul>
-        </div>
-
-        <div class="content-block">
-          <h3 class="section-title">Compétences Recherchées</h3>
-          <ul class="skills-list" id="formattedSkills"></ul>
-        </div>
-
-        <div class="content-block">
-          <h3 class="section-title">Informations Complémentaires</h3>
-          <div id="formattedAdditional" class="highlight"></div>
-        </div>
+        <div class="col-1 sidebar-right"></div>
       </div>
     </div>
 
