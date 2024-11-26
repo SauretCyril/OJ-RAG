@@ -20,8 +20,8 @@
           <li>
             Documents
             <ul>
-              <li><a href="#">Job</a></li>
-              <li><a href="#">CV</a></li>
+              <li><a href="#" onclick="showSection('File_choose')">Job</a></li>
+              <li><a href="#" onclick="showSection('CV_choose')">CV</a></li>
             </ul>
           </li>
         </ul>
@@ -30,8 +30,8 @@
     <div class="container">
       <div class="row">
         <div class="col-1 sidebar-left"></div>
-        <div class="col-10" id="File_choose">
-          <div class="card mb-4">
+        <div class="col-10">
+          <div class="card mb-4" id="File_choose">
             <div class="card-body">
               <form id="uploadForm" method="POST" enctype="multipart/form-data">
                 <div class="mb-3">
@@ -48,13 +48,32 @@
               </form>
             </div>
           </div>
+          <div class="card mb-4" id="CV_choose" style="display: none">
+            <div class="card-body">
+              <form
+                id="uploadCVForm"
+                method="POST"
+                enctype="multipart/form-data"
+              >
+                <div class="mb-3">
+                  <label for="cvFile" class="form-label">CV File (PDF)</label>
+                  <input
+                    type="file"
+                    class="form-control"
+                    id="cvFile"
+                    name="cv_file"
+                    accept=".pdf"
+                  />
+                </div>
+                <button type="submit" class="btn btn-primary">Upload</button>
+              </form>
+            </div>
+          </div>
           <div id="loading" style="display: none">Loading...</div>
           <div class="job-content">
             <div class="job-section">
               <h2 id="NUM">Numéro de l'annonce</h2>
-              <h1 class="job-title" id="jobTitle">
-                Détails de l'Offre d'Emploi
-              </h1>
+
               <div class="content-block">
                 <h3 class="section-title">Description du Poste</h3>
                 <div id="formattedJobDescription" class="highlight"></div>
@@ -73,6 +92,28 @@
               </div>
             </div>
           </div>
+          <div class="cv-content" style="display: none">
+            <div class="cv-section">
+              <h2 id="CV_NUM">Numéro du CV</h2>
+              <h1 class="cv-title" id="cvTitle">Détails du CV</h1>
+              <div class="content-block">
+                <h3 class="section-title">Expériences Professionnelles</h3>
+                <div id="formattedCVExperience" class="highlight"></div>
+              </div>
+              <div class="content-block">
+                <h3 class="section-title">Formations</h3>
+                <div id="formattedCVEducation" class="highlight"></div>
+              </div>
+              <div class="content-block">
+                <h3 class="section-title">Compétences</h3>
+                <ul class="skills-list" id="formattedCVSkills"></ul>
+              </div>
+              <div class="content-block">
+                <h3 class="section-title">Informations Complémentaires</h3>
+                <div id="formattedCVAdditional" class="highlight"></div>
+              </div>
+            </div>
+          </div>
         </div>
         <div class="col-1 sidebar-right"></div>
       </div>
@@ -82,6 +123,20 @@
     {# comment #}
     <script src="{{ url_for('static', filename='js/job_details.js') }}"></script>
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    <script>
+      function showSection(sectionId) {
+        document.getElementById("File_choose").style.display = "none";
+        document.getElementById("CV_choose").style.display = "none";
+        document.querySelector(".job-content").style.display = "none";
+        document.querySelector(".cv-content").style.display = "none";
+        document.getElementById(sectionId).style.display = "block";
+        if (sectionId === "File_choose") {
+          document.querySelector(".job-content").style.display = "block";
+        } else if (sectionId === "CV_choose") {
+          document.querySelector(".cv-content").style.display = "block";
+        }
+      }
+    </script>
     {# endcomment #}
   </body>
 </html>

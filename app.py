@@ -51,22 +51,6 @@ def allowed_file(filename):
 def index():
     return render_template('index.html')
 
-""" @app.route('/upload', methods=['POST'])
-def upload_file():
-    if 'job' not in request.files:
-        return jsonify(error='No file part'), 400
-    
-    job_file = request.files['job']
-    
-    if job_file.filename == '':
-        return jsonify(error='No selected file'), 400
-    
-    # Save the file and return the path
-    job_path = f"{job_file.filename}"
-    job_file.save(job_path)
-    
-    return jsonify(num_job=123, job_path=job_path) """
-
 @app.route('/upload', methods=['POST'])
 def upload_file():
     try:
@@ -81,16 +65,12 @@ def upload_file():
         if not allowed_file(job_file1.filename):
             return jsonify({'error': 'File type not allowed'}), 400
         
-        job_file1_path=job_file1.filename[:4]
+        job_file1_path = job_file1.filename[:4]
         if not os.path.exists(app.config['UPLOAD_FOLDER']):
             os.makedirs(app.config['UPLOAD_FOLDER'])
 
         job_path = os.path.join(app.config['UPLOAD_FOLDER'], job_file1.filename)
         job_file1.save(job_path)
-
-        #segments = job_file1.split('/')
-        #print("file path",job_file1_path)
-        #last_parent_directory = segments[-2]
 
         return jsonify({
             'job_path': job_path,
@@ -106,28 +86,29 @@ def job_details():
     return render_template('job_details.html')
 
 # get_answer
-@app.route('/get_answer', methods=['POST'])
+@app.route('/get_job_answer', methods=['POST'])
 def extract_job_text():
     try:
         job_path = request.json.get('job_path')
-        if not job_path:
-            return jsonify({'error': 'Missing job file path'}), 400
+        q2_job = request.json.get('q2_job')
+        if not job_path or not q2_job:
+            return jsonify({'error': 'Missing job file path or question'}), 400
 
         # Extraction rapide du texte
         job_text1 = extract_text_from_pdf(job_path)
         if not job_text1:
             return jsonify({'error': 'Job text extraction failed'}), 500
-
+        print ("question ",q2_job)
         # Formatage du texte avec la question prédéfinie
-        q2_job = (
-            "peux tu me faire un plan détaillé de l'offre avec les sections en précisant bien ce qui est obligatoire, optionnelle :"
-            "- Titre poste proposé,"
-            "- Duties (Description du poste décomposée en tache ou responsabilité),"
-            "- requirements (expérience attendues, ),"
-            "- skills (languages, outils obligatoires),"
-            "- Savoir-être (soft skill),"
-            "- autres (toutes informations autre utile à connaitre)"
-        )
+        # q2_job = (
+        #     "peux tu me faire un plan détaillé de l'offre avec les sections en précisant bien ce qui est obligatoire, optionnelle :"
+        #     "- Titre poste proposé,"
+        #     "- Duties (Description du poste décomposée en tache ou responsabilité),"
+        #     "- requirements (expérience attendues, ),"
+        #     "- skills (languages, outils obligatoires),"
+        #     "- Savoir-être (soft skill),"
+        #     "- autres (toutes informations autre utile à connaitre)"
+        # )
 
         formatted_job_text = get_answer(q2_job, job_text1)
 

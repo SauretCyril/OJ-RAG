@@ -8,9 +8,11 @@ function displayJobDetails(data) {
         let currentSection = '';
 
         sections.forEach(section => {
-            if (section.toLowerCase().includes('titre poste')) {
+            /* if (section.toLowerCase().includes('titre poste')) {
                 document.getElementById('jobTitle').textContent = section;
-            } else if (section.toLowerCase().includes('description')) {
+            } else */
+
+             if (section.toLowerCase().includes('description')) {
                 document.getElementById('formattedJobDescription').innerHTML = `<pre>${section}</pre>`;
             } else if (section.toLowerCase().includes('requirements')) {
                 addToList('formattedRequirements', section);
