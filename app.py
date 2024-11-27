@@ -11,8 +11,10 @@ import torchvision
 import numpy as np
 import json
 import logging
+from docx import Document
+from docx2pdf import convert
+import pythoncom
 
-# ...existing code...
 try:
     from fpdf import FPDF
 except ImportError:
@@ -149,26 +151,49 @@ def save_job_text_as_pdf(job_text_data, file_path_full):
 @app.route('/save-job-text', methods=['POST'])
 def save_job_text():
     try:
+        pythoncom.CoInitialize()  # Initialize COM library
         job_text_data = request.json.get('job_text_data')
         job_number = request.json.get('job_number')
         if not job_text_data or not job_number:
             logger.error(f"Missing job text data or job number: job_text_data={job_text_data}, job_number={job_number}")
             return jsonify({'error': 'Missing job text data or job number'}), 400
 
-        file_name = f"{job_number}_gpt_request.txt"
+        file_name = f"{job_number}_gpt_request"
         file_path = os.path.join(SAVED_TEXT_FOLDER, job_number)
-        file_path_full = os.path.join(file_path, file_name)
-        
-        with open(file_path_full, 'w', encoding='utf-8') as file:
+        file_path_txt = os.path.join(file_path, file_name + ".txt")
+        file_path_docx = os.path.join(file_path, file_name + ".docx")
+        """ Save txt file"""
+        with open(file_path_txt, 'w', encoding='utf-8') as file:
             file.write(job_text_data)
+        
+        """ Save pdf file"""
+        doc = format_text_as_word_style(job_text_data, job_number)
+        doc.save(file_path_docx)
 
-        pdf_file_path = save_job_text_as_pdf(job_text_data, file_path_full)
+        pdf_file_path = file_path_docx.replace('.docx', '.pdf')
+        convert(file_path_docx, pdf_file_path)
 
-        return jsonify({'message': 'Job text saved successfully', 'file_path': file_path_full, 'pdf_file_path': pdf_file_path})
+        return jsonify({'message': 'Job text saved successfully', 'file_path': file_path_txt, 'pdf_file_path': pdf_file_path})
 
     except Exception as e:
         logger.error(f"Error saving job text: {str(e)}")
         return jsonify({'error': str(e)}), 500
+
+    finally:
+        pythoncom.CoUninitialize()  # Uninitialize COM library
+
+def format_text_as_word_style(job_text, job_number):
+    doc = Document()
+    doc.add_heading(f"Job Number: {job_number}", level=1)
+    
+    for line in job_text.split('\n'):
+        if line.startswith('- '):
+            doc.add_paragraph(line, style='ListBullet')
+        else:
+            doc.add_paragraph(line)
+    
+    return doc
+
 
 if __name__ == '__main__':
     app.run(debug=False)

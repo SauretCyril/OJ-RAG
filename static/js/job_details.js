@@ -5,6 +5,8 @@ function displayJobDetails(data) {
     // Titre du poste
     if (data.formatted_text) {
         const sections = data.formatted_text.split('\n\n');
+        
+        console.log('sections', sections);
         let currentSection = '';
 
         sections.forEach(section => {

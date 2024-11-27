@@ -64,10 +64,10 @@ document.getElementById('uploadForm').addEventListener('submit', async function(
         const jobTextData = await jobTextResponse.json();
 
         // Log the data being sent to /save-job-text for debugging
-        console.log('Saving job text data:', {
+       /*  console.log('Saving job text data:', {
             job_text_data: jobTextData.formatted_text,
             job_number: num_job
-        });
+        }); */
 
         // sauvegarder la réponse au niveau du répertoire de l'annonce
         const saveResponse = await fetch('/save-job-text', {
@@ -75,6 +75,7 @@ document.getElementById('uploadForm').addEventListener('submit', async function(
             headers: {
                 'Content-Type': 'application/json',
             },
+            //
             body: JSON.stringify({ job_text_data: jobTextData.formatted_text, job_number: num_job })
         });
 
