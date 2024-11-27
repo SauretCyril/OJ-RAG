@@ -17,6 +17,7 @@ document.getElementById('uploadForm').addEventListener('submit', async function(
         "- skills (languages, outils obligatoires)," +
         "- Savoir-être (soft skill)," +
         "- autres (toutes informations autre utile à connaitre)";
+
     console.log("q2_job", q2_job);
     formData.append('job_file', jobFile, jobFile.name);
     formData.append('q2_job', q2_job);

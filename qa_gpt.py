@@ -101,7 +101,7 @@ def extract_text(source, is_url=False):
 def get_answer(question, context=""):
     try:
         client = OpenAI()  # Assurez-vous que OPENAI_API_KEY est défini dans vos variables d'environnement
-        full_context = f"""En tant qu' expert en analyse d'offres d'emploi dans le domaine informatique, analyse le texte suivant et réponds à cette question: {question}\n\nContexte:\n{context}"""
+        full_context = f"""En tant qu' expert en analyse d'offres d'emploi dans le domaine informatique (développeur, Analyste ou Testeur logiciel) , analyse le texte suivant et réponds à cette question: {question}\n\nContexte:\n{context}"""
         
         response = client.chat.completions.create(
             model="gpt-3.5-turbo",
