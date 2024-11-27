@@ -12,6 +12,15 @@ import numpy as np
 import json
 import logging
 
+# ...existing code...
+try:
+    from fpdf import FPDF
+except ImportError:
+    import os
+    os.system('pip install fpdf')
+    from fpdf import FPDF
+# ...existing code...
+
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
@@ -124,6 +133,19 @@ def extract_job_text():
         print(f"Error: {str(e)}")
         return jsonify({'error': str(e)}), 500
 
+def save_job_text_as_pdf(job_text_data, file_path_full):
+    pdf = FPDF()
+    pdf.add_page()
+    pdf.set_auto_page_break(auto=True, margin=15)
+    pdf.set_font("Arial", size=12)
+    
+    for line in job_text_data.split('\n'):
+        pdf.multi_cell(0, 10, line)
+    
+    pdf_output_path = file_path_full.replace('.txt', '.pdf')
+    pdf.output(pdf_output_path)
+    return pdf_output_path
+
 @app.route('/save-job-text', methods=['POST'])
 def save_job_text():
     try:
@@ -140,7 +162,9 @@ def save_job_text():
         with open(file_path_full, 'w', encoding='utf-8') as file:
             file.write(job_text_data)
 
-        return jsonify({'message': 'Job text saved successfully', 'file_path': file_path_full})
+        pdf_file_path = save_job_text_as_pdf(job_text_data, file_path_full)
+
+        return jsonify({'message': 'Job text saved successfully', 'file_path': file_path_full, 'pdf_file_path': pdf_file_path})
 
     except Exception as e:
         logger.error(f"Error saving job text: {str(e)}")
