@@ -7,7 +7,7 @@ import traceback
 from werkzeug.utils import secure_filename
 from qa_analyse import *
 import torch
-import torchvision
+#import torchvision
 import numpy as np
 import json
 import logging
@@ -65,27 +65,27 @@ def index():
 @app.route('/upload', methods=['POST'])
 def upload_file():
     try:
-        if 'job_file' not in request.files:
+        if 'file' not in request.files:
             return jsonify({'error': 'No file part'}), 400
 
-        job_file1 = request.files['job_file']
+        file1 = request.files['file']
         
-        if job_file1.filename == '':
+        if file1.filename == '':
             return jsonify({'error': 'No selected file'}), 400
 
-        if not allowed_file(job_file1.filename):
+        if not allowed_file(file1.filename):
             return jsonify({'error': 'File type not allowed'}), 400
         
-        job_file1_path = job_file1.filename[:4]
+        file1_path = file1.filename[:4]
         if not os.path.exists(app.config['UPLOAD_FOLDER']):
             os.makedirs(app.config['UPLOAD_FOLDER'])
 
-        job_path = os.path.join(app.config['UPLOAD_FOLDER'], job_file1.filename)
-        job_file1.save(job_path)
+        file = os.path.join(app.config['UPLOAD_FOLDER'],file1.filename)
+        file1.save(file)
 
         return jsonify({
-            'job_path': job_path,
-            'job_file_dir': job_file1_path
+            'path': file,
+            'file_dir': file1_path
         })
 
     except Exception as e:
@@ -100,16 +100,22 @@ def job_details():
 @app.route('/get_job_answer', methods=['POST'])
 def extract_job_text():
     try:
-        job_path = request.json.get('job_path')
-        q2_job = request.json.get('q2_job')
-        if not job_path or not q2_job:
+        file = request.json.get('path')
+        RQ = request.json.get('RQ')
+        print("file ",file)
+        print("RQ ",RQ)
+        
+      
+        
+        if not file or not RQ:
             return jsonify({'error': 'Missing job file path or question'}), 400
 
         # Extraction rapide du texte
-        job_text1 = extract_text_from_pdf(job_path)
-        if not job_text1:
+        text1 = extract_text_from_pdf(file)
+        print("text1 ",text1)
+        if not text1:
             return jsonify({'error': 'Job text extraction failed'}), 500
-        print ("question ",q2_job)
+        #print ("question ",q2_job)
         # Formatage du texte avec la question prédéfinie
         # q2_job = (
         #     "peux tu me faire un plan détaillé de l'offre avec les sections en précisant bien ce qui est obligatoire, optionnelle :"
@@ -121,19 +127,24 @@ def extract_job_text():
         #     "- autres (toutes informations autre utile à connaitre)"
         # )
 
-        formatted_job_text = get_answer(q2_job, job_text1)
-
+        # formated pour affichage text
+        answer = get_answer(RQ, text1 )
+        print("answer ",answer)
         # Ensure consistent formatting of the response
-        formatted_job_text = formatted_job_text.replace('\n', '<br>')
+        
+        #formatted_job_text = formatted_job_text.replace('\n', '<br>')
         #.replace(' - ', '<br>- ')
+        
         return jsonify({
-            'raw_text': job_text1,
-            'formatted_text': formatted_job_text
+            'raw_text': text1,
+            'formatted_text': answer
         })
 
     except Exception as e:
         print(f"Error: {str(e)}")
         return jsonify({'error': str(e)}), 500
+
+
 
 def save_job_text_as_pdf(job_text_data, file_path_full):
     pdf = FPDF()

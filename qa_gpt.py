@@ -118,3 +118,13 @@ def get_answer(question, context=""):
     except Exception as e:
         print(f"Erreur lors de l'analyse: {str(e)}")
         return f"Une erreur s'est produite: {str(e)}"
+
+@eel.expose
+def favicon():
+    return ""
+
+if __name__ == "__main__":
+    eel.start('index.html', block=False)
+    eel.expose(favicon)
+    while True:
+        eel.sleep(1.0)

@@ -4,15 +4,17 @@
 function displayJobDetails(data) {
     // Titre du poste
     if (data.formatted_text) {
-        const sections = data.formatted_text.split('\n\n');
         
-        console.log('sections', sections);
+        document.getElementById('formattedJobDescription').innerHTML = `<pre>${data.formatted_text}</pre>`;
+        //const sections = data.formatted_text.split('\n\n');
+        
+        /* console.log('sections', sections);
         let currentSection = '';
 
         sections.forEach(section => {
-            /* if (section.toLowerCase().includes('titre poste')) {
+            if (section.toLowerCase().includes('titre poste')) {
                 document.getElementById('jobTitle').textContent = section;
-            } else */
+            } else
 
              if (section.toLowerCase().includes('description')) {
                 document.getElementById('formattedJobDescription').innerHTML = `<pre>${section}</pre>`;
@@ -23,7 +25,7 @@ function displayJobDetails(data) {
             } else if (section.toLowerCase().includes('autres')) {
                 document.getElementById('formattedAdditional').innerHTML = `<pre>${section}</pre>`;
             }
-        });
+        }); */
     }
 }
 

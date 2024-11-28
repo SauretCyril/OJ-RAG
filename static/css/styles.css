@@ -93,6 +93,11 @@
     padding: 20px;
 }
 
+.job-content-text
+{
+    word-wrap: break-word;
+    max-width: 500;
+}
 .job-section {
     margin-bottom: 30px;
     padding: 20px;
@@ -130,4 +135,9 @@
     color: #3498db;
     position: absolute;
     left: 0;
+}
+
+#formattedJobDescription {
+    word-wrap: break-word;
+    white-space: pre-wrap; /* Ensures that whitespace is preserved and lines break as needed */
 }

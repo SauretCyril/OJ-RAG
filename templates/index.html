@@ -28,6 +28,7 @@
       </nav>
     </header>
     <div class="container">
+      <div id="loading" style="display: none">Loading...</div>
       <div class="row">
         <div class="col-1 sidebar-left"></div>
         <div class="col-10">
@@ -41,14 +42,23 @@
                     class="form-control"
                     id="jobFile"
                     name="job_file"
-                    accept=".pdf"
+                    accept="*.pdf"
                   />
                 </div>
                 <button type="submit" class="btn btn-primary">Upload</button>
               </form>
+              <div class="job-content">
+                <div class="job-section">
+                  <h2 id="NUM">Numéro de l'annonce</h2>
+                  <h3 class="section-title">Description du Poste</h3>
+                  <div class="content-block">
+                    <div id="formattedJobDescription"></div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
-          <div class="card mb-4" id="CV_choose" style="display: none">
+          <div class="card mb-4" id="CV_choose">
             <div class="card-body">
               <form
                 id="uploadCVForm"
@@ -62,56 +72,19 @@
                     class="form-control"
                     id="cvFile"
                     name="cv_file"
-                    accept=".pdf"
+                    accept="*.pdf"
                   />
                 </div>
                 <button type="submit" class="btn btn-primary">Upload</button>
               </form>
-            </div>
-          </div>
-          <div id="loading" style="display: none">Loading...</div>
-          <div class="job-content">
-            <div class="job-section">
-              <h2 id="NUM">Numéro de l'annonce</h2>
-
-              <div class="content-block">
-                <h3 class="section-title">Description du Poste</h3>
-                <div id="formattedJobDescription" class="highlight"></div>
-              </div>
-
-              <div class="content-block">
-                <h3 class="section-title">Prérequis</h3>
-                <ul class="skills-list" id="formattedRequirements"></ul>
-              </div>
-              <div class="content-block">
-                <h3 class="section-title">Compétences Recherchées</h3>
-                <ul class="skills-list" id="formattedSkills"></ul>
-              </div>
-              <div class="content-block">
-                <h3 class="section-title">Informations Complémentaires</h3>
-                <div id="formattedAdditional" class="highlight"></div>
-              </div>
-            </div>
-          </div>
-          <div class="cv-content" style="display: none">
-            <div class="cv-section">
-              <h2 id="CV_NUM">Numéro du CV</h2>
-              <h1 class="cv-title" id="cvTitle">Détails du CV</h1>
-              <div class="content-block">
-                <h3 class="section-title">Expériences Professionnelles</h3>
-                <div id="formattedCVExperience" class="highlight"></div>
-              </div>
-              <div class="content-block">
-                <h3 class="section-title">Formations</h3>
-                <div id="formattedCVEducation" class="highlight"></div>
-              </div>
-              <div class="content-block">
-                <h3 class="section-title">Compétences</h3>
-                <ul class="skills-list" id="formattedCVSkills"></ul>
-              </div>
-              <div class="content-block">
-                <h3 class="section-title">Informations Complémentaires</h3>
-                <div id="formattedCVAdditional" class="highlight"></div>
+              <div class="job-content">
+                <div class="job-section">
+                  <h2 id="CV_NUM">Type CV</h2>
+                  <div class="content-block">
+                    <h3 class="section-title">Description du CV</h3>
+                    <div id="formattedCvDescription"></div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -119,25 +92,8 @@
         <div class="col-1 sidebar-right"></div>
       </div>
     </div>
-
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
-    {# comment #}
     <script src="{{ url_for('static', filename='js/job_details.js') }}"></script>
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
-    <script>
-      function showSection(sectionId) {
-        document.getElementById("File_choose").style.display = "none";
-        document.getElementById("CV_choose").style.display = "none";
-        document.querySelector(".job-content").style.display = "none";
-        document.querySelector(".cv-content").style.display = "none";
-        document.getElementById(sectionId).style.display = "block";
-        if (sectionId === "File_choose") {
-          document.querySelector(".job-content").style.display = "block";
-        } else if (sectionId === "CV_choose") {
-          document.querySelector(".cv-content").style.display = "block";
-        }
-      }
-    </script>
-    {# endcomment #}
   </body>
 </html>
