@@ -62,6 +62,10 @@ def allowed_file(filename):
 def index():
     return render_template('index.html')
 
+@app.route('/save-path')
+def getSavePath():
+    return SAVED_TEXT_FOLDER
+
 @app.route('/upload', methods=['POST'])
 def upload_file():
     try:
@@ -102,10 +106,6 @@ def extract_job_text():
     try:
         file = request.json.get('path')
         RQ = request.json.get('RQ')
-        print("file ",file)
-        print("RQ ",RQ)
-        
-      
         
         if not file or not RQ:
             return jsonify({'error': 'Missing job file path or question'}), 400
@@ -115,26 +115,11 @@ def extract_job_text():
         print("text1 ",text1)
         if not text1:
             return jsonify({'error': 'Job text extraction failed'}), 500
-        #print ("question ",q2_job)
-        # Formatage du texte avec la question prédéfinie
-        # q2_job = (
-        #     "peux tu me faire un plan détaillé de l'offre avec les sections en précisant bien ce qui est obligatoire, optionnelle :"
-        #     "- Titre poste proposé,"
-        #     "- Duties (Description du poste décomposée en tache ou responsabilité),"
-        #     "- requirements (expérience attendues, ),"
-        #     "- skills (languages, outils obligatoires),"
-        #     "- Savoir-être (soft skill),"
-        #     "- autres (toutes informations autre utile à connaitre)"
-        # )
-
+       
         # formated pour affichage text
         answer = get_answer(RQ, text1 )
         print("answer ",answer)
         # Ensure consistent formatting of the response
-        
-        #formatted_job_text = formatted_job_text.replace('\n', '<br>')
-        #.replace(' - ', '<br>- ')
-        
         return jsonify({
             'raw_text': text1,
             'formatted_text': answer
@@ -145,7 +130,7 @@ def extract_job_text():
         return jsonify({'error': str(e)}), 500
 
 
-
+""" 
 def save_job_text_as_pdf(job_text_data, file_path_full):
     pdf = FPDF()
     pdf.add_page()
@@ -158,13 +143,14 @@ def save_job_text_as_pdf(job_text_data, file_path_full):
     pdf_output_path = file_path_full.replace('.txt', '.pdf')
     pdf.output(pdf_output_path)
     return pdf_output_path
-
+ """
 @app.route('/save-job-text', methods=['POST'])
 def save_job_text():
     try:
         pythoncom.CoInitialize()  # Initialize COM library
         job_text_data = request.json.get('job_text_data')
         job_number = request.json.get('job_number')
+        path= request.json.get('path')
         if not job_text_data or not job_number:
             logger.error(f"Missing job text data or job number: job_text_data={job_text_data}, job_number={job_number}")
             return jsonify({'error': 'Missing job text data or job number'}), 400
@@ -192,6 +178,7 @@ def save_job_text():
 
     finally:
         pythoncom.CoUninitialize()  # Uninitialize COM library
+        
 
 def format_text_as_word_style(job_text, job_number):
     doc = Document()
@@ -205,6 +192,24 @@ def format_text_as_word_style(job_text, job_number):
     
     return doc
 
-
+    """--------------------------- Analyse_
+    
+    """
+@app.route('/extract_features', methods=['POST'])
+def extract_features(text):
+    print("\n2. Extracting features...")
+    cv_features = extract_features(cv_text)
+    job_features = extract_features(job_text)
+    print("\n3. Computing similarity...")
+    raw_similarity = cosine_similarity(cv_features, job_features)
+    adjusted_similarity = calculate_similarity_score(cv_features, job_features)
+        
+    print(f"\nResults:")
+    raw_similarity_s=f"{raw_similarity:.4f}"
+    adjusted_similarity_s=f"{adjusted_similarity:.4f}"
+    print(f"Raw similarity score: {raw_similarity_s}")
+    print(f"Adjusted similarity score: {adjusted_similarity_s}")
+    return jsonify({'Raw_similarity_score': raw_similarity_s, 'Adjusted_similarity_score':adjusted_similarity_s})
+    
 if __name__ == '__main__':
     app.run(debug=False)

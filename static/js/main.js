@@ -168,24 +168,31 @@ document.getElementById('uploadCVForm').addEventListener('submit', async functio
         if (!cvTextResponse.ok) {
             throw new Error('Erreur lors de l\'extraction du texte du CV');
         }
+        savePath='G:/OneDrive/Entreprendre/Actions-4';
+        
+        /* const getsavePath = await fetch('/save-path', {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        }); */
 
         const cvTextData = await cvTextResponse.json();
 
         // sauvegarder la réponse au niveau du répertoire du CV
-       /*  const saveResponse = await fetch('/save-cv-text', {
+         const saveResponse = await fetch('/save-cv-text', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({ cv_text_data: cvTextData.formatted_text, cv_number: num_cv })
+            body: JSON.stringify({ cv_text_data: cvTextData.formatted_text, cv_number: num_cv, path:savePath  })
         });
 
         if (!saveResponse.ok) {
             const errorText = await saveResponse.text();
             console.error('Save response error:', errorText);
             throw new Error('Erreur lors de la sauvegarde du texte du CV');
-        } */
-
+        }
         // Display CV details directly
         displayCVDetails(cvTextData); 
         
