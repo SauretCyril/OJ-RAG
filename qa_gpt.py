@@ -50,7 +50,7 @@ def extract_text_from_pdf(pdf_path):
             #print(f"-> Text extrait: {text[:200]}...")
             return text
             
-        return "Le fichier PDF n'existe pas"
+        print(". Le fichier PDF n'existe pas")
     except Exception as e:
         print(f"An error occurred while extracting text from PDF: {e}")
         return ""

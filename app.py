@@ -23,7 +23,7 @@ except ImportError:
     from fpdf import FPDF
 # ...existing code...
 
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
 # Définir NumpyEncoder avant de l'utiliser
@@ -69,16 +69,20 @@ def getSavePath():
 @app.route('/upload', methods=['POST'])
 def upload_file():
     try:
+        logger.debug("dbg001.Upload file request received")
         if 'file' not in request.files:
-            return jsonify({'error': 'No file part'}), 400
+            logger.error("Er001.No file part in the request")
+            return jsonify({'Er001': 'No file part'}), 400
 
         file1 = request.files['file']
         
         if file1.filename == '':
-            return jsonify({'error': 'No selected file'}), 400
+            logger.error("Er002.No selected file")
+            return jsonify({'Er002': 'No selected file'}), 400
 
         if not allowed_file(file1.filename):
-            return jsonify({'error': 'File type not allowed'}), 400
+            logger.error(f"Er003.File type not allowed: {file1.filename}")
+            return jsonify({'Er003': 'File type not allowed'}), 400
         
         file1_path = file1.filename[:4]
         if not os.path.exists(app.config['UPLOAD_FOLDER']):
@@ -86,6 +90,7 @@ def upload_file():
 
         file = os.path.join(app.config['UPLOAD_FOLDER'],file1.filename)
         file1.save(file)
+        logger.debug(f"dbg002.File saved to {file}")
 
         return jsonify({
             'path': file,
@@ -93,8 +98,8 @@ def upload_file():
         })
 
     except Exception as e:
-        print(f"Upload error: {str(e)}")
-        return jsonify({'error': str(e)}), 500
+        logger.error(f"Er004.Upload error: {str(e)}")
+        return jsonify({'Er004': str(e)}), 500
 
 @app.route('/job-details')
 def job_details():
@@ -104,30 +109,40 @@ def job_details():
 @app.route('/get_job_answer', methods=['POST'])
 def extract_job_text():
     try:
+        logger.debug(f"dbg003.Request method: {request.method}")
         file = request.json.get('path')
         RQ = request.json.get('RQ')
-        
+        logger.debug(f"dbg004.Received file path: {file}")
+        logger.debug(f"dbg004.Received RQ: {RQ}")
+      
         if not file or not RQ:
-            return jsonify({'error': 'Missing job file path or question'}), 400
+            logger.error("Er005.Missing job file path or question")
+            return jsonify({'Er005': 'Missing job file path or question'}), 400
 
         # Extraction rapide du texte
         text1 = extract_text_from_pdf(file)
-        print("text1 ",text1)
+        
         if not text1:
-            return jsonify({'error': 'Job text extraction failed'}), 500
+            logger.error("Er006.Job text extraction failed")
+            return jsonify({'Er006': 'Job text extraction failed'}), 500
        
         # formated pour affichage text
-        answer = get_answer(RQ, text1 )
-        print("answer ",answer)
-        # Ensure consistent formatting of the response
+        """  return jsonify({
+            'raw_text':'raw_text',
+            'formatted_text':text1
+        }) """
+        
+        answer = get_answer(RQ, text1)
+        logger.debug(f"dbg005.Generated answer: {answer}")
+       
         return jsonify({
             'raw_text': text1,
             'formatted_text': answer
         })
 
     except Exception as e:
-        print(f"Error: {str(e)}")
-        return jsonify({'error': str(e)}), 500
+        logger.error(f"Er007.Error: {str(e)}")
+        return jsonify({'Er007': str(e)}), 500
 
 
 """ 
@@ -144,21 +159,30 @@ def save_job_text_as_pdf(job_text_data, file_path_full):
     pdf.output(pdf_output_path)
     return pdf_output_path
  """
-@app.route('/save-job-text', methods=['POST'])
+@app.route('/save-answer', methods=['POST'])
 def save_job_text():
     try:
+        logger.debug("dbg006.Save job text request received")
         pythoncom.CoInitialize()  # Initialize COM library
-        job_text_data = request.json.get('job_text_data')
-        job_number = request.json.get('job_number')
-        path= request.json.get('path')
+        job_text_data = request.json.get('text_data')
+        job_number = request.json.get('number')
+        the_path = request.json.get('the_path')
+        logger.debug("dbg007.Received path: %s", the_path)
+
         if not job_text_data or not job_number:
-            logger.error(f"Missing job text data or job number: job_text_data={job_text_data}, job_number={job_number}")
-            return jsonify({'error': 'Missing job text data or job number'}), 400
+            logger.error(f"Er008.error.Missing job text data or job number: job_text_data={job_text_data}, job_number={job_number}")
+            return jsonify({'Er008': 'Missing job text data or job number'}), 400
+
+        if not the_path:
+            logger.error("Er009.Received path is None")
+            return jsonify({'Er009': 'Missing path'}), 400
 
         file_name = f"{job_number}_gpt_request"
-        file_path = os.path.join(SAVED_TEXT_FOLDER, job_number)
+        file_path = os.path.join(the_path, job_number)
         file_path_txt = os.path.join(file_path, file_name + ".txt")
         file_path_docx = os.path.join(file_path, file_name + ".docx")
+        logger.debug(f"dbg008.Saving job to : {file_path_txt} and {file_path_docx}")
+
         """ Save txt file"""
         with open(file_path_txt, 'w', encoding='utf-8') as file:
             file.write(job_text_data)
@@ -169,12 +193,13 @@ def save_job_text():
 
         pdf_file_path = file_path_docx.replace('.docx', '.pdf')
         convert(file_path_docx, pdf_file_path)
+        logger.debug(f"dbg009.Job text saved successfully as {pdf_file_path}")
 
-        return jsonify({'message': 'Job text saved successfully', 'file_path': file_path_txt, 'pdf_file_path': pdf_file_path})
+        return jsonify({'dbg009': 'Job text saved successfully', 'file_path': file_path_txt, 'pdf_file_path': pdf_file_path})
 
     except Exception as e:
-        logger.error(f"Error saving job text: {str(e)}")
-        return jsonify({'error': str(e)}), 500
+        logger.error(f"Er009.Error saving job text: {str(e)}")
+        return jsonify({'Er009': str(e)}), 500
 
     finally:
         pythoncom.CoUninitialize()  # Uninitialize COM library
@@ -197,19 +222,19 @@ def format_text_as_word_style(job_text, job_number):
     """
 @app.route('/extract_features', methods=['POST'])
 def extract_features(text):
-    print("\n2. Extracting features...")
+    logger.debug("dbg010.2. Extracting features...")
     cv_features = extract_features(cv_text)
     job_features = extract_features(job_text)
-    print("\n3. Computing similarity...")
+    logger.debug("dbg011.3. Computing similarity...")
     raw_similarity = cosine_similarity(cv_features, job_features)
     adjusted_similarity = calculate_similarity_score(cv_features, job_features)
         
-    print(f"\nResults:")
+    logger.debug("dbg012.4.Results:")
     raw_similarity_s=f"{raw_similarity:.4f}"
     adjusted_similarity_s=f"{adjusted_similarity:.4f}"
-    print(f"Raw similarity score: {raw_similarity_s}")
-    print(f"Adjusted similarity score: {adjusted_similarity_s}")
+    logger.debug("dbg013.Raw similarity score: {raw_similarity_s}")
+    logger.debug("dbg014.Adjusted similarity score: {adjusted_similarity_s}")
     return jsonify({'Raw_similarity_score': raw_similarity_s, 'Adjusted_similarity_score':adjusted_similarity_s})
     
 if __name__ == '__main__':
-    app.run(debug=False)
+    app.run(debug=True)

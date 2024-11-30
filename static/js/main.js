@@ -51,6 +51,7 @@ document.getElementById('uploadForm').addEventListener('submit', async function(
         "- skills (languages, outils obligatoires)," +
         "- Savoir-être (soft skill)," +
         "- autres (toutes informations autre utile à connaitre)";
+        
         const jobTextResponse = await fetch('/get_job_answer', {
             method: 'POST',
             headers: {
@@ -58,7 +59,7 @@ document.getElementById('uploadForm').addEventListener('submit', async function(
             },
             body: JSON.stringify({ path: paths.path, RQ: q2_job })
         });
-
+        
         if (!jobTextResponse.ok) {
             throw new Error('Erreur lors de l\'extraction du texte de l\'offre');
         }
@@ -72,13 +73,14 @@ document.getElementById('uploadForm').addEventListener('submit', async function(
         }); */
 
         // sauvegarder la réponse au niveau du répertoire de l'annonce
-        const saveResponse = await fetch('/save-job-text', {
+        const saved_path="G:/OneDrive/Entreprendre/Actions-4";
+        const saveResponse = await fetch('/save-answer', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
             //
-            body: JSON.stringify({ job_text_data: jobTextData.formatted_text, job_number: num_job })
+            body: JSON.stringify({ text_data: jobTextData.formatted_text, number: num_job, the_path: saved_path })
         });
 
         if (!saveResponse.ok) {
@@ -164,11 +166,11 @@ document.getElementById('uploadCVForm').addEventListener('submit', async functio
             },
             body: JSON.stringify({ path: paths.path, RQ: q1_cv })
         });
-
+        
         if (!cvTextResponse.ok) {
             throw new Error('Erreur lors de l\'extraction du texte du CV');
         }
-        savePath='G:/OneDrive/Entreprendre/Actions-4';
+        
         
         /* const getsavePath = await fetch('/save-path', {
             method: 'GET',
@@ -178,14 +180,15 @@ document.getElementById('uploadCVForm').addEventListener('submit', async functio
         }); */
 
         const cvTextData = await cvTextResponse.json();
-
+        const saved_path="G:/OneDrive/Entreprendre/Actions-4";
+        
         // sauvegarder la réponse au niveau du répertoire du CV
-         const saveResponse = await fetch('/save-cv-text', {
+         const saveResponse = await fetch('/save-answer', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({ cv_text_data: cvTextData.formatted_text, cv_number: num_cv, path:savePath  })
+            body: JSON.stringify({ text_data: cvTextData.formatted_text, number: num_cv, the_path: saved_path })
         });
 
         if (!saveResponse.ok) {
