@@ -44,11 +44,13 @@ app.json_encoder = NumpyEncoder  # Ajouter cette ligne après la création de l'
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 app.config['UPLOAD_FOLDER'] = os.path.join(BASE_DIR, 'uploads')
 app.static_folder = os.path.join(BASE_DIR, 'static')
+app.config['CYPRESS_FOLDER'] = os.path.join(BASE_DIR, 'cypress')
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max-limit
 
 # Assurer que les dossiers nécessaires existent
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 os.makedirs(app.static_folder, exist_ok=True)
+os.makedirs(app.config['CYPRESS_FOLDER'], exist_ok=True)
 
 SAVED_TEXT_FOLDER = 'G:/OneDrive/Entreprendre/Actions-4'
 ALLOWED_EXTENSIONS = {'pdf'}
@@ -57,6 +59,11 @@ ALLOWED_EXTENSIONS = {'pdf'}
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+app.route('/alive')
+def alive():
+    return jsonify({'message': ' Im alive'}), 200
+
 
 @app.route('/')
 def index():
@@ -235,6 +242,10 @@ def extract_features(text):
     logger.debug("dbg013.Raw similarity score: {raw_similarity_s}")
     logger.debug("dbg014.Adjusted similarity score: {adjusted_similarity_s}")
     return jsonify({'Raw_similarity_score': raw_similarity_s, 'Adjusted_similarity_score':adjusted_similarity_s})
+
+@app.route('/cypress')
+def cypress():
+    return render_template('cypress.html')
     
 if __name__ == '__main__':
     app.run(debug=True)
