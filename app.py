@@ -5,7 +5,7 @@ from flask import Flask, render_template, jsonify, request, url_for
 import os
 
 from werkzeug.utils import secure_filename
-from qa_analyse import *
+from JO_analyse import *
 import torch
 #import torchvision
 import numpy as np
@@ -15,12 +15,7 @@ from docx import Document
 from docx2pdf import convert
 import pythoncom
 from fpdf import FPDF
-""" try:
-    from fpdf import FPDF
-except ImportError:
-    import os
-    os.system('pip install fpdf')
-    from fpdf import FPDF """
+
 # ...existing code...
 
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -39,6 +34,9 @@ class NumpyEncoder(json.JSONEncoder):
 
 # Configurer Flask pour utiliser le NumpyEncoder
 app = Flask(__name__)
+from RP_routes import routes 
+app.register_blueprint(routes)  # Register the blueprint
+
 app.json_encoder = NumpyEncoder  # Ajouter cette ligne après la création de l'app
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -64,7 +62,7 @@ def alive():
 
 @app.route('/')
 def index():
-    return render_template('index.html')
+    return render_template('RP_index.html')
 
 @app.route('/save-path')
 def getSavePath():
@@ -225,6 +223,7 @@ def extract_features(text):
     logger.debug("dbg014.Adjusted similarity score: {adjusted_similarity_s}")
     return jsonify({'Raw_similarity_score': raw_similarity_s, 'Adjusted_similarity_score':adjusted_similarity_s})
 
+ 
     
 if __name__ == '__main__':
     app.run(debug=True)

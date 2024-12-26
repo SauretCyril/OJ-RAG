@@ -1,5 +1,5 @@
 import os
-import eel
+
 from PyPDF2 import PdfReader
 from openai import OpenAI
 import requests
@@ -31,7 +31,7 @@ Exemple d'offre d'emploi :
   - Connaissance des pratiques DevOps
 """
 
-@eel.expose
+
 def extract_text_from_pdf(pdf_path):
     try:
         if os.path.exists(pdf_path):
@@ -55,7 +55,6 @@ def extract_text_from_pdf(pdf_path):
         print(f"An error occurred while extracting text from PDF: {e}")
         return ""
 
-@eel.expose
 def extract_text_from_url(url):
     try:
         # Récupérer le contenu de l'URL
@@ -87,7 +86,7 @@ def extract_text_from_url(url):
         print(f"Erreur lors de l'extraction depuis l'URL: {str(e)}")
         return f"Une erreur s'est produite: {str(e)}"
 
-@eel.expose
+
 def extract_text(source, is_url=False):
     """
     Extrait le texte soit d'un PDF soit d'une URL
@@ -97,7 +96,7 @@ def extract_text(source, is_url=False):
     else:
         return extract_text_from_pdf(source)
 
-@eel.expose
+
 def get_answer(question, context=""):
     try:
         client = OpenAI()  # Assurez-vous que OPENAI_API_KEY est défini dans vos variables d'environnement
@@ -119,12 +118,44 @@ def get_answer(question, context=""):
         print(f"Erreur lors de l'analyse: {str(e)}")
         return f"Une erreur s'est produite: {str(e)}"
 
-@eel.expose
+
 def favicon():
     return ""
 
-if __name__ == "__main__":
+
+
+'''
+get info of pdf file and return'''
+def get_info(file_path, question):
+    try:
+        client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))  # Assurez-vous que OPENAI_API_KEY est défini dans vos variables d'environnement
+        context = extract_text_from_pdf(file_path)
+        if (context == ""):
+            return "{'url':'', 'entreprise':'inconnue', 'poste':'Annonce non lisible'}"
+        
+        print(f"Contexte extrait: {context[:200]}...")
+        full_context = f"{question}\n\nContexte:\n{context}"
+        
+        response = client.chat.completions.create(
+            model="gpt-3.5-turbo",
+            messages=[
+                {"role": "system", "content": "analyse le texte suivant et réponds à cette question, peux tu renvoyer les informations sous forme de données json, les champs son définie dans la question entre [ et ]"},
+                {"role": "user", "content": full_context}
+            ],
+            temperature=0.7,
+            max_tokens=1000
+        )
+        
+        return response.choices[0].message.content
+
+    except Exception as e:
+        print(f"Erreur lors de l'analyse: {str(e)}")
+        return f"Une erreur s'est produite: {str(e)}"
+
+
+
+""" if __name__ == "__main__":
     eel.start('index.html', block=False)
     eel.expose(favicon)
     while True:
-        eel.sleep(1.0)
+        eel.sleep(1.0) """

@@ -3,7 +3,7 @@ import torch
 import numpy as np
 from PyPDF2 import PdfReader
 import re
-from qa_gpt import extract_text_from_pdf,get_answer
+from JO_analyse_gpt import extract_text_from_pdf,get_answer
 from functools import lru_cache
 import concurrent.futures
 from typing import Dict, List, Tuple
