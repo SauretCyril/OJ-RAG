@@ -2,12 +2,5 @@
   "name": "myats2",
   "version": "1.0.0",
   "description": "",
-  "main": "app.py",
-  "scripts": {
-    "cypress:open": "cypress open",
-    "cypress:run": "cypress run"
-  },
-  "devDependencies": {
-    "cypress": "^9.0.0"
-  }
+  "main": "app.py"
 }

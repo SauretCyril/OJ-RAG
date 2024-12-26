@@ -3,7 +3,7 @@ warnings.filterwarnings("ignore", category=UserWarning)
 
 from flask import Flask, render_template, jsonify, request, url_for
 import os
-import traceback
+
 from werkzeug.utils import secure_filename
 from qa_analyse import *
 import torch
@@ -14,13 +14,13 @@ import logging
 from docx import Document
 from docx2pdf import convert
 import pythoncom
-
-try:
+from fpdf import FPDF
+""" try:
     from fpdf import FPDF
 except ImportError:
     import os
     os.system('pip install fpdf')
-    from fpdf import FPDF
+    from fpdf import FPDF """
 # ...existing code...
 
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -44,13 +44,10 @@ app.json_encoder = NumpyEncoder  # Ajouter cette ligne après la création de l'
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 app.config['UPLOAD_FOLDER'] = os.path.join(BASE_DIR, 'uploads')
 app.static_folder = os.path.join(BASE_DIR, 'static')
-app.config['CYPRESS_FOLDER'] = os.path.join(BASE_DIR, 'cypress')
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max-limit
 
 # Assurer que les dossiers nécessaires existent
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
-os.makedirs(app.static_folder, exist_ok=True)
-os.makedirs(app.config['CYPRESS_FOLDER'], exist_ok=True)
 
 SAVED_TEXT_FOLDER = 'G:/OneDrive/Entreprendre/Actions-4'
 ALLOWED_EXTENSIONS = {'pdf'}
@@ -151,21 +148,6 @@ def extract_job_text():
         logger.error(f"Er007.Error: {str(e)}")
         return jsonify({'Er007': str(e)}), 500
 
-
-""" 
-def save_job_text_as_pdf(job_text_data, file_path_full):
-    pdf = FPDF()
-    pdf.add_page()
-    pdf.set_auto_page_break(auto=True, margin=15)
-    pdf.set_font("Arial", size=12)
-    
-    for line in job_text_data.split('\n'):
-        pdf.multi_cell(0, 10, line)
-    
-    pdf_output_path = file_path_full.replace('.txt', '.pdf')
-    pdf.output(pdf_output_path)
-    return pdf_output_path
- """
 @app.route('/save-answer', methods=['POST'])
 def save_job_text():
     try:
@@ -243,9 +225,6 @@ def extract_features(text):
     logger.debug("dbg014.Adjusted similarity score: {adjusted_similarity_s}")
     return jsonify({'Raw_similarity_score': raw_similarity_s, 'Adjusted_similarity_score':adjusted_similarity_s})
 
-@app.route('/cypress')
-def cypress():
-    return render_template('cypress.html')
     
 if __name__ == '__main__':
     app.run(debug=True)
