@@ -96,7 +96,7 @@ function openUrlHandler(item) {
 // Example usage
 function loadTableData(callback) {
     
-    reassignEventHandlers(window.columns);
+    //reassignEventHandlers(window.columns);
     generateTableHeaders();
     
     fetch('/read_annonces_json', {
@@ -127,6 +127,7 @@ function loadTableData(callback) {
             const dir_path = filePath.substring(0, filePath.lastIndexOf('/'));
             const isCvRef = item.Commentaire && item.Commentaire.includes('<CV-REF>');
             const fichier_annonce = dir_path + '/' + item.dossier+"_annonce_.pdf";
+            const fichier_annonce_resum = dir_path + '/' + item.dossier+"_gpt_request.pdf";
             const row = document.createElement('tr');
             row.id = filePath;
             row.style.position = 'relative'; // Ajout du positionnement relatif sur la ligne
@@ -183,6 +184,7 @@ function loadTableData(callback) {
                     attachmentIcon.classList.add('attachment-icon');
                     if (item.GptSum == "True") {
                         attachmentIcon.textContent = '😊'; // Remplacer par une icône sourire
+                        fichier_annonce =fichier_annonce_resum;
                     } else {
                         attachmentIcon.textContent = '📎';
                     }
