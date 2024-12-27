@@ -154,6 +154,9 @@ def save_job_text():
         job_text_data = request.json.get('text_data')
         job_number = request.json.get('number')
         the_path = request.json.get('the_path')
+        if the_path=='':
+            the_path = os.getenv("ANNONCES_FILE_DIR")
+            
         logger.debug("dbg007.Received path: %s", the_path)
 
         if not job_text_data or not job_number:

@@ -1,5 +1,3 @@
-
-
 // Add status tooltips
 /* document.querySelectorAll('.status-badge').forEach(badge => {
     badge.title = `Dernier changement: ${new Date().toLocaleDateString()}`;
@@ -68,29 +66,6 @@ function save_config_col() {
     });
 }
 //save_config_col();
-
-function openUrlHandler(item) {
-    if (item.url) {
-        fetch('/open_url', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ url: item.url })
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.status === "success") {
-                console.log('URL opened successfully.');
-            } else {
-                console.error('Error opening URL:', data.message);
-            }
-        })
-        .catch(error => {
-            console.error('Error opening URL:', error);
-        });
-    }
-}
 
 
 // Example usage
@@ -180,8 +155,12 @@ function loadTableData(callback) {
             .then(response => response.json())
             .then(data => {
                 if (data.exists) {
+                    
                     const attachmentIcon = document.createElement('span');
                     attachmentIcon.classList.add('attachment-icon');
+                    
+               
+                    
                     if (item.GptSum == "True") {
                         attachmentIcon.textContent = '😊'; // Remplacer par une icône sourire
                         fichier_annonce =fichier_annonce_resum;
@@ -280,6 +259,17 @@ function loadTableData(callback) {
                         }
                     };
             });
+
+                        document.getElementById('Resum').onclick = () => {
+                    const rowId = contextMenu.dataset.targetRow;
+                    if (confirm("Voulez vous faire le résumé de l'annonce ? :")) {
+                               
+                       
+                       
+                        }
+                    };
+            });
+
             tableBody.appendChild(row);
 
             categories.add(item.categorie);
@@ -985,4 +975,42 @@ window.addEventListener('load', function() {
     createMenu();
     // ...existing code...
 });
+
+
+
+
+async function get_job_answer(path,num_job)
+{
+ const q2_job = 
+        "peux tu me faire un plan détaillé de l'offre avec les sections en précisant bien ce qui est obligatoire, optionnelle :" +
+        "- Titre poste proposé," +
+        "- Duties (Description du poste décomposée en tache ou responsabilité)," +
+        "- requirements (expérience attendues, )," +
+        "- skills (languages, outils obligatoires)," +
+        "- Savoir-être (soft skill)," +
+        "- autres (toutes informations autre utile à connaitre)";
+        
+        const jobTextResponse = await fetch('/get_job_answer', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ path: path, RQ: q2_job })
+        });
+        
+        if (!jobTextResponse.ok) {
+            throw new Error('Erreur lors de l\'extraction du texte de l\'offre');
+        }
+
+        const jobTextData = await jobTextResponse.json();
+        const saved_path="";
+        const saveResponse = await fetch('/save-answer', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            //
+            body: JSON.stringify({ text_data: jobTextData.formatted_text, number: num_job, the_path: saved_path })
+        });
+}
 

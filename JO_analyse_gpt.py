@@ -154,8 +154,4 @@ def get_info(file_path, question):
 
 
 
-""" if __name__ == "__main__":
-    eel.start('index.html', block=False)
-    eel.expose(favicon)
-    while True:
-        eel.sleep(1.0) """
+
