@@ -193,6 +193,19 @@ function loadTableData(callback) {
                         firstCell.style.position = 'relative';
                         firstCell.appendChild(attachmentIcon);
                     }
+                    let resumexist="";
+                    document.getElementById('Resume').onclick = () => {
+                    if (item.GptSum == "True")
+                    {
+                        let resumexist="Attention cela va écraser le résumé existant...";
+                    }
+                    const rowId = contextMenu.dataset.targetRow;
+                    if (confirm("Voulez vous résumer l'annonce ? "+resumexist)) {
+                               
+                        // call the function get answers
+                       
+                        }
+                    };
                 }
             })
             .catch(error => {
@@ -258,6 +271,8 @@ function loadTableData(callback) {
                        
                         }
                     };
+
+                  
             });
 
 
