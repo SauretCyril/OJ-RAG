@@ -260,16 +260,8 @@ function loadTableData(callback) {
                     };
             });
 
-                        document.getElementById('Resum').onclick = () => {
-                    const rowId = contextMenu.dataset.targetRow;
-                    if (confirm("Voulez vous faire le résumé de l'annonce ? :")) {
-                               
-                       
-                       
-                        }
-                    };
-            });
 
+            
             tableBody.appendChild(row);
 
             categories.add(item.categorie);
