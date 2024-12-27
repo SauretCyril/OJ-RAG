@@ -55,7 +55,7 @@ def read_annonces_json():
                 for filename in files:
                     file_path = os.path.join(root, filename)
                     file_path = file_path.replace('\\', '/')  # Normalize path
-                    file_annonce = parent_dir + "_annonce_.pdf"
+                    #file_annonce = parent_dir + "_annonce_.pdf"
                     file_annonce_path = os.path.join(root, ".data.json")
                     if filename == file_annonce:
                         Data = define_default_data()     

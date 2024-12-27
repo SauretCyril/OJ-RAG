@@ -101,7 +101,7 @@ function loadTableData(callback) {
             const item = itemWrapper[filePath];
             const dir_path = filePath.substring(0, filePath.lastIndexOf('/'));
             const isCvRef = item.Commentaire && item.Commentaire.includes('<CV-REF>');
-            const fichier_annonce = dir_path + '/' + item.dossier+"_annonce_.pdf";
+            let fichier_annonce = dir_path + '/' + item.dossier+"_annonce_.pdf";
             const fichier_annonce_resum = dir_path + '/' + item.dossier+"_gpt_request.pdf";
             const row = document.createElement('tr');
             row.id = filePath;
@@ -154,6 +154,7 @@ function loadTableData(callback) {
             })
             .then(response => response.json())
             .then(data => {
+                console.log('<File exists>:', fichier_annonce,data.exists);
                 if (data.exists) {
                     
                     const attachmentIcon = document.createElement('span');
@@ -193,7 +194,7 @@ function loadTableData(callback) {
                         firstCell.style.position = 'relative';
                         firstCell.appendChild(attachmentIcon);
                     }
-                    let resumexist="";
+                   /*  let resumexist="";
                     document.getElementById('Resume').onclick = () => {
                     if (item.GptSum == "True")
                     {
@@ -205,7 +206,7 @@ function loadTableData(callback) {
                         // call the function get answers
                        
                         }
-                    };
+                    }; */
                 }
             })
             .catch(error => {
@@ -220,8 +221,8 @@ function loadTableData(callback) {
                 e.preventDefault();
                 const contextMenu = document.getElementById('contextMenu');
                 contextMenu.style.display = 'block';
-                contextMenu.style.left = e.pageX + 'px';
-                contextMenu.style.top = e.pageY + 'px';
+                contextMenu.style.left = `${e.clientX}px`;
+                contextMenu.style.top = `${e.clientY}px`;
                 contextMenu.dataset.targetRow = row.id;
 
                 document.getElementById('EditRow').onclick = () => {
@@ -560,7 +561,7 @@ function openEditModal(rowId) {
                     <div id="${tabName}" class="tab-content ${index === 0 ? 'active' : ''}">
                         ${fields.map(field => `
                             <div class="form-group">
-                                <label>${field.title}:</label>
+                                <label>${field}:</label>
                                 <input type="text" id="edit-${field}" value="${annonce[field] || ''}" 
                                        ${field === 'dossier' ? 'readonly' : ''}>
                             </div>
