@@ -192,6 +192,7 @@ th, td {
 
   .context-menu {
     position: fixed;
+    font-size: 10px;
     display: none;
     background-color: #ffffff;
     border: 1px solid #ccc;
