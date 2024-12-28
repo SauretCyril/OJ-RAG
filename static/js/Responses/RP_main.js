@@ -4,6 +4,7 @@
 }); */
 
 // Declare the global array
+window.CurrentRow ="";
 window.tabActive = "Campagne";
 window.annonces = [];
 window.columns = [
@@ -178,6 +179,7 @@ function loadTableData(callback) {
 
                     // Add onclick event to open the file
                     attachmentIcon.onclick = () => {
+                        window.CurrentRow=contextMenu.dataset.targetRow;
                         set_current_row();
                         fetch('/open_url', {
                             method: 'POST',
@@ -194,19 +196,8 @@ function loadTableData(callback) {
                         firstCell.style.position = 'relative';
                         firstCell.appendChild(attachmentIcon);
                     }
-                   /*  let resumexist="";
-                    document.getElementById('Resume').onclick = () => {
-                    if (item.GptSum == "True")
-                    {
-                        let resumexist="Attention cela va écraser le résumé existant...";
-                    }
-                    const rowId = contextMenu.dataset.targetRow;
-                    if (confirm("Voulez vous résumer l'annonce ? "+resumexist)) {
-                               
-                        // call the function get answers
-                       
-                        }
-                    }; */
+                    
+                    
                 }
             })
             .catch(error => {
@@ -226,29 +217,39 @@ function loadTableData(callback) {
                 contextMenu.dataset.targetRow = row.id;
 
                 document.getElementById('EditRow').onclick = () => {
-                    
+                    window.CurrentRow=contextMenu.dataset.targetRow;
                     set_current_row();
                     openEditModal(row.id);
                     contextMenu.style.display = 'none';
                 };
-               /*  document.getElementById('CtrlRow').onclick = () => {
-                    const rowId = contextMenu.dataset.targetRow;
-                    set_current_row(rowId);
-                    get_status_qualif(rowId);
-                    contextMenu.style.display = 'none';
-                }; */
+             
                 document.getElementById('SetCurrentRow').onclick = () => {
-                    
+                    window.CurrentRow=contextMenu.dataset.targetRow;
                     contextMenu.style.display = 'none';
                     set_current_row();
                 };
                 document.getElementById('Open').onclick = () => {
+                    window.CurrentRow=contextMenu.dataset.targetRow;
                     set_current_row();
                     open_dir(filePath);
-                    //set_current_row(rowId);
+                  
                     contextMenu.style.display = 'none';
                 };
-              
+                let resumexist="";
+                document.getElementById('Resume').onclick = () => {
+                    if (item.GptSum == "True")
+                    {
+                        let resumexist="Attention cela va écraser le résumé existant...";
+                    }
+                    const rowId = contextMenu.dataset.targetRow;
+                    if (confirm("Voulez vous résumer l'annonce ? "+resumexist +"->" +fichier_annonce+ ": " + item.dossier )) {
+                        window.CurrentRow=contextMenu.dataset.targetRow;
+                        set_current_row();       
+                        // call the function get answers
+                        get_job_answer(fichier_annonce,item.dossier);
+                        
+                        }
+                    };
 
 
                 document.getElementById('Delete').onclick = () => {
@@ -424,6 +425,7 @@ function refresh()
         .then(() => {
             //console.log('Save completed, now loading table data...');
             loadTableData();
+            set_current_row();
         })
         .catch(error => {
             console.error('Error during refresh:', error);
@@ -639,13 +641,15 @@ function cancelEdit() {
 
 function set_current_row() {
     // Reset the background color of all rows
-    const rowId = contextMenu.dataset.targetRow;
+    
+    const ThrowId = window.CurrentRow;
+   
     document.querySelectorAll('#table-body tr').forEach(row => {
         row.style.backgroundColor = ''; // Reset to original color
     });
 
     // Set the backgr/* ound color of the selected row to light blue
-    const selectedRow = document.getElementById(rowId);
+    const selectedRow = document.getElementById(ThrowId);
     if (selectedRow) {
         selectedRow.style.backgroundColor = 'lightblue';
     }
@@ -997,7 +1001,10 @@ async function get_job_answer(path,num_job)
         "- skills (languages, outils obligatoires)," +
         "- Savoir-être (soft skill)," +
         "- autres (toutes informations autre utile à connaitre)";
-        
+
+    showLoadingOverlay();
+
+    try {
         const jobTextResponse = await fetch('/get_job_answer', {
             method: 'POST',
             headers: {
@@ -1005,20 +1012,58 @@ async function get_job_answer(path,num_job)
             },
             body: JSON.stringify({ path: path, RQ: q2_job })
         });
-        
+
         if (!jobTextResponse.ok) {
             throw new Error('Erreur lors de l\'extraction du texte de l\'offre');
         }
 
         const jobTextData = await jobTextResponse.json();
-        const saved_path="";
+        const saved_path = "";
         const saveResponse = await fetch('/save-answer', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
-            //
             body: JSON.stringify({ text_data: jobTextData.formatted_text, number: num_job, the_path: saved_path })
         });
+
+        if (saveResponse.ok) {
+            alert("Résumé de l'offre d'emploi effectué");
+        } else {
+            alert("Erreur lors de la sauvegarde de l'offre d'emploi");
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert("Erreur lors du traitement de l'offre d'emploi");
+    } finally {
+        hideLoadingOverlay();
+        refresh();
+    }
+}
+
+function showLoadingOverlay() {
+    const overlay = document.createElement('div');
+    overlay.id = 'loading-overlay';
+    overlay.style.position = 'fixed';
+    overlay.style.top = '0';
+    overlay.style.left = '0';
+    overlay.style.width = '100%';
+    overlay.style.height = '100%';
+    overlay.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
+    overlay.style.zIndex = '1000';
+    overlay.style.display = 'flex';
+    overlay.style.justifyContent = 'center';
+    overlay.style.alignItems = 'center';
+    overlay.style.color = 'white';
+    overlay.style.fontSize = '24px';
+    overlay.textContent = 'Processing...';
+    document.body.appendChild(overlay);
+}
+
+function hideLoadingOverlay() {
+    const overlay = document.getElementById('loading-overlay');
+    if (overlay) {
+        overlay.remove();
+    }
 }
 

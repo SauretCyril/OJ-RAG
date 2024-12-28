@@ -116,10 +116,13 @@ def extract_job_text():
         RQ = request.json.get('RQ')
         logger.debug(f"dbg004.Received file path: {file}")
         logger.debug(f"dbg004.Received RQ: {RQ}")
-      
+
         if not file or not RQ:
             logger.error("Er005.Missing job file path or question")
             return jsonify({'Er005': 'Missing job file path or question'}), 400
+
+        # Notify front-end that processing has started
+        #yield jsonify({'message': 'Processing started'}), 202
 
         # Extraction rapide du texte
         text1 = extract_text_from_pdf(file)
@@ -127,16 +130,10 @@ def extract_job_text():
         if not text1:
             logger.error("Er006.Job text extraction failed")
             return jsonify({'Er006': 'Job text extraction failed'}), 500
-       
-        # formated pour affichage text
-        """  return jsonify({
-            'raw_text':'raw_text',
-            'formatted_text':text1
-        }) """
-        
+
         answer = get_answer(RQ, text1)
         logger.debug(f"dbg005.Generated answer: {answer}")
-       
+
         return jsonify({
             'raw_text': text1,
             'formatted_text': answer

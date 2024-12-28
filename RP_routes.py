@@ -16,7 +16,8 @@ def read_annonces_json():
             return []
 
         annonces_list = []
-       
+        excluded_annonces = load_excluded_annonces()
+
         for root, _, files in os.walk(directory_path):
             parent_dir = os.path.basename(root)
             file_annonce = parent_dir + "_annonce_.pdf"
@@ -35,7 +36,8 @@ def read_annonces_json():
                     try:
                         with open(file_path, 'r', encoding='utf-8') as file:
                             data = json.load(file)
-                            if not data['etat'] == "DELETED":
+                            #not in excluded_annonces.etat:
+                            if not data['etat'] =="DELETED":
                                 data["dossier"] = parent_dir  # Add parent directory name to data
                                 if os.path.exists(file_isGptResum_Path1):
                                     isGptResum="True"
@@ -92,7 +94,31 @@ def read_annonces_json():
         print(f"An unexpected error occurred while reading annonces: {e}")
         return []
 
+def load_excluded_annonces():
+    try:
+        config_path = os.path.join(os.getenv("ANNONCES_DIR_FILTER"), "excluded_annonces.json")
+        if os.path.exists(config_path):
+            with open(config_path, 'r', encoding='utf-8') as file:
+                return json.load(file)
+     
+    except Exception as e:
+        print(f"An error occurred while loading excluded annonces: {e}")
+        return jsonify({"status": "error", "message": str(e)}), 500
 
+@routes.route('/save_excluded_annonces', methods=['POST'])
+def save_excluded_annonces():
+    try:
+        data = request.get_json()
+        excluded_annonces = data.get('excluded_annonces', [])
+        
+        config_path = os.path.join(os.getenv("ANNONCES_DIR_FILTER"), "excluded_annonces.json")
+        with open(config_path, 'w', encoding='utf-8') as config_file:
+            json.dump(excluded_annonces, config_file, ensure_ascii=False, indent=4)
+        
+        return jsonify({"status": "success"}), 200
+    except Exception as e:
+        print(f"An error occurred while saving excluded annonces: {e}")
+        return jsonify({"status": "error", "message": str(e)}), 500
 
 '''save config columns'''
 @routes.route('/save_config_col', methods=['POST'])
