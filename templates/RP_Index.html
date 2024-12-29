@@ -18,13 +18,14 @@
           <li><a href="#home">Home</a></li>
           <!-- <li><a href="#colonnes" onclick="toggleColumnVisibilityForm()">Colonnes</a></li> -->
           <li><a href="#Save" onclick="refresh()">Refresh</a></li>
+
           <li>
-            <a href="#Option">Option</a>
-            <ul class="submenu">
-              <li><a href="#Exclude">Exclude</a></li>
-              <!--<li><a href="#SubOption2">Sub Option 2</a></li>-->
-              <!--<li><a href="#SubOption3">Sub Option 3</a></li>-->
-            </ul>
+            <!-- onchange="filterByStatus()"-->
+            <select id="statusFilter">
+              <option value="En cours">En cours</option>
+              <option value="Répondue">Répondue</option>
+              <option value="RDV">Répondue</option>
+            </select>
           </li>
         </ul>
       </nav>

@@ -16,8 +16,8 @@ def read_annonces_json():
             return []
 
         annonces_list = []
-        excluded_annonces = load_excluded_annonces()
-        print(f"Excluded annonces: {excluded_annonces}")
+        """ excluded_annonces = load_excluded_annonces()
+        print(f"Excluded annonces: {excluded_annonces}") """
         for root, _, files in os.walk(directory_path):
             parent_dir = os.path.basename(root)
             file_annonce = parent_dir + "_annonce_.pdf"
@@ -37,7 +37,7 @@ def read_annonces_json():
                         with open(file_path, 'r', encoding='utf-8') as file:
                             data = json.load(file)
                             #not in excluded_annonces.etat:
-                            if not data['etat']  in excluded_annonces["etat"]:
+                            if not data['etat']  in ["DELETED"]:
                                 data["dossier"] = parent_dir  # Add parent directory name to data
                                 if os.path.exists(file_isGptResum_Path1):
                                     isGptResum="True"

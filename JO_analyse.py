@@ -41,8 +41,11 @@ def preprocess_text(text):
 
 
 # Charger le modèle et le tokenizer
-tokenizer = LongformerTokenizer.from_pretrained("allenai/longformer-base-4096")
-model = LongformerModel.from_pretrained("allenai/longformer-base-4096")
+try:
+    tokenizer = LongformerTokenizer.from_pretrained('allenai/longformer-base-4096')
+    model = LongformerModel.from_pretrained('allenai/longformer-base-4096')
+except EnvironmentError as e:
+    print(f"Error loading model: {e}")
 
 # Fonction corrigée pour calculer la similarité cosinus
 def cosine_similarity(vec1, vec2):

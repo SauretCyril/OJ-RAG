@@ -226,4 +226,8 @@ def extract_features(text):
  
     
 if __name__ == '__main__':
+    from multiprocessing import freeze_support
+    from JO_analyse import *
+    freeze_support()
+    # Votre code pour démarrer l'application Flask
     app.run(debug=True)
