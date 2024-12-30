@@ -74,12 +74,16 @@ function loadTableData(callback) {
     
     //reassignEventHandlers(window.columns);
     generateTableHeaders();
-    
+    //state = value de la liste box statusFilter
+    const state = document.getElementById('statusFilter').value;
     fetch('/read_annonces_json', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'
-        }
+        },
+        body: JSON.stringify({
+        state: state
+        })
     })
     .then(response => response.json())
     .then(data => {

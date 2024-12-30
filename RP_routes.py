@@ -16,15 +16,15 @@ def read_annonces_json():
             return []
 
         annonces_list = []
-        """ excluded_annonces = load_excluded_annonces()
-        print(f"Excluded annonces: {excluded_annonces}") """
+        crit_annonces = load_crit_annonces()
+        print(f"###1 ------Excluded annonces: {crit_annonces}")
         for root, _, files in os.walk(directory_path):
             parent_dir = os.path.basename(root)
             file_annonce = parent_dir + "_annonce_.pdf"
-            file_isGptResum=parent_dir + "_gpt_request.pdf"
+            file_isGptResum = parent_dir + "_gpt_request.pdf"
             
-            file_isGptResum_Path1 =os.path.join(root, file_isGptResum)
-            file_isGptResum_Path1 =file_isGptResum_Path1.replace('\\', '/') 
+            file_isGptResum_Path1 = os.path.join(root, file_isGptResum)
+            file_isGptResum_Path1 = file_isGptResum_Path1.replace('\\', '/') 
           
             record_added = False
             data = {}
@@ -36,16 +36,31 @@ def read_annonces_json():
                     try:
                         with open(file_path, 'r', encoding='utf-8') as file:
                             data = json.load(file)
-                            #not in excluded_annonces.etat:
-                            if not data['etat']  in ["DELETED"]:
+                            # Check exclusion criteria
+                            isExclued = False
+                            if crit_annonces:
+                                excl = crit_annonces["exclude"]
+                                for crit in excl:
+                                    for key, values in crit.items():
+                                        if data.get(key) in values:
+                                            isExclued = True
+                                            break
+                                    if isExclued:
+                                        break
+                            else:
+                                if not data['etat'] in ["DELETED"]:
+                                    isExclued = True
+                            if not isExclued:
                                 data["dossier"] = parent_dir  # Add parent directory name to data
                                 if os.path.exists(file_isGptResum_Path1):
-                                    isGptResum="True"
+                                    isGptResum = "True"
                                 else:
-                                     isGptResum="False"
-                                data["GptSum"]=isGptResum
+                                    isGptResum = "False"
+                            
+                                data["GptSum"] = isGptResum
                                 jData = {file_path: data}
                                 annonces_list.append(jData)
+                            
                             record_added = True
 
                     except json.JSONDecodeError:
@@ -94,9 +109,9 @@ def read_annonces_json():
         print(f"An unexpected error occurred while reading annonces: {e}")
         return []
 
-def load_excluded_annonces():
+def load_crit_annonces():
     try:
-        config_path = os.path.join(os.getenv("ANNONCES_DIR_FILTER"), "excluded_annonces.json")
+        config_path = os.path.join(os.getenv("ANNONCES_DIR_STATE"), "excluded_annonces.json")
         if os.path.exists(config_path):
             with open(config_path, 'r', encoding='utf-8') as file:
                 return json.load(file)
