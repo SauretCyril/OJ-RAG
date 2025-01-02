@@ -69,6 +69,24 @@ function save_config_col() {
 //save_config_col();
 
 
+function loadFilterValues(tabActive) {
+    fetch('/read_filters_json', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ tabActive: tabActive })
+    })
+    .then(response => response.json())
+    .then(filters => {
+        console.log('Filter values loaded:', filters);
+        updateFilterValues(filters);
+        filterTable();
+    })
+    .catch(error => {
+        console.error('Error loading filter values:', error);
+    });
+}
 // Example usage
 function loadTableData(callback) {
     
@@ -76,7 +94,7 @@ function loadTableData(callback) {
     generateTableHeaders();
     //state = value de la liste box statusFilter
     const state = document.getElementById('statusFilter').value;
-    fetch('/read_annonces_json', {
+    fetch('/read_annonces_json', { 
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'
@@ -336,7 +354,7 @@ function loadTableData(callback) {
             });
         }
         
-        loadFilterValues(window.tabActive)() // Ensure this function is defined in Python
+        loadFilterValues(window.tabActive)() 
         .then(filters => {
             console.log('db67-Filter values loaded:', filters);
             if (filters) {
@@ -348,11 +366,7 @@ function loadTableData(callback) {
             console.error('Error loading filter values:', error);
         });
         
-       /*  loadFilterValues(function() {
-            filterTable();
-        }); */
-        
-        // Execute the callback if provided
+      
      
     })
     .catch(error => {
@@ -516,24 +530,6 @@ function updateFilterValues(filters) {
 }
 
 // Function to load filter values from JSON file and update input fields
-function loadFilterValues(tabActive) {
-    fetch('/read_filters_json', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ tabActive: tabActive })
-    })
-    .then(response => response.json())
-    .then(filters => {
-        console.log('Filter values loaded:', filters);
-        updateFilterValues(filters);
-        filterTable();
-    })
-    .catch(error => {
-        console.error('Error loading filter values:', error);
-    });
-}
 
 
 function openEditModal(rowId) {

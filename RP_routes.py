@@ -191,16 +191,18 @@ def file_exists():
 @routes.route('/read_filters_json', methods=['POST'])
 def read_filters_json():
     try:
+        
         data = request.get_json()
         tab_active = data.get('tabActive')
+        
         file_path = os.path.join(os.getenv("ANNONCES_DIR_FILTER"), tab_active + "_filter") + ".json"
         file_path = file_path.replace('\\', '/')  # Normalize path
-        print(f"loading filters from {file_path}")
+        print(f"##01-loading filters from {file_path}")
         if not os.path.exists(file_path):
             return jsonify({})
         with open(file_path, 'r', encoding='utf-8') as file:
             filters = json.load(file)
-            print(filters)
+            print("##02#",filters)
             return jsonify(filters)  # Return dictionary directly
     except Exception as e:
         print(f"An unexpected error occurred while reading filter values: {e}")

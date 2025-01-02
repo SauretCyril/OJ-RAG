@@ -230,4 +230,4 @@ if __name__ == '__main__':
     from JO_analyse import *
     freeze_support()
     # Votre code pour démarrer l'application Flask
-    app.run(debug=True)
+    app.run()
