@@ -8,6 +8,7 @@ from werkzeug.utils import secure_filename
 from JO_analyse_gpt import get_info
 import tkinter as tk
 from tkinter import filedialog
+import threading
 
 routes = Blueprint('routes', __name__)
 
@@ -168,7 +169,7 @@ def open_url():
     try:
         data = request.get_json()
         url = data.get('url')
-        
+        print ("##3-------------------------------",url)
         if url:
             # Logic to open the URL
             os.system(f'start {url}')
@@ -339,19 +340,28 @@ def select_cv():
         data = request.get_json()
         dossier_number = data.get('num_dossier')
         target_directory = data.get('repertoire_annonce')
-        print ("##2-------------------------------",dossier_number,target_directory)
-        """ if not dossier_number or not target_directory:
+        print ("##2-------------------------------", dossier_number, target_directory)
+        
+        if not dossier_number or not target_directory:
             return jsonify({"status": "error", "message": "Missing parameters"}), 400
-        """ 
-        # Open file dialog to select .docx file
+        
+        # Function to open file dialog in the main thread
         def open_file_dialog():
             root = tk.Tk()
             root.withdraw()  # Hide the root window
             file_path = filedialog.askopenfilename(filetypes=[("DOCX files", "*.docx")])
             root.destroy()  # Destroy the root window after file selection
             return file_path
-        print ("##3------")
-        file_path = open_file_dialog()
+        
+        # Run the file dialog in the main thread
+        file_path = None
+        def run_dialog():
+            nonlocal file_path
+            file_path = open_file_dialog()
+        
+        dialog_thread = threading.Thread(target=run_dialog)
+        dialog_thread.start()
+        dialog_thread.join()
         
         if not file_path:
             return jsonify({"status": "error", "message": "No file selected"}), 400

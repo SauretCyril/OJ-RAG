@@ -153,8 +153,8 @@ function loadTableData(callback) {
                             icon.textContent = '📗'; // Green book icon
                         }
                         icon.style.position = 'absolute';
-                        icon.style.left = '0px'; // Ajusté pour être visible sur le côté gauche
-                        icon.style.top = '0px';
+                        icon.style.alignContent='center';
+                        //icon.style.top = '0px';
                         icon.style.zIndex = '10'; // Ensure the icon is above the content
                         icon.style.cursor = 'pointer';
                         icon.addEventListener('click', () => get_cv(item.dossier, dir_path));
@@ -171,7 +171,7 @@ function loadTableData(callback) {
                             cell.style.cursor = col.style.cursor;
                             cell.style.color = col.style.color;
                             cell.style.textDecoration = col.style.textDecoration;
-                            cell.addEventListener(col.event, () => col.eventHandler(item));
+                            cell.addEventListener(col.event, () => open_url(item.url));
                         } else {
                             cell.style.color = ''; // Default color
                             cell.style.textDecoration = ''; // Default text decoration
@@ -408,16 +408,7 @@ function loadTableData(callback) {
         }
         
         loadFilterValues(window.tabActive);
-       /*  .then(filters => {
-            console.log('db67-Filter values loaded:', filters);
-            if (filters) {
-                //updateFilterValues(filters);  // Update filter input fields
-                //filterTable();  // Trigger table filtering
-            }
-        })
-        .catch(error => {
-            console.error('Error loading filter values:', error);
-        }); */
+      
         
       
      
@@ -1123,7 +1114,7 @@ function hideLoadingOverlay() {
 async function get_cv(num, repertoire_annonces) {
     const dossier_number = num;
     const target_directory = repertoire_annonces;
-
+    alert(target_directory);
     try {
         const response = await fetch('/select_cv', {
             method: 'POST',
@@ -1147,4 +1138,27 @@ async function get_cv(num, repertoire_annonces) {
         console.error('Error selecting CV:', error);
         alert('Erreur lors de la sélection du CV.');
     }
+}
+
+/**
+ * Event handler for opening URLs.
+ * @param {Object} item - The item containing the URL.
+ */
+function openUrlHandler(item) {
+    if (item.url) {
+        window.open(item.url, '_blank');
+    } else {
+        console.error('URL not found for the item:', item);
+    }
+}
+
+function open_url(theurl) {
+      
+            fetch('/open_url', {
+                method: 'POST',
+                headers: {
+                'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ url: theurl  })
+        });
 }
