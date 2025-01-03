@@ -8,9 +8,6 @@ document.getElementById('uploadForm').addEventListener('submit', async function(
         alert('Veuillez sélectionner les fichiers requis.');
         return;
     }
-
-    
-
     
     formData.append('file', jobFile, jobFile.name);
     ///formData.append('q2_job', q2_job);

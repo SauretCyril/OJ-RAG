@@ -1,10 +1,13 @@
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, send_from_directory, render_template_string
 import os
 import json
 import platform
 import csv
 import subprocess
+from werkzeug.utils import secure_filename
 from JO_analyse_gpt import get_info
+import tkinter as tk
+from tkinter import filedialog
 
 routes = Blueprint('routes', __name__)
 
@@ -22,16 +25,19 @@ def read_annonces_json():
             parent_dir = os.path.basename(root)
             file_annonce = parent_dir + "_annonce_.pdf"
             file_isGptResum = parent_dir + "_gpt_request.pdf"
+            file_cv = parent_dir + "_CyrilSauret.docx"
             
             file_isGptResum_Path1 = os.path.join(root, file_isGptResum)
             file_isGptResum_Path1 = file_isGptResum_Path1.replace('\\', '/') 
-          
+            file_cv_Path = os.path.join(root, file_cv.replace('\\', '/'))
             record_added = False
             data = {}
+            isCVin="N"
             for filename in files:
                 file_path = os.path.join(root, filename)
                 file_path = file_path.replace('\\', '/')  # Normalize path
-                  
+                if (filename  == "_CyrilSauret.docx"):
+                    isCVin="O"
                 if filename == ".data.json":
                     try:
                         with open(file_path, 'r', encoding='utf-8') as file:
@@ -58,6 +64,7 @@ def read_annonces_json():
                                     isGptResum = "False"
                             
                                 data["GptSum"] = isGptResum
+                                data["CV"] = isCVin
                                 jData = {file_path: data}
                                 annonces_list.append(jData)
                             
@@ -78,6 +85,7 @@ def read_annonces_json():
                         Data = define_default_data()     
                         Data["dossier"] = parent_dir
                         Data["etat"] = "gpt"
+                       
                         
                         try: 
                             infos = get_info(file_path, "peux tu me trouver l'url de l'annonce ( elle se trouve entre <- et ->)  [url], l'entreprise [entreprise], le titre du poste [poste] (ce titre ne doit pas dépasser 20 caractère)")
@@ -322,6 +330,40 @@ def open_parent_directory():
     except Exception as e:
         print(f"Error opening parent directory: {e}")
         return jsonify({"status": "error", "message": str(e)}), 500
+
+# ...existing code...
+
+@routes.route('/select_cv', methods=['POST'])
+def select_cv():
+    try:
+        data = request.get_json()
+        dossier_number = data.get('num_dossier')
+        target_directory = data.get('repertoire_annonce')
+        print ("##2-------------------------------",dossier_number,target_directory)
+        """ if not dossier_number or not target_directory:
+            return jsonify({"status": "error", "message": "Missing parameters"}), 400
+        """ 
+        # Open file dialog to select .docx file
+        def open_file_dialog():
+            root = tk.Tk()
+            root.withdraw()  # Hide the root window
+            file_path = filedialog.askopenfilename(filetypes=[("DOCX files", "*.docx")])
+            root.destroy()  # Destroy the root window after file selection
+            return file_path
+        print ("##3------")
+        file_path = open_file_dialog()
+        
+        if not file_path:
+            return jsonify({"status": "error", "message": "No file selected"}), 400
+        
+        filename = secure_filename(f"{dossier_number}_CyrilSauret.docx")
+        target_path = os.path.join(target_directory, filename)
+        os.rename(file_path, target_path)
+        
+        return jsonify({"status": "success", "message": f"File saved as {filename} in {target_directory}"}), 200
+    except Exception as e:
+        print(f"an error occur when select file: {e}")
+        return jsonify({"status": "error", "message": str(e)}), 500 
 
 # ...existing code...
 

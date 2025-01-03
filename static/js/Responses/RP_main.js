@@ -23,6 +23,7 @@ window.columns = [
     },
     { key: 'id', editable: true, width: '100px',"visible":true,"type":"tb",title:'ID' },
     { key: 'entreprise', editable: true, width: '150px',"visible":true ,"type":"tb",title:'Entreprise' },
+    { key: 'CV', editable: false, width: '75px',"visible":true ,"type":"tb",title:'CV' },
     { key: 'categorie', editable: true, class: 'category-badge', prefix: 'category-', width: '200px',"visible":true,"type":"tb",title:'Cat'  },
     { key: 'etat', editable: true, width: '95px',"visible":true ,"type":"tb",title:'Etat'  },
     { key: 'Date', editable: true, default: 'N/A', width: '120px',"visible":true ,"type":"tb",title:'Date' },
@@ -57,7 +58,7 @@ function save_config_col() {
     .then(response => response.json())
     .then(data => {
         if (data.status === "success") {
-            console.log('Configuration saved successfully.');
+            //console.log('Configuration saved successfully.');
         } else {
             console.error('Error saving configuration:', data.message);
         }
@@ -79,7 +80,7 @@ function loadFilterValues(tabActive) {
     })
     .then(response => response.json())
     .then(filters => {
-        console.log('Filter values loaded:', filters);
+        //console.log('Filter values loaded:', filters);
         updateFilterValues(filters);
         filterTable();
     })
@@ -93,14 +94,14 @@ function loadTableData(callback) {
     //reassignEventHandlers(window.columns);
     generateTableHeaders();
     //state = value de la liste box statusFilter
-    const state = document.getElementById('statusFilter').value;
+    //const state = document.getElementById('statusFilter').value;
     fetch('/read_annonces_json', { 
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-        state: state
+        state: "En Cours"        
         })
     })
     .then(response => response.json())
@@ -133,35 +134,56 @@ function loadTableData(callback) {
             window.columns.forEach((col, colIndex) => {
                 if (col.type === "tb" && col.visible === true) {
                     const cell = document.createElement('td');
-                    isurl = false;
-                    isresumGpt = false;
-                    if (col.key === 'GptSum' && item.hasOwnProperty('GptSum') && item.GptSum=="True") { 
-                        isresumGpt = true; 
+                    
+                    let isurl = false;
+                    let isresumGpt = false;
+                    if (col.key === 'GptSum' && item.hasOwnProperty('GptSum') && item.GptSum == "True") {
+                        isresumGpt = true;
                     }
                     
+                    if (col.key === 'CV') {
+                        console.log('#### CV:', item[col.key]);
+                        const icon = document.createElement('span');
+                        if (item[col.key] === 'N') {
+                            console.log('#### blanc:');
+                            
+                            icon.textContent = '📕'; // Red book icon
+                        } else {
+                            console.log('#### vert:');
+                            icon.textContent = '📗'; // Green book icon
+                        }
+                        icon.style.position = 'absolute';
+                        icon.style.left = '0px'; // Ajusté pour être visible sur le côté gauche
+                        icon.style.top = '0px';
+                        icon.style.zIndex = '10'; // Ensure the icon is above the content
+                        icon.style.cursor = 'pointer';
+                        icon.addEventListener('click', () => get_cv(item.dossier, dir_path));
+                        cell.appendChild(icon);
+                        
+                        
+                    } else {
+
+                        if (col.key === 'description' && item.url) {
+                            isurl = true;
+                        }
+
+                        if (isurl) {
+                            cell.style.cursor = col.style.cursor;
+                            cell.style.color = col.style.color;
+                            cell.style.textDecoration = col.style.textDecoration;
+                            cell.addEventListener(col.event, () => col.eventHandler(item));
+                        } else {
+                            cell.style.color = ''; // Default color
+                            cell.style.textDecoration = ''; // Default text decoration
+                        }
+                        cell.textContent = item[col.key] || col.default || '';
+                        if (col.class) cell.classList.add(col.class);
+                        if (col.editable) cell.contentEditable = "true";
+                        if (col.width) cell.style.width = col.width;
                     
-                    if (col.key === 'description' && item.url) { isurl = true; }
-
-                    if (isurl ) {
-                        cell.style.cursor = col.style.cursor;
-                        cell.style.color = col.style.color;
-                        cell.style.textDecoration = col.style.textDecoration;
-                        cell.addEventListener(col.event, () => col.eventHandler(item));
-                    } 
-                    else {
-                        cell.style.color = ''; // Default color
-                        cell.style.textDecoration = ''; // Default text decoration
+                        cell.onblur = () => updateAnnonces(index, col.key, cell.textContent);
                     }
-                    cell.textContent = item[col.key] || col.default || '';
-                    if (col.class) cell.classList.add(col.class);
-                    //if (col.prefix) cell.classList.add(`${col.prefix}${item[col.key].replace(/\s+/g, '-')}`);
-                    if (col.editable) cell.contentEditable = "true";
-                    if (col.width) cell.style.width = col.width;
-
-                    cell.onblur = () => updateAnnonces(index, col.key, cell.textContent);
-                  
                     row.appendChild(cell);
-                   
                 }
             });
             
@@ -177,7 +199,7 @@ function loadTableData(callback) {
             })
             .then(response => response.json())
             .then(data => {
-                console.log('<File exists>:', fichier_annonce,data.exists);
+                //console.log('<File exists>:', fichier_annonce,data.exists);
                 if (data.exists) {
                     
                     const attachmentIcon = document.createElement('span');
@@ -272,6 +294,37 @@ function loadTableData(callback) {
                         
                         }
                     };
+                /* document.getElementById('getCV').onclick = () => {
+                    const rowId = contextMenu.dataset.targetRow;
+                    const index = window.annonces.findIndex(a => Object.keys(a)[0] === rowId);
+                    if (index === -1) return;
+                    const item = window.annonces[index][rowId];
+                    const dossier_number = item.dossier;
+                    const target_directory = rowId.substring(0, rowId.lastIndexOf('/'));
+                    //alert('param :'+dossier_number + ' '+ target_directory);
+                    fetch('/select_cv', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            num_dossier: dossier_number,
+                            repertoire_annonce: target_directory
+                        })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.status === "success") {
+                            alert('CV selectionné avec succès.');
+                        } else {
+                            alert('Erreur lors de la sélection du CV: ' + data.message);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error selecting CV:', error);
+                        alert('Erreur lors de la sélection du CV.');
+                    });
+                }; */
 
 
                 document.getElementById('Delete').onclick = () => {
@@ -354,17 +407,17 @@ function loadTableData(callback) {
             });
         }
         
-        loadFilterValues(window.tabActive)() 
-        .then(filters => {
+        loadFilterValues(window.tabActive);
+       /*  .then(filters => {
             console.log('db67-Filter values loaded:', filters);
             if (filters) {
-                updateFilterValues(filters);  // Update filter input fields
-                filterTable();  // Trigger table filtering
+                //updateFilterValues(filters);  // Update filter input fields
+                //filterTable();  // Trigger table filtering
             }
         })
         .catch(error => {
             console.error('Error loading filter values:', error);
-        });
+        }); */
         
       
      
@@ -395,7 +448,7 @@ function filterTable() {
     });
 
     const rows = document.querySelectorAll('#table-body tr');
-    console.log(`Filter for ${rows.length} rows...`);
+    //console.log(`Filter for ${rows.length} rows...`);
     rows.forEach(row => {
         let shouldDisplay = true;
         // Check each cell against the filter
@@ -406,7 +459,7 @@ function filterTable() {
                 if (cell) {
                     const cellValue = cell.textContent.toLowerCase();
                     const filterValue = filters[col.key];
-                    console.log(`Cell value for ${col.key}: ${cellValue}, Filter value: ${filterValue}`);
+                    //console.log(`Cell value for ${col.key}: ${cellValue}, Filter value: ${filterValue}`);
                     if (filterValue && !cellValue.includes(filterValue)) {
                         shouldDisplay = false;
                     }
@@ -462,7 +515,7 @@ function saveTableData() {
         .then(response => response.json())
         .then(data => {
             if (data.status === "success") {
-                console.log('Data successfully saved.');
+                //console.log('Data successfully saved.');
                 resolve();
             } else {
                 console.error('Error saving data:', data.message);
@@ -493,7 +546,7 @@ function saveFilterValues(filters) {
     .then(response => response.json())
     .then(data => {
         if (data.status === "success") {
-            console.log('Filter values successfully saved.');
+            //console.log('Filter values successfully saved.');
         } else {
             console.error('Error saving filter values:', data.message);
         }
@@ -879,7 +932,7 @@ function open_dir(filepath) {
     .then(response => response.json())
     .then(data => {
         if (data.status === "success") {
-            console.log('Directory opened successfully.');
+            //console.log('Directory opened successfully.');
         } else {
             console.error('Error opening directory:', data.message);
         }
@@ -1067,3 +1120,31 @@ function hideLoadingOverlay() {
     }
 }
 
+async function get_cv(num, repertoire_annonces) {
+    const dossier_number = num;
+    const target_directory = repertoire_annonces;
+
+    try {
+        const response = await fetch('/select_cv', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                num_dossier: dossier_number,
+                repertoire_annonce: target_directory
+            })
+        });
+
+        const data = await response.json();
+
+        if (data.status === "success") {
+            alert('CV selectionné avec succès.');
+        } else {
+            alert('Erreur lors de la sélection du CV: ' + data.message);
+        }
+    } catch (error) {
+        console.error('Error selecting CV:', error);
+        alert('Erreur lors de la sélection du CV.');
+    }
+}
