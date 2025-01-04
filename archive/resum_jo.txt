@@ -59,3 +59,31 @@ async function get_job_answer(path,num_job)
         });
 }
 
+
+
+ const dossier_number = num;
+    const target_directory = repertoire_annonces;
+    alert(target_directory);
+    try {
+        const response = await fetch('/select_cv', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                num_dossier: dossier_number,
+                repertoire_annonce: target_directory
+            })
+        });
+
+        const data = await response.json();
+
+        if (data.status === "success") {
+            alert('CV selectionné avec succès.');
+        } else {
+            alert('Erreur lors de la sélection du CV: ' + data.message);
+        }
+    } catch (error) {
+        console.error('Error selecting CV:', error);
+        alert('Erreur lors de la sélection du CV.');
+    }

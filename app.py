@@ -47,17 +47,17 @@ app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max-limit
 # Assurer que les dossiers nécessaires existent
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
-SAVED_TEXT_FOLDER = 'G:/OneDrive/Entreprendre/Actions-4'
+SAVED_TEXT_FOLDER = 'path/to/save/folder'
 ALLOWED_EXTENSIONS = {'pdf'}
 
-#app.config['SAVED_TEXT_FOLDER'] = SAVED_TEXT_FOLDER
+app.config['SAVED_TEXT_FOLDER'] = SAVED_TEXT_FOLDER
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
-app.route('/alive')
+@app.route('/alive')
 def alive():
-    return jsonify({'message': ' Im alive'}), 200
+    return jsonify({'message': 'Im alive'}), 200
 
 
 @app.route('/')
@@ -171,8 +171,8 @@ def save_job_text():
         logger.debug(f"dbg008.Saving job to : {file_path_txt} and {file_path_docx}")
 
         """ Save txt file"""
-        with open(file_path_txt, 'w', encoding='utf-8') as file:
-            file.write(job_text_data)
+        """  with open(file_path_txt, 'w', encoding='utf-8') as file:
+            file.write(job_text_data) """
         
         """ Save pdf file"""
         doc = format_text_as_word_style(job_text_data, job_number)
@@ -230,4 +230,4 @@ if __name__ == '__main__':
     from JO_analyse import *
     freeze_support()
     # Votre code pour démarrer l'application Flask
-    app.run()
+    app.run(debug=True)

@@ -23,7 +23,8 @@ window.columns = [
     },
     { key: 'id', editable: true, width: '100px',"visible":true,"type":"tb",title:'ID' },
     { key: 'entreprise', editable: true, width: '150px',"visible":true ,"type":"tb",title:'Entreprise' },
-    { key: 'CV', editable: false, width: '75px',"visible":true ,"type":"tb",title:'CV' },
+    { key: 'CV', editable: false, width: '50px',"visible":true ,"type":"tb",title:'CV' },
+    { key: 'CVpdf', editable: false, width: '50px',"visible":true ,"type":"tb",title:'.pdf' },
     { key: 'categorie', editable: true, class: 'category-badge', prefix: 'category-', width: '200px',"visible":true,"type":"tb",title:'Cat'  },
     { key: 'etat', editable: true, width: '95px',"visible":true ,"type":"tb",title:'Etat'  },
     { key: 'Date', editable: true, default: 'N/A', width: '120px',"visible":true ,"type":"tb",title:'Date' },
@@ -141,23 +142,58 @@ function loadTableData(callback) {
                         isresumGpt = true;
                     }
                     
-                    if (col.key === 'CV') {
+                      if (col.key === 'CVpdf' && item['CV']=='O' ) {
                         console.log('#### CV:', item[col.key]);
                         const icon = document.createElement('span');
                         if (item[col.key] === 'N') {
                             console.log('#### blanc:');
                             
                             icon.textContent = '📕'; // Red book icon
-                        } else {
+                        } else if (item[col.key] === 'O') {
                             console.log('#### vert:');
                             icon.textContent = '📗'; // Green book icon
+                        } 
+                        icon.style.position = 'absolute';
+                        icon.style.alignContent='center';
+                        //icon.style.top = '0px';
+                        icon.style.zIndex = '10'; // Ensure the icon is above the content
+                        if (item[col.key] === 'O') {
+                            icon.style.cursor = 'pointer';
+                            icon.addEventListener('click', () => convert_cv(item.dossier, dir_path));
                         }
+                        cell.appendChild(icon);
+                      } else  if (col.key === 'CVpdf' && item['CV']=='N' ){
+                          {
+                            const icon = document.createElement('span');
+                            icon.textContent = '⚪'; // White circle icon
+                            
+                            icon.style.position = 'absolute';
+                            icon.style.alignContent='center';
+                            //icon.style.top = '0px';
+                            icon.style.zIndex = '10';
+                            cell.appendChild(icon);
+                          }
+                    }                      
+                     else if (col.key === 'CV') {
+                        console.log('#### CV:', item[col.key]);
+                        const icon = document.createElement('span');
+                        if (item[col.key] === 'N') {
+                            console.log('#### blanc:');
+                            
+                            icon.textContent = '📕'; // Red book icon
+                        } else if (item[col.key] === 'O') {
+                            console.log('#### vert:');
+                            icon.textContent = '📗'; // Green book icon
+                        } /* else if (item[col.key] === 'P') { 
+                            icon.textContent = '📙'; // Orange book icon
+                        } */
                         icon.style.position = 'absolute';
                         icon.style.alignContent='center';
                         //icon.style.top = '0px';
                         icon.style.zIndex = '10'; // Ensure the icon is above the content
                         icon.style.cursor = 'pointer';
-                        icon.addEventListener('click', () => get_cv(item.dossier, dir_path));
+                        
+                        icon.addEventListener('click', () => get_cv(item.dossier, dir_path,item[col.key],row.id));
                         cell.appendChild(icon);
                         
                         
@@ -585,7 +621,7 @@ function openEditModal(rowId) {
     // Définir les groupes d'onglets
     const tabGroups = {
         'Informations principales': ['dossier', 'description', 'id', 'entreprise', 'categorie'],
-        'Statut et suivi': ['etat', 'Date' ,'url','todo','lien_Etape'],
+        'Statut et suivi': ['etat', 'Date' ,'url','todo','lien_Etape','annonce_pdf','CV'],
         'Contact': ['tel', 'contact'],
         'Détails': ['Commentaire', 'type', 'type_question'], 
         'GPT': ['GptSum']
@@ -1110,47 +1146,80 @@ function hideLoadingOverlay() {
         overlay.remove();
     }
 }
-
-async function get_cv(num, repertoire_annonces) {
-    const dossier_number = num;
-    const target_directory = repertoire_annonces;
-    alert(target_directory);
-    try {
-        const response = await fetch('/select_cv', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
+async function convert_cv(numDossier, repertoire_annonces) 
+{
+ fetch('/convert_cv', {
+    method: 'POST',
+    headers:{
+            'Content-Type': 'application/json'
             },
-            body: JSON.stringify({
-                num_dossier: dossier_number,
-                repertoire_annonce: target_directory
-            })
-        });
+    body: JSON.stringify({ 
+        num_dossier: numDossier,
+        repertoire_annonces: repertoire_annonces,
+        })
+    });
+}
 
-        const data = await response.json();
-
-        if (data.status === "success") {
-            alert('CV selectionné avec succès.');
-        } else {
-            alert('Erreur lors de la sélection du CV: ' + data.message);
+async function get_cv(numDossier, repertoire_annonces,state,rowId) 
+{
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.pdf,.doc,.docx'; // Acceptable file types
+    input.style.display = 'none';
+    ready=true;
+    if (state==='O')
+    {
+         if  (! confirm("Voulez vous écraser votre CV ? ")) {
+        ready=false;   
         }
-    } catch (error) {
-        console.error('Error selecting CV:', error);
-        alert('Erreur lors de la sélection du CV.');
     }
+
+    
+        input.addEventListener('change', async (event) => 
+        {
+            const file = event.target.files[0];
+            if (file) 
+            {
+                const formData = new FormData();
+                formData.append('file_path', file);
+                formData.append('num_dossier', numDossier);
+                formData.append('repertoire_annonce', repertoire_annonces);
+
+                try 
+                {
+                    const response = await fetch('/share_cv', {
+                        method: 'POST',
+                        body: formData
+                    });
+                    const data = await response.json();
+
+                    if (data.status === "success") 
+                    {
+                        alert('CV selectionné avec succès.');
+                        UpdateState(rowId,'CV',"O");
+                    } else 
+                    {
+                        alert('Erreur lors de la sélection du CV: ' + data.message);
+                    }
+
+                } 
+                catch (error) 
+                {
+                    console.error('Error selecting CV:', error);
+                    alert('Erreur lors de la sélection du CV.');
+                }
+            }
+        });
+    if (ready) 
+    {
+         document.body.appendChild(input);
+        input.click();
+    }
+
+   
 }
 
-/**
- * Event handler for opening URLs.
- * @param {Object} item - The item containing the URL.
- */
-function openUrlHandler(item) {
-    if (item.url) {
-        window.open(item.url, '_blank');
-    } else {
-        console.error('URL not found for the item:', item);
-    }
-}
+
 
 function open_url(theurl) {
       

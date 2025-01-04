@@ -9,6 +9,8 @@ from JO_analyse_gpt import get_info
 import tkinter as tk
 from tkinter import filedialog
 import threading
+from docx2pdf import convert
+import pythoncom
 
 routes = Blueprint('routes', __name__)
 
@@ -27,18 +29,26 @@ def read_annonces_json():
             file_annonce = parent_dir + "_annonce_.pdf"
             file_isGptResum = parent_dir + "_gpt_request.pdf"
             file_cv = parent_dir + "_CyrilSauret.docx"
-            
+            file_cv_pdf = parent_dir + "_CyrilSauret.pdf"
             file_isGptResum_Path1 = os.path.join(root, file_isGptResum)
             file_isGptResum_Path1 = file_isGptResum_Path1.replace('\\', '/') 
             file_cv_Path = os.path.join(root, file_cv.replace('\\', '/'))
             record_added = False
             data = {}
             isCVin="N"
+            isCVinpdf="N"
+            for filename in files:
+                if filename  == file_cv:
+                    isCVin="O"
+                    print("###---->BINGO")
+                if filename  == file_cv_pdf:
+                    isCVinpdf="O"
+                    
             for filename in files:
                 file_path = os.path.join(root, filename)
                 file_path = file_path.replace('\\', '/')  # Normalize path
-                if (filename  == "_CyrilSauret.docx"):
-                    isCVin="O"
+               
+                 
                 if filename == ".data.json":
                     try:
                         with open(file_path, 'r', encoding='utf-8') as file:
@@ -66,6 +76,7 @@ def read_annonces_json():
                             
                                 data["GptSum"] = isGptResum
                                 data["CV"] = isCVin
+                                data["CVpdf"] = isCVinpdf
                                 jData = {file_path: data}
                                 annonces_list.append(jData)
                             
@@ -86,6 +97,8 @@ def read_annonces_json():
                         Data = define_default_data()     
                         Data["dossier"] = parent_dir
                         Data["etat"] = "gpt"
+                        Data["CV"] = isCVin
+                        data["CVpdf"] = isCVinpdf
                        
                         
                         try: 
@@ -97,6 +110,8 @@ def read_annonces_json():
                                 Data["description"] = infos["poste"]
                                 record_added = True  
                                 Data["etat"] = "New"
+                                Data["CV"] = isCVin
+                                data["CVpdf"] = isCVinpdf
                                 jData = {file_annonce_path: Data}   
                                 annonces_list.append(jData)
                             else:
@@ -334,48 +349,73 @@ def open_parent_directory():
 
 # ...existing code...
 
-@routes.route('/select_cv', methods=['POST'])
+
+@routes.route('/convert_cv', methods=['POST'])
+def convert_cv():
+    print ("convertir le cv docx en cv pdf")
+    data = request.get_json()
+    file_path= data.get('repertoire_annonces')
+    num_dossier = data.get('num_dossier')
+    filename = secure_filename(f"{num_dossier}_CyrilSauret.docx")
+    target_path = os.path.join(file_path, filename)
+    target_path_pdf= os.path.join(file_path, filename.replace('.docx', '.pdf'))
+    if os.path.exists(target_path_pdf):
+        os.remove(target_path_pdf)
+        print("-->04 pdf removed", target_path_pdf)
+    
+
+@routes.route('/share_cv', methods=['POST'])
 def select_cv():
     try:
-        data = request.get_json()
-        dossier_number = data.get('num_dossier')
-        target_directory = data.get('repertoire_annonce')
-        print ("##2-------------------------------", dossier_number, target_directory)
+        print("##0---")
+        file = request.files.get('file_path')
+        dossier_number = request.form.get('num_dossier')
+        target_directory = request.form.get('repertoire_annonce')
+        print("##2-------------------------------", dossier_number, target_directory)
         
-        if not dossier_number or not target_directory:
-            return jsonify({"status": "error", "message": "Missing parameters"}), 400
-        
-        # Function to open file dialog in the main thread
-        def open_file_dialog():
-            root = tk.Tk()
-            root.withdraw()  # Hide the root window
-            file_path = filedialog.askopenfilename(filetypes=[("DOCX files", "*.docx")])
-            root.destroy()  # Destroy the root window after file selection
-            return file_path
-        
-        # Run the file dialog in the main thread
-        file_path = None
-        def run_dialog():
-            nonlocal file_path
-            file_path = open_file_dialog()
-        
-        dialog_thread = threading.Thread(target=run_dialog)
-        dialog_thread.start()
-        dialog_thread.join()
-        
-        if not file_path:
-            return jsonify({"status": "error", "message": "No file selected"}), 400
+        if not dossier_number or not target_directory or not file:
+            return jsonify({"status": "error", "message": "Missing parameters"}), 400 
         
         filename = secure_filename(f"{dossier_number}_CyrilSauret.docx")
         target_path = os.path.join(target_directory, filename)
-        os.rename(file_path, target_path)
+        target_path = target_path.replace('\\', '/') 
+        print("##3-------------------------------", target_path)
+        pdf_file_path = target_path.replace('.docx', '.pdf')
+        pdf_file_path = pdf_file_path.replace('\\', '/') 
+        
+        if not os.path.exists(target_path):
+            file.save(target_path)
+            print("-->01 docx saved : ", target_path)
+        else:
+            os.remove(target_path)
+            print("-->02 docx removed", target_path)
+            file.save(target_path)
+            print("-->03 docx saved", target_path)
+        convert_to_pdf(target_path,pdf_file_path)
+        print("##3a-----------------------",pdf_file_path)
         
         return jsonify({"status": "success", "message": f"File saved as {filename} in {target_directory}"}), 200
     except Exception as e:
-        print(f"an error occur when select file: {e}")
+        print(f"An error occurred when duplicate file: {e}")
         return jsonify({"status": "error", "message": str(e)}), 500 
 
 # ...existing code...
+
+
+def convert_to_pdf(target_path,pdf_file_path):
+    
+    if os.path.exists(pdf_file_path):# Delete the existing file
+        os.remove(pdf_file_path)
+        print("-->04 pdf removed", pdf_file_path)
+    pythoncom.CoInitialize()
+    
+    try:
+        convert(target_path, pdf_file_path)
+        print("-->05 docx converted to pdf", pdf_file_path)
+    finally:
+        # Uninitialize COM library
+        pythoncom.CoUninitialize()
+            
 
 def define_default_data():
     return {
