@@ -1196,7 +1196,7 @@ async function get_cv(numDossier, repertoire_annonces,state,rowId)
                     if (data.status === "success") 
                     {
                         alert('CV selectionné avec succès.');
-                        UpdateState(rowId,'CV',"O");
+                        refresh();
                     } else 
                     {
                         alert('Erreur lors de la sélection du CV: ' + data.message);
