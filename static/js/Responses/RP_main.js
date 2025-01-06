@@ -28,7 +28,7 @@ window.columns = [
     { key: 'categorie', editable: true, class: 'category-badge', prefix: 'category-', width: '200px',"visible":true,"type":"tb",title:'Cat'  },
     { key: 'etat', editable: true, width: '95px',"visible":true ,"type":"tb",title:'Etat'  },
     { key: 'Date', editable: true, default: 'N/A', width: '120px',"visible":true ,"type":"tb",title:'Date' },
-    { key: 'todo', editable: true, width: '180px',"visible":true ,"type":"tb" ,title:'ToDo'},
+    { key: 'todo', editable: true, width: '200px',"visible":true ,"type":"tb" ,title:'ToDo'},
     { key: 'tel', editable: true, width: '125px',"visible":true ,"type":"tb",title:'Tel.' },
     { key: 'contact', editable: true, width: '150px',"visible":true ,"type":"tb",title:'Contact' },
     { key: 'Commentaire', editable: true, width: '150px',"visible":false,"type":"tb" ,title:'Commentaire' },
@@ -37,7 +37,9 @@ window.columns = [
     { key: 'annonce_pdf', editable: true, width: '80px',"visible":false ,"type":"tb",title:'Annonce (pdf)' },
     { key: 'type_question', editable: true, width: '80px',"visible":false ,"type":"tb" ,title:'type Question'},
     { key: 'lien_Etape', editable: true, width: '80px',"visible":false ,"type":"tb",title:'Lien Etape' },
-    { key: 'GptSum', editable: true, width: '80px',"visible":true ,"type":"tb",title:'Resum' }
+    { key: 'GptSum', editable: true, width: '80px',"visible":true ,"type":"tb",title:'Resum' },
+    { key: 'CVfile', editable: true, width: '80px',"visible":false ,"type":"tb",title:'CVfile' },
+    
 ];
 /**
  * Saves the current configuration of columns.
@@ -147,7 +149,6 @@ function loadTableData(callback) {
                         const icon = document.createElement('span');
                         if (item[col.key] === 'N') {
                             console.log('#### blanc:');
-                            
                             icon.textContent = '📕'; // Red book icon
                         } else if (item[col.key] === 'O') {
                             console.log('#### vert:');
@@ -184,9 +185,7 @@ function loadTableData(callback) {
                         } else if (item[col.key] === 'O') {
                             console.log('#### vert:');
                             icon.textContent = '📗'; // Green book icon
-                        } /* else if (item[col.key] === 'P') { 
-                            icon.textContent = '📙'; // Orange book icon
-                        } */
+                        } 
                         icon.style.position = 'absolute';
                         icon.style.alignContent='center';
                         //icon.style.top = '0px';
@@ -240,9 +239,6 @@ function loadTableData(callback) {
                     
                     const attachmentIcon = document.createElement('span');
                     attachmentIcon.classList.add('attachment-icon');
-                    
-               
-                    
                     if (item.GptSum == "True") {
                         attachmentIcon.textContent = '😊'; // Remplacer par une icône sourire
                         fichier_annonce =fichier_annonce_resum;
@@ -276,8 +272,6 @@ function loadTableData(callback) {
                         firstCell.style.position = 'relative';
                         firstCell.appendChild(attachmentIcon);
                     }
-                    
-                    
                 }
             })
             .catch(error => {
@@ -330,38 +324,6 @@ function loadTableData(callback) {
                         
                         }
                     };
-                /* document.getElementById('getCV').onclick = () => {
-                    const rowId = contextMenu.dataset.targetRow;
-                    const index = window.annonces.findIndex(a => Object.keys(a)[0] === rowId);
-                    if (index === -1) return;
-                    const item = window.annonces[index][rowId];
-                    const dossier_number = item.dossier;
-                    const target_directory = rowId.substring(0, rowId.lastIndexOf('/'));
-                    //alert('param :'+dossier_number + ' '+ target_directory);
-                    fetch('/select_cv', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({
-                            num_dossier: dossier_number,
-                            repertoire_annonce: target_directory
-                        })
-                    })
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.status === "success") {
-                            alert('CV selectionné avec succès.');
-                        } else {
-                            alert('Erreur lors de la sélection du CV: ' + data.message);
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Error selecting CV:', error);
-                        alert('Erreur lors de la sélection du CV.');
-                    });
-                }; */
-
 
                 document.getElementById('Delete').onclick = () => {
              
@@ -501,10 +463,35 @@ function filterTable() {
 }
 
 // Function to update the global array when a cell is edited
+
+function updateAnnonces_byfile(root, key, value) {
+    try {
+        // Assuming this code is running in a Node.js environment
+        const fs = require('fs');
+        const path = require('path');
+
+        const file_path = path.join(root, ".data.json");
+
+        if (fs.existsSync(file_path)) {
+            const data = fs.readFileSync(file_path, 'utf8');
+            const jsonData = JSON.parse(data);
+
+            jsonData[key] = value;
+
+            fs.writeFileSync(file_path, JSON.stringify(jsonData, null, 2), 'utf8');
+            console.log("File updated successfully:", file_path);
+        } else {
+            console.error("File not found:", file_path);
+        }
+    } catch (err) {
+        console.error("update annonce", err);
+    }
+}
+
 function updateAnnonces(index, key, value) {
     const filePath = Object.keys(window.annonces[index])[0];
     window.annonces[index][filePath][key] = value;
-    //console.log(`Updated window.annonces[${index}][${filePath}][${key}] to ${value}`);
+    
     
 }
 
@@ -621,7 +608,7 @@ function openEditModal(rowId) {
     // Définir les groupes d'onglets
     const tabGroups = {
         'Informations principales': ['dossier', 'description', 'id', 'entreprise', 'categorie'],
-        'Statut et suivi': ['etat', 'Date' ,'url','todo','lien_Etape','annonce_pdf','CV'],
+        'Statut et suivi': ['etat', 'Date' ,'url','todo','lien_Etape','annonce_pdf','CV','CVfile'],
         'Contact': ['tel', 'contact'],
         'Détails': ['Commentaire', 'type', 'type_question'], 
         'GPT': ['GptSum']
@@ -1184,7 +1171,7 @@ async function get_cv(numDossier, repertoire_annonces,state,rowId)
                 formData.append('file_path', file);
                 formData.append('num_dossier', numDossier);
                 formData.append('repertoire_annonce', repertoire_annonces);
-
+                fpath=repertoire_annonces + '/' + numDossier +  ".data.json";   
                 try 
                 {
                     const response = await fetch('/share_cv', {
@@ -1196,6 +1183,9 @@ async function get_cv(numDossier, repertoire_annonces,state,rowId)
                     if (data.status === "success") 
                     {
                         alert('CV selectionné avec succès.');
+                        alert(fpath + ",  'CVfile' , "+file.name)
+                     
+                        //updateAnnonces_byfile(fpath, "CVfile", file.name);
                         refresh();
                     } else 
                     {
