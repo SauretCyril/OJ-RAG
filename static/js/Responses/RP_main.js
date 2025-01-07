@@ -746,12 +746,31 @@ function set_current_row() {
     }
 }
 
+function toggleHeaderVisibility() {
+    const header = document.querySelector('thead');
+    const toggleButton = document.getElementById('toggle-header-btn');
+    if (header.style.display === 'none') {
+        header.style.display = '';
+        toggleButton.textContent = 'Hide Header';
+    } else {
+        header.style.display = 'none';
+        toggleButton.textContent = 'Show Header';
+    }
+}
+
 function generateTableHeaders() {
     const thead = document.querySelector('thead tr');
     const filterRow = document.querySelector('thead tr:nth-child(2)');
     // Clear existing headers
     thead.innerHTML = '';
     filterRow.innerHTML = '';
+    
+    // Add toggle button
+   /*  const toggleButton = document.createElement('button');
+    toggleButton.id = 'toggle-header-btn';
+    toggleButton.textContent = 'Hide Header';
+    toggleButton.onclick = toggleHeaderVisibility;
+    document.querySelector('thead').insertAdjacentElement('beforebegin', toggleButton); */
     
 // forEach((col
     window.columns.forEach(col => {
