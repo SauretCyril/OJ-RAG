@@ -25,7 +25,7 @@ window.columns = [
     { key: 'entreprise', editable: true, width: '150px',"visible":true ,"type":"tb",title:'Entreprise' },
     { key: 'CV', editable: false, width: '50px',"visible":true ,"type":"tb",title:'CV' },
     { key: 'CVpdf', editable: false, width: '50px',"visible":true ,"type":"tb",title:'.pdf' },
-    { key: 'categorie', editable: true, class: 'category-badge', prefix: 'category-', width: '200px',"visible":true,"type":"tb",title:'Cat'  },
+    { key: 'categorie', editable: true, class: 'category-badge', prefix: 'category-', width: '200px',"visible":false,"type":"tb",title:'Cat'  },
     { key: 'etat', editable: true, width: '95px',"visible":true ,"type":"tb",title:'Etat'  },
     { key: 'Date', editable: true, default: 'N/A', width: '120px',"visible":true ,"type":"tb",title:'Date' },
     { key: 'todo', editable: true, width: '200px',"visible":true ,"type":"tb" ,title:'ToDo'},
@@ -84,8 +84,11 @@ function loadFilterValues(tabActive) {
     .then(response => response.json())
     .then(filters => {
         //console.log('Filter values loaded:', filters);
-        updateFilterValues(filters);
-        filterTable();
+        if (filters)
+        {
+            updateFilterValues(filters);
+            filterTable();
+        }
     })
     .catch(error => {
         console.error('Error loading filter values:', error);
