@@ -441,13 +441,18 @@ function filterTable() {
 
     const rows = document.querySelectorAll('#table-body tr');
     //console.log(`Filter for ${rows.length} rows...`);
+    console.log("--------Filtering --------------------------------")
     rows.forEach(row => {
         let shouldDisplay = true;
         // Check each cell against the filter
+        //filters.forEach(col => {
         window.columns.forEach(col => {
             if (col.type === "tb" && col.visible === true) {
                 const cellIndex = window.columns.findIndex(c => c.key === col.key);
+              
                 const cell = row.querySelector(`td:nth-child(${cellIndex + 1})`);
+                console.log("---cellIndex:"+cellIndex+" -- "+ cell.textContent);
+                
                 if (cell) {
                     const cellValue = cell.textContent.toLowerCase();
                     const filterValue = filters[col.key];
