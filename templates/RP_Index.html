@@ -16,9 +16,15 @@
       <nav>
         <ul>
           <li><a href="#home">Home</a></li>
+          <li><a href="#New" onclick="createAnnouncementForm()">New</a></li>
           <!-- <li><a href="#colonnes" onclick="toggleColumnVisibilityForm()">Colonnes</a></li> -->
           <li><a href="#Save" onclick="refresh()">Refresh</a></li>
-
+          <li>
+            <a
+              href="{{ url_for('static', filename='templates/LK_links.html') }}"
+              >LK Links</a
+            >
+          </li>
           <li>
             <!-- onchange="filterByStatus()"-->
             <!--

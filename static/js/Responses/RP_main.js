@@ -610,7 +610,7 @@ function openEditModal(rowId) {
         'Informations principales': ['dossier', 'description', 'id', 'entreprise', 'categorie'],
         'Statut et suivi': ['etat', 'Date' ,'url','todo','lien_Etape','annonce_pdf','CV','CVfile'],
         'Contact': ['tel', 'contact'],
-        'Détails': ['Commentaire', 'type', 'type_question'], 
+        'Détails': ['Commentaire', 'type', 'Lieux'], 
         'GPT': ['GptSum']
     };
 //'annonce_pdf'
@@ -1221,3 +1221,170 @@ function open_url(theurl) {
                 body: JSON.stringify({ url: theurl  })
         });
 }
+
+// ...existing code...
+
+function createAnnouncementForm() {
+    const formHtml = `
+        <dialog id="announcementForm" class="announcement-form">
+            <form method="dialog">
+                <h2>Créer une annonce</h2>
+                <div class="form-group">
+                    <label for="announcementDossier">Dossier:</label>
+                    <input type="text" id="announcementDossier" class="rich-text-field">
+                </div>
+                <div class="form-group">
+                    <label for="announcementURL">URL:</label>
+                    <input type="url" id="announcementURL" class="rich-text-field">
+                </div>
+                <div class="form-group">
+                    <label for="announcementContent">Contenu de l'annonce:</label>
+                    <textarea id="announcementContent" class="rich-text-field"></textarea>
+                </div>
+                <div class="button-group">
+                    <button type="button" onclick="submitAnnouncement()">Créer</button>
+                    <button type="button" onclick="closeAnnouncementForm()">Annuler</button>
+                </div>
+            </form>
+        </dialog>
+    `;
+
+    // Remove existing form if any
+    const existingForm = document.getElementById('announcementForm');
+    if (existingForm) {
+        existingForm.remove();
+    }
+
+    // Add form to document
+    document.body.insertAdjacentHTML('beforeend', formHtml);
+
+    // Show form
+    const form = document.getElementById('announcementForm');
+    form.showModal();
+}
+
+function submitAnnouncement() {
+    let content = document.getElementById('announcementContent').value;
+    if (content.trim() === '') {
+        alert('Le contenu de l\'annonce ne peut pas être vide !!!');
+        return;
+    }
+    const contentNum = document.getElementById('announcementDossier').value;
+    if (contentNum.trim() === '') {
+        alert('Le numéro du dossier ne peut pas être vide !!!');
+        return;
+    }
+
+    const contentUrl = document.getElementById('announcementURL').value;
+    if (contentUrl.trim() === '' && !isValidURL(contentUrl)) {
+        alert("L'URL ne peut pas être null !!!");
+        return;
+    }
+   
+    contentUrlembed = "<- " + contentUrl + " ->";
+
+    // Remove all spaces inside content
+    content = content.replace(/\s+/g, '');
+
+    globalContent =  content;
+    showLoadingOverlay();
+    fetch('/save_announcement', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            contentNum: contentNum,
+            content: content,
+            url:contentUrl
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === "success") {
+            alert('Annonce créée avec succès.');
+            refresh();
+        } else {
+            alert('Erreur lors de la création de l\'annonce: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error creating announcement:', error);
+        alert('Erreur lors de la création de l\'annonce.');
+    });
+    hideLoadingOverlay();
+    // Handle the announcement content (e.g., send it to the server)
+    //console.log('Announcement content:', content);
+
+    // Close form
+    //closeAnnouncementForm();
+}
+
+function isValidURL(url) {
+    const pattern = new RegExp('^(https?:\\/\\/)?'+ // protocol
+        '((([a-z\\d]([a-z\\d-]*[a-z\\d])*)\\.?)+[a-z]{2,}|'+ // domain name
+        '((\\d{1,3}\\.){3}\\d{1,3}))'+ // OR ip (v4) address
+        '(\\:\\d+)?(\\/[-a-z\\d%_.~+]*)*'+ // port and path
+        '(\\?[;&a-z\\d%_.~+=-]*)?'+ // query string
+        '(\\#[-a-z\\d_]*)?$','i'); // fragment locator
+    return !!pattern.test(url);
+}
+
+function closeAnnouncementForm() {
+    const form = document.getElementById('announcementForm');
+    if (form) {
+        form.close();
+    }
+}
+
+// ...existing code...
+
+// Add styles for announcementForm
+const style = document.createElement('style');
+style.textContent = `
+    .announcement-form {
+        width: 600px;
+        height: 600px;
+        padding: 20px;
+        border: 1px solid #ccc;
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    }
+    .announcement-form .form-group {
+        margin-bottom: 15px;
+    }
+    .announcement-form .form-group label {
+        display: block;
+        margin-bottom: 5px;
+        font-weight: bold;
+    }
+    .announcement-form .form-group textarea {
+        width: 100%;
+        height: 400px;
+        padding: 10px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        resize: vertical;
+    }
+    .announcement-form .button-group {
+        display: flex;
+        justify-content: space-between;
+    }
+    .announcement-form .button-group button {
+        padding: 10px 20px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+    }
+    .announcement-form .button-group button:first-child {
+        background-color: #4CAF50;
+        color: white;
+    }
+    .announcement-form .button-group button:last-child {
+        background-color: #f44336;
+        color: white;
+    }
+`;
+document.head.appendChild(style);
+
+// ...existing code...

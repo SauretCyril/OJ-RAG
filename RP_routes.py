@@ -11,6 +11,8 @@ from tkinter import filedialog
 import threading
 from docx2pdf import convert
 import pythoncom
+from fpdf import FPDF
+from docx import Document
 
 routes = Blueprint('routes', __name__)
 
@@ -102,16 +104,24 @@ def read_annonces_json():
                        
                         
                         try: 
-                            infos = get_info(file_path, "peux tu me trouver l'url de l'annonce ( elle se trouve entre <- et ->)  [url], l'entreprise [entreprise], le titre du poste [poste] (ce titre ne doit pas dépasser 20 caractère)")
+                            infos = get_info(file_path, "peux tu me trouver : l'url [url] de l'annoncese trouve entre <- et ->, "+
+                                             "-l'entreprise [entreprise],"+
+                                             "-le titre ou l'intiltulé [poste] du poste à pourvoir (ce titre ne doit pas dépasser 20 caractère)"+
+                                             "-la localisation ou lieu dans lieux [lieu]")
+                        
                             infos = json.loads(infos)  # Parse the JSON response
                             if infos:
                                 Data["url"] = infos["url"]
+                                
+                                print("DBG-234 -> url: %s" % infos["url"])
+                                
                                 Data["entreprise"] = infos["entreprise"]
                                 Data["description"] = infos["poste"]
                                 record_added = True  
                                 Data["etat"] = "New"
                                 Data["CV"] = isCVin
                                 data["CVpdf"] = isCVinpdf
+                                data["Lieu"] = infos["lieu"]
                                 jData = {file_annonce_path: Data}   
                                 annonces_list.append(jData)
                             else:
@@ -436,3 +446,48 @@ def define_default_data():
         "type_question": "pdf",
         "title":""
     }
+
+@routes.route('/save_announcement', methods=['POST'])
+def save_announcement():
+    try:
+        data = request.get_json()
+        num_dossier = data.get('contentNum')
+        content = data.get('content')
+        url = data.get('url')
+
+        if not num_dossier or not content or not url:
+            return jsonify({"status": "error", "message": "Missing parameters"}), 400
+
+        directory_path = os.path.join(os.getenv("ANNONCES_FILE_DIR"), num_dossier)
+        if not os.path.exists(directory_path):
+            os.makedirs(directory_path)
+       
+        docx_file_path = os.path.join(directory_path, f"{num_dossier}_annonce_.docx")
+        pdf_file_path = os.path.join(directory_path, f"{num_dossier}_annonce_.pdf")
+        
+        """ if os.path.exists(pdf_file_path):
+            return jsonify({"status": "error", "message": f"Fichier {pdf_file_path} existe déjà"}), 400 """
+        
+        pythoncom.CoInitialize()
+        # Create DOCX file
+        try:
+            doc = Document()
+            # Ensure URL is properly formatted
+            doc.add_paragraph("<-")
+            doc.add_paragraph(url)
+            doc.add_paragraph("->")
+            doc.add_paragraph(content)
+            
+            doc.save(docx_file_path)
+            # Convert DOCX to PDF
+            convert(docx_file_path, pdf_file_path)
+        finally:
+            # Uninitialize COM library
+            pythoncom.CoUninitialize() 
+
+        return jsonify({"status": "success", "message": f"Announcement saved as {pdf_file_path}"}), 200
+    except Exception as e:
+        print(f"An error occurred while saving the announcement: {e}")
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+# ...existing code...
