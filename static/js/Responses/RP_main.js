@@ -140,7 +140,7 @@ function loadTableData(callback) {
             window.columns.forEach((col, colIndex) => {
                 if (col.type === "tb" && col.visible === true) {
                     const cell = document.createElement('td');
-                    
+                    cell.setAttribute('data-key', col.key);
                     let isurl = false;
                     let isresumGpt = false;
                     if (col.key === 'GptSum' && item.hasOwnProperty('GptSum') && item.GptSum == "True") {
@@ -446,21 +446,37 @@ function filterTable() {
         let shouldDisplay = true;
         // Check each cell against the filter
         //filters.forEach(col => {
+        let key="";
+        let cellIndex=0;
         window.columns.forEach(col => {
             if (col.type === "tb" && col.visible === true) {
-                const cellIndex = window.columns.findIndex(c => c.key === col.key);
-              
-                const cell = row.querySelector(`td:nth-child(${cellIndex + 1})`);
-                console.log("---cellIndex:"+cellIndex+" -- "+ cell.textContent);
                 
-                if (cell) {
+              
+                const cell = row.querySelector(`td:nth-child(${cellIndex})`);
+                if (cell)
+                {
+                    if (cell.hasAttributes){ 
+                            key=cell.getAttribute('data-key');
+                            filterValue=filters[key];
+                            console.log("---cellIndex: key = "+ key + "  |  value =" +filterValue);
+                            
+                            const cellValue = cell.textContent.toLowerCase();
+                            
+                            if (filterValue && !cellValue.includes(filters[key])) {
+                                shouldDisplay = false;
+                                
+                            }
+                    }
+                }
+                cellIndex++;
+               /*  if (cell) {
                     const cellValue = cell.textContent.toLowerCase();
                     const filterValue = filters[col.key];
                     //console.log(`Cell value for ${col.key}: ${cellValue}, Filter value: ${filterValue}`);
                     if (filterValue && !cellValue.includes(filterValue)) {
                         shouldDisplay = false;
                     }
-                }
+                } */
             }
         });
         row.style.display = shouldDisplay ? '' : 'none';
