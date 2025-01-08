@@ -1,0 +1,144 @@
+:root {
+    --primary: #2c3e50;
+    --secondary: #3498db;
+    --accent: #e74c3c;
+    --light: #fdfdfd;
+    --text: #2c3e50;
+    --success: #27ae60;
+    --warning: #f39c12;
+  }
+  
+  body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    margin: 0;
+    padding: 0;
+    color: var(--text);
+    background: var(--light);
+    line-height: 1.6;
+  }
+  
+  header {
+    background: var(--primary);
+    color: white;
+    padding: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  
+  .logo-container {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+  
+  .logo {
+    width: 50px;
+    height: 50px;
+    transition: transform 0.3s ease;
+  }
+  
+  .logo:hover {
+    transform: rotate(360deg);
+  }
+  
+  .contact-info {
+    text-align: right;
+  }
+  
+  main {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2rem;
+  }
+  
+  h1 {
+    color: var(--secondary);
+    text-align: center;
+    font-size: 2.5rem;
+    margin-bottom: 2rem;
+    background: linear-gradient(45deg, var(--primary), var(--secondary));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    padding: 1rem;
+  }
+  
+  .article {
+    background: white;
+    padding: 2rem;
+    border-radius: 10px;
+    box-shadow: 0 0 20px rgba(0,0,0,0.1);
+  }
+  
+  .workflow-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1rem;
+    margin: 2rem 0;
+  }
+  
+  .workflow-item {
+    background: var(--light);
+    padding: 1rem;
+    border-radius: 8px;
+    border-left: 4px solid var(--secondary);
+  }
+  
+  .status-indicators {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin: 1rem 0;
+  }
+  
+  .status-badge {
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    background: var(--success);
+    color: white;
+  }
+  
+  .function-card {
+    background: var(--light);
+    padding: 1.5rem;
+    margin: 1rem 0;
+    border-radius: 8px;
+    transition: transform 0.2s ease;
+    border-left: 4px solid var(--secondary);
+  }
+  
+  .function-card:hover {
+    transform: translateX(10px);
+  }
+  
+  .rag-definition {
+    background: linear-gradient(135deg, var(--primary), var(--secondary));
+    color: white;
+    padding: 2rem;
+    border-radius: 10px;
+    margin-top: 2rem;
+  }
+  
+  .tech-stack {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    margin-top: 1rem;
+    color: var(--accent);
+  }
+  
+  .process-flow {
+    margin: 2rem 0;
+    padding: 1rem;
+    background: var(--light);
+    border-radius: 8px;
+  }
+  
+  .process-step {
+    margin: 1rem 0;
+    padding: 1rem;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  }
