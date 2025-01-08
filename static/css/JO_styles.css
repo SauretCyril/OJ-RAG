@@ -131,7 +131,7 @@
 }
 
 .skills-list li:before {
-    content: "•";
+    content: "•"; 
     color: #3498db;
     position: absolute;
     left: 0;
