@@ -504,10 +504,10 @@ def read_notes():
         if not os.path.exists(file_path):
             # Create the file if it does not exist
             with open(file_path, 'w', encoding='utf-8') as file:
-                file.write("")  # Write an empty string to create the file
+                json.dump([], file)  # Write an empty JSON array to create the file
         
         with open(file_path, 'r', encoding='utf-8') as file:
-            content = file.read()
+            content = json.load(file)
         
         return jsonify({"status": "success", "content": content}), 200
     except Exception as e:
@@ -527,7 +527,7 @@ def save_notes():
             return jsonify({"status": "error", "message": "Missing parameters"}), 400
         
         with open(file_path, 'w', encoding='utf-8') as file:
-            file.write(content)
+            json.dump(content, file, ensure_ascii=False, indent=4)
         
         return jsonify({"status": "success"}), 200
     except Exception as e:

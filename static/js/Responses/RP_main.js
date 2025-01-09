@@ -33,14 +33,14 @@ window.columns = [
     { key: 'Date', editable: true, default: 'N/A', width: '120px',"visible":true ,"type":"tb",title:'Dt pub' },
     { key: 'Date_rep', editable: true, default: 'N/A', width: '120px',"visible":true ,"type":"tb",title:'Dt Rep' }, 
     { key: 'Commentaire', editable: true, width: '150px',"visible":true,"type":"tb" ,title:'Commentaire' },
-    { key: 'Notes', editable: false, width: '50px',"visible":true,"type":"tb" ,title:'Note' },
+    { key: 'Notes', editable: false, width: '50px',"visible":true,"type":"tb" ,title:'Nt' },
     { key: 'todo', editable: true, width: '200px',"visible":true ,"type":"tb" ,title:'ToDo'},
     { key: 'url', editable: false, width: '100px',"visible":false ,"type":"tb",title:'Url' },
     { key: 'type', editable: true, width: '80px',"visible":false ,"type":"tb",title:'Type'  },
     { key: 'annonce_pdf', editable: true, width: '80px',"visible":false ,"type":"tb",title:'Annonce (pdf)' },
     { key: 'type_question', editable: true, width: '80px',"visible":false ,"type":"tb" ,title:'type Question'},
     { key: 'lien_Etape', editable: true, width: '80px',"visible":false ,"type":"tb",title:'Lien Etape' },
-    { key: 'GptSum', editable: true, width: '80px',"visible":true ,"type":"tb",title:'Resum' },
+    { key: 'GptSum', editable: true, width: '80px',"visible":false,"type":"tb",title:'Resum' },
     { key: 'CVfile', editable: true, width: '80px',"visible":false ,"type":"tb",title:'CVfile' },
     
 ];
@@ -1126,7 +1126,8 @@ async function get_job_answer(path,num_job)
         "- requirements (expérience attendues, )," +
         "- skills (languages, outils obligatoires)," +
         "- Savoir-être (soft skill)," +
-        "- autres (toutes informations autre utile à connaitre)";
+        "- autres (toutes informations autre utile à connaitre)"
+        ;
 
     showLoadingOverlay();
 
@@ -1398,58 +1399,6 @@ function closeAnnouncementForm() {
 
 // ...existing code...
 
-// Add styles for announcementForm
-const style = document.createElement('style');
-style.textContent = `
-    .announcement-form {
-        width: 600px;
-        height: 600px;
-        padding: 20px;
-        border: 1px solid #ccc;
-        border-radius: 8px;
-        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-    }
-    .announcement-form .form-group {
-        margin-bottom: 15px;
-    }
-    .announcement-form .form-group label {
-        display: block;
-        margin-bottom: 5px;
-        font-weight: bold;
-    }
-    .announcement-form .form-group textarea {
-        width: 100%;
-        height: 400px;
-        padding: 10px;
-        border: 1px solid #ccc;
-        border-radius: 4px;
-        resize: vertical;
-    }
-    .announcement-form .button-group {
-        display: flex;
-        justify-content: space-between;
-    }
-    .announcement-form .button-group button {
-        padding: 10px 20px;
-        border: none;
-        border-radius: 4px;
-        cursor: pointer;
-    }
-    .announcement-form .button-group button:first-child {
-        background-color: #4CAF50;
-        color: white;
-    }
-    .announcement-form .button-group button:last-child {
-        background-color: #f44336;
-        color: white;
-    }
-`;
-document.head.appendChild(style);
-
-// ...existing code...
-
-// ...existing code...
-
 function open_notes(file_notes) {
     fetch('/read_notes', {
         method: 'POST',
@@ -1478,9 +1427,19 @@ function showNotesPopup(content, file_notes) {
         <dialog id="notesPopup" class="notes-popup">
             <form method="dialog">
                 <h2>Notes</h2>
-                <textarea id="notesContent" class="notes-textarea">${content}</textarea>
+                <div id="notesContentContainer">
+                    <table id="notesTable" class="notes-table">
+                        ${content.map((item, index) => `
+                            <tr>
+                                <td contenteditable="true" onblur="saveNoteChange('${file_notes}', ${index}, 'key', this.textContent)">${item.key}</td>
+                                <td contenteditable="true" style="width: 300px;" onblur="saveNoteChange('${file_notes}', ${index}, 'value', this.textContent)">${item.value}</td>
+                                <td style="width: 50px;"><span class="remove-icon" onclick="removeNoteRow('${file_notes}', ${index})">&times;</span></td>
+                            </tr>
+                        `).join('')}
+                    </table>
+                </div>
                 <div class="button-group">
-                    <button type="button" onclick="saveNotes('${file_notes}')">Enregistrer</button>
+                    <button type="button" onclick="addNoteRow('${file_notes}')">Ajouter</button>
                     <button type="button" onclick="closeNotesPopup()">Fermer</button>
                 </div>
             </form>
@@ -1501,20 +1460,42 @@ function showNotesPopup(content, file_notes) {
     popup.showModal();
 }
 
-function saveNotes(file_notes) {
-    const notesContent = document.getElementById('notesContent').value;
+function saveNoteChange(file_notes, index, key, value) {
+    fetch('/read_notes', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ file_path: file_notes })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === "success") {
+            const notesContent = data.content;
+            notesContent[index][key] = value;
+            saveNotes(file_notes, notesContent);
+        } else {
+            alert('Erreur lors de la lecture des notes: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error reading notes:', error);
+        alert('Erreur lors de la lecture des notes.');
+    });
+}
 
+function saveNotes(file_notes, content) {
     fetch('/save_notes', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ file_path: file_notes, content: notesContent })
+        body: JSON.stringify({ file_path: file_notes, content: content })
     })
     .then(response => response.json())
     .then(data => {
         if (data.status === "success") {
-            alert('Notes enregistrées avec succès.');
+            console.log('Notes enregistrées avec succès.');
         } else {
             alert('Erreur lors de l\'enregistrement des notes: ' + data.message);
         }
@@ -1523,8 +1504,56 @@ function saveNotes(file_notes) {
         console.error('Error saving notes:', error);
         alert('Erreur lors de l\'enregistrement des notes.');
     });
+}
 
-    closeNotesPopup();
+function addNoteRow(file_notes) {
+    fetch('/read_notes', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ file_path: file_notes })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === "success") {
+            const notesContent = data.content;
+            notesContent.push({ key: '', value: '' });
+            saveNotes(file_notes, notesContent);
+            showNotesPopup(notesContent, file_notes);
+        } else {
+            alert('Erreur lors de la lecture des notes: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error reading notes:', error);
+        alert('Erreur lors de la lecture des notes.');
+    });
+}
+
+function removeNoteRow(file_notes, index) {
+    fetch('/read_notes', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ file_path: file_notes })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === "success") {
+            const notesContent = data.content;
+            notesContent.splice(index, 1);
+            saveNotes(file_notes, notesContent);
+            showNotesPopup(notesContent, file_notes);
+        } else {
+            alert('Erreur lors de la lecture des notes: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error reading notes:', error);
+        alert('Erreur lors de la lecture des notes.');
+    });
 }
 
 function closeNotesPopup() {
@@ -1538,20 +1567,25 @@ function closeNotesPopup() {
 const style1 = document.createElement('style');
 style1.textContent = `
     .notes-popup {
-        width: 600px;
-        height: 400px;
+        width: 800px;
+        height: 500px;
         padding: 20px;
         border: 1px solid #ccc;
         border-radius: 8px;
         box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
     }
-    .notes-popup .notes-textarea {
+    .notes-popup .notes-table {
         width: 100%;
-        height: 300px;
-        padding: 10px;
+        border-collapse: collapse;
+    }
+    .notes-popup .notes-table td {
         border: 1px solid #ccc;
-        border-radius: 4px;
-        resize: vertical;
+        padding: 8px;
+    }
+    .notes-popup .remove-icon {
+        cursor: pointer;
+        color: red;
+        font-size: 20px;
     }
     .notes-popup .button-group {
         display: flex;
@@ -1575,3 +1609,4 @@ style1.textContent = `
 document.head.appendChild(style1);
 
 // ...existing code...
+
