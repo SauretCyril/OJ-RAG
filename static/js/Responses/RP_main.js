@@ -27,11 +27,14 @@ window.columns = [
     { key: 'CVpdf', editable: false, width: '50px',"visible":true ,"type":"tb",title:'.pdf' },
     { key: 'categorie', editable: true, class: 'category-badge', prefix: 'category-', width: '200px',"visible":false,"type":"tb",title:'Cat'  },
     { key: 'etat', editable: true, width: '95px',"visible":true ,"type":"tb",title:'Etat'  },
-    { key: 'Date', editable: true, default: 'N/A', width: '120px',"visible":true ,"type":"tb",title:'Date' },
-    { key: 'todo', editable: true, width: '200px',"visible":true ,"type":"tb" ,title:'ToDo'},
-    { key: 'tel', editable: true, width: '125px',"visible":true ,"type":"tb",title:'Tel.' },
     { key: 'contact', editable: true, width: '150px',"visible":true ,"type":"tb",title:'Contact' },
-    { key: 'Commentaire', editable: true, width: '150px',"visible":false,"type":"tb" ,title:'Commentaire' },
+    { key: 'tel', editable: true, width: '125px',"visible":false ,"type":"tb",title:'Tel.' },
+    { key: 'mail', editable: true, width: '125px',"visible":false ,"type":"tb",title:'mail' },
+    { key: 'Date', editable: true, default: 'N/A', width: '120px',"visible":true ,"type":"tb",title:'Dt pub' },
+    { key: 'Date_rep', editable: true, default: 'N/A', width: '120px',"visible":true ,"type":"tb",title:'Dt Rep' }, 
+    { key: 'Commentaire', editable: true, width: '150px',"visible":true,"type":"tb" ,title:'Commentaire' },
+    { key: 'Notes', editable: false, width: '50px',"visible":true,"type":"tb" ,title:'Note' },
+    { key: 'todo', editable: true, width: '200px',"visible":true ,"type":"tb" ,title:'ToDo'},
     { key: 'url', editable: false, width: '100px',"visible":false ,"type":"tb",title:'Url' },
     { key: 'type', editable: true, width: '80px',"visible":false ,"type":"tb",title:'Type'  },
     { key: 'annonce_pdf', editable: true, width: '80px',"visible":false ,"type":"tb",title:'Annonce (pdf)' },
@@ -133,6 +136,7 @@ function loadTableData(callback) {
             const isCvRef = item.Commentaire && item.Commentaire.includes('<CV-REF>');
             let fichier_annonce = dir_path + '/' + item.dossier+"_annonce_.pdf";
             const fichier_annonce_resum = dir_path + '/' + item.dossier+"_gpt_request.pdf";
+            const file_notes = dir_path + '/' + item.dossier+"_notes.txt";
             const row = document.createElement('tr');
             row.id = filePath;
             row.style.position = 'relative'; // Ajout du positionnement relatif sur la ligne
@@ -146,8 +150,15 @@ function loadTableData(callback) {
                     if (col.key === 'GptSum' && item.hasOwnProperty('GptSum') && item.GptSum == "True") {
                         isresumGpt = true;
                     }
-                    
-                      if (col.key === 'CVpdf' && item['CV']=='O' ) {
+                    if (col.key === 'Notes' ) 
+                    {
+                        item[col.key]="S";
+                        cell.style.cursor = 'pointer';
+                        cell.addEventListener('click', () => open_notes(file_notes));
+                        
+                    }
+                    if (col.key === 'CVpdf' && item['CV']=='O' ) 
+                    {
                         console.log('#### CV:', item[col.key]);
                         const icon = document.createElement('span');
                         if (item[col.key] === 'N') {
@@ -166,7 +177,9 @@ function loadTableData(callback) {
                             icon.addEventListener('click', () => convert_cv(item.dossier, dir_path));
                         }
                         cell.appendChild(icon);
-                      } else  if (col.key === 'CVpdf' && item['CV']=='N' ){
+                      } 
+                      else  if (col.key === 'CVpdf' && item['CV']=='N' )
+                      {
                           {
                             const icon = document.createElement('span');
                             icon.textContent = '⚪'; // White circle icon
@@ -177,8 +190,9 @@ function loadTableData(callback) {
                             icon.style.zIndex = '10';
                             cell.appendChild(icon);
                           }
-                    }                      
-                     else if (col.key === 'CV') {
+                     }                      
+                     else if (col.key === 'CV') 
+                     {
                         console.log('#### CV:', item[col.key]);
                         const icon = document.createElement('span');
                         if (item[col.key] === 'N') {
@@ -198,8 +212,9 @@ function loadTableData(callback) {
                         icon.addEventListener('click', () => get_cv(item.dossier, dir_path,item[col.key],row.id));
                         cell.appendChild(icon);
                         
-                        
-                    } else {
+                    } 
+                    else 
+                    {
 
                         if (col.key === 'description' && item.url) {
                             isurl = true;
@@ -632,8 +647,9 @@ function openEditModal(rowId) {
     // Définir les groupes d'onglets
     const tabGroups = {
         'Informations principales': ['dossier', 'description', 'id', 'entreprise', 'categorie'],
-        'Statut et suivi': ['etat', 'Date' ,'url','todo','lien_Etape','annonce_pdf','CV','CVfile'],
-        'Contact': ['tel', 'contact'],
+        'Statut': ['etat', 'lien_Etape','annonce_pdf','CV','CVfile'],
+        'suivi': [ 'Date','Date_rep','todo','commetaires'],
+        'Contact': [ 'contact','tel', 'mail','url'],
         'Détails': ['Commentaire', 'type', 'Lieux'], 
         'GPT': ['GptSum']
     };
@@ -1429,5 +1445,133 @@ style.textContent = `
     }
 `;
 document.head.appendChild(style);
+
+// ...existing code...
+
+// ...existing code...
+
+function open_notes(file_notes) {
+    fetch('/read_notes', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ file_path: file_notes })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === "success") {
+            const notesContent = data.content;
+            showNotesPopup(notesContent, file_notes);
+        } else {
+            alert('Erreur lors de la lecture des notes: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error reading notes:', error);
+        alert('Erreur lors de la lecture des notes.');
+    });
+}
+
+function showNotesPopup(content, file_notes) {
+    const popupHtml = `
+        <dialog id="notesPopup" class="notes-popup">
+            <form method="dialog">
+                <h2>Notes</h2>
+                <textarea id="notesContent" class="notes-textarea">${content}</textarea>
+                <div class="button-group">
+                    <button type="button" onclick="saveNotes('${file_notes}')">Enregistrer</button>
+                    <button type="button" onclick="closeNotesPopup()">Fermer</button>
+                </div>
+            </form>
+        </dialog>
+    `;
+
+    // Remove existing popup if any
+    const existingPopup = document.getElementById('notesPopup');
+    if (existingPopup) {
+        existingPopup.remove();
+    }
+
+    // Add popup to document
+    document.body.insertAdjacentHTML('beforeend', popupHtml);
+
+    // Show popup
+    const popup = document.getElementById('notesPopup');
+    popup.showModal();
+}
+
+function saveNotes(file_notes) {
+    const notesContent = document.getElementById('notesContent').value;
+
+    fetch('/save_notes', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ file_path: file_notes, content: notesContent })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === "success") {
+            alert('Notes enregistrées avec succès.');
+        } else {
+            alert('Erreur lors de l\'enregistrement des notes: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error saving notes:', error);
+        alert('Erreur lors de l\'enregistrement des notes.');
+    });
+
+    closeNotesPopup();
+}
+
+function closeNotesPopup() {
+    const popup = document.getElementById('notesPopup');
+    if (popup) {
+        popup.close();
+    }
+}
+
+// Add styles for notesPopup
+const style1 = document.createElement('style');
+style1.textContent = `
+    .notes-popup {
+        width: 600px;
+        height: 400px;
+        padding: 20px;
+        border: 1px solid #ccc;
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    }
+    .notes-popup .notes-textarea {
+        width: 100%;
+        height: 300px;
+        padding: 10px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        resize: vertical;
+    }
+    .notes-popup .button-group {
+        display: flex;
+        justify-content: space-between;
+    }
+    .notes-popup .button-group button {
+        padding: 10px 20px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+    }
+    .notes-popup .button-group button:first-child {
+        background-color: #4CAF50;
+        color: white;
+    }
+    .notes-popup .button-group button:last-child {
+        background-color: #f44336;
+        color: white;
+    }
+`;
+document.head.appendChild(style1);
 
 // ...existing code...

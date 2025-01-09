@@ -491,3 +491,47 @@ def save_announcement():
         return jsonify({"status": "error", "message": str(e)}), 500
 
 # ...existing code...
+
+@routes.route('/read_notes', methods=['POST'])
+def read_notes():
+    try:
+        data = request.get_json()
+        file_path = data.get('file_path')
+        
+        if not file_path:
+            return jsonify({"status": "error", "message": "File path not provided"}), 400
+        
+        if not os.path.exists(file_path):
+            # Create the file if it does not exist
+            with open(file_path, 'w', encoding='utf-8') as file:
+                file.write("")  # Write an empty string to create the file
+        
+        with open(file_path, 'r', encoding='utf-8') as file:
+            content = file.read()
+        
+        return jsonify({"status": "success", "content": content}), 200
+    except Exception as e:
+        print(f"An error occurred while reading notes: {e}")
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+# ...existing code...
+
+@routes.route('/save_notes', methods=['POST'])
+def save_notes():
+    try:
+        data = request.get_json()
+        file_path = data.get('file_path')
+        content = data.get('content')
+        
+        if not file_path or content is None:
+            return jsonify({"status": "error", "message": "Missing parameters"}), 400
+        
+        with open(file_path, 'w', encoding='utf-8') as file:
+            file.write(content)
+        
+        return jsonify({"status": "success"}), 200
+    except Exception as e:
+        print(f"An error occurred while saving notes: {e}")
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+# ...existing code...
