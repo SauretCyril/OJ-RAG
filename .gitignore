@@ -2,3 +2,12 @@
 templates/LK_links.html
 build/
 dist/
+node_modules/
+*.pdf
+templates/LK_links.html
+build/
+dist/
+node_modules/
+__pycache__/
+*.pyc
+.env

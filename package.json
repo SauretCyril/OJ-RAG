@@ -2,5 +2,11 @@
   "name": "myats2",
   "version": "1.0.0",
   "description": "",
-  "main": "app.py"
+  "main": "app.py",
+  "scripts": {
+    "start": "http-server ./ -o"
+  },
+  "devDependencies": {
+    "http-server": "^14.1.1"
+  }
 }

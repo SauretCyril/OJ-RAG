@@ -150,13 +150,7 @@ function loadTableData(callback) {
                     if (col.key === 'GptSum' && item.hasOwnProperty('GptSum') && item.GptSum == "True") {
                         isresumGpt = true;
                     }
-                    if (col.key === 'Notes' ) 
-                    {
-                        item[col.key]="S";
-                        cell.style.cursor = 'pointer';
-                        cell.addEventListener('click', () => open_notes(file_notes));
-                        
-                    }
+                   
                     if (col.key === 'CVpdf' && item['CV']=='O' ) 
                     {
                         console.log('#### CV:', item[col.key]);
@@ -229,7 +223,19 @@ function loadTableData(callback) {
                             cell.style.color = ''; // Default color
                             cell.style.textDecoration = ''; // Default text decoration
                         }
-                        cell.textContent = item[col.key] || col.default || '';
+                        
+                        if (col.key === 'Notes' ) 
+                        {
+                            const heartIcon = document.createElement('span');
+                            heartIcon.textContent = '❤️'; // Heart icon
+                            heartIcon.style.cursor = 'pointer';
+                            heartIcon.addEventListener('click', () => open_notes(file_notes));
+                            cell.appendChild(heartIcon);
+                        
+                        }
+                        else {
+                            cell.textContent = item[col.key];
+                        }
                         if (col.class) cell.classList.add(col.class);
                         if (col.editable) cell.contentEditable = "true";
                         if (col.width) cell.style.width = col.width;
