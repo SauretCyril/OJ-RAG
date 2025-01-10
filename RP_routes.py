@@ -535,3 +535,45 @@ def save_notes():
         return jsonify({"status": "error", "message": str(e)}), 500
 
 # ...existing code...
+
+@routes.route('/load_reseaux_link', methods=['GET'])
+def load_reseaux_link():
+    try:
+       file_path = os.path.join(os.getenv("RESEAUX_FILE"))
+       file_path = file_path.replace('\\', '/')  # Normalize path
+       if not os.path.exists(file_path):
+           return jsonify([])  # Return empty list if file does not exist
+       with open(file_path, 'r', encoding='utf-8') as file:
+           file = json.load(file)
+           return jsonify(file)  # Return JSON response
+    except Exception as e:
+        print(f"An unexpected error occurred while reading reseaux: {e}")
+        return jsonify([])
+
+@routes.route('/save_reseaux_link_update', methods=['POST'])
+def save_reseaux_link_update():
+    try:
+        link_data = request.get_json()
+        file_path = os.getenv("RESEAUX_FILE")
+        file_path = file_path.replace('\\', '/')  # Normalize path
+        print(f"##1245---",file_path)
+        if not os.path.exists(file_path):
+            return jsonify({"status": "error", "message": "File path does not exist"}), 400
+
+        with open(file_path, 'r', encoding='utf-8') as file:
+            links = json.load(file)
+
+        # Update the link in the list
+        for link in links:
+            if link['name'] == link_data['name']:
+                link.update(link_data)
+                break
+
+        with open(file_path, 'w', encoding='utf-8') as file:
+            json.dump(links, file, ensure_ascii=False, indent=4)
+
+        return jsonify({"status": "success"}), 200
+    except Exception as e:
+        print(f"An error occurred while saving reseaux link update: {e}")
+        return jsonify({"status": "error", "message": str(e)}), 500
+

@@ -7,6 +7,16 @@
 window.CurrentRow ="";
 window.tabActive = "Campagne";
 window.annonces = [];
+window.portalLinks=[];
+window.portalLinks_columns = [
+    { key: 'name', editable: false, width: '150px', visible: true,title:'name' },
+    { key: 'url', editable: false, width: '200px', visible: false,title:'url' },
+    { key: 'date', editable: true, width: '150px', visible: true,title:'Date' },
+    { key: 'commentaire', editable: false, width: '200px', visible: false,title:'Commentaire' },
+    { key: 'update', editable: true, width: '50px', visible: true,title:'update' },
+    { key: 'update_date', editable: true, width: '150px', visible: true,title:'Date update' }
+]
+
 window.columns = [
     { key: 'dossier', editable: false, width: '80px', visible: true, type: 'tb',title:'Dos' },
     { 
@@ -153,13 +163,13 @@ function loadTableData(callback) {
                    
                     if (col.key === 'CVpdf' && item['CV']=='O' ) 
                     {
-                        console.log('#### CV:', item[col.key]);
+                        //console.log('#### CV:', item[col.key]);
                         const icon = document.createElement('span');
                         if (item[col.key] === 'N') {
-                            console.log('#### blanc:');
+                            //console.log('#### blanc:');
                             icon.textContent = '📕'; // Red book icon
                         } else if (item[col.key] === 'O') {
-                            console.log('#### vert:');
+                            //console.log('#### vert:');
                             icon.textContent = '📗'; // Green book icon
                         } 
                         icon.style.position = 'absolute';
@@ -187,14 +197,14 @@ function loadTableData(callback) {
                      }                      
                      else if (col.key === 'CV') 
                      {
-                        console.log('#### CV:', item[col.key]);
+                        //console.log('#### CV:', item[col.key]);
                         const icon = document.createElement('span');
                         if (item[col.key] === 'N') {
-                            console.log('#### blanc:');
+                            //console.log('#### blanc:');
                             
                             icon.textContent = '📕'; // Red book icon
                         } else if (item[col.key] === 'O') {
-                            console.log('#### vert:');
+                            //console.log('#### vert:');
                             icon.textContent = '📗'; // Green book icon
                         } 
                         icon.style.position = 'absolute';
@@ -462,7 +472,7 @@ function filterTable() {
 
     const rows = document.querySelectorAll('#table-body tr');
     //console.log(`Filter for ${rows.length} rows...`);
-    console.log("--------Filtering --------------------------------")
+    //console.log("--------Filtering --------------------------------")
     rows.forEach(row => {
         let shouldDisplay = true;
         // Check each cell against the filter
@@ -479,7 +489,7 @@ function filterTable() {
                     if (cell.hasAttributes){ 
                             key=cell.getAttribute('data-key');
                             filterValue=filters[key];
-                            console.log("---cellIndex: key = "+ key + "  |  value =" +filterValue);
+                            //console.log("---cellIndex: key = "+ key + "  |  value =" +filterValue);
                             
                             const cellValue = cell.textContent.toLowerCase();
                             
@@ -787,14 +797,6 @@ function generateTableHeaders() {
     thead.innerHTML = '';
     filterRow.innerHTML = '';
     
-    // Add toggle button
-   /*  const toggleButton = document.createElement('button');
-    toggleButton.id = 'toggle-header-btn';
-    toggleButton.textContent = 'Hide Header';
-    toggleButton.onclick = toggleHeaderVisibility;
-    document.querySelector('thead').insertAdjacentElement('beforebegin', toggleButton); */
-    
-// forEach((col
     window.columns.forEach(col => {
         if (col.type === "tb" && col.visible === true) {
             // Create header cell
@@ -923,12 +925,14 @@ function toggleColumnVisibilityForm() {
 // Call the function to generate the form when the page loads
 window.addEventListener('load', function() {
     setNewTab();
-    //setNewTab();
-    
+    //setNewTab();  
     loadTableData(function() {
         //console.log('Table data loaded and callback executed.');
         // Add any additional code to execute after loading table data here
     });
+    createMenu();
+    loadReseauxLinks();
+
 });
 
 // ...existing code...
@@ -1115,11 +1119,11 @@ function createMenu() {
 }
 
 // Call createMenu on page load
-window.addEventListener('load', function() {
+/* window.addEventListener('load', function() {
     createMenu();
     // ...existing code...
 });
-
+ */
 
 
 
@@ -1613,6 +1617,116 @@ style1.textContent = `
     }
 `;
 document.head.appendChild(style1);
+
+// ...existing code...
+
+function showReseauxLinks() {
+    document.getElementById('reseaux-links-section').style.display = 'block';
+    document.getElementById('main-section').style.display = 'none';
+}
+
+function hideReseauxLinks() {
+    document.getElementById('reseaux-links-section').style.display = 'none';
+    document.getElementById('main-section').style.display = 'block';
+}
+
+async function loadReseauxLinks() {
+    try {
+        const response = await fetch('/load_reseaux_link');
+        const portalLinks = await response.json();
+        window.portalLinks = portalLinks;
+        console.log(portalLinks);
+        
+        const tableBody = document.getElementById('reseaux-links-table-body');
+        tableBody.innerHTML = ''; // Clear existing rows
+
+        window.portalLinks.forEach(link => {
+            const row = document.createElement('tr');
+            window.portalLinks_columns.forEach((col, colIndex) => {
+
+                if (col.visible === true) {
+                    let isurl = false;
+                    const cell = document.createElement('td');
+                    if (col.key === 'name' && link.url) {
+                        isurl = true;
+                    }
+
+                    if (isurl) {
+                        cell.style.cursor = "pointer";
+                        cell.style.color = "blue";
+                        cell.style.textDecoration = "underline";
+                        cell.addEventListener(col.event, () => open_url(link.url));
+                    } else {
+                        cell.style.color = ''; // Default color
+                        cell.style.textDecoration = ''; // Default text decoration
+                    }
+
+                    if (col.key === 'update') {
+                        const button = document.createElement('button');
+                        button.textContent = link[col.key] ? 'OK' : 'No';
+                        button.style.backgroundColor = link[col.key] ? 'green' : 'red';
+                        button.style.color = 'white';
+                        button.onclick = () => {
+                            link[col.key] = !link[col.key];
+                            button.textContent = link[col.key] ? 'OK' : 'No';
+                            button.style.backgroundColor = link[col.key] ? 'green' : 'red';
+                            if (link[col.key]) {
+                                if (link[col.key]===False) { link.update_date=""; } else 
+                                {
+                                    if(link[col.key] === true){
+                                        const date = new Date();
+                                        const dateFr = date.toLocaleDateString('fr-FR'); // Set current date in French format
+                                        link.update_date = dateFr;
+                                    }
+                                    link.update_date = "";
+                                   
+                                }
+                                
+                            }
+                            console.log('Updated link:', link);
+                            saveReseauxLinkUpdate(link);
+                           
+                        };
+                        cell.appendChild(button);
+                    } else {
+                        cell.contentEditable = col.editable;
+                        cell.textContent = link[col.key];
+                        cell.onblur = () => {
+                            link[col.key] = cell.textContent;
+                            saveReseauxLinkUpdate(link);
+                        };
+                    }
+
+                    if (col.width) cell.style.width = col.width;
+                    row.appendChild(cell);
+                }
+            });
+
+            tableBody.appendChild(row);
+        });
+    } catch (error) {
+        console.error('Error loading reseaux links:', error);
+    }
+}
+
+function saveReseauxLinkUpdate(link) {
+    fetch('/save_reseaux_link_update', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(link)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status !== "success") {
+            console.error('Error saving reseaux link update:', data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error saving reseaux link update:', error);
+    });
+}
 
 // ...existing code...
 

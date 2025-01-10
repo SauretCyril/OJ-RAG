@@ -380,3 +380,8 @@ th, td {
     background-color: #4CAF50;
     color: white;
 }
+.reseaux-links-table {
+  margin: 0 auto;
+  width: 100%;
+  max-width: 500px;
+}

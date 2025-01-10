@@ -11,46 +11,64 @@
     />
   </head>
   <body>
-    <header class="header-bar">
-      <h1>Gestionnaire d'annonce</h1>
-      <nav>
-        <ul>
-          <li><a href="#home">Home</a></li>
-          <li><a href="#New" onclick="createAnnouncementForm()">New</a></li>
-          <!-- <li><a href="#colonnes" onclick="toggleColumnVisibilityForm()">Colonnes</a></li> -->
-          <li><a href="#Save" onclick="refresh()">Refresh</a></li>
-          <li>
-            <a href="{{ url_for('static', filename='LK_links.html') }}"
-              >LK Links</a
-            >
-          </li>
-          <li>
-            <!-- onchange="filterByStatus()"-->
-            <!--
-            <select id="statusFilter">
-              <option value="En cours">En cours</option>
-              <option value="Répondue">Répondue</option>
-              <option value="RDV">Rdv</option>
-            </select>
-            -->
-          </li>
-        </ul>
-      </nav>
-    </header>
-    <div class="tabs" id="tabs">
-      <button class="tab" onclick="changeTab('All')">Campagne</button>
-      <button class="tab active" onclick="changeTab('New')">New</button>
-      <button class="tab" onclick="changeTab('ToDo')">ToDo</button>
-      <button class="tab" onclick="changeTab('Repondu')">Repondue</button>
-      <button class="tab" onclick="changeTab('RDV')">RDV</button>
+    <div id="main-section">
+      <header class="header-bar">
+        <h1>Gestionnaire d'annonce</h1>
+        <nav>
+          <ul>
+            <li><a href="#home">Home</a></li>
+            <li><a href="#New" onclick="createAnnouncementForm()">New</a></li>
+            <li><a href="#Save" onclick="refresh()">Refresh</a></li>
+            <li>
+              <a
+                href="#ReseauxLinks"
+                id="menu_reseaux"
+                onclick="showReseauxLinks()"
+                >Reseaux</a
+              >
+            </li>
+            <li>
+              <a href="{{ url_for('static', filename='LK_links.html') }}"
+                >LK Links</a
+              >
+            </li>
+          </ul>
+        </nav>
+      </header>
+
+      <div class="tabs" id="tabs">
+        <button class="tab" onclick="changeTab('All')">Campagne</button>
+        <button class="tab active" onclick="changeTab('New')">New</button>
+        <button class="tab" onclick="changeTab('ToDo')">ToDo</button>
+        <button class="tab" onclick="changeTab('Repondu')">Repondue</button>
+        <button class="tab" onclick="changeTab('RDV')">RDV</button>
+      </div>
+      <div class="table-responsive">
+        <table>
+          <thead>
+            <tr></tr>
+            <tr></tr>
+          </thead>
+          <tbody id="table-body">
+            <!-- Rows will be dynamically added here -->
+          </tbody>
+        </table>
+      </div>
     </div>
-    <div class="table-responsive">
-      <table>
+    <div id="reseaux-links-section" style="display: none">
+      <h2>Liens de Réseaux Sociaux</h2>
+
+      <table class="reseaux-links-table">
         <thead>
-          <tr></tr>
-          <tr></tr>
+          <button onclick="hideReseauxLinks()">Retour</button>
+          <tr>
+            <th>Nom</th>
+            <th>Date</th>
+            <th>Update</th>
+            <th>Date Update</th>
+          </tr>
         </thead>
-        <tbody id="table-body">
+        <tbody id="reseaux-links-table-body">
           <!-- Rows will be dynamically added here -->
         </tbody>
       </table>
