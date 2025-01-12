@@ -144,9 +144,10 @@ function loadTableData(callback) {
             const item = itemWrapper[filePath];
             const dir_path = filePath.substring(0, filePath.lastIndexOf('/'));
             const isCvRef = item.Commentaire && item.Commentaire.includes('<CV-REF>');
-            let fichier_annonce = dir_path + '/' + item.dossier+"_annonce_.pdf";
+            let fichier_annonce = dir_path + '/' + item.dossier+"_annonce_pdf";
+            
             const fichier_annonce_resum = dir_path + '/' + item.dossier+"_gpt_request.pdf";
-            fichier_annonce_scrap = dir_path + '/' + item.dossier+"_annonce_scrape.pdf"
+            
             const file_notes = dir_path + '/' + item.dossier+"_notes.txt";
             const row = document.createElement('tr');
             row.id = filePath;
@@ -1352,6 +1353,7 @@ function createAnnouncementForm() {
                 </div>
                 <div class="button-group">
                     <button type="button" onclick="submitAnnouncement()">Créer</button>
+                    <button type="button" onclick="scrapeAndFill()">Scrape URL</button>
                     <button type="button" onclick="closeAnnouncementForm()">Annuler</button>
                 </div>
             </form>
@@ -1370,6 +1372,50 @@ function createAnnouncementForm() {
     // Show form
     const form = document.getElementById('announcementForm');
     form.showModal();
+}
+
+// Ajouter cette nouvelle fonction
+function scrapeAndFill() {
+    const url = document.getElementById('announcementURL').value;
+    const dossier = document.getElementById('announcementDossier').value;
+    
+    if (!url || !isValidURL(url)) {
+        alert("Veuillez entrer une URL valide!");
+        return;
+    }
+    
+    if (!dossier) {
+        alert("Veuillez entrer un numéro de dossier!");
+        return;
+    }
+
+    showLoadingOverlay();
+    fetch('/scrape_url', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            item_url: url,
+            num_job: dossier
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === "success") {
+            document.getElementById('announcementContent').value = data.content;
+            alert('URL scrapée avec succès');
+        } else {
+            alert('Erreur lors du scraping: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error scraping URL:', error);
+        alert('Erreur lors du scraping de l\'URL');
+    })
+    .finally(() => {
+        hideLoadingOverlay();
+    });
 }
 
 function submitAnnouncement() {
