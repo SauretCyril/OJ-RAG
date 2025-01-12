@@ -13,6 +13,9 @@ from docx2pdf import convert
 import pythoncom
 from fpdf import FPDF
 from docx import Document
+import requests
+import json
+from tqdm import tqdm
 
 routes = Blueprint('routes', __name__)
 
@@ -25,7 +28,7 @@ def read_annonces_json():
 
         annonces_list = []
         crit_annonces = load_crit_annonces()
-        print(f"###1 ------Excluded annonces: {crit_annonces}")
+        #print(f"###1 ------Excluded annonces: {crit_annonces}")
         for root, _, files in os.walk(directory_path):
             parent_dir = os.path.basename(root)
             file_annonce = parent_dir + "_annonce_.pdf"
@@ -42,7 +45,7 @@ def read_annonces_json():
             for filename in files:
                 if filename  == file_cv:
                     isCVin="O"
-                    print("###---->BINGO")
+                    #print("###---->BINGO")
                 if filename  == file_cv_pdf:
                     isCVinpdf="O"
                     
@@ -86,7 +89,7 @@ def read_annonces_json():
 
                     except json.JSONDecodeError:
                         errordata = {"id": parent_dir, "description": "?", "etat": "invalid JSON"}
-                        print(f"Error: The file {file_path} contains invalid JSON.")
+                        print(f"Cyr_Error: The file {file_path} contains invalid JSON.")
                 
               
             if not record_added:
@@ -113,7 +116,7 @@ def read_annonces_json():
                             if infos:
                                 Data["url"] = infos["url"]
                                 
-                                print("DBG-234 -> url: %s" % infos["url"])
+                                #print("DBG-234 -> url: %s" % infos["url"])
                                 
                                 Data["entreprise"] = infos["entreprise"]
                                 Data["description"] = infos["poste"]
@@ -131,7 +134,7 @@ def read_annonces_json():
                                 annonces_list.append(jData)
                                
                         except Exception as e:
-                            print(f"An unexpected error occurred get infos with gpt: {e}")
+                            #print(f"An unexpected error occurred get infos with gpt: {e}")
                             record_added = True  
                             Data["etat"] = "Error"
                             jData = {file_annonce_path: Data}   
@@ -140,7 +143,7 @@ def read_annonces_json():
                                 
         return annonces_list 
     except Exception as e:
-        print(f"An unexpected error occurred while reading annonces: {e}")
+        print(f"Cyr_error_145 An unexpected error occurred while reading annonces: {e}")
         return []
 
 def load_crit_annonces():
@@ -151,8 +154,8 @@ def load_crit_annonces():
                 return json.load(file)
      
     except Exception as e:
-        print(f"An error occurred while loading excluded annonces: {e}")
-        return jsonify({"status": "error", "message": str(e)}), 500
+        print(f"Cyr_error_156 An error occurred while loading excluded annonces: {e}")
+        return jsonify({"status": "error", "message": "156>"+str(e)}), 500
 
 @routes.route('/save_excluded_annonces', methods=['POST'])
 def save_excluded_annonces():
@@ -166,8 +169,8 @@ def save_excluded_annonces():
         
         return jsonify({"status": "success"}), 200
     except Exception as e:
-        print(f"An error occurred while saving excluded annonces: {e}")
-        return jsonify({"status": "error", "message": str(e)}), 500
+        print(f"Cyr_error_171 An error occurred while saving excluded annonces: {e}")
+        return jsonify({"status": "error", "message": "171>"+str(e)}), 500
 
 '''save config columns'''
 @routes.route('/save_config_col', methods=['POST'])
@@ -184,8 +187,8 @@ def save_config_col():
         
         return jsonify({"status": "success"}), 200
     except Exception as e:
-        print(f"An error occurred while saving config columns: {e}")
-        return jsonify({"status": "error", "message": str(e)}), 500
+        print(f"Cyr_error_189 An error occurred while saving config columns: {e}")
+        return jsonify({"status": "error", "message": "189>"+str(e)}), 500
 
 # ...existing code...
 
@@ -194,7 +197,7 @@ def open_url():
     try:
         data = request.get_json()
         url = data.get('url')
-        print ("##3-------------------------------",url)
+        #print ("##3-------------------------------",url)
         if url:
             # Logic to open the URL
             os.system(f'start {url}')
@@ -202,8 +205,8 @@ def open_url():
         else:
             return jsonify({"status": "error", "message": "URL not provided"}), 400
     except Exception as e:
-        print(f"An error occurred while opening URL: {e}")
-        return jsonify({"status": "error", "message": str(e)}), 500
+        print(f"Cyr_error_207 An error occurred while opening URL: {e}")
+        return jsonify({"status": "error", "message": "207>"+str(e)}), 500
 
 # ...existing code...
 
@@ -218,8 +221,8 @@ def file_exists():
         else:
             return jsonify({"exists": False}), 200
     except Exception as e:
-        print(f"An error occurred while checking file existence: {e}")
-        return jsonify({"status": "error", "message": str(e)}), 500
+        print(f"Cyr_error_223 An error occurred while checking file existence: {e}")
+        return jsonify({"status": "error", "message": "223>"+str(e)}), 500
 
 
 @routes.route('/read_filters_json', methods=['POST'])
@@ -231,16 +234,16 @@ def read_filters_json():
         
         file_path = os.path.join(os.getenv("ANNONCES_DIR_FILTER"), tab_active + "_filter") + ".json"
         file_path = file_path.replace('\\', '/')  # Normalize path
-        print(f"##01-loading filters from {file_path}")
+        #print(f"##01-loading filters from {file_path}")
         if not os.path.exists(file_path):
             return jsonify({})
         with open(file_path, 'r', encoding='utf-8') as file:
             filters = json.load(file)
-            print("##02#",filters)
+            #print("##02#",filters)
             return jsonify(filters)  # Return dictionary directly
     except Exception as e:
-        print(f"An unexpected error occurred while reading filter values: {e}")
-        return jsonify({"status": "error", "message": str(e)}), 500
+        print(f"Cyr_error_244 An unexpected error occurred while reading filter values: {e}")
+        return jsonify({"status": "error", "message": "244>"+str(e)}), 500
 
 # ...existing code...
 
@@ -255,8 +258,8 @@ def save_annonces_json():
                     json.dump(content, file, ensure_ascii=False, indent=4)
         return jsonify({"status": "success"}), 200
     except Exception as e:
-        print(f"An unexpected error occurred while saving data: {e}")
-        return jsonify({"status": "error", "message": str(e)}), 500
+        print(f"Cyr_error_260 An unexpected error occurred while saving data: {e}")
+        return jsonify({"status": "error", "message": "260>"+str(e)}), 500
 
 # ...existing code...
 
@@ -272,8 +275,8 @@ def save_filters_json():
             json.dump(filters, file, ensure_ascii=False, indent=4)
         return jsonify({"status": "success"}), 200
     except Exception as e:
-        print(f"An unexpected error occurred while saving filter values: {e}")
-        return jsonify({"status": "error", "message": str(e)}), 500
+        print(f"Cyr_error_277 An unexpected error occurred while saving filter values: {e}")
+        return jsonify({"status": "error", "message": "277>"+str(e)}), 500
 
 # ...existing code...
 
@@ -290,7 +293,7 @@ def load_config_col():
             conf = json.load(file)
             return jsonify(conf)  # Return JSON response
     except Exception as e:
-        print(f"An unexpected error occurred while reading columns config: {e}")
+        print(f"Cyr_error_295 An unexpected error occurred while reading columns config: {e}")
         return jsonify([])
 
 # ...existing code...
@@ -302,7 +305,7 @@ def read_csv_file():
         file_path = data.get('file_path')
         file_path = os.path.join(os.getenv("SUIVI_DIR"), file_path)
         file_path = file_path.replace('\\', '/')  # Normalize path
-        print(f"file path: {file_path}")
+        #print(f"file path: {file_path}")
         if not os.path.exists(file_path):
             return jsonify([])
 
@@ -311,7 +314,7 @@ def read_csv_file():
             data = [row for row in csvreader]
             return jsonify(data)
     except Exception as e:
-        print(f"An unexpected error occurred while reading CSV file: {e}")
+        print(f"Cyr_error_316 An unexpected error occurred while reading CSV file: {e}")
         return jsonify([])
 
 
@@ -323,7 +326,7 @@ def save_csv_file():
         csv_data = data.get('data')
         file_path = os.path.join(os.getenv("SUIVI_DIR"), file_path)
         file_path = file_path.replace('\\', '/')  # Normalize path
-        print(f"Saving CSV to {file_path}")
+        #print(f"Saving CSV to {file_path}")
         if not os.path.exists(file_path):
             return jsonify({"status": "error", "message": "File path does not exist"}), 400
 
@@ -334,8 +337,8 @@ def save_csv_file():
             writer.writerows(csv_data)
         return jsonify({"status": "success"}), 200
     except Exception as e:
-        print(f"An unexpected error occurred while saving CSV file: {e}")
-        return jsonify({"status": "error", "message": str(e)}), 500
+        print(f"Cyr_error_339 An unexpected error occurred while saving CSV file: {e}")
+        return jsonify({"status": "error", "message": "339>"+str(e)}), 500
 
 # ...existing code...
 
@@ -354,15 +357,15 @@ def open_parent_directory():
             subprocess.run(['xdg-open', parent_directory])
         return jsonify({"status": "success"}), 200
     except Exception as e:
-        print(f"Error opening parent directory: {e}")
-        return jsonify({"status": "error", "message": str(e)}), 500
+        print(f"Cyr_error_359 opening parent directory: {e}")
+        return jsonify({"status": "error", "message": "359>"+str(e)}), 500
 
 # ...existing code...
 
 
 @routes.route('/convert_cv', methods=['POST'])
 def convert_cv():
-    print ("convertir le cv docx en cv pdf")
+    #print ("convertir le cv docx en cv pdf")
     data = request.get_json()
     file_path= data.get('repertoire_annonces')
     num_dossier = data.get('num_dossier')
@@ -371,17 +374,17 @@ def convert_cv():
     target_path_pdf= os.path.join(file_path, filename.replace('.docx', '.pdf'))
     if os.path.exists(target_path_pdf):
         os.remove(target_path_pdf)
-        print("-->04 pdf removed", target_path_pdf)
+        #print("-->04 pdf removed", target_path_pdf)
     
 
 @routes.route('/share_cv', methods=['POST'])
 def select_cv():
     try:
-        print("##0---")
+        #print("##0---")
         file = request.files.get('file_path')
         dossier_number = request.form.get('num_dossier')
         target_directory = request.form.get('repertoire_annonce')
-        print("##2-------------------------------", dossier_number, target_directory)
+        #print("##2-------------------------------", dossier_number, target_directory)
         
         if not dossier_number or not target_directory or not file:
             return jsonify({"status": "error", "message": "Missing parameters"}), 400 
@@ -389,25 +392,25 @@ def select_cv():
         filename = secure_filename(f"{dossier_number}_CyrilSauret.docx")
         target_path = os.path.join(target_directory, filename)
         target_path = target_path.replace('\\', '/') 
-        print("##3-------------------------------", target_path)
+        #print("##3-------------------------------", target_path)
         pdf_file_path = target_path.replace('.docx', '.pdf')
         pdf_file_path = pdf_file_path.replace('\\', '/') 
         
         if not os.path.exists(target_path):
             file.save(target_path)
-            print("-->01 docx saved : ", target_path)
+            #print("-->01 docx saved : ", target_path)
         else:
             os.remove(target_path)
-            print("-->02 docx removed", target_path)
+            #print("-->02 docx removed", target_path)
             file.save(target_path)
-            print("-->03 docx saved", target_path)
+            #print("-->03 docx saved", target_path)
         convert_to_pdf(target_path,pdf_file_path)
-        print("##3a-----------------------",pdf_file_path)
+        #print("##3a-----------------------",pdf_file_path)
         
         return jsonify({"status": "success", "message": f"File saved as {filename} in {target_directory}"}), 200
     except Exception as e:
-        print(f"An error occurred when duplicate file: {e}")
-        return jsonify({"status": "error", "message": str(e)}), 500 
+        print(f"Cyr_error_411 An error occurred when duplicate file: {e}")
+        return jsonify({"status": "error", "message": "441>"+str(e)}), 500 
 
 # ...existing code...
 
@@ -416,12 +419,12 @@ def convert_to_pdf(target_path,pdf_file_path):
     
     if os.path.exists(pdf_file_path):# Delete the existing file
         os.remove(pdf_file_path)
-        print("-->04 pdf removed", pdf_file_path)
+        #print("-->04 pdf removed", pdf_file_path)
     pythoncom.CoInitialize()
     
     try:
         convert(target_path, pdf_file_path)
-        print("-->05 docx converted to pdf", pdf_file_path)
+        #print("-->05 docx converted to pdf", pdf_file_path)
     finally:
         # Uninitialize COM library
         pythoncom.CoUninitialize()
@@ -487,8 +490,8 @@ def save_announcement():
 
         return jsonify({"status": "success", "message": f"Announcement saved as {pdf_file_path}"}), 200
     except Exception as e:
-        print(f"An error occurred while saving the announcement: {e}")
-        return jsonify({"status": "error", "message": str(e)}), 500
+        print(f"Cyr_error_492 An error occurred while saving the announcement: {e}")
+        return jsonify({"status": "error", "message": "492>"+str(e)}), 500
 
 # ...existing code...
 
@@ -511,8 +514,8 @@ def read_notes():
         
         return jsonify({"status": "success", "content": content}), 200
     except Exception as e:
-        print(f"An error occurred while reading notes: {e}")
-        return jsonify({"status": "error", "message": str(e)}), 500
+        print(f"Cyr_error_516 An error occurred while reading notes: {e}")
+        return jsonify({"status": "error", "message": "516>"+str(e)}), 500
 
 # ...existing code...
 
@@ -531,8 +534,8 @@ def save_notes():
         
         return jsonify({"status": "success"}), 200
     except Exception as e:
-        print(f"An error occurred while saving notes: {e}")
-        return jsonify({"status": "error", "message": str(e)}), 500
+        print(f"Cyr_error_536 An error occurred while saving notes: {e}")
+        return jsonify({"status": "error", "message": "536>"+str(e)}), 500
 
 # ...existing code...
 
@@ -547,7 +550,7 @@ def load_reseaux_link():
            file = json.load(file)
            return jsonify(file)  # Return JSON response
     except Exception as e:
-        print(f"An unexpected error occurred while reading reseaux: {e}")
+        print(f"Cyr_error_552 An unexpected error occurred while reading reseaux: {e}")
         return jsonify([])
 
 @routes.route('/save_reseaux_link_update', methods=['POST'])
@@ -556,7 +559,7 @@ def save_reseaux_link_update():
         link_data = request.get_json()
         file_path = os.getenv("RESEAUX_FILE")
         file_path = file_path.replace('\\', '/')  # Normalize path
-        print(f"##1245---",file_path)
+        #print(f"Cyr_error_561---",file_path)
         if not os.path.exists(file_path):
             return jsonify({"status": "error", "message": "File path does not exist"}), 400
 
@@ -574,6 +577,48 @@ def save_reseaux_link_update():
 
         return jsonify({"status": "success"}), 200
     except Exception as e:
-        print(f"An error occurred while saving reseaux link update: {e}")
-        return jsonify({"status": "error", "message": str(e)}), 500
+        print(f"Cyr_error_579 An error occurred while saving reseaux link update: {e}")
+        return jsonify({"status": "error", "message": "579>"+str(e)}), 500
 
+# ...existing code...
+
+
+@routes.route('/scrape_url', methods=['POST'])
+def scrape_url():
+    try:
+        data = request.get_json()
+        
+        num_job = data.get('num_job') 
+        path_to_save = data.get('the_path')
+        url_to_scrape = data.get('item_url')
+        
+        if not url_to_scrape or not num_job or not path_to_save:
+            return jsonify({"status": "error", "message": "Missing parameters"}), 400
+
+        api_url = "http://localhost:3000/v1/pdf"
+        headers = {
+            'Content-Type': 'application/json'
+        }
+        payload = {
+            "url": url_to_scrape,
+            "waitFor": 1000
+        }
+        print(f"DBG01------payload : {payload}")
+        response = requests.post(api_url, headers=headers, json=payload)
+        
+        if response.status_code == 200:
+            try:
+                content = response.content
+                with open(path_to_save, 'wb') as file:
+                    file.write(content)
+                return jsonify({"status": "success", "data": "Success"}), 200
+              
+            except json.JSONDecodeError:
+                return jsonify({"status": "error", "message": "Invalid JSON response from server"}), 500
+        else:
+            return jsonify({"status": "error", "message": response.text}), response.status_code
+    except Exception as e:
+        print(f"Cyr_error_616 An error occurred in scrape_url: {e}")
+        return jsonify({"status": "error", "message": str(e)}), 500 
+
+# ...existing code...

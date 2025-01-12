@@ -146,6 +146,7 @@ function loadTableData(callback) {
             const isCvRef = item.Commentaire && item.Commentaire.includes('<CV-REF>');
             let fichier_annonce = dir_path + '/' + item.dossier+"_annonce_.pdf";
             const fichier_annonce_resum = dir_path + '/' + item.dossier+"_gpt_request.pdf";
+            fichier_annonce_scrap = dir_path + '/' + item.dossier+"_annonce_scrape.pdf"
             const file_notes = dir_path + '/' + item.dossier+"_notes.txt";
             const row = document.createElement('tr');
             row.id = filePath;
@@ -343,6 +344,14 @@ function loadTableData(callback) {
                   
                     contextMenu.style.display = 'none';
                 };
+
+                 document.getElementById('Sscrape_url').onclick = () => {
+                    window.CurrentRow=contextMenu.dataset.targetRow;
+                    set_current_row();
+                    scrape_url(item.url,item.dossier,fichier_annonce_scrap);
+                  
+                    contextMenu.style.display = 'none';
+                };
                 let resumexist="";
                 document.getElementById('Resume').onclick = () => {
                     if (item.GptSum == "True")
@@ -456,6 +465,34 @@ function loadTableData(callback) {
 function getStatus(filepath){
     return "Toto";
 }
+
+/* 
+function StealGet(url, num_job, the_path) {
+    try {
+        console.log("Cyr_print_478 StealGet: url = " + url + " num_job = " + num_job + " the_path = " + the_path);
+        fetch('/scrape_url', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ item_url: url, num_job: num_job, the_path: the_path })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === "success") {
+                console.log('StealGet successful:', data);
+            } else {
+                console.error('Cyr_print_484 Error in StealGet:', data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Cyr_print_488 Error in StealGet:', error);
+        });
+    } catch (error) {
+        console.error('Cyr_print_491 An unexpected error occurred in StealGet:', error);
+    }
+} */
+
 
 // Function to filter table rows based on input values
 function filterTable() {
@@ -1730,3 +1767,31 @@ function saveReseauxLinkUpdate(link) {
 
 // ...existing code...
 
+async function scrape_url(item_url, num_job, the_path) {
+    try {
+        const response = await fetch('/scrape_url', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                item_url: item_url,
+                num_job: num_job,
+                the_path: the_path
+            })
+        });
+
+        const data = await response.json();
+
+        if (response.status === 200) {
+            console.log('Scrape URL successful:', data);
+            alert('Scrape URL successful :');
+        } else {
+            console.error('Error in scrape_url:', data.message);
+            alert('Error in scrape_url: ' + data.message);
+        }
+    } catch (error) {
+        console.error('Error in scrape_url:', error);
+        alert('Error in scrape_url: ' + error.message);
+    }
+}
