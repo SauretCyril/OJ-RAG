@@ -348,7 +348,9 @@ function loadTableData(callback) {
                  document.getElementById('Sscrape_url').onclick = () => {
                     window.CurrentRow=contextMenu.dataset.targetRow;
                     set_current_row();
-                    scrape_url(item.url,item.dossier,fichier_annonce_scrap);
+                    //alert("Scraping de l'annonce en cours...",item.url,item.dossier,fichier_annonce_scrap);
+
+                    scrape_url(item.url,item.dossier);
                   
                     contextMenu.style.display = 'none';
                 };
@@ -1768,6 +1770,8 @@ function saveReseauxLinkUpdate(link) {
 // ...existing code...
 
 async function scrape_url(item_url, num_job, the_path) {
+   
+
     try {
         const response = await fetch('/scrape_url', {
             method: 'POST',
@@ -1776,8 +1780,7 @@ async function scrape_url(item_url, num_job, the_path) {
             },
             body: JSON.stringify({
                 item_url: item_url,
-                num_job: num_job,
-                the_path: the_path
+                num_job: num_job
             })
         });
 

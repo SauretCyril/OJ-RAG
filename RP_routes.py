@@ -589,10 +589,10 @@ def scrape_url():
         data = request.get_json()
         
         num_job = data.get('num_job') 
-        path_to_save = data.get('the_path')
+        #path_to_save = data.get('the_path')
         url_to_scrape = data.get('item_url')
         
-        if not url_to_scrape or not num_job or not path_to_save:
+        if not url_to_scrape or not num_job:
             return jsonify({"status": "error", "message": "Missing parameters"}), 400
 
         api_url = "http://localhost:3000/v1/pdf"
@@ -609,7 +609,9 @@ def scrape_url():
         if response.status_code == 200:
             try:
                 content = response.content
-                with open(path_to_save, 'wb') as file:
+                directory_path = os.path.join(os.getenv("ANNONCES_FILE_DIR"), num_job)
+                pdf_file_path = os.path.join(directory_path, f"{num_job}_annonce_steal.pdf")
+                with open(pdf_file_path, 'wb') as file:
                     file.write(content)
                 return jsonify({"status": "success", "data": "Success"}), 200
               
