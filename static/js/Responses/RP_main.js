@@ -69,11 +69,11 @@ async function getEnvVariable(variableName) {
             return data.variable_value;
         } else {
             console.error(`Error fetching variable ${variableName}:`, data.message);
-            return null;
+            return ""   ;
         }
     } catch (error) {
         console.error(`Error fetching variable ${variableName}:`, error);
-        return null;
+        return ""   ;
     }
 }
 function save_config_col() {
@@ -162,9 +162,10 @@ function loadTableData(callback) {
             const item = itemWrapper[filePath];
             const dir_path = filePath.substring(0, filePath.lastIndexOf('/'));
             const isCvRef = item.Commentaire && item.Commentaire.includes('<CV-REF>');
-            let fichier_annonce = dir_path + '/' + item.dossier+"_annonce_.pdf";
-            
-            const fichier_annonce_resum = dir_path + '/' + item.dossier+"_gpt_request.pdf";
+            SUF_ANNONCE_PDF=getEnvVariable('SUF_ANNONCE_PDF');
+            let fichier_annonce = dir_path + '/' + item.dossier+SUF_ANNONCE_PDF;
+            SUF_GPT_REQUEST_PDF=getEnvVariable('SUF_GPT_REQUEST_PDF'); 
+            const fichier_annonce_resum = dir_path + '/' + item.dossier+SUF_GPT_REQUEST_PDF;
             
             const file_notes = dir_path + '/' + item.dossier+"_notes.txt";
             const row = document.createElement('tr');
