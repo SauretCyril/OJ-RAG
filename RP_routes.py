@@ -34,7 +34,7 @@ def read_annonces_json():
         for root, _, files in os.walk(directory_path):
             parent_dir = os.path.basename(root)
             file_annonce = parent_dir + "_annonce_.pdf"
-            file_annonce_steal = parent_dir + "_annonce_steal.pdf"
+            #file_annonce_steal = parent_dir + "_annonce_steal.pdf"
             file_isGptResum = parent_dir + "_gpt_request.pdf"
             file_cv = parent_dir + "_CyrilSauret.docx"
             file_cv_pdf = parent_dir + "_CyrilSauret.pdf"
@@ -51,8 +51,8 @@ def read_annonces_json():
                     #print("###---->BINGO")
                 if filename  == file_cv_pdf:
                     isCVinpdf="O"
-                if (filename ==  file_annonce_steal):
-                    file_annonce = file_annonce_steal
+            """  if (filename ==  file_annonce_steal):
+                    file_annonce = file_annonce_steal """
                   
             for filename in files:
                 file_path = os.path.join(root, filename)

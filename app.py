@@ -15,11 +15,13 @@ from docx import Document
 from docx2pdf import convert
 import pythoncom
 from fpdf import FPDF
-
+from dotenv import load_dotenv
 # ...existing code...
+load_dotenv()
 
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
+
 
 # Définir NumpyEncoder avant de l'utiliser
 class NumpyEncoder(json.JSONEncoder):
@@ -55,10 +57,24 @@ app.config['SAVED_TEXT_FOLDER'] = SAVED_TEXT_FOLDER
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
+
+
 @app.route('/alive')
 def alive():
     return jsonify({'message': 'Im alive'}), 200
 
+
+@app.route('/get_env_variable', methods=['GET'])
+def get_env_variable():
+    variable_name = request.args.get('variable_name')
+    if not variable_name:
+        return jsonify({"status": "error", "message": "Missing variable_name parameter"}), 400
+
+    variable_value = os.getenv(variable_name)
+    if variable_value is None:
+        return jsonify({"status": "error", "message": f"Variable {variable_name} not found"}), 404
+
+    return jsonify({"status": "success", "variable_value": variable_value}), 200
 
 @app.route('/')
 def index():
@@ -222,6 +238,7 @@ def extract_features(text):
     logger.debug("dbg013.Raw similarity score: {raw_similarity_s}")
     logger.debug("dbg014.Adjusted similarity score: {adjusted_similarity_s}")
     return jsonify({'Raw_similarity_score': raw_similarity_s, 'Adjusted_similarity_score':adjusted_similarity_s})
+
 
  
     
