@@ -1,0 +1,8 @@
+{
+  "FILE_NAMES": {
+    "ANNONCE_SUFFIX": "_annonce_.pdf",
+    "CV_SUFFIX": "_CyrilSauret",
+    "GPT_REQUEST_SUFFIX": "_gpt_request.pdf",
+    "DATA_FILE": ".data.json"
+  }
+}

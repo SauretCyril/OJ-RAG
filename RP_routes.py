@@ -21,6 +21,18 @@ from io import BytesIO
 
 routes = Blueprint('routes', __name__)
 
+# Load shared constants
+def load_constants():
+    config_path = os.path.join(os.path.dirname(__file__), 'config', 'constants.json')
+    with open(config_path, 'r') as f:
+        return json.load(f)
+
+CONSTANTS = load_constants()
+print('Loaded constants:', CONSTANTS)
+@routes.route('/get_constants', methods=['GET'])
+def get_constants():
+    return jsonify(CONSTANTS)
+
 @routes.route('/read_annonces_json', methods=['POST'])
 def read_annonces_json():
     try:
@@ -33,11 +45,10 @@ def read_annonces_json():
         #print(f"###1 ------Excluded annonces: {crit_annonces}")
         for root, _, files in os.walk(directory_path):
             parent_dir = os.path.basename(root)
-            file_annonce = parent_dir + "_annonce_.pdf"
-            #file_annonce_steal = parent_dir + "_annonce_steal.pdf"
-            file_isGptResum = parent_dir + "_gpt_request.pdf"
-            file_cv = parent_dir + "_CyrilSauret.docx"
-            file_cv_pdf = parent_dir + "_CyrilSauret.pdf"
+            file_annonce = parent_dir + CONSTANTS['FILE_NAMES']['ANNONCE_SUFFIX']
+            file_isGptResum = parent_dir + CONSTANTS['FILE_NAMES']['GPT_REQUEST_SUFFIX']
+            file_cv = parent_dir + CONSTANTS['FILE_NAMES']['CV_SUFFIX'] + ".docx"
+            file_cv_pdf = parent_dir + CONSTANTS['FILE_NAMES']['CV_SUFFIX'] + ".pdf"
             file_isGptResum_Path1 = os.path.join(root, file_isGptResum)
             file_isGptResum_Path1 = file_isGptResum_Path1.replace('\\', '/') 
             file_cv_Path = os.path.join(root, file_cv.replace('\\', '/'))

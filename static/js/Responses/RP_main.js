@@ -4,6 +4,7 @@
 }); */
 
 // Declare the global array
+let CONSTANTS;
 window.CurrentRow ="";
 window.tabActive = "Campagne";
 window.annonces = [];
@@ -58,7 +59,15 @@ window.columns = [
  * Saves the current configuration of columns.
  * Serializes the columns and sends them to the backend for saving.
  */
-
+async function loadConstants() {
+    try {
+        const response = await fetch('/get_constants');
+        CONSTANTS = await response.json();
+    } catch (error) {
+        console.error('Error loading constants:', error);
+    }
+    console.log('Constants loaded:', CONSTANTS);
+}
 function save_config_col() {
     const serializedColumns = serializeColumns(window.columns);
     
@@ -966,6 +975,7 @@ function toggleColumnVisibilityForm() {
 
 // Call the function to generate the form when the page loads
 window.addEventListener('load', function() {
+    loadConstants();
     setNewTab();
     //setNewTab();  
     loadTableData(function() {
@@ -974,6 +984,7 @@ window.addEventListener('load', function() {
     });
     createMenu();
     loadReseauxLinks();
+    
 
 });
 
@@ -1160,12 +1171,6 @@ function createMenu() {
     document.body.insertBefore(menu, document.body.firstChild);
 }
 
-// Call createMenu on page load
-/* window.addEventListener('load', function() {
-    createMenu();
-    // ...existing code...
-});
- */
 
 
 
