@@ -155,11 +155,15 @@ function loadTableData(callback) {
             const dir_path = filePath.substring(0, filePath.lastIndexOf('/'));
             const isCvRef = item.Commentaire && item.Commentaire.includes('<CV-REF>');
             
-            let fichier_annonce = dir_path + '/' + item.dossier+"_annonce_.pdf";
+            //let fichier_annonce = dir_path + '/' + item.dossier+"_annonce_.pdf";
+            let fichier_annonce = dir_path + '/' + item.dossier+CONSTANTS['FILE_NAMES']['ANNONCE_SUFFIX'];
+            console.log("<<fichier_annonce>>",fichier_annonce);
             
-            const fichier_annonce_resum = dir_path + '/' + item.dossier+"_gpt_request.pdf";
+            //const fichier_annonce_resum = dir_path + '/' + item.dossier+"_gpt_request.pdf";
+            const fichier_annonce_resum = dir_path + '/' + CONSTANTS['FILE_NAMES']['GPT_REQUEST_SUFFIX'];
             
-            const file_notes = dir_path + '/' + item.dossier+"_notes.txt";
+            //const file_notes = dir_path + '/' + item.dossier+"_notes.txt";
+            const file_notes = dir_path + '/' + item.dossier+CONSTANTS['FILE_NAMES']['NOTES_FILE'];
             const row = document.createElement('tr');
             row.id = filePath;
             row.style.position = 'relative'; // Ajout du positionnement relatif sur la ligne
