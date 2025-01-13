@@ -157,7 +157,7 @@ function loadTableData(callback) {
             
             //let fichier_annonce = dir_path + '/' + item.dossier+"_annonce_.pdf";
             let fichier_annonce = dir_path + '/' + item.dossier+CONSTANTS['FILE_NAMES']['ANNONCE_SUFFIX'];
-            console.log("<<fichier_annonce>>",fichier_annonce);
+            
             
             //const fichier_annonce_resum = dir_path + '/' + item.dossier+"_gpt_request.pdf";
             const fichier_annonce_resum = dir_path + '/' + CONSTANTS['FILE_NAMES']['GPT_REQUEST_SUFFIX'];
@@ -294,7 +294,14 @@ function loadTableData(callback) {
                         attachmentIcon.textContent = '😊'; // Remplacer par une icône sourire
                         fichier_annonce =fichier_annonce_resum;
                     } else {
-                        attachmentIcon.textContent = '📎';
+                        if(item.issteal == "O") {
+                           attachmentIcon.textContent = '🚩';
+                           attachmentIcon.style.color = 'green';
+                       
+                        }
+                        else {
+                            attachmentIcon.textContent = '📎';
+                        }
                     }
 
                     attachmentIcon.style.position = 'absolute';
@@ -479,37 +486,12 @@ function loadTableData(callback) {
     document.addEventListener('click', function() {
         document.getElementById('contextMenu').style.display = 'none';
     });
+    saveTableData();
 }
 function getStatus(filepath){
     return "Toto";
 }
 
-/* 
-function StealGet(url, num_job, the_path) {
-    try {
-        console.log("Cyr_print_478 StealGet: url = " + url + " num_job = " + num_job + " the_path = " + the_path);
-        fetch('/scrape_url', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ item_url: url, num_job: num_job, the_path: the_path })
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.status === "success") {
-                console.log('StealGet successful:', data);
-            } else {
-                console.error('Cyr_print_484 Error in StealGet:', data.message);
-            }
-        })
-        .catch(error => {
-            console.error('Cyr_print_488 Error in StealGet:', error);
-        });
-    } catch (error) {
-        console.error('Cyr_print_491 An unexpected error occurred in StealGet:', error);
-    }
-} */
 
 
 // Function to filter table rows based on input values

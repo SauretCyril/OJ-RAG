@@ -46,6 +46,7 @@ def read_annonces_json():
         for root, _, files in os.walk(directory_path):
             parent_dir = os.path.basename(root)
             file_annonce = parent_dir + CONSTANTS['FILE_NAMES']['ANNONCE_SUFFIX']
+            file_annonce_steal=parent_dir + CONSTANTS['FILE_NAMES']['STEAL_ANNONCE_SUFFIX']
             file_isGptResum = parent_dir + CONSTANTS['FILE_NAMES']['GPT_REQUEST_SUFFIX']
             file_cv = parent_dir + CONSTANTS['FILE_NAMES']['CV_SUFFIX'] + ".docx"
             file_cv_pdf = parent_dir + CONSTANTS['FILE_NAMES']['CV_SUFFIX'] + ".pdf"
@@ -56,14 +57,15 @@ def read_annonces_json():
             data = {}
             isCVin="N"
             isCVinpdf="N"
+            isSteal="N"
             for filename in files:
                 if filename  == file_cv:
                     isCVin="O"
                     #print("###---->BINGO")
                 if filename  == file_cv_pdf:
                     isCVinpdf="O"
-            """  if (filename ==  file_annonce_steal):
-                    file_annonce = file_annonce_steal """
+                if (filename ==  file_annonce_steal):
+                    isSteal="O"
                   
             for filename in files:
                 file_path = os.path.join(root, filename)
@@ -98,8 +100,10 @@ def read_annonces_json():
                                 data["GptSum"] = isGptResum
                                 data["CV"] = isCVin
                                 data["CVpdf"] = isCVinpdf
+                                data['isSteal'] = isSteal
                                 jData = {file_path: data}
                                 annonces_list.append(jData)
+                                
                             
                             record_added = True
 
@@ -120,7 +124,9 @@ def read_annonces_json():
                         Data["etat"] = "gpt"
                         Data["CV"] = isCVin
                         data["CVpdf"] = isCVinpdf
-                       
+                        data['isSteal'] = isSteal
+                        # Save the data to JSON file
+                        #save_annonces_json(data=[{file_annonce_path: Data}])
                         
                         try: 
                             infos = get_info(file_path, "peux tu me trouver : l'url [url] de l'annoncese trouve entre <- et ->, "+
@@ -463,7 +469,8 @@ def define_default_data():
         "Commentaire": "",
         "type": "AN",
         "type_question": "pdf",
-        "title":""
+        "title":"",
+        "isSteal": "N",
     }
 
 @routes.route('/save_announcement', methods=['POST'])
