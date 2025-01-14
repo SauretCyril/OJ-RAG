@@ -158,18 +158,24 @@ function loadTableData(callback) {
             const filePath = Object.keys(itemWrapper)[0];
             const item = itemWrapper[filePath];
             const dir_path = filePath.substring(0, filePath.lastIndexOf('/'));
+            console.log("<<-1---dir_path--->>",dir_path);
             const isCvRef = item.Commentaire && item.Commentaire.includes('<CV-REF>');
             
-            //let fichier_annonce = dir_path + '/' + item.dossier+"_annonce_.pdf";
+            
             let fichier_annonce = dir_path + '/' + item.dossier+window.CONSTANTS['FILE_NAMES']['ANNONCE_SUFFIX'];
-            console.log("<<fichier_annonce>>",fichier_annonce);
+            //console.log("<<-2-fichier_annonce>>",fichier_annonce);
+            
             let fichier_annonce_steal = dir_path + '/' + item.dossier+window.CONSTANTS['FILE_NAMES']['STEAL_ANNONCE_SUFFIX'];
-            //const fichier_annonce_resum = dir_path + '/' + item.dossier+"_gpt_request.pdf";
-            const fichier_annonce_resum = dir_path + '/' + window.CONSTANTS['FILE_NAMES']['GPT_REQUEST_SUFFIX'];
-             console.log("<<fichier_annonce_resum>>",fichier_annonce_resum);
-            //const file_notes = dir_path + '/' + item.dossier+"_notes.txt";
+            //console.log("<<-3-ffichier_annonce_steal>>",fichier_annonce_steal);
+            
+            
+            const fichier_annonce_resum = dir_path + '/' + item.dossier+window.CONSTANTS['FILE_NAMES']['GPT_REQUEST_SUFFIX'];
+            //console.log("<<-4-fichier_annonce_resum>>",fichier_annonce_resum);
+            
+            
             const file_notes = dir_path + '/' + item.dossier+window.CONSTANTS['FILE_NAMES']['NOTES_FILE'];
-            console.log("<<file_notes>>",file_notes);
+            //console.log("<<-5-file_notes>>",file_notes);
+            
             const row = document.createElement('tr');
             row.id = filePath;
             row.style.position = 'relative'; // Ajout du positionnement relatif sur la ligne
@@ -187,10 +193,12 @@ function loadTableData(callback) {
                         if (item[col.key] === 'O') {
                             //console.log('#### blanc:');
                             icon.textContent = '📗'; // Red book icon
+                            icon.style.cursor = 'pointer';
+                            icon.addEventListener('click', () => open_url(fichier_annonce_resum));
                         } else  {
                             //console.log('#### vert:');
                             icon.textContent = '📕'; // Green book icon
-                            icon.addEventListener(col.event, () => open_url(fichier_annonce_resum));
+                            
                         } 
                         icon.style.position = 'absolute';
                         icon.style.alignContent='center';
@@ -257,40 +265,40 @@ function loadTableData(callback) {
                     else if (col.key === 'isJo')
                     {
                         const icon = document.createElement('span');
-                         if (item[col.key] === 'N') {
+                         if (item[col.key] === 'O') {
                             //console.log('#### blanc:');
+                            icon.textContent = '📗'; // Green book icon
+                            icon.style.cursor = 'pointer';
+                            icon.addEventListener('click', () => open_url(fichier_annonce));
                             
-                            icon.textContent = '📕'; // Red book icon
                         } else  {
                             //console.log('#### vert:');
-                            icon.textContent = '📗'; // Green book icon
-                           
-                            icon.addEventListener(col.event, () => open_url(fichier_annonce));
+                            icon.textContent = '📕'; // Red book icon
                         } 
                         icon.style.position = 'absolute';
                         icon.style.alignContent='center';
                         //icon.style.top = '0px';
                         icon.style.zIndex = '10'; // Ensure the icon is above the content
-                        icon.style.cursor = 'pointer';
+                        
                         cell.appendChild(icon);
                     }
                     else if (col.key === 'isSteal')
                     {
                         const icon = document.createElement('span');
-                        if (item[col.key] === 'N') {
+                        if (item[col.key] === 'O') {
                             //console.log('#### blanc:');
-                            
-                            icon.textContent = '📕'; // Red book icon
-                        } else if (item[col.key] === 'O') {
+                            icon.textContent = '📗'; // Red book icon
+                            icon.addEventListener('click', () => open_url(fichier_annonce_steal));
+                            icon.style.cursor = 'pointer';
+                        } else {
                             //console.log('#### vert:');
-                            icon.textContent = '📗'; // Green book icon
-                            icon.addEventListener(col.event, () => open_url(fichier_annonce_steal));
+                            icon.textContent = '📕'; // Green book icon    
                         } 
                         icon.style.position = 'absolute';
                         icon.style.alignContent='center';
                         //icon.style.top = '0px';
                         icon.style.zIndex = '10'; // Ensure the icon is above the content
-                        icon.style.cursor = 'pointer';
+                        
                         cell.appendChild(icon);
                     } else if (col.key === 'Notes' ) 
                         {
@@ -378,20 +386,30 @@ function loadTableData(callback) {
                     contextMenu.style.display = 'none';
                 };
                 let resumexist="";
-                document.getElementById('Resume').onclick = () => {
-                    if (item.GptSum == "True")
+                document.getElementById('Resume').onclick = () => 
+                {
+                    let thefile="";
+                    resuReady=false;
+                    if (item.isSteal=="O")
+                        {thefile=fichier_annonce_steal,resuReady=true;}
+                        else if (item.isjo=="O"){thefile=fichier_annonceresuReady=true;}
+                    if (item.GptSum == "O")
                     {
                         let resumexist="Attention cela va écraser le résumé existant...";
                     }
-                    const rowId = contextMenu.dataset.targetRow;
-                    if (confirm("Voulez vous résumer l'annonce ? "+resumexist +"->" +fichier_annonce+ ": " + item.dossier )) {
-                        window.CurrentRow=contextMenu.dataset.targetRow;
-                        set_current_row();       
-                        // call the function get answers
-                        get_job_answer(fichier_annonce,item.dossier);
-                        
-                        }
-                    };
+                    if (resuReady) 
+                    {
+                        const rowId = contextMenu.dataset.targetRow;
+                        if (confirm("Voulez vous résumer l'annonce ? "+resumexist +"->" +thefile+ ": " + item.dossier )) {
+                            window.CurrentRow=contextMenu.dataset.targetRow;
+                            set_current_row();       
+                            // call the function get answers
+                            get_job_answer(thefile,item.dossier);
+                            
+                            }
+                    } else
+                    {alert("il faut que l'annonce soit sauvegardée en pdf")}
+                }
 
                 document.getElementById('Delete').onclick = () => {
              
@@ -1315,7 +1333,7 @@ async function get_cv(numDossier, repertoire_annonces,state,rowId)
 
 
 function open_url(theurl) {
-      alert(theurl);
+     // alert(theurl);
             fetch('/open_url', {
                 method: 'POST',
                 headers: {
