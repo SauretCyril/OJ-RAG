@@ -35,14 +35,14 @@ window.columns = [
     { key: 'id', editable: true, width: '100px',"visible":true,"type":"tb",title:'ID' },
     { key: 'entreprise', editable: true, width: '150px',"visible":true ,"type":"tb",title:'Entreprise' },
     
-    { key: 'isJo', editable: false, width: '70px',"visible":true ,"type":"tb",title:'Manu' },
-    { key: 'isSteal', editable: false, width: '70px',"visible":true ,"type":"tb",title:'Steal' },
-    { key: 'GptSum', editable: false, width: '70px',"visible":true,"type":"tb",title:'Resum' },
-    { key: 'CV', editable: false, width: '70px',"visible":true ,"type":"tb",title:'CV' },
-    { key: 'CVpdf', editable: false, width: '70px',"visible":true ,"type":"tb",title:'.pdf' },
+    { key: 'isJo', editable: false, width: '50px',"visible":true ,"type":"tb",title:'Manu' },
+    { key: 'isSteal', editable: false, width: '50px',"visible":true ,"type":"tb",title:'Steal' },
+    { key: 'GptSum', editable: false, width: '50px',"visible":true,"type":"tb",title:'Resum' },
+    { key: 'CV', editable: false, width: '50px',"visible":true ,"type":"tb",title:'CV' },
+    { key: 'CVpdf', editable: false, width: '50px',"visible":true ,"type":"tb",title:'.pdf' },
     
-    { key: 'categorie', editable: true, class: 'category-badge', prefix: 'category-', width: '200px',"visible":false,"type":"tb",title:'Cat'  },
-    { key: 'etat', editable: true, width: '95px',"visible":true ,"type":"tb",title:'Etat'  },
+    { key: 'categorie', editable: true, class: 'category-badge', prefix: 'category-', width: '120px',"visible":true,"type":"tb",title:'Cat'  },
+    { key: 'etat', editable: true, width: '100px',"visible":true ,"type":"tb",title:'Etat'  },
     { key: 'contact', editable: true, width: '150px',"visible":true ,"type":"tb",title:'Contact' },
     { key: 'tel', editable: true, width: '125px',"visible":false ,"type":"tb",title:'Tel.' },
     { key: 'mail', editable: true, width: '125px',"visible":false ,"type":"tb",title:'mail' },
@@ -50,9 +50,9 @@ window.columns = [
     { key: 'Date_rep', editable: true, default: 'N/A', width: '120px',"visible":true ,"type":"tb",title:'Dt Rep' }, 
     { key: 'Commentaire', editable: true, width: '150px',"visible":true,"type":"tb" ,title:'Commentaire' },
     { key: 'Notes', editable: false, width: '50px',"visible":true,"type":"tb" ,title:'Nt' },
-    { key: 'todo', editable: true, width: '200px',"visible":true ,"type":"tb" ,title:'ToDo'},
+    { key: 'todo', editable: true, width: '120px',"visible":true ,"type":"tb" ,title:'ToDo'},
     { key: 'url', editable: false, width: '100px',"visible":false ,"type":"tb",title:'Url' },
-    { key: 'type', editable: true, width: '80px',"visible":false ,"type":"tb",title:'Type'  },
+    { key: 'type', editable: true, width: '80px',"visible":true ,"type":"tb",title:'Type'  },
     { key: 'annonce_pdf', editable: true, width: '80px',"visible":false ,"type":"tb",title:'Annonce (pdf)' },
     { key: 'type_question', editable: true, width: '80px',"visible":false ,"type":"tb" ,title:'type Question'},
     { key: 'lien_Etape', editable: true, width: '80px',"visible":false ,"type":"tb",title:'Lien Etape' },
@@ -392,7 +392,7 @@ function loadTableData(callback) {
                     resuReady=false;
                     if (item.isSteal=="O")
                         {thefile=fichier_annonce_steal,resuReady=true;}
-                        else if (item.isjo=="O"){thefile=fichier_annonceresuReady=true;}
+                        else if (item.isJo=="O"){thefile=fichier_annonce,resuReady=true;}
                     if (item.GptSum == "O")
                     {
                         let resumexist="Attention cela va écraser le résumé existant...";
@@ -400,11 +400,11 @@ function loadTableData(callback) {
                     if (resuReady) 
                     {
                         const rowId = contextMenu.dataset.targetRow;
-                        if (confirm("Voulez vous résumer l'annonce ? "+resumexist +"->" +thefile+ ": " + item.dossier )) {
+                        if (confirm("Voulez vous résumer le document ? "+resumexist +"->" +thefile+ ": " + item.dossier )) {
                             window.CurrentRow=contextMenu.dataset.targetRow;
                             set_current_row();       
                             // call the function get answers
-                            get_job_answer(thefile,item.dossier);
+                            get_job_answer(thefile,item.dossier, item.type);
                             
                             }
                     } else
@@ -1178,9 +1178,12 @@ function createMenu() {
 
 
 
-async function get_job_answer(path,num_job)
+async function get_job_answer(path,num_job,type)
 {
- const q2_job = 
+ let q2_job = "";
+ if (type === 'AN') {
+
+ q2_job = 
         "peux tu me faire un plan détaillé de l'offre avec les sections en précisant bien ce qui est obligatoire, optionnelle :" +
         "- Titre poste proposé," +
         "- Duties (Description du poste décomposée en tache ou responsabilité)," +
@@ -1189,7 +1192,17 @@ async function get_job_answer(path,num_job)
         "- Savoir-être (soft skill)," +
         "- autres (toutes informations autre utile à connaitre)"
         ;
-
+ } else if (type=="PF" ) {
+  
+  q2_job = " peux tu me faire un plan détaillé de du frofile du candidat avec les sections" +
+        "- Titre du profile," +
+        "- le résumé du texte mis en avant du profile," +
+        "- savoirs faire ou sof skills ," +
+        "- EXPERIENCES PROFESSIONNELLES: (Entreprise, date début et fin, domaine de l'entreprise,poste occupé) sachant qu'il peut y avoir plusieurs expériences pour une entreprise, il faut lister en sous section les functions occupées avec la description de la tache, les outils, langages et environnement " +
+        "- les compétences," +
+        "- autres (toutes informations autre utile à connaitre)"
+ }
+    alert("Q2_job=",q2_job );
     showLoadingOverlay();
 
     try {

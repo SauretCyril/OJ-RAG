@@ -326,6 +326,7 @@ def save_filters_json():
         tab_active = data.get('tabActive')
         file_path = os.path.join(os.getenv("ANNONCES_DIR_FILTER"), tab_active + "_filter") + ".json"
         file_path = file_path.replace('\\', '/')  # Normalize path
+        print(f"##-9998-saving filters to {file_path}")    
         with open(file_path, 'w', encoding='utf-8') as file:
             json.dump(filters, file, ensure_ascii=False, indent=4)
         return jsonify({"status": "success"}), 200
