@@ -4,7 +4,7 @@
 }); */
 
 // Declare the global array
-let CONSTANTS;
+window.CONSTANTS=[];
 window.CurrentRow ="";
 window.tabActive = "Campagne";
 window.annonces = [];
@@ -34,8 +34,13 @@ window.columns = [
     },
     { key: 'id', editable: true, width: '100px',"visible":true,"type":"tb",title:'ID' },
     { key: 'entreprise', editable: true, width: '150px',"visible":true ,"type":"tb",title:'Entreprise' },
-    { key: 'CV', editable: false, width: '50px',"visible":true ,"type":"tb",title:'CV' },
-    { key: 'CVpdf', editable: false, width: '50px',"visible":true ,"type":"tb",title:'.pdf' },
+    
+    { key: 'isJo', editable: false, width: '70px',"visible":true ,"type":"tb",title:'Manu' },
+    { key: 'isSteal', editable: false, width: '70px',"visible":true ,"type":"tb",title:'Steal' },
+    { key: 'GptSum', editable: false, width: '70px',"visible":true,"type":"tb",title:'Resum' },
+    { key: 'CV', editable: false, width: '70px',"visible":true ,"type":"tb",title:'CV' },
+    { key: 'CVpdf', editable: false, width: '70px',"visible":true ,"type":"tb",title:'.pdf' },
+    
     { key: 'categorie', editable: true, class: 'category-badge', prefix: 'category-', width: '200px',"visible":false,"type":"tb",title:'Cat'  },
     { key: 'etat', editable: true, width: '95px',"visible":true ,"type":"tb",title:'Etat'  },
     { key: 'contact', editable: true, width: '150px',"visible":true ,"type":"tb",title:'Contact' },
@@ -51,7 +56,7 @@ window.columns = [
     { key: 'annonce_pdf', editable: true, width: '80px',"visible":false ,"type":"tb",title:'Annonce (pdf)' },
     { key: 'type_question', editable: true, width: '80px',"visible":false ,"type":"tb" ,title:'type Question'},
     { key: 'lien_Etape', editable: true, width: '80px',"visible":false ,"type":"tb",title:'Lien Etape' },
-    { key: 'GptSum', editable: true, width: '80px',"visible":false,"type":"tb",title:'Resum' },
+    
     { key: 'CVfile', editable: true, width: '80px',"visible":false ,"type":"tb",title:'CVfile' },
     
 ];
@@ -62,11 +67,11 @@ window.columns = [
 async function loadConstants() {
     try {
         const response = await fetch('/get_constants');
-        CONSTANTS = await response.json();
+        window.CONSTANTS = await response.json();
     } catch (error) {
         console.error('Error loading constants:', error);
     }
-    console.log('Constants loaded:', CONSTANTS);
+    console.log('Constants loaded:', window.CONSTANTS);
 }
 function save_config_col() {
     const serializedColumns = serializeColumns(window.columns);
@@ -156,29 +161,45 @@ function loadTableData(callback) {
             const isCvRef = item.Commentaire && item.Commentaire.includes('<CV-REF>');
             
             //let fichier_annonce = dir_path + '/' + item.dossier+"_annonce_.pdf";
-            let fichier_annonce = dir_path + '/' + item.dossier+CONSTANTS['FILE_NAMES']['ANNONCE_SUFFIX'];
-            
-            
+            let fichier_annonce = dir_path + '/' + item.dossier+window.CONSTANTS['FILE_NAMES']['ANNONCE_SUFFIX'];
+            console.log("<<fichier_annonce>>",fichier_annonce);
+            let fichier_annonce_steal = dir_path + '/' + item.dossier+window.CONSTANTS['FILE_NAMES']['STEAL_ANNONCE_SUFFIX'];
             //const fichier_annonce_resum = dir_path + '/' + item.dossier+"_gpt_request.pdf";
-            const fichier_annonce_resum = dir_path + '/' + CONSTANTS['FILE_NAMES']['GPT_REQUEST_SUFFIX'];
-            
+            const fichier_annonce_resum = dir_path + '/' + window.CONSTANTS['FILE_NAMES']['GPT_REQUEST_SUFFIX'];
+             console.log("<<fichier_annonce_resum>>",fichier_annonce_resum);
             //const file_notes = dir_path + '/' + item.dossier+"_notes.txt";
-            const file_notes = dir_path + '/' + item.dossier+CONSTANTS['FILE_NAMES']['NOTES_FILE'];
+            const file_notes = dir_path + '/' + item.dossier+window.CONSTANTS['FILE_NAMES']['NOTES_FILE'];
+            console.log("<<file_notes>>",file_notes);
             const row = document.createElement('tr');
             row.id = filePath;
             row.style.position = 'relative'; // Ajout du positionnement relatif sur la ligne
 // forEach((col
             window.columns.forEach((col, colIndex) => {
                 if (col.type === "tb" && col.visible === true) {
+                    
                     const cell = document.createElement('td');
                     cell.setAttribute('data-key', col.key);
-                    let isurl = false;
-                    let isresumGpt = false;
-                    if (col.key === 'GptSum' && item.hasOwnProperty('GptSum') && item.GptSum == "True") {
-                        isresumGpt = true;
+                   
+                    
+                    if (col.key === 'GptSum' ) 
+                    {
+                        const icon = document.createElement('span');
+                        if (item[col.key] === 'O') {
+                            //console.log('#### blanc:');
+                            icon.textContent = '📕'; // Red book icon
+                        } else  {
+                            //console.log('#### vert:');
+                            icon.textContent = '📗'; // Green book icon
+                            icon.addEventListener(col.event, () => open_url(fichier_annonce_resum));
+                        } 
+                        icon.style.position = 'absolute';
+                        icon.style.alignContent='center';
+                        //icon.style.top = '0px';
+                        icon.style.zIndex = '10'; // Ensure the icon is above the content
+                        cell.appendChild(icon);
                     }
                    
-                    if (col.key === 'CVpdf' && item['CV']=='O' ) 
+                     else if  (col.key === 'CVpdf' && item['CV']=='O' ) 
                     {
                         //console.log('#### CV:', item[col.key]);
                         const icon = document.createElement('span');
@@ -201,16 +222,15 @@ function loadTableData(callback) {
                       } 
                       else  if (col.key === 'CVpdf' && item['CV']=='N' )
                       {
-                          {
+                         
                             const icon = document.createElement('span');
                             icon.textContent = '⚪'; // White circle icon
-                            
                             icon.style.position = 'absolute';
                             icon.style.alignContent='center';
                             //icon.style.top = '0px';
                             icon.style.zIndex = '10';
                             cell.appendChild(icon);
-                          }
+                         
                      }                      
                      else if (col.key === 'CV') 
                      {
@@ -220,7 +240,7 @@ function loadTableData(callback) {
                             //console.log('#### blanc:');
                             
                             icon.textContent = '📕'; // Red book icon
-                        } else if (item[col.key] === 'O') {
+                        } else  {
                             //console.log('#### vert:');
                             icon.textContent = '📗'; // Green book icon
                         } 
@@ -234,9 +254,56 @@ function loadTableData(callback) {
                         cell.appendChild(icon);
                         
                     } 
+                    else if (col.key === 'isJo')
+                    {
+                        const icon = document.createElement('span');
+                         if (item[col.key] === 'N') {
+                            //console.log('#### blanc:');
+                            
+                            icon.textContent = '📕'; // Red book icon
+                        } else  {
+                            //console.log('#### vert:');
+                            icon.textContent = '📗'; // Green book icon
+                           
+                            icon.addEventListener(col.event, () => open_url(fichier_annonce));
+                        } 
+                        icon.style.position = 'absolute';
+                        icon.style.alignContent='center';
+                        //icon.style.top = '0px';
+                        icon.style.zIndex = '10'; // Ensure the icon is above the content
+                        icon.style.cursor = 'pointer';
+                        cell.appendChild(icon);
+                    }
+                    else if (col.key === 'isSteal')
+                    {
+                        const icon = document.createElement('span');
+                        if (item[col.key] === 'N') {
+                            //console.log('#### blanc:');
+                            
+                            icon.textContent = '📕'; // Red book icon
+                        } else if (item[col.key] === 'O') {
+                            //console.log('#### vert:');
+                            icon.textContent = '📗'; // Green book icon
+                            icon.addEventListener(col.event, () => open_url(fichier_annonce_steal));
+                        } 
+                        icon.style.position = 'absolute';
+                        icon.style.alignContent='center';
+                        //icon.style.top = '0px';
+                        icon.style.zIndex = '10'; // Ensure the icon is above the content
+                        icon.style.cursor = 'pointer';
+                        cell.appendChild(icon);
+                    } else if (col.key === 'Notes' ) 
+                        {
+                            const heartIcon = document.createElement('span');
+                            heartIcon.textContent = '❤️'; // Heart icon
+                            heartIcon.style.cursor = 'pointer';
+                            heartIcon.addEventListener('click', () => open_notes(file_notes));
+                            cell.appendChild(heartIcon);
+                        
+                        }
                     else 
                     {
-
+                        isurl=false;
                         if (col.key === 'description' && item.url) {
                             isurl = true;
                         }
@@ -251,18 +318,9 @@ function loadTableData(callback) {
                             cell.style.textDecoration = ''; // Default text decoration
                         }
                         
-                        if (col.key === 'Notes' ) 
-                        {
-                            const heartIcon = document.createElement('span');
-                            heartIcon.textContent = '❤️'; // Heart icon
-                            heartIcon.style.cursor = 'pointer';
-                            heartIcon.addEventListener('click', () => open_notes(file_notes));
-                            cell.appendChild(heartIcon);
-                        
-                        }
-                        else {
-                            cell.textContent = item[col.key];
-                        }
+                       
+                      
+                        cell.textContent = item[col.key];
                         if (col.class) cell.classList.add(col.class);
                         if (col.editable) cell.contentEditable = "true";
                         if (col.width) cell.style.width = col.width;
@@ -276,65 +334,7 @@ function loadTableData(callback) {
             if (isCvRef) {
                 row.style.backgroundColor = '#8be28b';
             }
-            fetch('/file_exists', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ file_path: fichier_annonce })
-            })
-            .then(response => response.json())
-            .then(data => {
-                //console.log('<File exists>:', fichier_annonce,data.exists);
-                if (data.exists) {
-                    
-                    const attachmentIcon = document.createElement('span');
-                    attachmentIcon.classList.add('attachment-icon');
-                    if (item.GptSum == "True") {
-                        attachmentIcon.textContent = '😊'; // Remplacer par une icône sourire
-                        fichier_annonce =fichier_annonce_resum;
-                    } else {
-                        if(item.issteal == "O") {
-                           attachmentIcon.textContent = '🚩';
-                           attachmentIcon.style.color = 'green';
-                       
-                        }
-                        else {
-                            attachmentIcon.textContent = '📎';
-                        }
-                    }
-
-                    attachmentIcon.style.position = 'absolute';
-                    attachmentIcon.style.left = '0px'; // Ajusté pour être visible sur le côté gauche
-                    attachmentIcon.style.top = '50%';
-                    attachmentIcon.style.transform = 'translateY(-55%)';
-                    attachmentIcon.style.zIndex = '1'; // Assure que l'icône est au-dessus du contenu
-                    attachmentIcon.style.cursor = 'pointer'; // Change cursor on hover
-
-                    // Add onclick event to open the file
-                    attachmentIcon.onclick = () => {
-                        window.CurrentRow=contextMenu.dataset.targetRow;
-                        set_current_row();
-                        fetch('/open_url', {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json'
-                            },
-                            body: JSON.stringify({ url: fichier_annonce })
-                        });
-                    };
-
-                    // Ajouter l'icône au premier td de la ligne plutôt qu'à la ligne elle-même
-                    const firstCell = row.firstChild;
-                    if (firstCell) {
-                        firstCell.style.position = 'relative';
-                        firstCell.appendChild(attachmentIcon);
-                    }
-                }
-            })
-            .catch(error => {
-                console.error('Error checking file existence:', error);
-            });
+            /*   */
             
             
             //tableBody.appendChild(row);
@@ -1315,7 +1315,7 @@ async function get_cv(numDossier, repertoire_annonces,state,rowId)
 
 
 function open_url(theurl) {
-      
+      alert(theurl);
             fetch('/open_url', {
                 method: 'POST',
                 headers: {

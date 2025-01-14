@@ -66,6 +66,13 @@ def read_annonces_json():
                     isCVinpdf="O"
                 if (filename ==  file_annonce_steal):
                     isSteal="O"
+                    file_path_isJo = os.path.join(root, file_annonce)
+                    file_path_isJo = file_path.replace('\\', '/') 
+                if (filename ==  file_annonce):
+                    isJo="O"
+                    file_path_isJo = os.path.join(root, file_annonce)
+                    file_path_isJo = file_path.replace('\\', '/') 
+                    
                   
             for filename in files:
                 file_path = os.path.join(root, filename)
@@ -93,14 +100,15 @@ def read_annonces_json():
                             if not isExclued:
                                 data["dossier"] = parent_dir  # Add parent directory name to data
                                 if os.path.exists(file_isGptResum_Path1):
-                                    isGptResum = "True"
+                                    isGptResum = "O"
                                 else:
-                                    isGptResum = "False"
-                            
+                                    isGptResum = "N"
+                                data["isJo"] = isJo
+                                data['isSteal'] = isSteal
                                 data["GptSum"] = isGptResum
                                 data["CV"] = isCVin
                                 data["CVpdf"] = isCVinpdf
-                                data['isSteal'] = isSteal
+                                
                                 jData = {file_path: data}
                                 annonces_list.append(jData)
                                 
@@ -121,10 +129,12 @@ def read_annonces_json():
                     if filename == file_annonce:
                         Data = define_default_data()     
                         Data["dossier"] = parent_dir
-                        Data["etat"] = "gpt"
+                        data["isJo"] = isJo
+                        data['isSteal'] = isSteal
+                        data["GptSum"] = isGptResum
                         Data["CV"] = isCVin
                         data["CVpdf"] = isCVinpdf
-                        data['isSteal'] = isSteal
+                        
                         # Save the data to JSON file
                         #save_annonces_json(data=[{file_annonce_path: Data}])
                         
