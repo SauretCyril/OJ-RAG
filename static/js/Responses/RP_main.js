@@ -186,10 +186,10 @@ function loadTableData(callback) {
                         const icon = document.createElement('span');
                         if (item[col.key] === 'O') {
                             //console.log('#### blanc:');
-                            icon.textContent = '📕'; // Red book icon
+                            icon.textContent = '📗'; // Red book icon
                         } else  {
                             //console.log('#### vert:');
-                            icon.textContent = '📗'; // Green book icon
+                            icon.textContent = '📕'; // Green book icon
                             icon.addEventListener(col.event, () => open_url(fichier_annonce_resum));
                         } 
                         icon.style.position = 'absolute';

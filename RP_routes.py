@@ -58,6 +58,7 @@ def read_annonces_json():
             isCVin="N"
             isCVinpdf="N"
             isSteal="N"
+            isJo="N"
             for filename in files:
                 if filename  == file_cv:
                     isCVin="O"
@@ -72,6 +73,8 @@ def read_annonces_json():
                     isJo="O"
                     file_path_isJo = os.path.join(root, file_annonce)
                     file_path_isJo = file_path.replace('\\', '/') 
+                if (filename ==  file_isGptResum):
+                    isGptResum="O"
                     
                   
             for filename in files:
@@ -120,7 +123,7 @@ def read_annonces_json():
                         print(f"Cyr_Error: The file {file_path} contains invalid JSON.")
                 
               
-            if not record_added:
+            """ if not record_added:
                 for filename in files:
                     file_path = os.path.join(root, filename)
                     file_path = file_path.replace('\\', '/')  # Normalize path
@@ -171,7 +174,7 @@ def read_annonces_json():
                             Data["etat"] = "Error"
                             jData = {file_annonce_path: Data}   
                             annonces_list.append(jData)
-                    if record_added: break
+                    if record_added: break """
                                 
         return annonces_list 
     except Exception as e:
