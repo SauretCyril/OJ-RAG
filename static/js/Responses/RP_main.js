@@ -2,7 +2,7 @@
 /* document.querySelectorAll('.status-badge').forEach(badge => {
     badge.title = `Dernier changement: ${new Date().toLocaleDateString()}`;
 }); */
-
+//import { exportToCSV } from './export.js';
 // Declare the global array
 window.CONSTANTS=[];
 window.CurrentRow ="";
@@ -135,7 +135,7 @@ function loadTableData(callback) {
             'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-        state: "En Cours"        
+        excluded: "excluded_annonces.json"        
         })
     })
     .then(response => response.json())
@@ -192,13 +192,15 @@ function loadTableData(callback) {
                         const icon = document.createElement('span');
                         if (item[col.key] === 'O') {
                             //console.log('#### blanc:');
-                            icon.textContent = '📗'; // Red book icon
+                            icon.textContent = '📗'; // Green book icon
+                            icon.style.color = 'green';
                             icon.style.cursor = 'pointer';
                             icon.addEventListener('click', () => open_url(fichier_annonce_resum));
                         } else  {
                             //console.log('#### vert:');
-                            icon.textContent = '📕'; // Green book icon
-                            
+                            icon.textContent = '⚪'; // Green book icon
+                            //icon.style.color = 'red';
+                            icon.style.cursor = 'undefined';
                         } 
                         icon.style.position = 'absolute';
                         icon.style.alignContent='center';
@@ -213,10 +215,12 @@ function loadTableData(callback) {
                         const icon = document.createElement('span');
                         if (item[col.key] === 'N') {
                             //console.log('#### blanc:');
-                            icon.textContent = '📕'; // Red book icon
+                            icon.textContent = '⚪'; // Red book icon
+                            // icon.style.color = 'red';
                         } else if (item[col.key] === 'O') {
                             //console.log('#### vert:');
                             icon.textContent = '📗'; // Green book icon
+                             icon.style.color = 'green';
                         } 
                         icon.style.position = 'absolute';
                         icon.style.alignContent='center';
@@ -247,10 +251,12 @@ function loadTableData(callback) {
                         if (item[col.key] === 'N') {
                             //console.log('#### blanc:');
                             
-                            icon.textContent = '📕'; // Red book icon
+                            icon.textContent = '⚪'; // Red book icon
+                            //icon.style.color = 'red';
                         } else  {
                             //console.log('#### vert:');
-                            icon.textContent = '📗'; // Green book icon
+                            icon.textContent = '📗'; // Red book icon
+                             icon.style.color = 'green';
                         } 
                         icon.style.position = 'absolute';
                         icon.style.alignContent='center';
@@ -273,7 +279,8 @@ function loadTableData(callback) {
                             
                         } else  {
                             //console.log('#### vert:');
-                            icon.textContent = '📕'; // Red book icon
+                            icon.textContent = '⚪'; // Red book icon
+                            //icon.style.color = 'red';
                         } 
                         icon.style.position = 'absolute';
                         icon.style.alignContent='center';
@@ -292,7 +299,8 @@ function loadTableData(callback) {
                             icon.style.cursor = 'pointer';
                         } else {
                             //console.log('#### vert:');
-                            icon.textContent = '📕'; // Green book icon    
+                            icon.textContent = '⚪'; // Green book icon 
+                            //icon.style.color = 'red';   
                         } 
                         icon.style.position = 'absolute';
                         icon.style.alignContent='center';
@@ -504,7 +512,7 @@ function loadTableData(callback) {
     document.addEventListener('click', function() {
         document.getElementById('contextMenu').style.display = 'none';
     });
-    saveTableData();
+    //saveTableData();
 }
 function getStatus(filepath){
     return "Toto";

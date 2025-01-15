@@ -27,18 +27,19 @@
 
             <li><a href="#New" onclick="createAnnouncementForm()">New</a></li>
             <li><a href="#Save" onclick="refresh()">Refresh</a></li>
-            <li>
+           {% comment %}  <li>
               <a
                 href="#ReseauxLinks"
                 id="menu_reseaux"
                 onclick="showReseauxLinks()"
                 >Reseaux</a
               >
-            </li>
+            </li> {% endcomment %}
             <li>
               <a href="{{ url_for('static', filename='LK_links.html') }}"
-                >LK Links</a
+                >Links</a
               >
+              <li><a href="#Export" onclick="exportToCSV()">New</a></li>
             </li>
           </ul>
         </nav>
@@ -52,6 +53,11 @@
         <button class="tab" onclick="changeTab('RDV')">RDV</button>
         <button class="tab" onclick="changeTab('Profiles')">Profiles</button>
         <button class="tab" onclick="changeTab('Suivi')">Suivi</button>
+        <div style="float: right">
+          <select id="Excluded">
+            <option value="option1">excluded_annonces.json</option>
+          </select>
+        </div>
       </div>
       <div class="table-responsive">
         <table>
@@ -101,5 +107,6 @@
     </div>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="{{ url_for('static', filename='js/Responses/RP_main.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/Responses/export.js') }}"></script>
   </body>
 </html>

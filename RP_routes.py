@@ -36,12 +36,16 @@ def get_constants():
 @routes.route('/read_annonces_json', methods=['POST'])
 def read_annonces_json():
     try:
+        data = request.get_json()
+        excluedFile = data.get('excluded')
+        print(f"#################-0 excluedFile={excluedFile}")
         directory_path = os.getenv("ANNONCES_FILE_DIR")
         if not os.path.exists(directory_path):
             return []
 
         annonces_list = []
-        crit_annonces = load_crit_annonces()
+        #excluedFile="excluded_annonces.json"
+        crit_annonces = load_crit_annonces(excluedFile)
         print(f"###-0 scan repertoire annonces for--------------------------------")
         print(f"###-0 ")
         for root, _, files in os.walk(directory_path):
@@ -201,9 +205,10 @@ def read_annonces_json():
         print(f"Cyr_error_145 An unexpected error occurred while reading annonces: {e}")
         return []
 
-def load_crit_annonces():
+def load_crit_annonces(excluedFile):
     try:
-        config_path = os.path.join(os.getenv("ANNONCES_DIR_STATE"), "excluded_annonces.json")
+        file="excluded_annonces.json"
+        config_path = os.path.join(os.getenv("ANNONCES_DIR_STATE"), excluedFile)
         if os.path.exists(config_path):
             with open(config_path, 'r', encoding='utf-8') as file:
                 return json.load(file)
