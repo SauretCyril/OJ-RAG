@@ -38,6 +38,8 @@ class NumpyEncoder(json.JSONEncoder):
 app = Flask(__name__)
 from RP_routes import routes 
 app.register_blueprint(routes)  # Register the blueprint
+from ST_steal import Steal 
+app.register_blueprint(Steal)  # Register the blueprint
 
 app.json_encoder = NumpyEncoder  # Ajouter cette ligne après la création de l'app
 
