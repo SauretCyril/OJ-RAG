@@ -27,19 +27,17 @@
 
             <li><a href="#New" onclick="createAnnouncementForm()">New</a></li>
             <li><a href="#Save" onclick="refresh()">Refresh</a></li>
-           {% comment %}  <li>
+              <!--<li>
               <a
                 href="#ReseauxLinks"
                 id="menu_reseaux"
                 onclick="showReseauxLinks()"
                 >Reseaux</a
               >
-            </li> {% endcomment %}
+            </li> -->
             <li>
-              <a href="{{ url_for('static', filename='LK_links.html') }}"
-                >Links</a
-              >
-              <li><a href="#Export" onclick="exportToCSV()">New</a></li>
+              <a href="{{ url_for('static', filename='LK_links.html') }}">Links</a>
+              <li><a href="#Export" onclick="exportToCSV()">export</a></li>
             </li>
           </ul>
         </nav>

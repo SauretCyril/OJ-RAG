@@ -45,7 +45,7 @@ window.columns = [
     { key: 'etat', editable: true, width: '100px',"visible":true ,"type":"tb",title:'Etat'  },
     { key: 'contact', editable: true, width: '150px',"visible":true ,"type":"tb",title:'Contact' },
     { key: 'tel', editable: true, width: '125px',"visible":false ,"type":"tb",title:'Tel.' },
-    { key: 'mail', editable: true, width: '125px',"visible":false ,"type":"tb",title:'mail' },
+    { key: 'mail', editable: true, width: '125px',"visible":false,"type":"tb",title:'mail' },
     { key: 'Date', editable: true, default: 'N/A', width: '120px',"visible":true ,"type":"tb",title:'Dt pub' },
     { key: 'Date_rep', editable: true, default: 'N/A', width: '120px',"visible":true ,"type":"tb",title:'Dt Rep' }, 
     { key: 'Commentaire', editable: true, width: '150px',"visible":true,"type":"tb" ,title:'Commentaire' },
