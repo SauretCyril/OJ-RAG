@@ -1,8 +1,6 @@
 // Add status tooltips
-/* document.querySelectorAll('.status-badge').forEach(badge => {
-    badge.title = `Dernier changement: ${new Date().toLocaleDateString()}`;
-}); */
-//import { exportToCSV } from './export.js';
+
+
 // Declare the global array
 window.CONSTANTS=[];
 window.CurrentRow ="";
