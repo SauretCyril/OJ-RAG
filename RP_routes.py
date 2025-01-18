@@ -46,12 +46,14 @@ def read_annonces_json():
         annonces_list = []
         #excluedFile="excluded_annonces.json"
         crit_annonces = load_crit_annonces(excluedFile)
-        print(f"###-0 scan repertoire annonces for--------------------------------")
-        print(f"###-0 ")
+        print(f"###-0 scan repertoire annonces for crit_annonces={excluedFile}")
+        print(f"###-0 ",crit_annonces)
         for root, _, files in os.walk(directory_path):
-            print(f"###-1 ------repertoire {root}")
+            
+            print(f"###-1 ------repertoire {root}-1-------------Start-{directory_path}")
             
             parent_dir = os.path.basename(root)
+            
             file_annonce = parent_dir + CONSTANTS['FILE_NAMES']['ANNONCE_SUFFIX']
             file_annonce_steal=parent_dir + CONSTANTS['FILE_NAMES']['STEAL_ANNONCE_SUFFIX']
             file_annonce_path = os.path.join(root, file_annonce)
@@ -73,8 +75,9 @@ def read_annonces_json():
             isJo="N"
             file_path_steal=""
             file_path_isJo=""
+            print(f"###-1a ------parent_dir {parent_dir}")
             for filename in files:
-                print ("------------filename=file_annonce_steal",filename,file_annonce_steal)
+                print ("###-1b------------filename=",filename)
                 if filename  == file_cv:
                     isCVin="O"
                     #print("###---->BINGO")

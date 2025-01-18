@@ -155,3 +155,28 @@ def get_info(file_path, question):
 
 
 
+def response_me(question,url,role):
+    try:
+        client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))  # Assurez-vous que OPENAI_API_KEY est défini dans vos variables d'environnement
+        context=extract_text_from_url(url)
+        if (context == ""):
+            return "{'url':'', 'entreprise':'inconnue', 'poste':'Annonce non lisible'}"
+        
+        
+        full_context = f"{question}\n\nContexte:\n{context}"
+        
+        response = client.chat.completions.create(
+            model="gpt-3.5-turbo",
+            messages=[
+                {"role": "system", "content": role},
+                {"role": "user", "content": full_context}
+            ],
+            temperature=0.7,
+            max_tokens=1000
+        )
+        
+        return response.choices[0].message.content
+
+    except Exception as e:
+        print(f"Erreur lors de l'analyse: {str(e)}")
+        return f"Une erreur s'est produite: {str(e)}"

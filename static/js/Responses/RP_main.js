@@ -120,6 +120,7 @@ function loadFilterValues(tabActive) {
         console.error('Error loading filter values:', error);
     });
 }
+
 // Example usage
 function loadTableData(callback) {
     
@@ -127,13 +128,16 @@ function loadTableData(callback) {
     generateTableHeaders();
     //state = value de la liste box statusFilter
     //const state = document.getElementById('statusFilter').value;
+    //"excluded_annonces.json"
+    excludedfile = document.getElementById('Excluded').value+".json";
+    //alert(excluded);
     fetch('/read_annonces_json', { 
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-        excluded: "excluded_annonces.json"        
+        excluded: excludedfile         
         })
     })
     .then(response => response.json())
@@ -406,7 +410,7 @@ function loadTableData(callback) {
                     if (resuReady) 
                     {
                         const rowId = contextMenu.dataset.targetRow;
-                        if (confirm("Voulez vous résumer le document ? "+resumexist +"->" +thefile+ ": " + item.dossier )) {
+                        if (confirm("Voulez vous résumer le document ? "+resumexist +"->" +thefile+ " dans le dossier " + item.dossier )) {
                             window.CurrentRow=contextMenu.dataset.targetRow;
                             set_current_row();       
                             // call the function get answers
@@ -994,6 +998,7 @@ window.addEventListener('load', function() {
     });
     createMenu();
     loadReseauxLinks();
+    document.getElementById('Excluded').addEventListener('change', loadTableData);
     
 
 });
@@ -1184,7 +1189,7 @@ function createMenu() {
 
 
 
-async function get_job_answer(path,num_job,type)
+async function get_job_answer(thepath,num_job,type="AN")
 {
  let q2_job = "";
  if (type === 'AN') {
@@ -1212,12 +1217,13 @@ async function get_job_answer(path,num_job,type)
     showLoadingOverlay();
 
     try {
+        //alert("path=",thepath);
         const jobTextResponse = await fetch('/get_job_answer', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({ path: path, RQ: q2_job })
+            body: JSON.stringify({ path: thepath, RQ: q2_job })
         });
 
         if (!jobTextResponse.ok) {
