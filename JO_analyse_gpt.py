@@ -57,23 +57,30 @@ def extract_text_from_pdf(pdf_path):
 
 def extract_text_from_url(url):
     try:
+        print(f"-> Tentative d'extraction de texte depuis l'URL: {url}")
+        
         # Récupérer le contenu de l'URL
         response = requests.get(url)
+        print(f"-> Statut de la réponse HTTP: {response.status_code}")
         response.raise_for_status()  # Vérifie si la requête a réussi
         
         # Parser le HTML
         soup = BeautifulSoup(response.text, 'html.parser')
+        print("-> HTML parsé avec succès")
         
         # Supprimer les scripts et styles
         for script in soup(["script", "style"]):
             script.decompose()
+        print("-> Scripts et styles supprimés")
             
         # Extraire le texte
         text = soup.get_text(separator='\n')
+        print("-> Texte extrait du HTML")
         
         # Nettoyer le texte (supprimer les lignes vides multiples)
         lines = [line.strip() for line in text.split('\n')]
         text = '\n'.join(line for line in lines if line)
+        print("-> Texte nettoyé")
         
         if not text.strip():
             print("-> L'URL ne contient pas de texte extractible")
@@ -108,7 +115,7 @@ def get_answer(question, context=""):
                 {"role": "system", "content": "Tu es un assistant expert en analyse d'offres d'emploi dans le domaine du développement d'application informatique. peux tu réccupérer le numéro de l'annonce qui se trouve apres <Num>"},
                 {"role": "user", "content": full_context}
             ],
-            temperature=0.7,
+            temperature=0.8,
             max_tokens=1100
         )
         
@@ -133,7 +140,7 @@ def get_info(file_path, question):
         if (context == ""):
             return "{'url':'', 'entreprise':'inconnue', 'poste':'Annonce non lisible'}"
         
-        print(f"Contexte extrait: {context[:200]}...")
+        #print(f"Contexte extrait: {context[:200]}...")
         full_context = f"{question}\n\nContexte:\n{context}"
         
         response = client.chat.completions.create(

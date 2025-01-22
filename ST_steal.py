@@ -39,7 +39,7 @@ def scrape_url():
         }
         payload = {
             "url": url_to_scrape,
-            "waitFor": 2000
+            "waitFor": 3000
         }
         print(f"DBG01------payload : {payload}")
 

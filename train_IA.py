@@ -7,7 +7,7 @@ from flask import Flask, request, jsonify
 # Charger le modèle et le tokenizer
 tokenizer = GPT2Tokenizer.from_pretrained('gpt2')
 model = GPT2LMHeadModel.from_pretrained('gpt2')
-
+""" 
 # Fonction pour extraire le texte des fichiers PDF
 def extract_text_from_pdf(pdf_path):
     reader = PdfReader(pdf_path)
@@ -103,4 +103,4 @@ if __name__ == '__main__':
         print("-----")
     
     # Lancer l'application Flask
-    app.run(debug=True)
+    app.run(debug=True) """

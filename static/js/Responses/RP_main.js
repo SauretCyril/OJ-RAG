@@ -1,5 +1,7 @@
 // Add status tooltips
 
+//const { url } = require('inspector');
+
 
 // Declare the global array
 window.CONSTANTS=[];
@@ -414,7 +416,8 @@ function loadTableData(callback) {
                             window.CurrentRow=contextMenu.dataset.targetRow;
                             set_current_row();       
                             // call the function get answers
-                            get_job_answer(thefile,item.dossier, item.type);
+                            //get_job_answer(item.url,item.dossier, item.type,true);
+                            get_job_answer(thefile,item.dossier, item.type,false);
                             
                             }
                     } else
@@ -1108,6 +1111,32 @@ function AIQ(ispdf, value, oneitem) {
    
     window.open(`qa.html?${params.toString()}`, '_blank');
 }
+/* 
+async function get_job_answer_from_url(url, question) {
+    try {
+        
+        const response = await fetch('/get_job_answer_from_url', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ url: url, RQ: question })
+        });
+
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+
+        const data = await response.json();
+        return data;
+      
+    } catch (error) {
+        console.error('Error:', error);
+    }
+} */
+
+// Example usage
+
 
 
 // ...existing code...
@@ -1189,23 +1218,38 @@ function createMenu() {
 
 
 
-async function get_job_answer(thepath,num_job,type="AN")
+async function get_job_answer(thepath,num_job,type,isUrl)
 {
+ if (thepath.length === 0) {
+    alert("Veuillez renseigner le chemin du fichier ou l'URL");
+    return;
+ }
+ else {
+    alert("Traitement de l'offre d'emploi en cours... : " + thepath );
+ }
+ type="AN";
  let q2_job = "";
  if (type === 'AN') {
 
  q2_job = 
         "peux tu me faire un plan détaillé de l'offre avec les sections en précisant bien ce qui est obligatoire, optionnelle :" +
         "- Titre poste proposé," +
+        "- le nom de l'entrerise qui recrute," +
+        "- le lieux ou se situe le poste," +
+        "- la date de publication ou d'actualisation de l'annonce,"+
         "- Duties (Description du poste décomposée en tache ou responsabilité)," +
         "- requirements (expérience attendues, )," +
-        "- skills (languages, outils obligatoires)," +
+        "- skills (languages, outils obligatoires, framework)," +
         "- Savoir-être (soft skill)," +
-        "- autres (toutes informations autre utile à connaitre)"
+        "- autres (toutes informations autre utile à connaitre, comme descriptif de l'entreprise, secteur d'activité, pourquoi l'entreprise recrute...)"+
+        
+        "- en onclusion : peux tu faire une présentation rapide sur 3 lignes du candidat idéal"+
+        "- il faut ajouter la donnée suivante telque : <- "+thepath+" -> afin que je puisse garder la référence"
+
         ;
  } else if (type=="PF" ) {
   
-  q2_job = " peux tu me faire un plan détaillé de du frofile du candidat avec les sections" +
+  q2_job = " peux tu me faire un plan détaillé de du profile du candidat avec les sections" +
         "- Titre du profile," +
         "- le résumé du texte mis en avant du profile," +
         "- savoirs faire ou sof skills ," +
@@ -1213,23 +1257,38 @@ async function get_job_answer(thepath,num_job,type="AN")
         "- les compétences," +
         "- autres (toutes informations autre utile à connaitre)"
  }
-    alert("Q2_job=",q2_job );
+   
     showLoadingOverlay();
 
     try {
-        //alert("path=",thepath);
-        const jobTextResponse = await fetch('/get_job_answer', {
+        
+        let jobTextResponse="";
+        if (! isUrl)
+        {
+            jobTextResponse = await fetch('/get_job_answer', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ path: thepath, RQ: q2_job })
+            });
+        } else {
+             
+            //jobTextResponse = get_job_answer_from_url(thepath,q2_job);
+            jobTextResponse= await fetch('/get_job_answer_from_url', {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json',
+                'Content-Type': 'application/json'
             },
-            body: JSON.stringify({ path: thepath, RQ: q2_job })
+            body: JSON.stringify({ url: thepath, RQ: q2_job })
         });
-
+           
+        }
+        
         if (!jobTextResponse.ok) {
             throw new Error('Erreur lors de l\'extraction du texte de l\'offre');
         }
-
+        
         const jobTextData = await jobTextResponse.json();
         const saved_path = "";
         const saveResponse = await fetch('/save-answer', {
@@ -1389,8 +1448,9 @@ function createAnnouncementForm() {
                 </div>
                 <div class="button-group">
                     <button type="button" onclick="submitAnnouncement()">Créer</button>
+                    <button type="button" onclick="scan_url()">Scan Url</button>
                     <button type="button" onclick="scrapeAndFill()">Scrape URL</button>
-                    <button type="button" onclick="closeAnnouncementForm()">Annuler</button>
+                    <button type="button" onclick="closeAnnouncementForm()">Fermer</button>
                 </div>
             </form>
         </dialog>
@@ -1453,6 +1513,30 @@ function scrapeAndFill() {
         hideLoadingOverlay();
     });
 }
+
+function scan_url() {
+      const contentUrl = document.getElementById('announcementURL').value;
+    if (contentUrl )
+    {
+        if (contentUrl.trim() === '' && !isValidURL(contentUrl)) {
+            alert("L'URL ne peut pas être null !!! ou invalide");
+            return;
+        }
+        const contentNum = document.getElementById('announcementDossier').value;
+        if (contentNum.trim() === '') {
+            alert('Le numéro du dossier ne peut pas être vide !!!');
+            return;
+        }
+        showLoadingOverlay();
+        alert("Scanning URL : "+contentUrl);
+        get_job_answer(contentUrl,contentNum, "AN",true);
+        hideLoadingOverlay();
+        refresh();
+    } else {
+        alert("il y a un problême houston");
+    }
+
+} 
 
 function submitAnnouncement() {
     let content = document.getElementById('announcementContent').value;

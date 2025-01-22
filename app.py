@@ -6,6 +6,7 @@ import os
 
 from werkzeug.utils import secure_filename
 from JO_analyse import *
+from JO_analyse_gpt import *
 import torch
 #import torchvision
 import numpy as np
@@ -172,9 +173,12 @@ def save_job_text():
 
         file_name = f"{job_number}_gpt_request"
         file_path = os.path.join(the_path, job_number)
-        file_path_txt = os.path.join(file_path, file_name + ".txt")
+        if not os.path.exists(file_path):
+            os.makedirs(file_path)
+            
+        
         file_path_docx = os.path.join(file_path, file_name + ".docx")
-        logger.debug(f"dbg008.Saving job to : {file_path_txt} and {file_path_docx}")
+       
 
         """ Save txt file"""
         """  with open(file_path_txt, 'w', encoding='utf-8') as file:
@@ -188,7 +192,7 @@ def save_job_text():
         convert(file_path_docx, pdf_file_path)
         logger.debug(f"dbg009.Job text saved successfully as {pdf_file_path}")
 
-        return jsonify({'dbg009': 'Job text saved successfully', 'file_path': file_path_txt, 'pdf_file_path': pdf_file_path})
+        return jsonify({'dbg009': 'Job text saved successfully', 'pdf_file_path': pdf_file_path})
 
     except Exception as e:
         logger.error(f"Er009.Error saving job text: {str(e)}")
@@ -230,7 +234,46 @@ def extract_features(text):
     return jsonify({'Raw_similarity_score': raw_similarity_s, 'Adjusted_similarity_score':adjusted_similarity_s})
 
 
- 
+     
+    
+# get_answer
+@app.route('/get_job_answer_from_url', methods=['POST'])
+def extract_job_text_from_url():
+    try:
+        logger.debug(f"dbg010.Request method: {request.method}")
+        logger.debug(f"dbg011.Request data: {request.get_data(as_text=True)}")  # Log the raw request data
+        file = request.json.get('url')
+        RQ = request.json.get('RQ')
+        logger.debug(f"dbg012.Received file path: {file}")
+        logger.debug(f"dbg013.Received RQ: {RQ}")
+
+        if not file or not RQ:
+            logger.error("Er014.Missing job file path or question")
+            return jsonify({'Er014': 'Missing job file path or question'}), 400
+
+        # Notify front-end that processing has started
+        #yield jsonify({'message': 'Processing started'}), 202
+
+        # Extraction rapide du texte
+        text1 = extract_text_from_url(file)
+        
+        if not text1:
+            logger.error("Er0016.Job text extraction failed")
+            return jsonify({'Er016': 'Job text extraction failed'}), 500
+
+        answer = get_answer(RQ, text1)
+        logger.debug(f"dbg017.Generated answer: {answer}")
+
+        return jsonify({
+            'raw_text': text1,
+            'formatted_text': answer
+        })
+
+    except Exception as e:
+        logger.error(f"Er018.Error: {str(e)}")
+        return jsonify({'Er018': str(e)}), 500
+
+
     
 if __name__ == '__main__':
     from multiprocessing import freeze_support
@@ -238,3 +281,6 @@ if __name__ == '__main__':
     freeze_support()
     # Votre code pour démarrer l'application Flask
     app.run(debug=True)
+    
+    
+

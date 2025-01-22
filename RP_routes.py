@@ -18,8 +18,14 @@ import json
 from tqdm import tqdm
 from PyPDF2 import PdfFileReader, PdfFileWriter
 from io import BytesIO
+import logging
 
 routes = Blueprint('routes', __name__)
+logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
+
+# Define excluded directories
+EXCLUDED_DIRECTORIES = ["suivi", "pile", "conf"]  # Add your excluded directories here
 
 # Load shared constants
 def load_constants():
@@ -38,21 +44,22 @@ def read_annonces_json():
     try:
         data = request.get_json()
         excluedFile = data.get('excluded')
-        print(f"#################-0 excluedFile={excluedFile}")
         directory_path = os.getenv("ANNONCES_FILE_DIR")
         if not os.path.exists(directory_path):
             return []
 
         annonces_list = []
-        #excluedFile="excluded_annonces.json"
         crit_annonces = load_crit_annonces(excluedFile)
-        print(f"###-0 scan repertoire annonces for crit_annonces={excluedFile}")
-        print(f"###-0 ",crit_annonces)
+        print(f"RP-0 scan repertoire annonces for--------------------------------")
+        #print(f"###-0 ")
         for root, _, files in os.walk(directory_path):
-            
-            print(f"###-1 ------repertoire {root}-1-------------Start-{directory_path}")
-            
             parent_dir = os.path.basename(root)
+            if parent_dir in EXCLUDED_DIRECTORIES:
+                #print(f"RP-1 --Skipping directory: {parent_dir}")
+                continue
+                
+
+            #print(f"RP-2 ------repertoire {root}")
             
             file_annonce = parent_dir + CONSTANTS['FILE_NAMES']['ANNONCE_SUFFIX']
             file_annonce_steal=parent_dir + CONSTANTS['FILE_NAMES']['STEAL_ANNONCE_SUFFIX']
@@ -64,7 +71,12 @@ def read_annonces_json():
             
             # CV 
             file_cv = parent_dir + CONSTANTS['FILE_NAMES']['CV_SUFFIX'] + ".docx"
+            
             file_cv_pdf = parent_dir + CONSTANTS['FILE_NAMES']['CV_SUFFIX'] + ".pdf"
+            
+            file_cv_New = parent_dir + CONSTANTS['FILE_NAMES']['CV_SUFFIX_NEW'] + ".docx"
+            file_cv_pdf_New = parent_dir + CONSTANTS['FILE_NAMES']['CV_SUFFIX_NEW'] + ".pdf"
+           
              
             #file_cv_Path = os.path.join(root, file_cv.replace('\\', '/'))
             record_added = False
@@ -75,21 +87,21 @@ def read_annonces_json():
             isJo="N"
             file_path_steal=""
             file_path_isJo=""
-            print(f"###-1a ------parent_dir {parent_dir}")
+            isGptResum=""
             for filename in files:
-                print ("###-1b------------filename=",filename)
-                if filename  == file_cv:
+                #print ("------------filename=file_annonce_steal",filename,file_annonce_steal)
+                if filename  == file_cv or filename == file_cv_New:
                     isCVin="O"
                     #print("###---->BINGO")
-                if filename  == file_cv_pdf:
+                if filename  == file_cv_pdf or filename == file_cv_pdf_New:
                     isCVinpdf="O"
                 
                 if (filename ==  file_annonce_steal):
                     isSteal="O"
                     file_path_steal = os.path.join(root, file_annonce_steal)
-                    print ("--------bingo---------------------------------")
-                    print ("file_path_steal trouvé = ",file_path_steal)
-                    print ("--------bingo---------------------------------")
+                    #print ("--------bingo---------------------------------")
+                    #print ("file_path_steal trouvé = ",file_path_steal)
+                    #print ("--------bingo---------------------------------")
                     
                      
                 if (filename ==  file_annonce):
@@ -100,13 +112,14 @@ def read_annonces_json():
                    
                 if (filename ==  file_isGptResum):
                     isGptResum="O"
+                    file_path_gpt = os.path.join(root, file_isGptResum)
                     
                   
             for filename in files:
                 file_path = os.path.join(root, filename)
                 file_path = file_path.replace('\\', '/')  # Normalize path
                 file_path_nodata=os.path.join(root, ".data.json")
-                 
+                file_path_nodata =file_path.replace('\\', '/') 
                 if filename == ".data.json":
                     record_added = True
                     try:
@@ -143,38 +156,41 @@ def read_annonces_json():
                                 annonces_list.append(jData)
                                 
                             
-                        
 
                     except json.JSONDecodeError:
                         errordata = {"id": parent_dir, "description": "?", "etat": "invalid JSON"}
                         print(f"Cyr_Error: The file {file_path} contains invalid JSON.")
-            print(f"###-1 ------repertoire {root}-------------End")   
+            #print(f"###-1 ------repertoire {root}-------------End")   
             
             if not record_added:
-                print ("###-3 pas de fichier .data.json")
+                #print ("RP-7 pas de fichier .data.json")
                 thefile=""
                 Piece_exist=False
                 if isSteal =="O":
                   thefile= file_path_steal
-                  print ("###-4 file_path_steal trouvé = ",file_path_steal)
+                  #print ("###-4 file_path_steal trouvé = ",file_path_steal)
                   Piece_exist=True
                 else :
                     if isJo =="O":
                         thefile= file_path_isJo
-                        print ("###-5 file_path_isJo trouvé = ",file_path_isJo)
+                        #print ("###-5 file_path_isJo trouvé = ",file_path_isJo)
                         Piece_exist=True
-               
+                    else:
+                        if isGptResum =="O":
+                           thefile =file_path_gpt
+                           Piece_exist=True
                 
-                if Piece_exist:
+            if Piece_exist:
                     
-                    try:
-                        print ("###-6 le fichier annonce va être traité = ",thefile)
+                try:
+                        print ("RP-8 le fichier annonce va être traité = ",thefile)
                         thefile = thefile.replace('\\', '/')
-                        infos = get_info(thefile, "peux tu me trouver : l'url [url] de l'annoncese trouve entre <- et ->, "+
+                        infos = get_info(thefile, "-peux tu trouver : l'url  référence de l'annonce ['url'], l'url  peut aussi se trouver  entre <- et ->, "+
                                                 "-l'entreprise [entreprise],"+
                                                 "-le titre ou l'intiltulé [poste] du poste à pourvoir (ce titre ne doit pas dépasser 20 caractère)"+
-                                                "-la localisation ou lieu dans lieux [lieu]")
-                            
+                                                "-la localisation ou lieu dans lieux [lieu]"+ 
+                                                "-la date de publication ou d'actualisation  [Date]")
+                        print ("RP-9 infos = ",infos)    
                         if (infos):
                             infos = json.loads(infos)  # Parse the JSON response 
                             data["url"] = infos["url"]
@@ -184,6 +200,7 @@ def read_annonces_json():
                             data["isJo"] = isJo
                             data['isSteal'] = isSteal
                             data["GptSum"] = isGptResum
+                            data["Date"] = infos["Date"]
                             data["CV"] = isCVin
                             data["CVpdf"] = isCVinpdf
                             # block info piece         
@@ -191,13 +208,13 @@ def read_annonces_json():
                             data["description"] = infos["poste"]
                             data["Lieu"] = infos["lieu"]  
                             data["etat"] = "New"
-                            
+                            print("DBG-234 -> file_path_nodata: %s" % file_path_nodata)
                             jData = {file_path_nodata: data}   
                             annonces_list.append(jData)
                             record_added = True
                             
-                    except Exception as e:   
-                        print(f"Cyr_Error: An error occurred while trying to retrieve information from {thefile}: {str(e)}")
+                except Exception as e:   
+                        print(f"Cyr_Error 14578: An error occurred while trying to retrieve information from {thefile}: {str(e)}")
                         return []
                 
                 
@@ -453,7 +470,7 @@ def select_cv():
         if not dossier_number or not target_directory or not file:
             return jsonify({"status": "error", "message": "Missing parameters"}), 400 
         
-        filename = secure_filename(f"{dossier_number}_CyrilSauret.docx")
+        filename = secure_filename(f"{dossier_number}_CV_CyrilSauret.docx")
         target_path = os.path.join(target_directory, filename)
         target_path = target_path.replace('\\', '/') 
         #print("##3-------------------------------", target_path)
