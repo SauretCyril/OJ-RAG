@@ -46,7 +46,10 @@ def extract_text_from_pdf(pdf_path):
             if not text.strip():
                 text +="Le PDF est vide ou ne contient pas de texte extractible"
                 return text
-                
+            
+            # Ensure the text is properly encoded and decoded
+            text = text.encode('utf-8', errors='ignore').decode('utf-8')
+            
             #print(f"-> Text extrait: {text[:200]}...")
             return text
             

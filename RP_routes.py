@@ -34,7 +34,7 @@ def load_constants():
         return json.load(f)
 
 CONSTANTS = load_constants()
-print('Loaded constants:', CONSTANTS)
+#print('Loaded constants:', CONSTANTS)
 @routes.route('/get_constants', methods=['GET'])
 def get_constants():
     return jsonify(CONSTANTS)
@@ -50,7 +50,7 @@ def read_annonces_json():
 
         annonces_list = []
         crit_annonces = load_crit_annonces(excluedFile)
-        print(f"RP-0 scan repertoire annonces for--------------------------------")
+        #print(f"RP-0 scan repertoire annonces for--------------------------------")
         #print(f"###-0 ")
         for root, _, files in os.walk(directory_path):
             parent_dir = os.path.basename(root)
@@ -103,23 +103,23 @@ def read_annonces_json():
                     #print ("file_path_steal trouvé = ",file_path_steal)
                     #print ("--------bingo---------------------------------")
                     
-                     
-                if (filename ==  file_annonce):
-                    isJo="O"
-                    file_path_isJo = os.path.join(root, file_annonce)
+                else :      
+                    if (filename ==  file_annonce):
+                        isJo="O"
+                        file_path_isJo = os.path.join(root, file_annonce)
                    
-                    
-                   
-                if (filename ==  file_isGptResum):
-                    isGptResum="O"
-                    file_path_gpt = os.path.join(root, file_isGptResum)
+                    else:
+                        if (filename ==  file_isGptResum):
+                            isGptResum="O"
+                            file_path_gpt = os.path.join(root, file_isGptResum)
                     
                   
             for filename in files:
                 file_path = os.path.join(root, filename)
                 file_path = file_path.replace('\\', '/')  # Normalize path
                 file_path_nodata=os.path.join(root, ".data.json")
-                file_path_nodata =file_path.replace('\\', '/') 
+                file_path_nodata =file_path_nodata.replace('\\', '/') 
+                #print("DBG-233 -> file_path_nodata: " + file_path_nodata)
                 if filename == ".data.json":
                     record_added = True
                     try:
@@ -185,11 +185,15 @@ def read_annonces_json():
                 try:
                         print ("RP-8 le fichier annonce va être traité = ",thefile)
                         thefile = thefile.replace('\\', '/')
-                        infos = get_info(thefile, "-peux tu trouver : l'url  référence de l'annonce ['url'], l'url  peut aussi se trouver  entre <- et ->, "+
-                                                "-l'entreprise [entreprise],"+
-                                                "-le titre ou l'intiltulé [poste] du poste à pourvoir (ce titre ne doit pas dépasser 20 caractère)"+
-                                                "-la localisation ou lieu dans lieux [lieu]"+ 
-                                                "-la date de publication ou d'actualisation  [Date]")
+                        the_request = (
+                            " -peux tu trouver : l'url référence de l'annonce ['url'], l'url peut aussi se trouver entre <- et ->, "
+                            "-l'entreprise [entreprise], "
+                            "-le titre ou l'intiltulé [poste] du poste à pourvoir (ce titre ne doit pas dépasser 20 caractères), "
+                            "-la localisation ou lieu dans lieux [lieu], "
+                            "-la date de publication ou d'actualisation [Date]"
+                        )
+                        print("RP-258", the_request)
+                        infos = get_info(thefile,the_request)
                         print ("RP-9 infos = ",infos)    
                         if (infos):
                             infos = json.loads(infos)  # Parse the JSON response 
@@ -208,15 +212,19 @@ def read_annonces_json():
                             data["description"] = infos["poste"]
                             data["Lieu"] = infos["lieu"]  
                             data["etat"] = "New"
-                            print("DBG-234 -> file_path_nodata: %s" % file_path_nodata)
-                            jData = {file_path_nodata: data}   
+                            print("DBG-234 -> file_path_nodata: " + file_path_nodata)
+                            print("DBG-5487 -> file_path: " + file_path) 
+                            jData = {file_path_nodata: data}  
+                            
                             annonces_list.append(jData)
                             record_added = True
-                            
+                            #file_path_nodata = file_path_nodata.replace('\\', '/')  # Normalize path
+                            with open(file_path_nodata, 'w', encoding='utf-8') as file:
+                                json.dump(jData, file, ensure_ascii=False, indent=4)
                 except Exception as e:   
-                        print(f"Cyr_Error 14578: An error occurred while trying to retrieve information from {thefile}: {str(e)}")
-                        return []
-                
+                    print(f"Cyr_Error 14578: An error occurred while trying to retrieve information from {thefile}: {str(e)}")
+                    return []
+                 
                 
                
                                 

@@ -6,7 +6,8 @@ import os
 
 from werkzeug.utils import secure_filename
 from JO_analyse import *
-from JO_analyse_gpt import *
+from JO_analyse_gpt import extract_text_from_url  # Import the function from the correct module
+#from JO_analyse_gpt import *
 import torch
 #import torchvision
 import numpy as np
@@ -158,7 +159,7 @@ def save_job_text():
         job_text_data = request.json.get('text_data')
         job_number = request.json.get('number')
         the_path = request.json.get('the_path')
-        if the_path=='':
+        if the_path == '':
             the_path = os.getenv("ANNONCES_FILE_DIR")
             
         logger.debug("dbg007.Received path: %s", the_path)
@@ -175,16 +176,15 @@ def save_job_text():
         file_path = os.path.join(the_path, job_number)
         if not os.path.exists(file_path):
             os.makedirs(file_path)
-            
         
         file_path_docx = os.path.join(file_path, file_name + ".docx")
-       
-
-        """ Save txt file"""
-        """  with open(file_path_txt, 'w', encoding='utf-8') as file:
-            file.write(job_text_data) """
         
-        """ Save pdf file"""
+        # Handle file indexing if the file already exists
+        index = 1
+        while os.path.exists(file_path_docx):
+            file_path_docx = os.path.join(file_path, f"{file_name}({index}).docx")
+            index += 1
+
         doc = format_text_as_word_style(job_text_data, job_number)
         doc.save(file_path_docx)
 
@@ -281,6 +281,6 @@ if __name__ == '__main__':
     freeze_support()
     # Votre code pour démarrer l'application Flask
     app.run(debug=True)
-    
-    
+
+
 

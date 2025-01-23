@@ -41,7 +41,7 @@ window.columns = [
     { key: 'CV', editable: false, width: '50px',"visible":true ,"type":"tb",title:'CV' },
     { key: 'CVpdf', editable: false, width: '50px',"visible":true ,"type":"tb",title:'.pdf' },
     
-    { key: 'categorie', editable: true, class: 'category-badge', prefix: 'category-', width: '120px',"visible":true,"type":"tb",title:'Cat'  },
+    { key: 'categorie', editable: true, class: 'category-badge', prefix: 'category-', width: '100px',"visible":true,"type":"tb",title:'Cat'  },
     { key: 'etat', editable: true, width: '100px',"visible":true ,"type":"tb",title:'Etat'  },
     { key: 'contact', editable: true, width: '150px',"visible":true ,"type":"tb",title:'Contact' },
     { key: 'tel', editable: true, width: '125px',"visible":false ,"type":"tb",title:'Tel.' },
@@ -54,7 +54,7 @@ window.columns = [
     { key: 'url', editable: false, width: '100px',"visible":false ,"type":"tb",title:'Url' },
     { key: 'type', editable: true, width: '80px',"visible":true ,"type":"tb",title:'Type'  },
     { key: 'annonce_pdf', editable: true, width: '80px',"visible":false ,"type":"tb",title:'Annonce (pdf)' },
-    { key: 'type_question', editable: true, width: '80px',"visible":false ,"type":"tb" ,title:'type Question'},
+    { key: 'type_question', editable: true, width: '60px',"visible":true ,"type":"tb" ,title:'?'},
     { key: 'lien_Etape', editable: true, width: '80px',"visible":false ,"type":"tb",title:'Lien Etape' },
     
     { key: 'CVfile', editable: true, width: '80px',"visible":false ,"type":"tb",title:'CVfile' },
@@ -164,7 +164,7 @@ function loadTableData(callback) {
             const dir_path = filePath.substring(0, filePath.lastIndexOf('/'));
             console.log("<<-1---dir_path--->>",dir_path);
             const isCvRef = item.Commentaire && item.Commentaire.includes('<CV-REF>');
-            
+            const isOnDay = item.type_question && item.type_question.includes('DAY');
             
             let fichier_annonce = dir_path + '/' + item.dossier+window.CONSTANTS['FILE_NAMES']['ANNONCE_SUFFIX'];
             //console.log("<<-2-fichier_annonce>>",fichier_annonce);
@@ -183,6 +183,9 @@ function loadTableData(callback) {
             const row = document.createElement('tr');
             row.id = filePath;
             row.style.position = 'relative'; // Ajout du positionnement relatif sur la ligne
+            if (isOnDay) {
+                row.style.backgroundColor = '#ADD8E6'; // Light blue color
+            }
 // forEach((col
             window.columns.forEach((col, colIndex) => {
                 if (col.type === "tb" && col.visible === true) {
@@ -405,10 +408,7 @@ function loadTableData(callback) {
                     if (item.isSteal=="O")
                         {thefile=fichier_annonce_steal,resuReady=true;}
                         else if (item.isJo=="O"){thefile=fichier_annonce,resuReady=true;}
-                    if (item.GptSum == "O")
-                    {
-                        let resumexist="Attention cela va écraser le résumé existant...";
-                    }
+                   
                     if (resuReady) 
                     {
                         const rowId = contextMenu.dataset.targetRow;
@@ -1281,7 +1281,7 @@ async function get_job_answer(thepath,num_job,type,isUrl)
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({ url: thepath, RQ: q2_job })
-        });
+            });
            
         }
         
