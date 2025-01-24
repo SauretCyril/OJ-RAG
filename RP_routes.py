@@ -64,10 +64,13 @@ def read_annonces_json():
             file_annonce = parent_dir + CONSTANTS['FILE_NAMES']['ANNONCE_SUFFIX']
             file_annonce_steal=parent_dir + CONSTANTS['FILE_NAMES']['STEAL_ANNONCE_SUFFIX']
             file_annonce_path = os.path.join(root, file_annonce)
+            
             # résumé gpt
             file_isGptResum = parent_dir + CONSTANTS['FILE_NAMES']['GPT_REQUEST_SUFFIX']
             file_isGptResum_Path1 = os.path.join(root, file_isGptResum)
             file_isGptResum_Path1 = file_isGptResum_Path1.replace('\\', '/')
+            
+           
             
             # CV 
             file_cv = parent_dir + CONSTANTS['FILE_NAMES']['CV_SUFFIX'] + ".docx"
@@ -88,6 +91,7 @@ def read_annonces_json():
             file_path_steal=""
             file_path_isJo=""
             isGptResum=""
+            list_RQ = {}
             for filename in files:
                 #print ("------------filename=file_annonce_steal",filename,file_annonce_steal)
                 if filename  == file_cv or filename == file_cv_New:
@@ -99,10 +103,7 @@ def read_annonces_json():
                 if (filename ==  file_annonce_steal):
                     isSteal="O"
                     file_path_steal = os.path.join(root, file_annonce_steal)
-                    #print ("--------bingo---------------------------------")
-                    #print ("file_path_steal trouvé = ",file_path_steal)
-                    #print ("--------bingo---------------------------------")
-                    
+                  
                 else :      
                     if (filename ==  file_annonce):
                         isJo="O"
@@ -112,14 +113,27 @@ def read_annonces_json():
                         if (filename ==  file_isGptResum):
                             isGptResum="O"
                             file_path_gpt = os.path.join(root, file_isGptResum)
-                    
+                            
+                            file_gpt_name= parent_dir+CONSTANTS['FILE_NAMES']['GPT_REQUEST_SUFFIX_NAME']
+                            file_gpt_name_pdf=os.path.join(root,file_gpt_name+".pdf").replace('\\', '/') 
+                            file_path_RQ=os.path.join(root,file_gpt_name+"RQ.txt").replace('\\', '/')
+                            
+                            index = 1
+                            while os.path.exists(file_gpt_name_pdf):
+                                list_RQ[index] = {"reponse":file_gpt_name_pdf,"question":file_path_RQ,"exist":os.path.exists(file_path_RQ)}
+                                file_gpt_name_pdf = os.path.join(file_path, f"{file_gpt_name}({index}).pdf").replace('\\', '/')
+                                file_path_RQ =os.path.join(file_path, f"{file_gpt_name}({index})_RQ.txt").replace('\\', '/')
+                                index += 1
+                            #print ("----file_path_gpt_name    ==", list_RQ)
+                           
+                            
                   
             for filename in files:
                 file_path = os.path.join(root, filename)
                 file_path = file_path.replace('\\', '/')  # Normalize path
                 file_path_nodata=os.path.join(root, ".data.json")
                 file_path_nodata =file_path_nodata.replace('\\', '/') 
-                #print("DBG-233 -> file_path_nodata: " + file_path_nodata)
+                
                 if filename == ".data.json":
                     record_added = True
                     try:
@@ -151,17 +165,18 @@ def read_annonces_json():
                                 data["GptSum"] = isGptResum
                                 data["CV"] = isCVin
                                 data["CVpdf"] = isCVinpdf
-                                
+                                data["list_RQ"]=list_RQ
                                 jData = {file_path: data}
                                 annonces_list.append(jData)
-                                
+                                """  with open(file_path, 'w', encoding='utf-8') as file:
+                                    json.dump(jData, file, ensure_ascii=False, indent=4) """
                             
 
                     except json.JSONDecodeError:
                         errordata = {"id": parent_dir, "description": "?", "etat": "invalid JSON"}
                         print(f"Cyr_Error: The file {file_path} contains invalid JSON.")
             #print(f"###-1 ------repertoire {root}-------------End")   
-            
+            Piece_exist=False
             if not record_added:
                 #print ("RP-7 pas de fichier .data.json")
                 thefile=""
@@ -212,9 +227,10 @@ def read_annonces_json():
                             data["description"] = infos["poste"]
                             data["Lieu"] = infos["lieu"]  
                             data["etat"] = "New"
+                            data["list_RQ"]=list_RQ
                             print("DBG-234 -> file_path_nodata: " + file_path_nodata)
                             print("DBG-5487 -> file_path: " + file_path) 
-                            jData = {file_path_nodata: data}  
+                            jData = {file_path_nodata:data}  
                             
                             annonces_list.append(jData)
                             record_added = True

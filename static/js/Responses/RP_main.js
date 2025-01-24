@@ -34,7 +34,7 @@ window.columns = [
     },
     { key: 'id', editable: true, width: '100px',"visible":true,"type":"tb",title:'ID' },
     { key: 'entreprise', editable: true, width: '150px',"visible":true ,"type":"tb",title:'Entreprise' },
-    
+    { key: 'list_RQ', editable: false, width: '40px',"visible":true ,"type":"tb",title:'RQ' },
     { key: 'isJo', editable: false, width: '50px',"visible":true ,"type":"tb",title:'Manu' },
     { key: 'isSteal', editable: false, width: '50px',"visible":true ,"type":"tb",title:'Steal' },
     { key: 'GptSum', editable: false, width: '50px',"visible":true,"type":"tb",title:'Resum' },
@@ -58,6 +58,7 @@ window.columns = [
     { key: 'lien_Etape', editable: true, width: '80px',"visible":false ,"type":"tb",title:'Lien Etape' },
     
     { key: 'CVfile', editable: true, width: '80px',"visible":false ,"type":"tb",title:'CVfile' },
+   
     
 ];
 /**
@@ -193,8 +194,20 @@ function loadTableData(callback) {
                     const cell = document.createElement('td');
                     cell.setAttribute('data-key', col.key);
                    
-                    
-                    if (col.key === 'GptSum' ) 
+                    if (col.key === 'list_RQ') 
+                    {
+                        //const heartIcon = document.createElement('span');
+                        //heartIcon.textContent = '❤️'; // Heart icon
+                        const button = document.createElement('button');
+                        button.textContent = ''; // Heart icon
+                        button.style.cursor = 'pointer';
+                        button.addEventListener('click', () => open_notes(file_notes));
+                        cell.appendChild(button);
+                        //heartIcon.style.cursor = 'pointer';
+                        //heartIcon.addEventListener('click', () => open_notes(file_notes));
+                        //cell.appendChild(button);
+                    } 
+                    else if (col.key === 'GptSum' ) 
                     {
                         const icon = document.createElement('span');
                         if (item[col.key] === 'O') {
@@ -992,6 +1005,8 @@ function toggleColumnVisibilityForm() {
 
 // Call the function to generate the form when the page loads
 window.addEventListener('load', function() {
+    document.head.appendChild(style1);
+    document.head.appendChild(style3);
     loadConstants();
     setNewTab();
     //setNewTab();  
@@ -1111,33 +1126,6 @@ function AIQ(ispdf, value, oneitem) {
    
     window.open(`qa.html?${params.toString()}`, '_blank');
 }
-/* 
-async function get_job_answer_from_url(url, question) {
-    try {
-        
-        const response = await fetch('/get_job_answer_from_url', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ url: url, RQ: question })
-        });
-
-        if (!response.ok) {
-            throw new Error('Network response was not ok');
-        }
-
-        const data = await response.json();
-        return data;
-      
-    } catch (error) {
-        console.error('Error:', error);
-    }
-} */
-
-// Example usage
-
-
 
 // ...existing code...
 
@@ -1296,7 +1284,9 @@ async function get_job_answer(thepath,num_job,type,isUrl)
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({ text_data: jobTextData.formatted_text, number: num_job, the_path: saved_path })
+            body: JSON.stringify({ text_data: jobTextData.formatted_text, number: num_job, the_path: saved_path 
+                , RQ: q2_job
+            })
         });
 
         if (saveResponse.ok) {
@@ -1433,7 +1423,7 @@ function createAnnouncementForm() {
     const formHtml = `
         <dialog id="announcementForm" class="announcement-form">
             <form method="dialog">
-                <h2>Créer une annonce</h2>
+                <h2>Créer un dossier</h2>
                 <div class="form-group">
                     <label for="announcementDossier">Dossier:</label>
                     <input type="text" id="announcementDossier" class="rich-text-field">
@@ -1468,9 +1458,62 @@ function createAnnouncementForm() {
     // Show form
     const form = document.getElementById('announcementForm');
     form.showModal();
+    fillNextDossierName(); // Call the function to fill the next dossier name
 }
 
-// Ajouter cette nouvelle fonction
+// Add styles for announcementForm
+const style3 = document.createElement('style');
+style3.textContent = `
+    .announcement-form {
+        width: 50%;
+        min-width: 50%;
+        height: 50%;
+        min-height: 50%;
+        padding: 20px;
+        border: 1px solid #ccc;
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        index: 1000;
+    }
+    .announcement-form .form-group {
+        margin-bottom: 15px;
+    }
+    .announcement-form .form-group label {
+        display: block;
+        margin-bottom: 5px;
+    }
+    .announcement-form .form-group input,
+    .announcement-form .form-group textarea {
+        width: 100%;
+        padding: 8px;
+        box-sizing: border-box;
+    }
+    .announcement-form .button-group {
+        display: flex;
+        justify-content: space-between;
+    }
+    .announcement-form .button-group button {
+        padding: 10px 20px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+    }
+    .announcement-form .button-group button:first-child {
+        background-color: #4CAF50;
+        color: white;
+    }
+    .announcement-form .button-group button:last-child {
+        background-color: #f44336;
+        color: white;
+    }
+`;
+
+
+// ...existing code...
+
 function scrapeAndFill() {
     const url = document.getElementById('announcementURL').value;
     const dossier = document.getElementById('announcementDossier').value;
@@ -1609,6 +1652,7 @@ function closeAnnouncementForm() {
     const form = document.getElementById('announcementForm');
     if (form) {
         form.close();
+        form.remove(); // Ensure the form is removed from the DOM
     }
 }
 
@@ -1821,7 +1865,7 @@ style1.textContent = `
         color: white;
     }
 `;
-document.head.appendChild(style1);
+
 
 // ...existing code...
 
@@ -1964,3 +2008,42 @@ async function scrape_url(item_url, num_job, the_path) {
         alert('Error in scrape_url: ' + error.message);
     }
 }
+
+// ...existing code...
+
+async function fillNextDossierName() {
+    let lastDossier = window.annonces.reduce((last, current) => {
+        const currentDossier = Object.values(current)[0].dossier;
+        return currentDossier > last ? currentDossier : last;
+    }, "A000");
+   
+    let letter = lastDossier.charAt(0);
+    let number = parseInt(lastDossier.slice(1)) + 1;
+    let nextDossier = letter + number.toString().padStart(3, '0');
+    //alert(nextDossier)
+    while (await checkDossierExists(nextDossier)) {
+        number += 1;
+        nextDossier = letter + number.toString().padStart(3, '0');
+    }
+
+    document.getElementById('announcementDossier').value = nextDossier;
+}
+
+async function checkDossierExists(dossier) {
+    try {
+        const response = await fetch('/check_dossier_exists', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ dossier: dossier })
+        });
+        const data = await response.json();
+        return data.exists;
+    } catch (error) {
+        console.error('Error checking dossier existence:', error);
+        return false;
+    }
+}
+
+// ...existing code...

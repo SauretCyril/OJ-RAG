@@ -5,6 +5,7 @@
     "CV_SUFFIX": "_CyrilSauret",
     "CV_SUFFIX_NEW": "_CV_CyrilSauret",
     "GPT_REQUEST_SUFFIX": "_gpt_request.pdf",
+    "GPT_REQUEST_SUFFIX_NAME": "_gpt_request",
     "DATA_FILE": ".data.json",
     "NOTES_FILE": "_notes.txt"
   }

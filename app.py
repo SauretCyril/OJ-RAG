@@ -159,6 +159,7 @@ def save_job_text():
         job_text_data = request.json.get('text_data')
         job_number = request.json.get('number')
         the_path = request.json.get('the_path')
+        rq=request.json.get('RQ')
         if the_path == '':
             the_path = os.getenv("ANNONCES_FILE_DIR")
             
@@ -178,11 +179,13 @@ def save_job_text():
             os.makedirs(file_path)
         
         file_path_docx = os.path.join(file_path, file_name + ".docx")
+        file_path_RQ = os.path.join(file_path, file_name + "_RQ.txt")
         
         # Handle file indexing if the file already exists
         index = 1
         while os.path.exists(file_path_docx):
             file_path_docx = os.path.join(file_path, f"{file_name}({index}).docx")
+            file_path_RQ =os.path.join(file_path, f"{file_name}({index})_RQ.txt")
             index += 1
 
         doc = format_text_as_word_style(job_text_data, job_number)
@@ -191,7 +194,11 @@ def save_job_text():
         pdf_file_path = file_path_docx.replace('.docx', '.pdf')
         convert(file_path_docx, pdf_file_path)
         logger.debug(f"dbg009.Job text saved successfully as {pdf_file_path}")
+        os.remove(file_path_docx)
 
+        # Save RQ to text file
+        save_rq_to_text_file(file_path_RQ, rq)
+        
         return jsonify({'dbg009': 'Job text saved successfully', 'pdf_file_path': pdf_file_path})
 
     except Exception as e:
@@ -200,7 +207,11 @@ def save_job_text():
 
     finally:
         pythoncom.CoUninitialize()  # Uninitialize COM library
-        
+
+def save_rq_to_text_file(file_path, rq):
+    with open(file_path, 'w') as file:
+        file.write(rq)
+    logger.debug(f"dbg010.RQ saved successfully as {file_path}")
 
 def format_text_as_word_style(job_text, job_number):
     doc = Document()
@@ -214,6 +225,8 @@ def format_text_as_word_style(job_text, job_number):
     
     return doc
 
+
+    
     """--------------------------- Analyse_
     
     """
@@ -273,8 +286,23 @@ def extract_job_text_from_url():
         logger.error(f"Er018.Error: {str(e)}")
         return jsonify({'Er018': str(e)}), 500
 
+@app.route('/check_dossier_exists', methods=['POST'])
+def check_dossier_exist():
+    try:
+        directory_path = os.getenv("ANNONCES_FILE_DIR")
+        dossier = request.json.get('dossier')
+        dossier_path = os.path.join(directory_path, dossier)
+        print("#### dbg2471 : dossier_path", dossier_path)
+        if not dossier_path:
+            return jsonify({'error': 'Missing dossier path'}), 400
 
-    
+        exists = os.path.exists(dossier_path)
+        return jsonify({'exists': exists}), 200
+
+    except Exception as e:
+        logger.error(f"Error checking dossier existence: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
 if __name__ == '__main__':
     from multiprocessing import freeze_support
     from JO_analyse import *
