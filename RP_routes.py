@@ -251,7 +251,7 @@ def read_annonces_json():
 
 def load_crit_annonces(excluedFile):
     try:
-        file="excluded_annonces.json"
+        #file="excluded_annonces.json"
         config_path = os.path.join(os.getenv("ANNONCES_DIR_STATE"), excluedFile)
         if os.path.exists(config_path):
             with open(config_path, 'r', encoding='utf-8') as file:

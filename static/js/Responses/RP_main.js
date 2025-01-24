@@ -133,6 +133,7 @@ function loadTableData(callback) {
     //const state = document.getElementById('statusFilter').value;
     //"excluded_annonces.json"
     excludedfile = document.getElementById('Excluded').value+".json";
+    //alert("excludedfile : "+ excludedfile);
     //alert(excluded);
     fetch('/read_annonces_json', { 
         method: 'POST',
