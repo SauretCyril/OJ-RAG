@@ -19,9 +19,11 @@ from tqdm import tqdm
 from PyPDF2 import PdfFileReader, PdfFileWriter
 from io import BytesIO
 import logging
+from logging import DEBUG
+import aiofiles
 
 routes = Blueprint('routes', __name__)
-logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+logging.basicConfig(level=DEBUG, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
 # Define excluded directories
@@ -39,8 +41,12 @@ CONSTANTS = load_constants()
 def get_constants():
     return jsonify(CONSTANTS)
 
+def get_cookie_value(cookie_name):
+    cookies = request.cookies
+    return cookies.get(cookie_name, 'default')
+
 @routes.route('/read_annonces_json', methods=['POST'])
-def read_annonces_json():
+async def read_annonces_json():
     try:
         data = request.get_json()
         excluedFile = data.get('excluded')
@@ -79,7 +85,7 @@ def read_annonces_json():
             
             file_cv_New = parent_dir + CONSTANTS['FILE_NAMES']['CV_SUFFIX_NEW'] + ".docx"
             file_cv_pdf_New = parent_dir + CONSTANTS['FILE_NAMES']['CV_SUFFIX_NEW'] + ".pdf"
-           
+            data_json_file = ".data.json" 
              
             #file_cv_Path = os.path.join(root, file_cv.replace('\\', '/'))
             record_added = False
@@ -91,9 +97,12 @@ def read_annonces_json():
             file_path_steal=""
             file_path_isJo=""
             isGptResum=""
+           
             list_RQ = {}
             for filename in files:
-                #print ("------------filename=file_annonce_steal",filename,file_annonce_steal)
+                
+               
+                   #print ("dbg4625-------filename=file_annonce",data_json_file)
                 if filename  == file_cv or filename == file_cv_New:
                     isCVin="O"
                     #print("###---->BINGO")
@@ -110,7 +119,7 @@ def read_annonces_json():
                         file_path_isJo = os.path.join(root, file_annonce)
                    
                     else:
-                        if (filename ==  file_isGptResum):
+                        if (filename ==  file_isGptResum ):
                             isGptResum="O"
                             file_path_gpt = os.path.join(root, file_isGptResum)
                             
@@ -175,39 +184,44 @@ def read_annonces_json():
                     except json.JSONDecodeError:
                         errordata = {"id": parent_dir, "description": "?", "etat": "invalid JSON"}
                         print(f"Cyr_Error: The file {file_path} contains invalid JSON.")
-            #print(f"###-1 ------repertoire {root}-------------End")   
+            #print(f"RP-7 ------dossier {parent_dir}-----data json = {isData_json_file}")   
             Piece_exist=False
+            
             if not record_added:
-                #print ("RP-7 pas de fichier .data.json")
+                #print ("RP-7234  fichier .data.json :", isData_json_file)
                 thefile=""
                 Piece_exist=False
-                if isSteal =="O":
-                  thefile= file_path_steal
-                  #print ("###-4 file_path_steal trouvé = ",file_path_steal)
-                  Piece_exist=True
-                else :
-                    if isJo =="O":
-                        thefile= file_path_isJo
-                        #print ("###-5 file_path_isJo trouvé = ",file_path_isJo)
-                        Piece_exist=True
-                    else:
-                        if isGptResum =="O":
-                           thefile =file_path_gpt
-                           Piece_exist=True
                 
-            if Piece_exist:
                     
-                try:
-                        print ("RP-8 le fichier annonce va être traité = ",thefile)
+                if isSteal =="O":
+                    thefile= file_path_steal
+                    #print ("###-4 file_path_steal trouvé = ",file_path_steal)
+                    Piece_exist=True
+                else :
+                        if isJo =="O":
+                            thefile= file_path_isJo
+                            #print ("###-5 file_path_isJo trouvé = ",file_path_isJo)
+                            Piece_exist=True
+                        else:
+                            if isGptResum =="O":
+                                thefile =file_path_gpt
+                                Piece_exist=True
+                
+                if Piece_exist:
+                    
+                    try:
+                        print ("RP-7245 le fichier annonce va être traité = ",thefile)
                         thefile = thefile.replace('\\', '/')
-                        the_request = (
-                            " -peux tu trouver : l'url référence de l'annonce ['url'], l'url peut aussi se trouver entre <- et ->, "
-                            "-l'entreprise [entreprise], "
-                            "-le titre ou l'intiltulé [poste] du poste à pourvoir (ce titre ne doit pas dépasser 20 caractères), "
-                            "-la localisation ou lieu dans lieux [lieu], "
-                            "-la date de publication ou d'actualisation [Date]"
-                        )
-                        print("RP-258", the_request)
+
+                        # Use the value of 'current_instruction' from cookies
+                        current_instruction = get_cookie_value('current_instruction')
+                        if not current_instruction:
+                           current_instruction="default"
+                            
+                        the_request = load_CRQ_text(current_instruction)
+                        
+                        print("RP-2158", the_request)  
+                         
                         infos = get_info(thefile,the_request)
                         print ("RP-9 infos = ",infos)    
                         if (infos):
@@ -228,6 +242,7 @@ def read_annonces_json():
                             data["Lieu"] = infos["lieu"]  
                             data["etat"] = "New"
                             data["list_RQ"]=list_RQ
+                            data["instructions"]=the_request
                             print("DBG-234 -> file_path_nodata: " + file_path_nodata)
                             print("DBG-5487 -> file_path: " + file_path) 
                             jData = {file_path_nodata:data}  
@@ -236,10 +251,10 @@ def read_annonces_json():
                             record_added = True
                             #file_path_nodata = file_path_nodata.replace('\\', '/')  # Normalize path
                             with open(file_path_nodata, 'w', encoding='utf-8') as file:
-                                json.dump(jData, file, ensure_ascii=False, indent=4)
-                except Exception as e:   
-                    print(f"Cyr_Error 14578: An error occurred while trying to retrieve information from {thefile}: {str(e)}")
-                    return []
+                                json.dump(data, file, ensure_ascii=False, indent=4)
+                    except Exception as e:   
+                        print(f"Cyr_Error 14578: An error occurred while trying to retrieve information from {thefile}: {str(e)}")
+                        return []
                  
                 
                
@@ -688,5 +703,82 @@ def save_reseaux_link_update():
 
 # ...existing code...
 
+@routes.route('/list-CRQ-files', methods=['GET'])
+async def list_CRQ_files():
+    list_CRQ = []
+    try:
+        directory_path = os.getenv("DIR_CRQ_FILE")
+        defaultfile = os.path.join(directory_path, 'default.txt')
+        if not os.path.exists(directory_path):
+            logger.info("Directory does not exist, creating: %s", directory_path)
+            os.makedirs(directory_path)
+            the_request = (
+                " -peux tu trouver : l'url référence de l'annonce ['url'], l'url peut aussi se trouver entre <- et ->, "
+                "-l'entreprise [entreprise], "
+                "-le titre ou l'intiltulé [poste] du poste à pourvoir (ce titre ne doit pas dépasser 20 caractères), "
+                "-la localisation ou lieu dans lieux [lieu], "
+                "-la date de publication ou d'actualisation [Date]"
+            )
+            defaultfile = defaultfile.replace('\\', '/')
+            print("dbg1456-----", defaultfile)
+            await save_CRQ_text(defaultfile,the_request)
+        
+        text_files = [f for f in os.listdir(directory_path) if f.endswith('.txt')]
+        #for each file in directory_path
+        for file in text_files:
+            file_path = os.path.join(directory_path, file)
+            with open(file_path, 'r', encoding='utf-8') as thefile:
+                list_CRQ.append({
+                    'fichier': file_path,
+                    'name': file,
+                    
+                })
+        
+        return jsonify(list_CRQ), 200
+    except Exception as e:
+        logger.error("Unable to scan directory: %s", str(e))
+        return jsonify({"error": f"Unable to scan directory: {str(e)}"}), 500
 
 # ...existing code...
+
+#@routes.route('/save-CRQ-text', methods=['POST'])
+async def save_CRQ_text(file_name,text_data):
+    try:
+        #file_name = request.json.get('file_name')
+        #text_data = request.json.get('text_data')
+        
+        if not file_name or not text_data:
+            return jsonify({'error': 'Missing file name or text data'}), 400
+
+        async with aiofiles.open(file_name, 'w', encoding='utf-8') as file:
+            await file.write(text_data)
+        logger.debug(f"Text saved successfully as {file_name}")
+        return jsonify({'message': 'Text saved successfully'}), 200
+
+    except Exception as e:
+        logger.error(f"Error saving text: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+# ...existing code...
+
+#@routes.route('/load-CRQ-text', methods=['POST'])
+def load_CRQ_text(file_name):
+    try:
+        text=""
+        file_name_txt = file_name+".txt"
+        filepath = os.path.join(os.getenv('DIR_CRQ_FILE'), file_name_txt)
+        filepath = filepath.replace('\\', '/')
+        
+        print("dbg789 :fichier instructions",filepath)
+        if os.path.exists(filepath):
+            if not file_name:
+                return jsonify({'error tre245': 'Missing file name'}), 400
+
+            with open(filepath, 'r', encoding='utf-8') as file:
+                text = file.read()
+        
+        return text
+
+    except Exception as e:
+        logger.error(f"Error loading text: {str(e)}")
+        return ""

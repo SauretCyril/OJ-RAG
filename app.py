@@ -7,6 +7,8 @@ import os
 from werkzeug.utils import secure_filename
 from JO_analyse import *
 from JO_analyse_gpt import extract_text_from_url  # Import the function from the correct module
+
+
 #from JO_analyse_gpt import *
 import torch
 #import torchvision
@@ -303,6 +305,7 @@ def check_dossier_exist():
         logger.error(f"Error checking dossier existence: {str(e)}")
         return jsonify({'error': str(e)}), 500
 
+
 if __name__ == '__main__':
     from multiprocessing import freeze_support
     from JO_analyse import *
@@ -311,4 +314,5 @@ if __name__ == '__main__':
     app.run(debug=True)
 
 
+# fonction pour load un simple texte
 

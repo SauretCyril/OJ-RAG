@@ -749,9 +749,9 @@ function openEditModal(rowId) {
         'suivi': [ 'Date','Date_rep','todo','commetaires'],
         'Contact': [ 'contact','tel', 'mail','url'],
         'Détails': ['Commentaire', 'type', 'Lieux'], 
-        'GPT': ['GptSum']
+        'GPT': ['GptSum', 'instructions']
     };
-//'annonce_pdf'
+
     // Create modal HTML with tabs
     let modalHtml = `
         <dialog id="editModal" class="edit-modal">
@@ -769,8 +769,11 @@ function openEditModal(rowId) {
                         ${fields.map(field => `
                             <div class="form-group">
                                 <label>${field}:</label>
-                                <input type="text" id="edit-${field}" value="${annonce[field] || ''}" 
-                                       ${field === 'dossier' ? 'readonly' : ''}>
+                                ${field === 'instructions' ? 
+                                    `<textarea id="edit-${field}" rows="5">${annonce[field] || ''}</textarea>` :
+                                    `<input type="text" id="edit-${field}" value="${annonce[field] || ''}" 
+                                       ${field === 'dossier' ? 'readonly' : ''}>`
+                                }
                             </div>
                         `).join('')}
                     </div>
@@ -1008,6 +1011,7 @@ function toggleColumnVisibilityForm() {
 window.addEventListener('load', function() {
     document.head.appendChild(style1);
     document.head.appendChild(style3);
+    document.head.appendChild(style4);
     loadConstants();
     setNewTab();
     //setNewTab();  
@@ -1019,8 +1023,9 @@ window.addEventListener('load', function() {
     loadReseauxLinks();
     document.getElementById('Excluded').addEventListener('change', loadTableData);
     
-
+    get_setting_current_instruction() ;
 });
+
 
 // ...existing code...
 
@@ -1207,7 +1212,7 @@ function createMenu() {
 
 
 
-async function get_job_answer(thepath,num_job,type,isUrl)
+async function get_job_answer(thepath,num_job,isUrl)
 {
  if (thepath.length === 0) {
     alert("Veuillez renseigner le chemin du fichier ou l'URL");
@@ -1216,9 +1221,8 @@ async function get_job_answer(thepath,num_job,type,isUrl)
  else {
     alert("Traitement de l'offre d'emploi en cours... : " + thepath );
  }
- type="AN";
- let q2_job = "";
- if (type === 'AN') {
+
+
 
  q2_job = 
         "peux tu me faire un plan détaillé de l'offre avec les sections en précisant bien ce qui est obligatoire, optionnelle :" +
@@ -1236,16 +1240,16 @@ async function get_job_answer(thepath,num_job,type,isUrl)
         "- il faut ajouter la donnée suivante telque : <- "+thepath+" -> afin que je puisse garder la référence"
 
         ;
- } else if (type=="PF" ) {
+ 
   
-  q2_job = " peux tu me faire un plan détaillé de du profile du candidat avec les sections" +
+ /*  q2_job = " peux tu me faire un plan détaillé de du profile du candidat avec les sections" +
         "- Titre du profile," +
         "- le résumé du texte mis en avant du profile," +
         "- savoirs faire ou sof skills ," +
         "- EXPERIENCES PROFESSIONNELLES: (Entreprise, date début et fin, domaine de l'entreprise,poste occupé) sachant qu'il peut y avoir plusieurs expériences pour une entreprise, il faut lister en sous section les functions occupées avec la description de la tache, les outils, langages et environnement " +
         "- les compétences," +
-        "- autres (toutes informations autre utile à connaitre)"
- }
+        "- autres (toutes informations autre utile à connaitre)" */
+ 
    
     showLoadingOverlay();
 
@@ -1573,7 +1577,7 @@ function scan_url() {
         }
         showLoadingOverlay();
         alert("Scanning URL : "+contentUrl);
-        get_job_answer(contentUrl,contentNum, "AN",true);
+        get_job_answer(contentUrl,contentNum,true);
         hideLoadingOverlay();
         refresh();
     } else {
@@ -1681,192 +1685,6 @@ function open_notes(file_notes) {
         alert('Erreur lors de la lecture des notes.');
     });
 }
-
-function showNotesPopup(content, file_notes) {
-    const popupHtml = `
-        <dialog id="notesPopup" class="notes-popup">
-            <form method="dialog">
-                <h2>Notes</h2>
-                <div id="notesContentContainer">
-                    <table id="notesTable" class="notes-table">
-                        ${content.map((item, index) => `
-                            <tr>
-                                <td contenteditable="true" onblur="saveNoteChange('${file_notes}', ${index}, 'key', this.textContent)">${item.key}</td>
-                                <td contenteditable="true" style="width: 300px;" onblur="saveNoteChange('${file_notes}', ${index}, 'value', this.textContent)">${item.value}</td>
-                                <td style="width: 50px;"><span class="remove-icon" onclick="removeNoteRow('${file_notes}', ${index})">&times;</span></td>
-                            </tr>
-                        `).join('')}
-                    </table>
-                </div>
-                <div class="button-group">
-                    <button type="button" onclick="addNoteRow('${file_notes}')">Ajouter</button>
-                    <button type="button" onclick="closeNotesPopup()">Fermer</button>
-                </div>
-            </form>
-        </dialog>
-    `;
-
-    // Remove existing popup if any
-    const existingPopup = document.getElementById('notesPopup');
-    if (existingPopup) {
-        existingPopup.remove();
-    }
-
-    // Add popup to document
-    document.body.insertAdjacentHTML('beforeend', popupHtml);
-
-    // Show popup
-    const popup = document.getElementById('notesPopup');
-    popup.showModal();
-}
-
-function saveNoteChange(file_notes, index, key, value) {
-    fetch('/read_notes', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ file_path: file_notes })
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.status === "success") {
-            const notesContent = data.content;
-            notesContent[index][key] = value;
-            saveNotes(file_notes, notesContent);
-        } else {
-            alert('Erreur lors de la lecture des notes: ' + data.message);
-        }
-    })
-    .catch(error => {
-        console.error('Error reading notes:', error);
-        alert('Erreur lors de la lecture des notes.');
-    });
-}
-
-function saveNotes(file_notes, content) {
-    fetch('/save_notes', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ file_path: file_notes, content: content })
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.status === "success") {
-            console.log('Notes enregistrées avec succès.');
-        } else {
-            alert('Erreur lors de l\'enregistrement des notes: ' + data.message);
-        }
-    })
-    .catch(error => {
-        console.error('Error saving notes:', error);
-        alert('Erreur lors de l\'enregistrement des notes.');
-    });
-}
-
-function addNoteRow(file_notes) {
-    fetch('/read_notes', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ file_path: file_notes })
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.status === "success") {
-            const notesContent = data.content;
-            notesContent.push({ key: '', value: '' });
-            saveNotes(file_notes, notesContent);
-            showNotesPopup(notesContent, file_notes);
-        } else {
-            alert('Erreur lors de la lecture des notes: ' + data.message);
-        }
-    })
-    .catch(error => {
-        console.error('Error reading notes:', error);
-        alert('Erreur lors de la lecture des notes.');
-    });
-}
-
-function removeNoteRow(file_notes, index) {
-    fetch('/read_notes', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ file_path: file_notes })
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.status === "success") {
-            const notesContent = data.content;
-            notesContent.splice(index, 1);
-            saveNotes(file_notes, notesContent);
-            showNotesPopup(notesContent, file_notes);
-        } else {
-            alert('Erreur lors de la lecture des notes: ' + data.message);
-        }
-    })
-    .catch(error => {
-        console.error('Error reading notes:', error);
-        alert('Erreur lors de la lecture des notes.');
-    });
-}
-
-function closeNotesPopup() {
-    const popup = document.getElementById('notesPopup');
-    if (popup) {
-        popup.close();
-    }
-}
-
-// Add styles for notesPopup
-const style1 = document.createElement('style');
-style1.textContent = `
-    .notes-popup {
-        width: 800px;
-        height: 500px;
-        padding: 20px;
-        border: 1px solid #ccc;
-        border-radius: 8px;
-        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-    }
-    .notes-popup .notes-table {
-        width: 100%;
-        border-collapse: collapse;
-    }
-    .notes-popup .notes-table td {
-        border: 1px solid #ccc;
-        padding: 8px;
-    }
-    .notes-popup .remove-icon {
-        cursor: pointer;
-        color: red;
-        font-size: 20px;
-    }
-    .notes-popup .button-group {
-        display: flex;
-        justify-content: space-between;
-    }
-    .notes-popup .button-group button {
-        padding: 10px 20px;
-        border: none;
-        border-radius: 4px;
-        cursor: pointer;
-    }
-    .notes-popup .button-group button:first-child {
-        background-color: #4CAF50;
-        color: white;
-    }
-    .notes-popup .button-group button:last-child {
-        background-color: #f44336;
-        color: white;
-    }
-`;
-
 
 // ...existing code...
 
