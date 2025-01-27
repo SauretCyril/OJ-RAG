@@ -21,7 +21,7 @@ function show_CRQ_Popup(fileList) {
     const popupHtml = `
         <dialog id="CRQPopup" class="CRQ-popup">
             <form method="dialog">
-                <h2>Liste des fichiers</h2>
+                <h2>les instructions de classements</h2>
                 <div id="CRQContentContainer">
                     <ul id="fileList">
                         ${fileList.map(file => `
@@ -34,6 +34,7 @@ function show_CRQ_Popup(fileList) {
                 </div>
                 <div class="button-group">
                     <button type="button" onclick="saveSetting()" id="saveButton" style="display: none;">Enregistrer</button>
+                    <button type="button" onclick="editText()" id="editButton" style="display: none;">Edite</button>
                     <button type="button" onclick="closeCRQPopup()">Fermer</button>
                 </div>
             </form>
@@ -61,6 +62,102 @@ function selectFile(element) {
     }
     element.classList.add('selected');
     document.getElementById('saveButton').style.display = 'inline-block';
+    document.getElementById('editButton').style.display = 'inline-block';
+
+}
+// la fonction EditText doit permettre de modifier le contenu du fichier selectionné
+// il faut ouvrir une popup qui contient le contenu du fichier selectionné
+// avec un bouton fermer et un bouton enregistrer
+// le bouton enregistrer doit permettre de sauvegarder les modifications
+function editText(file) {
+    const selected = document.querySelector('.selected');
+   
+    if (selected) {
+        const settingValue = selected.querySelector('strong').innerText;
+        fetch('/load-CRQ-text', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ file_name: settingValue })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                alert('Erreur lors de la lecture des instructions : ' + data.error);
+            } else {
+                showEditTextPopup(data, settingValue);
+            }
+        })
+        .catch(error => {
+            console.error('Error reading instructions:', error);
+            alert('Erreur lors de la lecture des instructions.');
+        });
+    }
+ }
+
+function showEditTextPopup(content, fileName) {
+    const popupHtml = `
+        <dialog id="editTextPopup" class="edit-modal">
+            <form method="dialog">
+                <h2>Edit Text: ${fileName}</h2>
+                <div class="form-group">
+                    <textarea id="editTextContent" rows="10">${content}</textarea>
+                </div>
+                <div class="button-group">
+                    <button type="button" onclick="saveEditedText('${fileName}')">Enregistrer</button>
+                    <button type="button" onclick="closeEditTextPopup()">Fermer</button>
+                </div>
+            </form>
+        </dialog>
+    `;
+
+    // Remove existing popup if any
+    const existingPopup = document.getElementById('editTextPopup');
+    if (existingPopup) {
+        existingPopup.remove();
+    }
+
+    // Add popup to document
+    document.body.insertAdjacentHTML('beforeend', popupHtml);
+
+    // Show popup
+    const popup = document.getElementById('editTextPopup');
+    popup.showModal();
+}
+
+function saveEditedText(fileName) {
+    const editedContent = document.getElementById('editTextContent').value;
+    alert(editedContent);
+    fetch('/save-CRQ-text', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ file_name: fileName, text_data: editedContent })
+    })
+    .then(response => response.json())
+    .then(data => {
+        alert("saved" ,data.message);
+        if (data.message === 'Text saved successfully') {
+            alert('Text saved successfully.');
+            closeEditTextPopup();
+        } else {
+            alert('Error saving text: ' + data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error saving text:', error);
+        alert('Error saving text.');
+    });
+}
+
+function closeEditTextPopup() {
+    const popup = document.getElementById('editTextPopup');
+    if (popup) {
+        popup.close();
+        popup.remove();
+    }
 }
 
 function saveSetting() {

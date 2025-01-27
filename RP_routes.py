@@ -741,17 +741,24 @@ async def list_CRQ_files():
 
 # ...existing code...
 
-#@routes.route('/save-CRQ-text', methods=['POST'])
-async def save_CRQ_text(file_name,text_data):
+@routes.route('/save-CRQ-text', methods=['POST'])
+async def route_save_CRQ_text(): 
+    file_name = request.json.get('file_name')
+    text_data = request.json.get('text_data')
+    print("dbg897 :fichier name", file_name)
+    print("dbg897a :text_data", text_data)
+    
+    return  save_CRQ_text(file_name, text_data)
+
+def save_CRQ_text(file_name, text_data):
     try:
-        #file_name = request.json.get('file_name')
-        #text_data = request.json.get('text_data')
-        
+       
         if not file_name or not text_data:
             return jsonify({'error': 'Missing file name or text data'}), 400
-
-        async with aiofiles.open(file_name, 'w', encoding='utf-8') as file:
-            await file.write(text_data)
+        print("dbg897b :sauvegarde en cours ")
+        with open(file_name, 'w', encoding='utf-8') as file:
+            file.write(text_data)
+        
         logger.debug(f"Text saved successfully as {file_name}")
         return jsonify({'message': 'Text saved successfully'}), 200
 
@@ -761,7 +768,14 @@ async def save_CRQ_text(file_name,text_data):
 
 # ...existing code...
 
-#@routes.route('/load-CRQ-text', methods=['POST'])
+@routes.route('/load-CRQ-text', methods=['POST'])
+def route_load_CRQ_text():
+    file_name = request.json.get('file_name')
+    print("dbg788 :fichier instructions",file_name)     
+    text=load_CRQ_text(file_name)
+    print("dbg790 :text ",text)   
+    return jsonify(text)
+    
 def load_CRQ_text(file_name):
     try:
         text=""

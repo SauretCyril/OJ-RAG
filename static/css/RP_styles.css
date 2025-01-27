@@ -404,18 +404,32 @@ th, td {
 /* ...existing code... */
 
 #settings-section {
-    padding: 20px;
-    background-color: #f9f9f9;
-    border: 1px solid #ddd;
+    padding: 5px;
+    background-color: #9addfc;
+    border: 2px solid #040b75;
     border-radius: 8px;
-    margin-bottom: 20px;
+    margin-bottom: 5px;
 }
 
-#settings-section h2 {
-    margin-top: 0;
+#settings-section h4 {
+  font-size: 17px;  
+  margin-top: 0;
+
 }
 
-#settings-section p {
-    font-size: 14px;
+#settings-section a {
+    font-size: 16px;
     color: #333;
 }
+
+/* ...existing code... */
+
+textarea {
+    width: calc(100% - 20px); /* Adjust width to leave space for padding */
+    height: calc(100% - 60px); /* Adjust height to leave space for buttons */
+    padding: 10px;
+    box-sizing: border-box;
+    resize: none; /* Disable resizing */
+}
+
+/* ...existing code... */
