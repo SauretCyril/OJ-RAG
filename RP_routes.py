@@ -5,7 +5,7 @@ import platform
 import csv
 import subprocess
 from werkzeug.utils import secure_filename
-from JO_analyse_gpt import get_info
+
 import tkinter as tk
 from tkinter import filedialog
 import threading
@@ -22,6 +22,13 @@ import logging
 from logging import DEBUG
 import aiofiles
 
+from paths import *
+from cookies import *
+from JO_analyse_gpt import get_info
+
+from dotenv import load_dotenv
+
+load_dotenv()
 routes = Blueprint('routes', __name__)
 logging.basicConfig(level=DEBUG, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
@@ -37,20 +44,20 @@ def load_constants():
 
 CONSTANTS = load_constants()
 #print('Loaded constants:', CONSTANTS)
+
+
 @routes.route('/get_constants', methods=['GET'])
 def get_constants():
     return jsonify(CONSTANTS)
 
-def get_cookie_value(cookie_name):
-    cookies = request.cookies
-    return cookies.get(cookie_name, 'default')
 
 @routes.route('/read_annonces_json', methods=['POST'])
 async def read_annonces_json():
     try:
+        
         data = request.get_json()
         excluedFile = data.get('excluded')
-        directory_path = os.getenv("ANNONCES_FILE_DIR")
+        directory_path = GetRoot()
         if not os.path.exists(directory_path):
             return []
 
@@ -214,9 +221,9 @@ async def read_annonces_json():
                         thefile = thefile.replace('\\', '/')
 
                         # Use the value of 'current_instruction' from cookies
-                        current_instruction = get_cookie_value('current_instruction')
+                        #current_instruction = get_cookie_value('current_instruction')
                         if not current_instruction:
-                           current_instruction="default"
+                           current_instruction="annonce"
                             
                         the_request = load_CRQ_text(current_instruction)
                         
@@ -267,7 +274,7 @@ async def read_annonces_json():
 def load_crit_annonces(excluedFile):
     try:
         #file="excluded_annonces.json"
-        config_path = os.path.join(os.getenv("ANNONCES_DIR_STATE"), excluedFile)
+        config_path = os.path.join(GetDirState(), excluedFile)
         if os.path.exists(config_path):
             with open(config_path, 'r', encoding='utf-8') as file:
                 return json.load(file)
@@ -282,7 +289,7 @@ def save_excluded_annonces():
         data = request.get_json()
         excluded_annonces = data.get('excluded_annonces', [])
         
-        config_path = os.path.join(os.getenv("ANNONCES_DIR_FILTER"), "excluded_annonces.json")
+        config_path = os.path.join(GetDirFilter(), "excluded_annonces.json")
         with open(config_path, 'w', encoding='utf-8') as config_file:
             json.dump(excluded_annonces, config_file, ensure_ascii=False, indent=4)
         
@@ -300,7 +307,7 @@ def save_config_col():
         tab_active = data.get('tabActive')
         
         # Save the serialized columns to a file or database
-        config_path = os.path.join(os.getenv("ANNONCES_DIR_FILTER"), f"{tab_active}__colums")+ ".json"
+        config_path = os.path.join(GetDirFilter(), f"{tab_active}__colums")+ ".json"
         with open(config_path, 'w', encoding='utf-8') as config_file:
             json.dump(serialized_columns, config_file, ensure_ascii=False, indent=4)
         
@@ -351,7 +358,7 @@ def read_filters_json():
         data = request.get_json()
         tab_active = data.get('tabActive')
         
-        file_path = os.path.join(os.getenv("ANNONCES_DIR_FILTER"), tab_active + "_filter") + ".json"
+        file_path = os.path.join(GetDirFilter(), tab_active + "_filter") + ".json"
         file_path = file_path.replace('\\', '/')  # Normalize path
         #print(f"##01-loading filters from {file_path}")
         if not os.path.exists(file_path):
@@ -388,7 +395,7 @@ def save_filters_json():
         data = request.get_json()
         filters = data.get('filters')
         tab_active = data.get('tabActive')
-        file_path = os.path.join(os.getenv("ANNONCES_DIR_FILTER"), tab_active + "_filter") + ".json"
+        file_path = os.path.join(GetDirFilter(), tab_active + "_filter") + ".json"
         file_path = file_path.replace('\\', '/')  # Normalize path
         print(f"##-9998-saving filters to {file_path}")    
         with open(file_path, 'w', encoding='utf-8') as file:
@@ -405,7 +412,7 @@ def load_config_col():
     try:
         data = request.get_json()
         tab_active = data.get('tabActive')
-        file_path = os.path.join(os.getenv("ANNONCES_DIR_FILTER"), tab_active + "_colums") + ".json"
+        file_path = os.path.join(GetDirFilter(), tab_active + "_colums") + ".json"
         file_path = file_path.replace('\\', '/')  # Normalize path
         if not os.path.exists(file_path):
             return jsonify([])  # Return empty list if file does not exist
@@ -582,7 +589,7 @@ def save_announcement():
         if not num_dossier or not content or not url:
             return jsonify({"status": "error", "message": "Missing parameters"}), 400
 
-        directory_path = os.path.join(os.getenv("ANNONCES_FILE_DIR"), num_dossier)
+        directory_path = os.path.join(GetRoot(), num_dossier)
         if not os.path.exists(directory_path):
             os.makedirs(directory_path)
        
@@ -707,7 +714,7 @@ def save_reseaux_link_update():
 async def list_CRQ_files():
     list_CRQ = []
     try:
-        directory_path = os.getenv("DIR_CRQ_FILE")
+        directory_path = GetDirCRQ()
         defaultfile = os.path.join(directory_path, 'default.txt')
         if not os.path.exists(directory_path):
             logger.info("Directory does not exist, creating: %s", directory_path)
@@ -780,7 +787,7 @@ def load_CRQ_text(file_name):
     try:
         text=""
         file_name_txt = file_name+".txt"
-        filepath = os.path.join(os.getenv('DIR_CRQ_FILE'), file_name_txt)
+        filepath = os.path.join(GetDirCRQ(), file_name_txt)
         filepath = filepath.replace('\\', '/')
         
         print("dbg789 :fichier instructions",filepath)
@@ -796,3 +803,11 @@ def load_CRQ_text(file_name):
     except Exception as e:
         logger.error(f"Error loading text: {str(e)}")
         return ""
+
+@routes.route('/select_dir', methods=['GET'])
+async def SelectDirectory():
+    root = tk.Tk()
+    root.withdraw()  # Hide the main window
+    selected_dir = filedialog.askdirectory()
+    root.destroy()
+    return selected_dir

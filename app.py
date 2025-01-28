@@ -40,12 +40,17 @@ class NumpyEncoder(json.JSONEncoder):
 
 # Configurer Flask pour utiliser le NumpyEncoder
 app = Flask(__name__)
+app.json_encoder = NumpyEncoder  # Ajouter cette ligne après la création de l'app
 from RP_routes import routes 
 app.register_blueprint(routes)  # Register the blueprint
+
 from ST_steal import Steal 
 app.register_blueprint(Steal)  # Register the blueprint
 
-app.json_encoder = NumpyEncoder  # Ajouter cette ligne après la création de l'app
+from cookies import cookies
+app.register_blueprint(cookies)  # Register the blueprint
+
+
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 app.config['UPLOAD_FOLDER'] = os.path.join(BASE_DIR, 'uploads')
