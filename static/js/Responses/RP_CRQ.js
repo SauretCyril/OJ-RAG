@@ -1,4 +1,5 @@
 function open_CRQ() {
+      // Call the function and wait for it to complete    ;
     fetch('/list-CRQ-files', {
         method: 'GET',
         headers: {
@@ -12,9 +13,8 @@ function open_CRQ() {
     .catch(error => {
         console.error('Error fetching file list:', error);
         alert('Erreur lors de la récupération des fichiers.');
-    });
-}
-
+    }); 
+} 
 function show_CRQ_Popup(fileList) {
     //alert(fileList);
     
@@ -33,7 +33,7 @@ function show_CRQ_Popup(fileList) {
                     </ul>
                 </div>
                 <div class="button-group">
-                    <button type="button" onclick="saveSetting()" id="saveButton" style="display: none;">Enregistrer</button>
+                    <button type="button" onclick="save_current_instruction()" id="saveButton" style="display: none;">Enregistrer</button>
                     <button type="button" onclick="editText()" id="editButton" style="display: none;">Edite</button>
                     <button type="button" onclick="closeCRQPopup()">Fermer</button>
                 </div>
@@ -56,24 +56,24 @@ function show_CRQ_Popup(fileList) {
 }
 
 function selectFile(element) {
-    const selected = document.querySelector('.selected');
-    if (selected) {
-        selected.classList.remove('selected');
+    const selectedElement = document.querySelector('.selected');
+    if (selectedElement) {
+        selectedElement.classList.remove('selected');
     }
     element.classList.add('selected');
     document.getElementById('saveButton').style.display = 'inline-block';
     document.getElementById('editButton').style.display = 'inline-block';
-
 }
+
 // la fonction EditText doit permettre de modifier le contenu du fichier selectionné
 // il faut ouvrir une popup qui contient le contenu du fichier selectionné
 // avec un bouton fermer et un bouton enregistrer
 // le bouton enregistrer doit permettre de sauvegarder les modifications
 function editText(file) {
-    const selected = document.querySelector('.selected');
+    const selectedElement = document.querySelector('.selected');
    
-    if (selected) {
-        const settingValue = selected.querySelector('strong').innerText;
+    if (selectedElement) {
+        const settingValue = selectedElement.querySelector('strong').innerText;
         fetch('/load-CRQ-text', {
             method: 'POST',
             headers: {
@@ -128,7 +128,6 @@ function showEditTextPopup(content, fileName) {
 
 function saveEditedText(fileName) {
     const editedContent = document.getElementById('editTextContent').value;
-    alert(editedContent);
     fetch('/save-CRQ-text', {
         method: 'POST',
         headers: {
@@ -138,7 +137,6 @@ function saveEditedText(fileName) {
     })
     .then(response => response.json())
     .then(data => {
-        alert("saved" ,data.message);
         if (data.message === 'Text saved successfully') {
             alert('Text saved successfully.');
             closeEditTextPopup();
@@ -160,15 +158,7 @@ function closeEditTextPopup() {
     }
 }
 
-function saveSetting() {
-    const selected = document.querySelector('.selected');
-    if (selected) {
-        const settingValue = selected.querySelector('strong').innerText;
-        localStorage.setItem('current_instruction', settingValue);
-        document.cookie = `current_instruction=${settingValue}; path=/; max-age=${60 * 60 * 24 * 365}`;
-        get_setting_current_instruction();
-    }
-}
+
 
 function closeCRQPopup() {
     const popup = document.getElementById('CRQPopup');
@@ -214,24 +204,16 @@ style4.textContent = `
         color: white;
     }
 `;
+function save_current_instruction() {
+    value=document.querySelector('.selected').innerText;
+    CookieName='current_instruction';
+    const selectedElement = document.querySelector('.selected');
+    if (selectedElement) {
+        const selected = selectedElement.innerText;
+        save_cookie(CookieName,selected);
 
-
-function get_setting_current_instruction() {
-    const currentInstruction = getCookie('current_instruction');
-    if (currentInstruction) {
-        document.getElementById('current-instruction').textContent = currentInstruction;
-    } else {
-        document.getElementById('current-instruction').textContent = 'No current';
-    }
+     }
 }
 
-function getCookie(name) {
-    let cookieArr = document.cookie.split(";");
-    for (let i = 0; i < cookieArr.length; i++) {
-        let cookiePair = cookieArr[i].split("=");
-        if (name == cookiePair[0].trim()) {
-            return decodeURIComponent(cookiePair[1]);
-        }
-    }
-    return null;
-}
+
+

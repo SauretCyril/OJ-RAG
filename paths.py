@@ -5,18 +5,7 @@ from tkinter import filedialog
 
 def GetRoot():
     root_dir = os.getenv("ANNONCES_FILE_DIR")
-    """ cookie_current_dir =get_cookie_value("current_dir")
-    print (f"dbg147: ANNONCES_FILE_DIR = {cookie_current_dir}")
-    if cookie_current_dir!=None:
-        root_dir=cookie_current_dir
-        print(f"dbg251: Cookie find = {root_dir}")
-    else:
-        print(f"dbg253: Cookie save= {root_dir}")
-        set_cookie_value("current_dir", root_dir) """
-        
-        
-    #print(f"dbg001: ANNOUNCES_FILE_DIR = {root_dir}")
-     
+    print(f"dbg001: ANNOUNCES_FILE_DIR = {root_dir}")
     return root_dir
 
 def GetDirFilter():

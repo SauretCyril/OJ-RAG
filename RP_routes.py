@@ -222,6 +222,7 @@ async def read_annonces_json():
 
                         # Use the value of 'current_instruction' from cookies
                         #current_instruction = get_cookie_value('current_instruction')
+                        current_instruction="annonce"
                         if not current_instruction:
                            current_instruction="annonce"
                             

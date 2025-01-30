@@ -167,7 +167,7 @@ function loadTableData(callback) {
             console.log("<<-1---dir_path--->>",dir_path);
             const isCvRef = item.Commentaire && item.Commentaire.includes('<CV-REF>');
             const isOnDay = item.type_question && item.type_question.includes('DAY');
-            
+            const isrefus = item.todo && item.todo.includes('refus');
             let fichier_annonce = dir_path + '/' + item.dossier+window.CONSTANTS['FILE_NAMES']['ANNONCE_SUFFIX'];
             //console.log("<<-2-fichier_annonce>>",fichier_annonce);
             
@@ -183,11 +183,20 @@ function loadTableData(callback) {
             //console.log("<<-5-file_notes>>",file_notes);
             
             const row = document.createElement('tr');
+            row.classList.add('normal-row');
             row.id = filePath;
             row.style.position = 'relative'; // Ajout du positionnement relatif sur la ligne
+              if (isrefus) {
+                row.classList.add('refus-row');
+              }
+            else {
+                    row.classList.add('normal-row');
+                }
+          
             if (isOnDay) {
                 row.style.backgroundColor = '#ADD8E6'; // Light blue color
             }
+           
 // forEach((col
             window.columns.forEach((col, colIndex) => {
                 if (col.type === "tb" && col.visible === true) {
@@ -368,10 +377,8 @@ function loadTableData(callback) {
                 }
             });
             
-            if (isCvRef) {
-                row.style.backgroundColor = '#8be28b';
-            }
-            /*   */
+         
+          
             
             
             //tableBody.appendChild(row);
@@ -1008,22 +1015,25 @@ function toggleColumnVisibilityForm() {
 }
 
 // Call the function to generate the form when the page loads
-window.addEventListener('load', function() {
+//onload
+window.addEventListener('load', async function() {
     document.head.appendChild(style1);
     document.head.appendChild(style3);
     document.head.appendChild(style4);
-    loadConstants();
-    setNewTab();
-    //setNewTab();  
-    loadTableData(function() {
+    
+    await loadConstants();  // Ensure loadConstants is completed
+    await get_setting_current_instruction();  // Ensure get cookie current_instruction is completed
+    setNewTab();  
+    
+    await loadTableData(function() {
         //console.log('Table data loaded and callback executed.');
         // Add any additional code to execute after loading table data here
     });
+    
     createMenu();
-    loadReseauxLinks();
+    //loadReseauxLinks();
     document.getElementById('Excluded').addEventListener('change', loadTableData);
     
-    get_setting_current_instruction() ;
 });
 
 
@@ -1866,3 +1876,187 @@ async function checkDossierExists(dossier) {
 }
 
 // ...existing code...
+
+// ...existing code...
+
+function exportToHTML() {
+    let htmlContent = `
+        <html>
+        <head>
+            <style>
+                table { width: 100%; border-collapse: collapse; }
+                th, td { border: 1px solid black; padding: 8px; text-align: left; }
+                .hidden { display: none; }
+                .filter-buttons { margin-bottom: 10px; }
+                .filter-buttons button { margin-right: 5px; }
+            </style>
+            <script>
+                function toggleNotes(id) {
+                    const notesRow = document.getElementById('notes-' + id);
+                    if (notesRow.classList.contains('hidden')) {
+                        notesRow.classList.remove('hidden');
+                    } else {
+                        notesRow.classList.add('hidden');
+                    }
+                }
+
+                function filterAnnonces(filterType) {
+                    const rows = document.querySelectorAll('tbody tr');
+                    rows.forEach(row => {
+                        row.style.display = '';
+                    });
+
+                    if (filterType) {
+                        rows.forEach(row => {
+                            const etat = row.querySelector('td[data-key="etat"]').textContent;
+                            const todo = row.querySelector('td[data-key="todo"]').textContent;
+                            const categorie = row.querySelector('td[data-key="categorie"]').textContent;
+
+                            if ((filterType === 'done' && etat !== 'done') ||
+                                (filterType === 'repondu' && todo !== 'Répondu') ||
+                                (filterType === 'rdv' && categorie !== 'RDV')) {
+                                row.style.display = 'none';
+                            }
+                        });
+                    }
+                }
+            </script>
+        </head>
+        <body>
+            <div class="filter-buttons">
+                <button onclick="filterAnnonces()">All</button>
+                <button onclick="filterAnnonces('done')">Déjà réalisée</button>
+                <button onclick="filterAnnonces('repondu')">Répondue</button>
+                <button onclick="filterAnnonces('rdv')">RDV</button>
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>+</th>
+                        <th>Dossier</th>
+                        <th>Description</th>
+                        <th>Entreprise</th>
+                        <th>Categorie</th>
+                        <th>Etat</th>
+                        <th>Date</th>
+                        <th>Date Rep</th>
+                        <th>Notes</th>
+                        <th>Todo</th>
+                    </tr>
+                </thead>
+                <tbody>
+    `;
+
+    window.annonces.forEach((annonceWrapper, index) => {
+        const filePath = Object.keys(annonceWrapper)[0];
+        const annonce = annonceWrapper[filePath];
+        htmlContent += `
+            <tr>
+                <td><button onclick="toggleNotes(${index})">+</button></td>
+                <td data-key="dossier">${annonce.dossier}</td>
+                <td data-key="description">${annonce.description}</td>
+                <td data-key="entreprise">${annonce.entreprise}</td>
+                <td data-key="categorie">${annonce.categorie}</td>
+                <td data-key="etat">${annonce.etat}</td>
+                <td data-key="Date">${annonce.Date}</td>
+                <td data-key="Date_rep">${annonce.Date_rep}</td>
+                <td data-key="Notes">${annonce.Notes || ''}</td>
+                <td data-key="todo">${annonce.todo}</td>
+            </tr>
+            <tr id="notes-${index}" class="hidden">
+                <td colspan="10">
+                    <strong>URL:</strong> ${annonce.url || ''}<br>
+                    <strong>Commentaire:</strong> ${annonce.Commentaire || ''}<br>
+                    <strong>Notes:</strong>
+                    <table>
+                        ${(annonce.Notes || '').split('\n').map(note => note ? `<tr><td>${note}</td></tr>` : '').join('')}
+                    </table>
+                </td>
+            </tr>
+        `;
+    });
+
+    htmlContent += `
+                </tbody>
+            </table>
+        </body>
+        </html>
+    `;
+
+    const blob = new Blob([htmlContent], { type: 'text/html' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'annonces.html';
+    a.click();
+    URL.revokeObjectURL(url);
+}
+
+async function get_cookie(cookieName) {
+    try {
+        const response = await fetch('/get_cookie', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ cookie_name: cookieName })
+        });
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        const data = await response.json();
+        return data[cookieName];
+    } catch (error) {
+        console.error('Error fetching cookie:', error);
+        throw error;
+    }
+}
+
+async function get_setting_current_instruction() {
+    try {
+        const oneCooKie = await get_cookie('current_instruction');
+        if (oneCooKie) {
+            document.getElementById('current-instruction').textContent = oneCooKie;
+        } else {
+            document.getElementById('current-instruction').textContent = 'No current';
+        }
+    } catch (error) {
+        console.error('Error fetching current instruction:', error);
+    }
+}
+
+// ...existing code...
+function save_cookie(CookieName, value) {
+       
+        //alert("current_instruction = " + selected);
+        fetch('/set_current_instruction_cookie', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ [CookieName]:  value}) // Use CookieName as the key
+        }).then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.text();  // Changed from response.json() to response.text()
+        }).then(data => {
+            try {
+                const jsonData = JSON.parse(data);
+                if (jsonData.message === 'Cookie set successfully') {
+                    alert(CookieName+ ' saved successfully avec la valeur : ' + value);
+                } else {
+                    alert('Error 2478 setting cookie: ' + jsonData.error);
+                }
+            } catch (error) {
+                console.error('Error 2547 parsing JSON:', error);
+                alert('Error 2547 parsing server response.');
+            }
+        })
+        .catch(error => {
+            console.error('Error 1244 setting cookie: ', error);
+            alert('Error 1244 setting cookie.');
+        });
+    
+    
+}

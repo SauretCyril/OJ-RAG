@@ -37,20 +37,20 @@
             </li> -->
             <li>
               <a href="{{ url_for('static', filename='LK_links.html') }}">Links</a>
-              <li><a href="#Export" onclick="exportToCSV()">export</a></li>
+              <li><a href="#Export" onclick="exportToHTML()">export</a></li>
             </li>
             <li><a href="#CRQ" onclick="open_CRQ()">Liste CRQ</a></li>
           </ul>
         </nav>
       </header>
       <div>
-      <div id="settings-section">
+       <div id="settings-section">
         <h3>Settings</h3>
         <label for="current-instruction"  >Current Instruction :</label>
         <a href="#CRQ" id="current-instruction" onclick="open_CRQ()"></a>
         <label for="current-dossier"  >Current Dossier :</label>
         <a href="#CurrenDir" id="current-dir" onclick="ChooseNewDossier()"></a>
-      </div>
+      </div> 
      
      
       </div>

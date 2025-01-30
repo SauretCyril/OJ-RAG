@@ -189,11 +189,11 @@ def save_job_text():
         file_path_RQ = os.path.join(file_path, file_name + "_RQ.txt")
         
         # Handle file indexing if the file already exists
-        index = 1
+        """  index = 1
         while os.path.exists(file_path_docx):
             file_path_docx = os.path.join(file_path, f"{file_name}({index}).docx")
             file_path_RQ =os.path.join(file_path, f"{file_name}({index})_RQ.txt")
-            index += 1
+            index += 1 """
 
         doc = format_text_as_word_style(job_text_data, job_number)
         doc.save(file_path_docx)
