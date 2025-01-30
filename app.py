@@ -159,7 +159,7 @@ def extract_job_text():
         return jsonify({'Er007': str(e)}), 500
 
 @app.route('/save-answer', methods=['POST'])
-def save_job_text():
+def save_answer():
     try:
         logger.debug("dbg006.Save job text request received")
         pythoncom.CoInitialize()  # Initialize COM library
@@ -200,7 +200,9 @@ def save_job_text():
 
         pdf_file_path = file_path_docx.replace('.docx', '.pdf')
         convert(file_path_docx, pdf_file_path)
+        
         logger.debug(f"dbg009.Job text saved successfully as {pdf_file_path}")
+        
         os.remove(file_path_docx)
 
         # Save RQ to text file

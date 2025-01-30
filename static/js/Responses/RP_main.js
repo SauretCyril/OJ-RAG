@@ -1294,12 +1294,18 @@ async function get_job_answer(thepath,num_job,isUrl)
         
         const jobTextData = await jobTextResponse.json();
         const saved_path = "";
+        
+        savetext="[--doc--]\n"+thepath+"\n";
+        savetext+="[--Qestion--]\n"+q2_job+"\n";
+        savetext+="[--Response--]\n"+ jobTextData.formatted_text;
+      
+       
         const saveResponse = await fetch('/save-answer', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({ text_data: jobTextData.formatted_text, number: num_job, the_path: saved_path 
+            body: JSON.stringify({ text_data: savetext, number: num_job, the_path: saved_path 
                 , RQ: q2_job
             })
         });
@@ -2015,6 +2021,7 @@ async function get_cookie(cookieName) {
 async function get_setting_current_instruction() {
     try {
         const oneCooKie = await get_cookie('current_instruction');
+        //alert("oneCookie",oneCooKie);
         if (oneCooKie) {
             document.getElementById('current-instruction').textContent = oneCooKie;
         } else {
