@@ -47,7 +47,9 @@ window.columns = [
     { key: 'tel', editable: true, width: '125px',"visible":false ,"type":"tb",title:'Tel.' },
     { key: 'mail', editable: true, width: '125px',"visible":false,"type":"tb",title:'mail' },
     { key: 'Date', editable: true, default: 'N/A', width: '120px',"visible":true ,"type":"tb",title:'Dt pub' },
-    { key: 'Date_rep', editable: true, default: 'N/A', width: '120px',"visible":true ,"type":"tb",title:'Dt Rep' }, 
+    { key: 'Date_rep', editable: true, default: 'N/A', width: '120px',"visible":true ,"type":"tb",title:'Dt Rep' },
+    { key: 'Date_from', editable: true, default: 'N/A', width: '120px',"visible":true ,"type":"tb",title:'Dt From' },
+    { key: 'delay', editable: false, default: 'N/A', width: '120px',"visible":true ,"type":"tb",title:'Delais' },  
     { key: 'Commentaire', editable: true, width: '150px',"visible":true,"type":"tb" ,title:'Commentaire' },
     { key: 'Notes', editable: false, width: '50px',"visible":true,"type":"tb" ,title:'Nt' },
     { key: 'todo', editable: true, width: '120px',"visible":true ,"type":"tb" ,title:'ToDo'},
@@ -164,7 +166,7 @@ function loadTableData(callback) {
             const filePath = Object.keys(itemWrapper)[0];
             const item = itemWrapper[filePath];
             const dir_path = filePath.substring(0, filePath.lastIndexOf('/'));
-            console.log("<<-1---dir_path--->>",dir_path);
+            //console.log("<<-1---dir_path--->>",dir_path);
             const isCvRef = item.Commentaire && item.Commentaire.includes('<CV-REF>');
             const isOnDay = item.type_question && item.type_question.includes('DAY');
             const isrefus = item.todo && item.todo.includes('refus');
@@ -1031,7 +1033,7 @@ window.addEventListener('load', async function() {
     });
     
     createMenu();
-    //loadReseauxLinks();
+    ;
     document.getElementById('Excluded').addEventListener('change', loadTableData);
     
 });

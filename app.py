@@ -86,7 +86,7 @@ def getSavePath():
 @app.route('/upload', methods=['POST'])
 def upload_file():
     try:
-        logger.debug("dbg001.Upload file request received")
+        #logger.debug("dbg001.Upload file request received")
         if 'file' not in request.files:
             logger.error("Er001.No file part in the request")
             return jsonify({'Er001': 'No file part'}), 400
@@ -107,7 +107,7 @@ def upload_file():
 
         file = os.path.join(app.config['UPLOAD_FOLDER'],file1.filename)
         file1.save(file)
-        logger.debug(f"dbg002.File saved to {file}")
+        #logger.debug(f"dbg002.File saved to {file}")
 
         return jsonify({
             'path': file,
@@ -124,13 +124,13 @@ def job_details():
 
 # get_answer
 @app.route('/get_job_answer', methods=['POST'])
-def extract_job_text():
+def get_job_answer():
     try:
-        logger.debug(f"dbg003.Request method: {request.method}")
+        #logger.debug(f"dbg003.Request method: {request.method}")
         file = request.json.get('path')
         RQ = request.json.get('RQ')
-        logger.debug(f"dbg004.Received file path: {file}")
-        logger.debug(f"dbg004.Received RQ: {RQ}")
+        #logger.debug(f"dbg004.Received file path: {file}")
+        #logger.debug(f"dbg004.Received RQ: {RQ}")
 
         if not file or not RQ:
             logger.error("Er005.Missing job file path or question")
@@ -146,8 +146,10 @@ def extract_job_text():
             logger.error("Er006.Job text extraction failed")
             return jsonify({'Er006': 'Job text extraction failed'}), 500
 
-        answer = get_answer(RQ, text1)
-        logger.debug(f"dbg005.Generated answer: {answer}")
+        
+        role="En tant qu' expert en analyse d'offres d'emploi dans le domaine informatique (développeur, Analyste ou Testeur logiciel) , analyse le texte suivant et réponds à cette question"
+        answer = get_answer(RQ,role, text1)
+        #logger.debug(f"dbg005.Generated answer: {answer}")
 
         return jsonify({
             'raw_text': text1,
@@ -161,7 +163,7 @@ def extract_job_text():
 @app.route('/save-answer', methods=['POST'])
 def save_answer():
     try:
-        logger.debug("dbg006.Save job text request received")
+        #logger.debug("dbg006.Save job text request received")
         pythoncom.CoInitialize()  # Initialize COM library
         job_text_data = request.json.get('text_data')
         job_number = request.json.get('number')
@@ -170,7 +172,7 @@ def save_answer():
         if the_path == '':
             the_path = os.getenv("ANNONCES_FILE_DIR")
             
-        logger.debug("dbg007.Received path: %s", the_path)
+        #logger.debug("dbg007.Received path: %s", the_path)
 
         if not job_text_data or not job_number:
             logger.error(f"Er008.error.Missing job text data or job number: job_text_data={job_text_data}, job_number={job_number}")
@@ -201,7 +203,7 @@ def save_answer():
         pdf_file_path = file_path_docx.replace('.docx', '.pdf')
         convert(file_path_docx, pdf_file_path)
         
-        logger.debug(f"dbg009.Job text saved successfully as {pdf_file_path}")
+        #logger.debug(f"dbg009.Job text saved successfully as {pdf_file_path}")
         
         os.remove(file_path_docx)
 
@@ -220,7 +222,7 @@ def save_answer():
 def save_rq_to_text_file(file_path, rq):
     with open(file_path, 'w') as file:
         file.write(rq)
-    logger.debug(f"dbg010.RQ saved successfully as {file_path}")
+    #logger.debug(f"dbg010.RQ saved successfully as {file_path}")
 
 def format_text_as_word_style(job_text, job_number):
     doc = Document()
@@ -241,18 +243,18 @@ def format_text_as_word_style(job_text, job_number):
     """
 @app.route('/extract_features', methods=['POST'])
 def extract_features(text):
-    logger.debug("dbg010.2. Extracting features...")
+    #logger.debug("dbg010.2. Extracting features...")
     cv_features = extract_features(cv_text)
     job_features = extract_features(job_text)
-    logger.debug("dbg011.3. Computing similarity...")
+    #logger.debug("dbg011.3. Computing similarity...")
     raw_similarity = cosine_similarity(cv_features, job_features)
     adjusted_similarity = calculate_similarity_score(cv_features, job_features)
         
-    logger.debug("dbg012.4.Results:")
+    #logger.debug("dbg012.4.Results:")
     raw_similarity_s=f"{raw_similarity:.4f}"
     adjusted_similarity_s=f"{adjusted_similarity:.4f}"
-    logger.debug("dbg013.Raw similarity score: {raw_similarity_s}")
-    logger.debug("dbg014.Adjusted similarity score: {adjusted_similarity_s}")
+    #logger.debug("dbg013.Raw similarity score: {raw_similarity_s}")
+    #logger.debug("dbg014.Adjusted similarity score: {adjusted_similarity_s}")
     return jsonify({'Raw_similarity_score': raw_similarity_s, 'Adjusted_similarity_score':adjusted_similarity_s})
 
 
@@ -260,14 +262,15 @@ def extract_features(text):
     
 # get_answer
 @app.route('/get_job_answer_from_url', methods=['POST'])
-def extract_job_text_from_url():
+def et_job_answer_from_url():
     try:
-        logger.debug(f"dbg010.Request method: {request.method}")
-        logger.debug(f"dbg011.Request data: {request.get_data(as_text=True)}")  # Log the raw request data
+        #logger.debug(f"dbg010.Request method: {request.method}")
+        #logger.debug(f"dbg011.Request data: {request.get_data(as_text=True)}")  # Log the raw request data
         file = request.json.get('url')
         RQ = request.json.get('RQ')
-        logger.debug(f"dbg012.Received file path: {file}")
-        logger.debug(f"dbg013.Received RQ: {RQ}")
+        
+        #logger.debug(f"dbg012.Received file path: {file}")
+        #logger.debug(f"dbg013.Received RQ: {RQ}")
 
         if not file or not RQ:
             logger.error("Er014.Missing job file path or question")
@@ -282,9 +285,9 @@ def extract_job_text_from_url():
         if not text1:
             logger.error("Er0016.Job text extraction failed")
             return jsonify({'Er016': 'Job text extraction failed'}), 500
-
-        answer = get_answer(RQ, text1)
-        logger.debug(f"dbg017.Generated answer: {answer}")
+        role="En tant qu' expert en analyse d'offres d'emploi dans le domaine informatique (développeur, Analyste ou Testeur logiciel) , analyse le texte suivant et réponds à cette question"
+        answer = get_answer(RQ,role, text1)
+        #logger.debug(f"dbg017.Generated answer: {answer}")
 
         return jsonify({
             'raw_text': text1,

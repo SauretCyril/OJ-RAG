@@ -51,6 +51,44 @@ def get_constants():
     return jsonify(CONSTANTS)
 
 
+from datetime import datetime
+
+def calculate_delay(data):
+    try:
+        today = datetime.today()
+        date_from = data.get('date_from', '')
+        date_rep = data.get('date_rep', '')
+        todo = data.get('todo', '')
+
+        if 'refus' in todo.lower():
+            return "dead"
+
+        if date_rep:
+            try:
+                date_rep_c = datetime.strptime(date_rep, '%d-%m-%Y')
+                print("dbg778 => date_from_c = "+date_from_c)
+                return (today - date_rep_c).days
+            except ValueError:
+                print ("err dbg456= " +  ValueError )
+                pass
+            
+        if date_from:
+            try:
+                date_from_c = datetime.strptime(date_from, '%d-%m-%Y')
+                print("dbg778 => date_from_c = "+date_from_c)
+                return (today - date_from_c).days
+            except ValueError:
+                print ("err dbg457= " +  ValueError )
+                pass
+
+       
+
+        return 'N/A'
+    except Exception as e:
+        print(f"Error calculating delay: {e}")
+        return 'N/A'
+
+
 @routes.route('/read_annonces_json', methods=['POST'])
 async def read_annonces_json():
     try:
@@ -182,6 +220,7 @@ async def read_annonces_json():
                                 data["CV"] = isCVin
                                 data["CVpdf"] = isCVinpdf
                                 data["list_RQ"]=list_RQ
+                                data["delay"]=calculate_delay(data)
                                 jData = {file_path: data}
                                 annonces_list.append(jData)
                                 """  with open(file_path, 'w', encoding='utf-8') as file:
@@ -229,8 +268,8 @@ async def read_annonces_json():
                         the_request = load_CRQ_text(current_instruction)
                         
                         print("RP-2158", the_request)  
-                         
-                        infos = get_info(thefile,the_request)
+                        role="analyse le texte suivant et réponds à cette question, peux tu renvoyer les informations sous forme de données json, les champs son définie dans la question entre [ et ]"
+                        infos = get_info(thefile,role,the_request)
                         print ("RP-9 infos = ",infos)    
                         if (infos):
                             infos = json.loads(infos)  # Parse the JSON response 
@@ -767,7 +806,7 @@ def save_CRQ_text(file_name, text_data):
         with open(file_name, 'w', encoding='utf-8') as file:
             file.write(text_data)
         
-        logger.debug(f"Text saved successfully as {file_name}")
+        #logger.debug(f"Text saved successfully as {file_name}")
         return jsonify({'message': 'Text saved successfully'}), 200
 
     except Exception as e:

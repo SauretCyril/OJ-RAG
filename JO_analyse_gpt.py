@@ -107,15 +107,16 @@ def extract_text(source, is_url=False):
         return extract_text_from_pdf(source)
 
 
-def get_answer(question, context=""):
+def get_answer(question, role,context=""):
     try:
+        
         client = OpenAI()  # Assurez-vous que OPENAI_API_KEY est défini dans vos variables d'environnement
-        full_context = f"""En tant qu' expert en analyse d'offres d'emploi dans le domaine informatique (développeur, Analyste ou Testeur logiciel) , analyse le texte suivant et réponds à cette question: {question}\n\nContexte:\n{context}"""
+        full_context = f"""{role}: {question}\n\nContexte:\n{context}"""
         
         response = client.chat.completions.create(
             model="gpt-3.5-turbo",
             messages=[
-                {"role": "system", "content": "Tu es un assistant expert en analyse d'offres d'emploi dans le domaine du développement d'application informatique. peux tu réccupérer le numéro de l'annonce qui se trouve apres <Num>"},
+                {"role": "system", "content": role},
                 {"role": "user", "content": full_context}
             ],
             temperature=0.8,
@@ -136,8 +137,9 @@ def favicon():
 
 '''
 get info of pdf file and return'''
-def get_info(file_path, question):
+def get_info(file_path,role, question):
     try:
+        
         client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))  # Assurez-vous que OPENAI_API_KEY est défini dans vos variables d'environnement
         context = extract_text_from_pdf(file_path)
         if (context == ""):
