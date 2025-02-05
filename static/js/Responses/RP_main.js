@@ -1024,7 +1024,8 @@ window.addEventListener('load', async function() {
     document.head.appendChild(style4);
     
     await loadConstants();  // Ensure loadConstants is completed
-    await get_setting_current_instruction();  // Ensure get cookie current_instruction is completed
+    await show_current_instruction();  // Ensure get cookie current_instruction is completed
+    await show_current_dossier();
     setNewTab();  
     
     await loadTableData(function() {
@@ -2020,7 +2021,7 @@ async function get_cookie(cookieName) {
     }
 }
 
-async function get_setting_current_instruction() {
+async function show_current_instruction() {
     try {
         const oneCooKie = await get_cookie('current_instruction');
         //alert("oneCookie",oneCooKie);
@@ -2033,6 +2034,21 @@ async function get_setting_current_instruction() {
         console.error('Error fetching current instruction:', error);
     }
 }
+
+async function show_current_dossier() {
+    try {
+        const oneCooKie = await get_cookie('current_dossier');
+        //alert("oneCookie",oneCooKie);
+        if (oneCooKie) {
+            document.getElementById('current-dir').textContent = oneCooKie;
+        } else {
+            document.getElementById('current-dir').textContent = 'No current';
+        }
+    } catch (error) {
+        console.error('Error fetching current dossier:', error);
+    }
+}
+
 
 // ...existing code...
 function save_cookie(CookieName, value) {

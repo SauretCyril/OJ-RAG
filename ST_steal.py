@@ -11,7 +11,7 @@ import requests
 from fpdf import FPDF
 import tkinter as tk
 from tkinter import messagebox
-
+from paths import GetRoot
 
 Steal = Blueprint('ST_steal', __name__)
 
@@ -48,7 +48,7 @@ def scrape_url():
         
         if response.status_code == 200:
             try:
-                directory_path = os.path.join(os.getenv("ANNONCES_FILE_DIR"), num_job)
+                directory_path = os.path.join(GetRoot(), num_job)
                 if not os.path.exists(directory_path):
                     os.makedirs(directory_path)
                     

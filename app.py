@@ -20,6 +20,7 @@ from docx2pdf import convert
 import pythoncom
 from fpdf import FPDF
 from dotenv import load_dotenv
+from paths import GetRoot
 # ...existing code...
 load_dotenv()
 
@@ -170,7 +171,8 @@ def save_answer():
         the_path = request.json.get('the_path')
         rq=request.json.get('RQ')
         if the_path == '':
-            the_path = os.getenv("ANNONCES_FILE_DIR")
+            #the_path = os.getenv("ANNONCES_FILE_DIR")
+            the_path = GetRoot()
             
         #logger.debug("dbg007.Received path: %s", the_path)
 
@@ -301,7 +303,8 @@ def et_job_answer_from_url():
 @app.route('/check_dossier_exists', methods=['POST'])
 def check_dossier_exist():
     try:
-        directory_path = os.getenv("ANNONCES_FILE_DIR")
+        #directory_path = os.getenv("ANNONCES_FILE_DIR")
+        directory_path = GetRoot()
         dossier = request.json.get('dossier')
         dossier_path = os.path.join(directory_path, dossier)
         print("#### dbg2471 : dossier_path", dossier_path)

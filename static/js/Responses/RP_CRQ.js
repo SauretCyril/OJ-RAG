@@ -205,12 +205,14 @@ style4.textContent = `
     }
 `;
 function save_current_instruction() {
-    value=document.querySelector('.selected').innerText;
+   value=document.querySelector('.selected').innerText;
     CookieName='current_instruction';
     const selectedElement = document.querySelector('.selected');
     if (selectedElement) {
         const selected = selectedElement.innerText;
-        save_cookie(CookieName,selected);
+        alert('ck00->current_instruction = '+selected);
+        save_cookie('current_instruction',selected);
+        
 
      }
 }
