@@ -2051,15 +2051,15 @@ async function show_current_dossier() {
 
 
 // ...existing code...
-function save_cookie(CookieName, value) {
+function save_cookie(cookieName, value) {
        
         //alert("current_instruction = " + selected);
-        fetch('/set_current_instruction_cookie', {
+        fetch('/save_cookie', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({ [CookieName]:  value}) // Use CookieName as the key
+            body: JSON.stringify({ 'cookie_name':  cookieName, 'cookie_value':value}) // Use CookieName as the key
         }).then(response => {
             if (!response.ok) {
                 throw new Error('Network response was not ok');
@@ -2068,8 +2068,8 @@ function save_cookie(CookieName, value) {
         }).then(data => {
             try {
                 const jsonData = JSON.parse(data);
-                if (jsonData.message === 'Cookie set successfully') {
-                    alert(CookieName+ ' saved successfully avec la valeur : ' + value);
+                if (jsonData.message === 'done') {
+                    alert(cookieName+ ' saved successfully avec la valeur : ' + value);
                 } else {
                     alert('Error 2478 setting cookie: ' + jsonData.error);
                 }

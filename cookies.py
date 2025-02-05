@@ -19,7 +19,7 @@ def save_cookie():
 
     response = make_response(jsonify({"message": "done"}))  # Include JSON message in response
     response.set_cookie(cookie_name, cookie_value, max_age=max_age)
-    logger.info(f"Cookie set: {cookie_name} = {cookie_value}")
+    logger.info(f"dbg5642 Cookie set: {cookie_name} = {cookie_value}")
     return response  # Ensure the response is returned
 
 @cookies.route('/get_cookie', methods=['POST'])

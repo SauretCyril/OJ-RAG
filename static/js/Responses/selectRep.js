@@ -45,7 +45,12 @@ function submitDirectory() {
         },
         body: JSON.stringify({ 'cookie_name': 'current_dossier' , 'cookie_value': directoryPath})
     })
-    .then(response => response.json())
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        return response.json();
+    })
     .then(data => {
         if (data.message === "done") {
             alert('Répertoire enregistré avec succès.');
