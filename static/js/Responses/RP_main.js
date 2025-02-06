@@ -129,14 +129,11 @@ function loadFilterValues(tabActive) {
 // Example usage
 function loadTableData(callback) {
     
-    //reassignEventHandlers(window.columns);
+ 
     generateTableHeaders();
-    //state = value de la liste box statusFilter
-    //const state = document.getElementById('statusFilter').value;
-    //"excluded_annonces.json"
+   
     excludedfile = document.getElementById('Excluded').value+".json";
-    //alert("excludedfile : "+ excludedfile);
-    //alert(excluded);
+  
     fetch('/read_annonces_json', { 
         method: 'POST',
         headers: {
@@ -703,7 +700,12 @@ function saveFilterValues(filters) {
             tabActive: window.tabActive
         })
     })
-    .then(response => response.json())
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        return response.json();
+    })
     .then(data => {
         if (data.status === "success") {
             //console.log('Filter values successfully saved.');
@@ -712,7 +714,7 @@ function saveFilterValues(filters) {
         }
     })
     .catch(error => {
-        console.error('Error saving filter values:', error);
+        console.error('An unexpected error occurred while saving filter values:', error);
     });
 }
 
@@ -1015,26 +1017,54 @@ function toggleColumnVisibilityForm() {
         }
     }
 }
+async function loadCookies() {
+        try {
+            const response = await fetch('/load_cookies', {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            const cookies = await response.json();
+            // Process the cookies as needed
+            console.log('Cookies loaded:', cookies);
+        } catch (error) {
+            console.error('Error loading cookies:', error);
+        }
+    }
 
 // Call the function to generate the form when the page loads
 //onload
 window.addEventListener('load', async function() {
+    // Style
     document.head.appendChild(style1);
     document.head.appendChild(style3);
     document.head.appendChild(style4);
-    
+    // constant
     await loadConstants();  // Ensure loadConstants is completed
+
+
+    // load User settings
+    await loadCookies();
+   
+    
+    // show User settings
     await show_current_instruction();  // Ensure get cookie current_instruction is completed
     await show_current_dossier();
-    setNewTab();  
     
+    // Load data
+    await loadRealizationsData();
     await loadTableData(function() {
         //console.log('Table data loaded and callback executed.');
         // Add any additional code to execute after loading table data here
     });
     
+    setNewTab();  
     createMenu();
-    ;
+    
     document.getElementById('Excluded').addEventListener('change', loadTableData);
     
 });
@@ -2024,7 +2054,7 @@ async function get_cookie(cookieName) {
 async function show_current_instruction() {
     try {
         const oneCooKie = await get_cookie('current_instruction');
-        //alert("oneCookie",oneCooKie);
+        
         if (oneCooKie) {
             document.getElementById('current-instruction').textContent = oneCooKie;
         } else {

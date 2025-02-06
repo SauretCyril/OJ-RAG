@@ -51,6 +51,9 @@ app.register_blueprint(Steal)  # Register the blueprint
 from cookies import cookies
 app.register_blueprint(cookies)  # Register the blueprint
 
+from Realisations import realizations
+app.register_blueprint(realizations)
+
 
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))

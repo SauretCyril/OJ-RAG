@@ -92,13 +92,15 @@ def calculate_delay(data):
 @routes.route('/read_annonces_json', methods=['POST'])
 async def read_annonces_json():
     try:
-        
+        buildAllPaths()
         data = request.get_json()
         excluedFile = data.get('excluded')
         directory_path = GetRoot()
+       
         if not os.path.exists(directory_path):
+            print("dbg676 -> Root path not exist")
             return []
-
+        print("dbg675 -> directory_path",directory_path)
         annonces_list = []
         crit_annonces = load_crit_annonces(excluedFile)
         #print(f"RP-0 scan repertoire annonces for--------------------------------")
@@ -329,7 +331,8 @@ def save_excluded_annonces():
         data = request.get_json()
         excluded_annonces = data.get('excluded_annonces', [])
         
-        config_path = os.path.join(GetDirFilter(), "excluded_annonces.json")
+        dirfilter=GetDirFilter()
+        config_path = os.path.join(dirfilter, "excluded_annonces.json")
         with open(config_path, 'w', encoding='utf-8') as config_file:
             json.dump(excluded_annonces, config_file, ensure_ascii=False, indent=4)
         
@@ -345,9 +348,9 @@ def save_config_col():
         data = request.get_json()
         serialized_columns = data.get('columns')
         tab_active = data.get('tabActive')
-        
+        dirfilter=GetDirFilter()
         # Save the serialized columns to a file or database
-        config_path = os.path.join(GetDirFilter(), f"{tab_active}__colums")+ ".json"
+        config_path = os.path.join(dirfilter, f"{tab_active}__colums")+ ".json"
         with open(config_path, 'w', encoding='utf-8') as config_file:
             json.dump(serialized_columns, config_file, ensure_ascii=False, indent=4)
         
@@ -398,7 +401,9 @@ def read_filters_json():
         data = request.get_json()
         tab_active = data.get('tabActive')
         
-        file_path = os.path.join(GetDirFilter(), tab_active + "_filter") + ".json"
+        dirfilter=GetDirFilter()
+        
+        file_path = os.path.join(dirfilter, tab_active + "_filter") + ".json"
         file_path = file_path.replace('\\', '/')  # Normalize path
         #print(f"##01-loading filters from {file_path}")
         if not os.path.exists(file_path):
@@ -435,7 +440,8 @@ def save_filters_json():
         data = request.get_json()
         filters = data.get('filters')
         tab_active = data.get('tabActive')
-        file_path = os.path.join(GetDirFilter(), tab_active + "_filter") + ".json"
+        dirfilter = GetDirFilter()
+        file_path = os.path.join(dirfilter, tab_active + "_filter") + ".json"
         file_path = file_path.replace('\\', '/')  # Normalize path
         print(f"##-9998-saving filters to {file_path}")    
         with open(file_path, 'w', encoding='utf-8') as file:
@@ -452,7 +458,8 @@ def load_config_col():
     try:
         data = request.get_json()
         tab_active = data.get('tabActive')
-        file_path = os.path.join(GetDirFilter(), tab_active + "_colums") + ".json"
+        dirfilter= GetDirFilter()
+        file_path = os.path.join(dirfilter, tab_active + "_colums") + ".json"
         file_path = file_path.replace('\\', '/')  # Normalize path
         if not os.path.exists(file_path):
             return jsonify([])  # Return empty list if file does not exist
