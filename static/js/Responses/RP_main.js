@@ -213,7 +213,7 @@ function loadTableData(callback) {
                         const button = document.createElement('button');
                         button.textContent = ''; // Heart icon
                         button.style.cursor = 'pointer';
-                        button.addEventListener('click', () => open_notes(file_notes));
+                        button.addEventListener('click', () => open_notes(file_notes,false));
                         cell.appendChild(button);
                         //heartIcon.style.cursor = 'pointer';
                         //heartIcon.addEventListener('click', () => open_notes(file_notes));
@@ -1725,9 +1725,23 @@ function closeAnnouncementForm() {
     }
 }
 
+
+
+async function selectvalue(file_SK) {
+   // ouvrir la popup de selection
+    const popupResult  = await open_notes(file_SK,true);
+    if (popupResult) {
+        // Mettre à jour la valeur du champ
+        return popupResult;
+    } else {
+        return null;
+    } 
+}
+
+
 // ...existing code...
 
-function open_notes(file_notes) {
+function open_notes(file_notes,isSelected) {
     fetch('/read_notes', {
         method: 'POST',
         headers: {
@@ -1739,7 +1753,7 @@ function open_notes(file_notes) {
     .then(data => {
         if (data.status === "success") {
             const notesContent = data.content;
-            showNotesPopup(notesContent, file_notes);
+            showNotesPopup(notesContent, file_notes,isSelected);
         } else {
             alert('Erreur lors de la lecture des notes: ' + data.message);
         }

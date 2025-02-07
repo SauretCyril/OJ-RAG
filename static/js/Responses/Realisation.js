@@ -7,7 +7,7 @@ const columns = [
     { id: 'resultats', label: 'Résultats', type: 'text', style: 'width: 150px;' },
     { id: 'savoirEtre', label: 'Savoir Être', type: 'select', style: 'width: 150px;', options: ['Option 1', 'Option 2', 'Option 3'] },
     { id: 'savoirFaire', label: 'Savoir-Faire', type: 'select', style: 'width: 150px;', options: ['Option A', 'Option B', 'Option C'] },
-    { id: 'deleteRow', label: 'Actions', type: 'deleteRow', style: 'width: 100px;' }
+    { id: 'deleteRow', label: 'Remove', type: 'deleteRow', style: 'width: 50px;' }
 ];
 
 // Fonction pour charger les réalisations
@@ -99,7 +99,7 @@ function updateRealizationsTableBody() {
         <tr>
             ${columns.map(column => {
                 if (column.type === 'select') {
-                    return `<td><select onchange="updateRealization(${index}, '${column.id}', this.value)">${column.options.map(option => `<option value="${option}" ${realization[column.id] === option ? 'selected' : ''}>${option}</option>`).join('')}</select></td>`;
+                    return `<td><input type="text" style="background-color: yellow; ${column.style}" value="${realization[column.id]}" ondblclick="handleDoubleClick('${column.id}')" /></td>`;
                 } else if (column.type === 'textarea') {
                     return `<td><textarea style="${column.style}" onchange="updateRealization(${index}, '${column.id}', this.value)">${realization[column.id]}</textarea></td>`;
                 } else if (column.type === 'deleteRow') {
@@ -110,6 +110,48 @@ function updateRealizationsTableBody() {
             }).join('')}
         </tr>
     `).join('');
+}
+
+function handleDoubleClick(id) {
+    alert("OK "+ id);
+    let dirName="";
+    let filename="";
+    if (id=== 'savoirEtre') {
+        dirName= "DIR_SOFT_SK_FILE";
+        filename= "SOFT_SK_File" ;
+        
+    }
+    else if (id === 'savoirFaire')   {
+        dirName= "DIR_HARD_SK_FILE";
+        filename= "SOFT_HARD_File";
+    } else { 
+        alert("Erreur de colonne");
+        return;
+
+    }
+
+    alert(dirName+ ", " + filename);
+    fetch(`/get_file_path`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ dirName: dirName, filename: filename })
+    })
+    .then(response => response.json())
+    .then(data => {
+        alert('Data received:', JSON.stringify(data)); // Log the data received
+        if (data.filePath) {
+            const file = data.filePath;
+            alert('Chemin du fichier récupéré avec succès: ' + file);
+            // Handle the file path as needed
+        } else {
+            alert('Erreur 147 : lors de la récupération du chemin du fichier: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error fetching file path:', error);
+    });
 }
 
 // Fonction pour enregistrer les réalisations

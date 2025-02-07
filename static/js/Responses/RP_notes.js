@@ -1,5 +1,4 @@
-
-function showNotesPopup(content, file_notes) {
+function showNotesPopup(content, file_notes, isSelected) {
     const popupHtml = `
         <dialog id="notesPopup" class="notes-popup">
             <form method="dialog">
@@ -11,12 +10,13 @@ function showNotesPopup(content, file_notes) {
                                 <td contenteditable="true" onblur="saveNoteChange('${file_notes}', ${index}, 'key', this.textContent)">${item.key}</td>
                                 <td contenteditable="true" style="width: 300px;" onblur="saveNoteChange('${file_notes}', ${index}, 'value', this.textContent)">${item.value}</td>
                                 <td style="width: 50px;"><span class="remove-icon" onclick="removeNoteRow('${file_notes}', ${index})">&times;</span></td>
+                                ${isSelected ? `<td style="width: 50px;"><span class="select-icon" onclick="selectNoteValue('${item.value}')">👆</span></td>` : ''}
                             </tr>
                         `).join('')}
                     </table>
                 </div>
                 <div class="button-group">
-                    <button type="button" onclick="addNoteRow('${file_notes}')">Ajouter</button>
+                    <button type="button" onclick="addNoteRow('${file_notes}', ${isSelected})">Ajouter</button>
                     <button type="button" onclick="closeNotesPopup()">Fermer</button>
                 </div>
             </form>
@@ -35,6 +35,12 @@ function showNotesPopup(content, file_notes) {
     // Show popup
     const popup = document.getElementById('notesPopup');
     popup.showModal();
+}
+
+function selectNoteValue(value) {
+    closeNotesPopup();
+    // Return the selected value (you can customize this part as needed)
+    console.log('Selected value:', value);
 }
 
 function saveNoteChange(file_notes, index, key, value) {
@@ -164,6 +170,11 @@ style1.textContent = `
         color: red;
         font-size: 20px;
     }
+    .notes-popup .select-icon {
+        cursor: pointer;
+        color: blue;
+        font-size: 20px;
+    }
     .notes-popup .button-group {
         display: flex;
         justify-content: space-between;
@@ -183,4 +194,3 @@ style1.textContent = `
         color: white;
     }
 `;
-

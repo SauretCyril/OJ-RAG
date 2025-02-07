@@ -20,7 +20,7 @@ from docx2pdf import convert
 import pythoncom
 from fpdf import FPDF
 from dotenv import load_dotenv
-from paths import GetRoot
+from paths import *
 # ...existing code...
 load_dotenv()
 
@@ -83,6 +83,36 @@ def alive():
 def index():
     return render_template('RP_index.html')
 
+@app.route('/get_file_path', methods=['POST'])
+def get_file_path():
+    dirname = request.json.get('dirName')
+    filename = request.json.get('filename')
+    print("dbg3214 : dirName", dirname)
+    print("dbg3215 : filename", filename)
+
+    if not dirname or not filename:
+        return jsonify({'error': 'Invalid parameters'}), 400    
+    
+    dirnamevalue = GetOneDir(dirname)
+    print(f"dbg3216a repertoire du fichier {dirname}: filepath", dirnamevalue)
+    
+    filenamevalue = os.getenv(filename)
+    print(f"dbg3216b nom du fichier = {filenamevalue}")
+    
+    if not filenamevalue:
+        return jsonify({'error': 'Filename not found in environment variables'}), 404
+    
+    filepath = os.path.join(dirnamevalue, filenamevalue)
+    print("dbg3216c : fichier ", filepath)
+    
+    return jsonify({
+        'filePath': filepath,
+        'exist': os.path.exists(filepath)
+    })
+
+    
+    
+    
 @app.route('/save-path')
 def getSavePath():
     return SAVED_TEXT_FOLDER

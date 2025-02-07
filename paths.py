@@ -47,10 +47,10 @@ def GetDirCRQ():
 def GetDirREA():
     path_REA =os.getenv("DIR_REA_FILE")
     dirroot = GetRoot()
-    print("dbg651a root = ",dirroot)
+    print("dbg651d root = ",dirroot)
     new_path=os.path.join(dirroot,path_REA)
     new_path = new_path.replace('\\', '/')
-    print("dbg651a realisation dir = ",new_path)
+    print("dbg651c realisation dir = ",new_path)
     return new_path
 
 def GetDirSoft_Sk():
@@ -59,16 +59,21 @@ def GetDirSoft_Sk():
     print("dbg651a root = ",dirroot)
     new_path=os.path.join(dirroot,path_soft_sk)
     new_path = new_path.replace('\\', '/')
-    print("dbg651a realisation dir = ",new_path)
+    print("dbg651b realisation dir = ",new_path)
     return new_path
 
+
 def GetOneDir(envName):
-    path = os.getenv(envName)
     dirroot = GetRoot()
-    print("dbg651a root = ",dirroot)
+    print("dbg651f root = ",dirroot)
+    
+    path = os.getenv(envName)
+    print(f"dbg651e path de {envName} = ",path )
+    
     new_path=os.path.join(dirroot,path)
     new_path = new_path.replace('\\', '/')
-    print("dbg651a realisation dir = ",new_path)
+    
+    print(f"dbg651g GetOneDir ({envName}) => ",new_path)
     return new_path
 
 
