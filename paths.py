@@ -53,6 +53,25 @@ def GetDirREA():
     print("dbg651a realisation dir = ",new_path)
     return new_path
 
+def GetDirSoft_Sk():
+    path_soft_sk = os.getenv("DIR_SOFT_SK_FILE")
+    dirroot = GetRoot()
+    print("dbg651a root = ",dirroot)
+    new_path=os.path.join(dirroot,path_soft_sk)
+    new_path = new_path.replace('\\', '/')
+    print("dbg651a realisation dir = ",new_path)
+    return new_path
+
+def GetOneDir(envName):
+    path = os.getenv(envName)
+    dirroot = GetRoot()
+    print("dbg651a root = ",dirroot)
+    new_path=os.path.join(dirroot,path)
+    new_path = new_path.replace('\\', '/')
+    print("dbg651a realisation dir = ",new_path)
+    return new_path
+
+
 
 def buildAllPaths():
     ''' repertoire principal des dossiers'''

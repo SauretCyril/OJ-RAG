@@ -5,9 +5,9 @@ const columns = [
     { id: 'titrePoste', label: 'Titre Poste', type: 'text', style: 'width: 150px;' },
     { id: 'etapeSolution', label: 'Etape Solution', type: 'textarea', style: 'width: 200px;' },
     { id: 'resultats', label: 'Résultats', type: 'text', style: 'width: 150px;' },
-    { id: 'savoirEtre', label: 'Savoir Être', type: 'text', style: 'width: 150px;' },
-    { id: 'savoirFaire', label: 'Savoir-Faire', type: 'text', style: 'width: 150px;' },
-    { id: 'actions', label: 'Actions', type: 'button', style: 'width: 100px;' }
+    { id: 'savoirEtre', label: 'Savoir Être', type: 'select', style: 'width: 150px;', options: ['Option 1', 'Option 2', 'Option 3'] },
+    { id: 'savoirFaire', label: 'Savoir-Faire', type: 'select', style: 'width: 150px;', options: ['Option A', 'Option B', 'Option C'] },
+    { id: 'deleteRow', label: 'Actions', type: 'deleteRow', style: 'width: 100px;' }
 ];
 
 // Fonction pour charger les réalisations
@@ -102,8 +102,8 @@ function updateRealizationsTableBody() {
                     return `<td><select onchange="updateRealization(${index}, '${column.id}', this.value)">${column.options.map(option => `<option value="${option}" ${realization[column.id] === option ? 'selected' : ''}>${option}</option>`).join('')}</select></td>`;
                 } else if (column.type === 'textarea') {
                     return `<td><textarea style="${column.style}" onchange="updateRealization(${index}, '${column.id}', this.value)">${realization[column.id]}</textarea></td>`;
-                } else if (column.type === 'button') {
-                    return `<td><button onclick="removeRealization(this)">Supprimer</button></td>`;
+                } else if (column.type === 'deleteRow') {
+                    return `<td><button onclick="removeRealization(this)">${column.label}</button></td>`;
                 } else {
                     return `<td><input type="${column.type}" style="${column.style}" value="${realization[column.id]}" onchange="updateRealization(${index}, '${column.id}', this.value)" /></td>`;
                 }
