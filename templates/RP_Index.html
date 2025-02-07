@@ -17,29 +17,26 @@
         <nav>
           <ul>
             <li><a href="#home">Home</a></li>
-            <li>
-              <a
-                href="https://www.notion.so/2025_Todo-17a8e68cf98e80d4a56ae8bdb0e9855b"
-                target="_blank"
-                >To Do</a
-              >
-            </li>
-
+           
             <li><a href="#New" onclick="createAnnouncementForm()">New</a></li>
             <li><a href="#Save" onclick="refresh()">Refresh</a></li>
-              <!--<li>
-              <a
-                href="#ReseauxLinks"
-                id="menu_reseaux"
-                onclick="showReseauxLinks()"
-                >Reseaux</a
-              >
-            </li> -->
+            <li><a href="#REA" onclick="showRealizationsForm()">Realisations</a></li>
+            <!--<li><a href="#CRQ" onclick="open_CRQ()">Liste CRQ</a></li>-->
             <li>
-              <a href="{{ url_for('static', filename='LK_links.html') }}">Links</a>
-              <!--<li><a href="#Export" onclick="exportToHTML()">export</a></li>-->
+              <a href="#links">Liens</a>
+              <ul>
+                <li>
+                  <a
+                    href="https://www.notion.so/2025_Todo-17a8e68cf98e80d4a56ae8bdb0e9855b"
+                    target="_blank"
+                    >To Do</a
+                  >
+                </li>
+                <li>
+                  <a href="{{ url_for('static', filename='LK_links.html') }}">Links</a>
+                </li>
+              </ul>
             </li>
-            <li><a href="#CRQ" onclick="open_CRQ()">Liste CRQ</a></li>
           </ul>
         </nav>
       </header>

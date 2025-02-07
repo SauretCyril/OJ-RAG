@@ -35,7 +35,7 @@ def save_cookie():
     with open(json_file_path, 'w') as file:
         json.dump(cookies_data, file)
    
-    logger.info(f"dbg5642 Cookie saved: {cookie_name} = {cookie_value}")
+    #logger.info(f"dbg5642 Cookie saved: {cookie_name} = {cookie_value}")
     
     return jsonify({"message": "done"})
 
@@ -45,10 +45,10 @@ def load_cookies():
     if os.path.exists(json_file_path):
         with open(json_file_path, 'r') as file:
             cookies_data = json.load(file)
-        logger.info("Cookies loaded successfully from the JSON file.")
+       #logger.info("Cookies loaded successfully from the JSON file.")
         return jsonify({"message": "Cookies loaded successfully", "cookies_data": cookies_data})
     else:
-        logger.warning("JSON file does not exist.")
+        #logger.warning("JSON file does not exist.")
         return jsonify({"error": "JSON file does not exist"}), 404
 
 @cookies.route('/get_cookie', methods=['POST'])
@@ -66,7 +66,7 @@ def get_cookie():
     
     # Get the cookie value
     cookie_value = cookies_data.get(cookie_name)
-    logger.info(f"dbg5641 cookies :{cookie_name} value = {cookie_value}")
+    #logger.info(f"dbg5641 cookies :{cookie_name} value = {cookie_value}")
         
     return jsonify({cookie_name: cookie_value})
 
@@ -77,7 +77,7 @@ def get_cookie_value(key_name):
             return jsonify({"error": "key_name is required"}), 400
         # Get the value for the provided key
         value = cookies_data.get(key_name)
-        logger.info(f"dbg5643 Key: {key_name}, Value: {value}")
+        #logger.info(f"dbg5643 Key: {key_name}, Value: {value}")
         return value
     except Exception as e:
         logger.error(f"Error-3345 getting cookie value for key {key_name}: {e}")

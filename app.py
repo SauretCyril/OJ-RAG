@@ -310,7 +310,7 @@ def check_dossier_exist():
         directory_path = GetRoot()
         dossier = request.json.get('dossier')
         dossier_path = os.path.join(directory_path, dossier)
-        print("#### dbg2471 : dossier_path", dossier_path)
+        #print("#### dbg2471 : dossier_path", dossier_path)
         if not dossier_path:
             return jsonify({'error': 'Missing dossier path'}), 400
 

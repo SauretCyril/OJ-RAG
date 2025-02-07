@@ -1,5 +1,6 @@
-window.realizations_data = {}
+window.realizations_data = [];
 
+// Fonction pour charger les réalisations
 function loadRealizationsData() {
     fetch('/read_realizations', {
         method: 'GET',
@@ -7,28 +8,35 @@ function loadRealizationsData() {
             'Content-Type': 'application/json'
         }
     })
-    .then(response => response.json())
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        return response.json();
+    })
     .then(data => {
+        console.log('Data received:', JSON.stringify(data)); // Log the data received
         if (data.status === "success") {
             window.realizations_data = data.realizations;
-            //showRealizationsForm(window.realizations_data);
+            updateRealizationsTableBody(); // Update the table body with the new data
         } else {
-            alert('Erreur lors de la lecture des réalisations: ' + data.message);
+            alert('Erreur-1255 lors de la lecture des réalisations: ' + data.message);
         }
     })
     .catch(error => {
-        console.error('Error reading realizations:', error);
+        console.error('Error-1488 reading realizations:', error);
     });
 }
 
-function showRealizationsForm(realizations) {
+// Fonction pour afficher le formulaire des réalisations
+function showRealizationsForm() {
     const formHtml = `
         <div id="realizationsForm">
             <h2>Gérer les Réalisations</h2>
             <table id="realizationsTable">
-                <thead>
+                <thead id="realizationsTableHead">
                     <tr>
-                        <th>Num</th>
+                        <th>Ordre</th>
                         <th>Titre Poste</th>
                         <th>Etape Solution</th>
                         <th>Résultats</th>
@@ -37,18 +45,8 @@ function showRealizationsForm(realizations) {
                         <th>Actions</th>
                     </tr>
                 </thead>
-                <tbody>
-                    ${realizations.map((realization, index) => `
-                        <tr>
-                            <td>${index + 1}</td>
-                            <td><input type="text" value="${realization.titrePoste}" /></td>
-                            <td><textarea>${realization.etapeSolution}</textarea></td>
-                            <td><input type="text" value="${realization.resultats}" /></td>
-                            <td><input type="text" value="${realization.savoirEtre}" /></td>
-                            <td><input type="text" value="${realization.savoirFaire}" /></td>
-                            <td><button onclick="removeRealization(this)">Supprimer</button></td>
-                        </tr>
-                    `).join('')}
+                <tbody id="realizationsTableBody">
+                   
                 </tbody>
             </table>
             <button onclick="addRealization()">Ajouter</button>
@@ -60,69 +58,109 @@ function showRealizationsForm(realizations) {
     const formContainer = document.createElement('div');
     formContainer.innerHTML = formHtml;
     document.body.appendChild(formContainer);
+    tableau_fill();
 }
 
+function closeRealizationsForm() {
+
+    const formContainer = document.getElementById('realizationsForm');
+    if (formContainer) {
+        formContainer.remove();
+    }
+}
+
+// Fonction pour mettre à jour une réalisation
+function updateRealization(index, key, value) {
+    window.realizations_data[index][key] = value;
+}
+
+// Fonction pour ajouter une nouvelle réalisation
 function addRealization() {
-    const table = document.getElementById('realizationsTable').getElementsByTagName('tbody')[0];
-    const newRow = table.insertRow();
-    newRow.innerHTML = `
+    const newRealization = {
+        ordre: window.realizations_data.length + 1,
+        titrePoste: '',
+        etapeSolution: '',
+        resultats: '',
+        savoirEtre: '',
+        savoirFaire: ''
+    };
+    window.realizations_data.push(newRealization);
+    updateRealizationsTableBody();
+}
+
+// Fonction pour mettre à jour le corps du tableau des réalisations
+function updateRealizationsTableBody() {
+    const tableBody = document.getElementById('realizationsTableBody');
+    tableBody.innerHTML = window.realizations_data.map((realization, index) => `
         <tr>
-            <td>${table.rows.length}</td>
-            <td><input type="text" /></td>
-            <td><textarea></textarea></td>
-            <td><input type="text" /></td>
-            <td><input type="text" /></td>
-            <td><input type="text" /></td>
+            <td><input type="number" value="${realization.ordre}" onchange="updateRealization(${index}, 'ordre', this.value)" /></td>
+            
+            <td><input type="text" value="${realization.titrePoste}" onchange="updateRealization(${index}, 'titrePoste', this.value)" /></td>
+            <td><textarea onchange="updateRealization(${index}, 'etapeSolution', this.value)">${realization.etapeSolution}</textarea></td>
+            <td><input type="text" value="${realization.resultats}" onchange="updateRealization(${index}, 'resultats', this.value)" /></td>
+            <td><input type="text" value="${realization.savoirEtre}" onchange="updateRealization(${index}, 'savoirEtre', this.value)" /></td>
+            <td><input type="text" value="${realization.savoirFaire}" onchange="updateRealization(${index}, 'savoirFaire', this.value)" /></td>
             <td><button onclick="removeRealization(this)">Supprimer</button></td>
         </tr>
-    `;
+    `).join('');
 }
 
-function removeRealization(button) {
-    const row = button.parentNode.parentNode;
-    row.parentNode.removeChild(row);
-}
-
+// Fonction pour enregistrer les réalisations
 function saveRealizations() {
-    const table = document.getElementById('realizationsTable').getElementsByTagName('tbody')[0];
-    const realizations = [];
-    for (let i = 0; i < table.rows.length; i++) {
-        const row = table.rows[i];
-        const realization = {
-            num: i + 1,
-            titrePoste: row.cells[1].getElementsByTagName('input')[0].value,
-            etapeSolution: row.cells[2].getElementsByTagName('textarea')[0].value,
-            resultats: row.cells[3].getElementsByTagName('input')[0].value,
-            savoirEtre: row.cells[4].getElementsByTagName('input')[0].value,
-            savoirFaire: row.cells[5].getElementsByTagName('input')[0].value
-        };
-        realizations.push(realization);
-    }
+    const dataToSend = { data: window.realizations_data };
+    console.log('Data to be sent:', JSON.stringify(dataToSend)); // Log the data to be sent
 
     fetch('/save_realizations', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ realizations: realizations })
+        body: JSON.stringify(dataToSend)
     })
-    .then(response => response.json())
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        return response.json();
+    })
     .then(data => {
         if (data.status === "success") {
-            alert('Réalisations enregistrées avec succès');
+            alert('Les réalisations ont été enregistrées avec succès.');
         } else {
-            alert('Erreur lors de l\'enregistrement des réalisations: ' + data.message);
+            alert('Erreur-1256 lors de l\'enregistrement des réalisations: ' + data.message);
         }
     })
     .catch(error => {
-        console.error('Error saving realizations:', error);
+        console.error('Error-1489 saving realizations:', error);
     });
 }
 
-function closeRealizationsForm() {
-    const form = document.getElementById('realizationsForm');
-    if (form) {
-        form.remove();
-    }
-    window.location.href = 'RP_index.html';
+// Fonction pour remplir le tableau des réalisations
+function tableau_fill() {
+    const tableBody = document.getElementById('realizationsTableBody');
+    tableBody.innerHTML = window.realizations_data.map((realization, index) => `
+        <tr>
+            <td><input type="number" value="${realization.ordre}" onchange="updateRealization(${index}, 'ordre', this.value)" /></td>
+            
+            <td><input type="text" value="${realization.titrePoste}" onchange="updateRealization(${index}, 'titrePoste', this.value)" /></td>
+            <td><textarea onchange="updateRealization(${index}, 'etapeSolution', this.value)">${realization.etapeSolution}</textarea></td>
+            <td><input type="text" value="${realization.resultats}" onchange="updateRealization(${index}, 'resultats', this.value)" /></td>
+            <td><input type="text" value="${realization.savoirEtre}" onchange="updateRealization(${index}, 'savoirEtre', this.value)" /></td>
+            <td><input type="text" value="${realization.savoirFaire}" onchange="updateRealization(${index}, 'savoirFaire', this.value)" /></td>
+            <td><button onclick="removeRealization(this)">Supprimer</button></td>
+        </tr>
+    `).join('');
 }
+
+// Fonction pour trier le tableau en fonction de la colonne "Ordre"
+function sortRealizationsByOrder() {
+    window.realizations_data.sort((a, b) => a.ordre - b.ordre);
+    updateRealizationsTableBody();
+}
+
+// Ajouter un écouteur d'événement pour trier le tableau lorsque la colonne "Ordre" est modifiée
+document.addEventListener('change', function(event) {
+    if (event.target && event.target.matches('input[type="number"]')) {
+        sortRealizationsByOrder();
+    }
+});

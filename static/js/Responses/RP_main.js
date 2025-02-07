@@ -1,5 +1,8 @@
 // Add status tooltips
 
+// Import the loadRealizationsData function
+//import { loadRealizationsData } from './Realisation.js';
+
 //const { url } = require('inspector');
 
 
@@ -1056,17 +1059,29 @@ window.addEventListener('load', async function() {
     await show_current_dossier();
     
     // Load data
-    await loadRealizationsData();
+    
     await loadTableData(function() {
         //console.log('Table data loaded and callback executed.');
         // Add any additional code to execute after loading table data here
+        
     });
-    
     setNewTab();  
     createMenu();
     
-    document.getElementById('Excluded').addEventListener('change', loadTableData);
-    
+    // Ensure loadRealizationsData is defined
+    if (typeof loadRealizationsData === 'function') {
+        await loadRealizationsData();
+    } else {
+        console.error('loadRealizationsData function is not defined.');
+    }
+
+    // Ensure the element with id 'Excluded' exists before adding the event listener
+    const excludedElement = document.getElementById('Excluded');
+    if (excludedElement) {
+        excludedElement.addEventListener('change', loadTableData);
+    } else {
+        console.error('Element with id "Excluded" not found.');
+    }
 });
 
 
@@ -1284,7 +1299,7 @@ async function get_job_answer(thepath,num_job,isUrl)
 
         ;
  
-  
+   
  /*  q2_job = " peux tu me faire un plan détaillé de du profile du candidat avec les sections" +
         "- Titre du profile," +
         "- le résumé du texte mis en avant du profile," +

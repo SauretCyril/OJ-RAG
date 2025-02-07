@@ -53,43 +53,43 @@ def extract_text_from_pdf(pdf_path):
             #print(f"-> Text extrait: {text[:200]}...")
             return text
             
-        print(". Le fichier PDF n'existe pas")
+        #print(". Le fichier PDF n'existe pas")
     except Exception as e:
         print(f"An error occurred while extracting text from PDF: {e}")
         return ""
 
 def extract_text_from_url(url):
     try:
-        print(f"-> Tentative d'extraction de texte depuis l'URL: {url}")
+        #print(f"-> Tentative d'extraction de texte depuis l'URL: {url}")
         
         # Récupérer le contenu de l'URL
         response = requests.get(url)
-        print(f"-> Statut de la réponse HTTP: {response.status_code}")
+        #print(f"-> Statut de la réponse HTTP: {response.status_code}")
         response.raise_for_status()  # Vérifie si la requête a réussi
         
         # Parser le HTML
         soup = BeautifulSoup(response.text, 'html.parser')
-        print("-> HTML parsé avec succès")
+        #print("-> HTML parsé avec succès")
         
         # Supprimer les scripts et styles
         for script in soup(["script", "style"]):
             script.decompose()
-        print("-> Scripts et styles supprimés")
+        #print("-> Scripts et styles supprimés")
             
         # Extraire le texte
         text = soup.get_text(separator='\n')
-        print("-> Texte extrait du HTML")
+        #print("-> Texte extrait du HTML")
         
         # Nettoyer le texte (supprimer les lignes vides multiples)
         lines = [line.strip() for line in text.split('\n')]
         text = '\n'.join(line for line in lines if line)
-        print("-> Texte nettoyé")
+        #print("-> Texte nettoyé")
         
         if not text.strip():
             print("-> L'URL ne contient pas de texte extractible")
             return "L'URL ne contient pas de texte extractible"
             
-        print(f"-> Texte extrait de l'URL: {text[:200]}...")
+        #print(f"-> Texte extrait de l'URL: {text[:200]}...")
         return text
         
     except Exception as e:
