@@ -1,5 +1,15 @@
 window.realizations_data = [];
 
+const columns = [
+    { id: 'ordre', label: 'Ordre', type: 'number', style: 'width: 50px;' },
+    { id: 'titrePoste', label: 'Titre Poste', type: 'text', style: 'width: 150px;' },
+    { id: 'etapeSolution', label: 'Etape Solution', type: 'textarea', style: 'width: 200px;' },
+    { id: 'resultats', label: 'Résultats', type: 'text', style: 'width: 150px;' },
+    { id: 'savoirEtre', label: 'Savoir Être', type: 'text', style: 'width: 150px;' },
+    { id: 'savoirFaire', label: 'Savoir-Faire', type: 'text', style: 'width: 150px;' },
+    { id: 'actions', label: 'Actions', type: 'button', style: 'width: 100px;' }
+];
+
 // Fonction pour charger les réalisations
 function loadRealizationsData() {
     fetch('/read_realizations', {
@@ -36,13 +46,7 @@ function showRealizationsForm() {
             <table id="realizationsTable">
                 <thead id="realizationsTableHead">
                     <tr>
-                        <th>Ordre</th>
-                        <th>Titre Poste</th>
-                        <th>Etape Solution</th>
-                        <th>Résultats</th>
-                        <th>Savoir Être</th>
-                        <th>Savoir-Faire</th>
-                        <th>Actions</th>
+                        ${columns.map(column => `<th style="${column.style}">${column.label}</th>`).join('')}
                     </tr>
                 </thead>
                 <tbody id="realizationsTableBody">
@@ -58,7 +62,7 @@ function showRealizationsForm() {
     const formContainer = document.createElement('div');
     formContainer.innerHTML = formHtml;
     document.body.appendChild(formContainer);
-    tableau_fill();
+    updateRealizationsTableBody();
 }
 
 function closeRealizationsForm() {
@@ -93,14 +97,17 @@ function updateRealizationsTableBody() {
     const tableBody = document.getElementById('realizationsTableBody');
     tableBody.innerHTML = window.realizations_data.map((realization, index) => `
         <tr>
-            <td><input type="number" value="${realization.ordre}" onchange="updateRealization(${index}, 'ordre', this.value)" /></td>
-            
-            <td><input type="text" value="${realization.titrePoste}" onchange="updateRealization(${index}, 'titrePoste', this.value)" /></td>
-            <td><textarea onchange="updateRealization(${index}, 'etapeSolution', this.value)">${realization.etapeSolution}</textarea></td>
-            <td><input type="text" value="${realization.resultats}" onchange="updateRealization(${index}, 'resultats', this.value)" /></td>
-            <td><input type="text" value="${realization.savoirEtre}" onchange="updateRealization(${index}, 'savoirEtre', this.value)" /></td>
-            <td><input type="text" value="${realization.savoirFaire}" onchange="updateRealization(${index}, 'savoirFaire', this.value)" /></td>
-            <td><button onclick="removeRealization(this)">Supprimer</button></td>
+            ${columns.map(column => {
+                if (column.type === 'select') {
+                    return `<td><select onchange="updateRealization(${index}, '${column.id}', this.value)">${column.options.map(option => `<option value="${option}" ${realization[column.id] === option ? 'selected' : ''}>${option}</option>`).join('')}</select></td>`;
+                } else if (column.type === 'textarea') {
+                    return `<td><textarea style="${column.style}" onchange="updateRealization(${index}, '${column.id}', this.value)">${realization[column.id]}</textarea></td>`;
+                } else if (column.type === 'button') {
+                    return `<td><button onclick="removeRealization(this)">Supprimer</button></td>`;
+                } else {
+                    return `<td><input type="${column.type}" style="${column.style}" value="${realization[column.id]}" onchange="updateRealization(${index}, '${column.id}', this.value)" /></td>`;
+                }
+            }).join('')}
         </tr>
     `).join('');
 }
@@ -135,23 +142,7 @@ function saveRealizations() {
     });
 }
 
-// Fonction pour remplir le tableau des réalisations
-function tableau_fill() {
-    const tableBody = document.getElementById('realizationsTableBody');
-    tableBody.innerHTML = window.realizations_data.map((realization, index) => `
-        <tr>
-            <td><input type="number" value="${realization.ordre}" onchange="updateRealization(${index}, 'ordre', this.value)" /></td>
-            
-            <td><input type="text" value="${realization.titrePoste}" onchange="updateRealization(${index}, 'titrePoste', this.value)" /></td>
-            <td><textarea onchange="updateRealization(${index}, 'etapeSolution', this.value)">${realization.etapeSolution}</textarea></td>
-            <td><input type="text" value="${realization.resultats}" onchange="updateRealization(${index}, 'resultats', this.value)" /></td>
-            <td><input type="text" value="${realization.savoirEtre}" onchange="updateRealization(${index}, 'savoirEtre', this.value)" /></td>
-            <td><input type="text" value="${realization.savoirFaire}" onchange="updateRealization(${index}, 'savoirFaire', this.value)" /></td>
-            <td><button onclick="removeRealization(this)">Supprimer</button></td>
-        </tr>
-    `).join('');
-}
-
+/* 7 */
 // Fonction pour trier le tableau en fonction de la colonne "Ordre"
 function sortRealizationsByOrder() {
     window.realizations_data.sort((a, b) => a.ordre - b.ordre);
@@ -164,3 +155,10 @@ document.addEventListener('change', function(event) {
         sortRealizationsByOrder();
     }
 });
+
+function removeRealization(button) {
+    const row = button.parentNode.parentNode;
+    const index = row.rowIndex - 1; // Adjust for header row
+    window.realizations_data.splice(index, 1);
+    updateRealizationsTableBody();
+}
