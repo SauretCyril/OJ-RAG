@@ -1741,7 +1741,7 @@ async function selectvalue(file_SK) {
 
 // ...existing code...
 
-function open_notes(file_notes,isSelected) {
+function open_notes(file_notes,isSelected,indexRow,idcol) {
     fetch('/read_notes', {
         method: 'POST',
         headers: {

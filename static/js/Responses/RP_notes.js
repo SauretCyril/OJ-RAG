@@ -1,4 +1,4 @@
-function showNotesPopup(content, file_notes, isSelected) {
+function showNotesPopup(content, file_notes, isSelected,indexRow,idCol) {
     const popupHtml = `
         <dialog id="notesPopup" class="notes-popup">
             <form method="dialog">
@@ -10,7 +10,7 @@ function showNotesPopup(content, file_notes, isSelected) {
                                 <td contenteditable="true" onblur="saveNoteChange('${file_notes}', ${index}, 'key', this.textContent)">${item.key}</td>
                                 <td contenteditable="true" style="width: 300px;" onblur="saveNoteChange('${file_notes}', ${index}, 'value', this.textContent)">${item.value}</td>
                                 <td style="width: 50px;"><span class="remove-icon" onclick="removeNoteRow('${file_notes}', ${index})">&times;</span></td>
-                                ${isSelected ? `<td style="width: 50px;"><span class="select-icon" onclick="selectNoteValue('${item.value}')">👆</span></td>` : ''}
+                                ${isSelected ? `<td style="width: 50px;"><span class="select-icon" onclick="selectNoteValue('${item.value}', ${index}, '${idCol}')">👆</span></td>` : ''}
                             </tr>
                         `).join('')}
                     </table>
@@ -37,10 +37,11 @@ function showNotesPopup(content, file_notes, isSelected) {
     popup.showModal();
 }
 
-function selectNoteValue(value) {
+function selectNoteValue(value, index, idCol) {
     closeNotesPopup();
     // Return the selected value (you can customize this part as needed)
     console.log('Selected value:', value);
+    
 }
 
 function saveNoteChange(file_notes, index, key, value) {
