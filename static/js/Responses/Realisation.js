@@ -90,14 +90,17 @@ function updateRealization(index, key, value) {
 function addRealization() {
     const newRealization = {
         ordre: window.realizations_data.length + 1,
+        entreprise: '',
+        periode: '',
         titrePoste: '',
+        contexte: '',
         etapeSolution: '',
         resultats: '',
         savoirEtre: '',
         savoirFaire: ''
     };
     window.realizations_data.push(newRealization);
-    //updateRealizationsTableBody();
+    updateRealizationsTableBody();
 }
 
 // Fonction pour mettre à jour le corps du tableau des réalisations

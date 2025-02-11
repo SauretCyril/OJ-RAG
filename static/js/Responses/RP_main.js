@@ -59,7 +59,7 @@ window.columns = [
     { key: 'url', editable: false, width: '100px',"visible":false ,"type":"tb",title:'Url' },
     { key: 'type', editable: true, width: '80px',"visible":true ,"type":"tb",title:'Type'  },
     { key: 'annonce_pdf', editable: true, width: '80px',"visible":false ,"type":"tb",title:'Annonce (pdf)' },
-    { key: 'type_question', editable: true, width: '60px',"visible":true ,"type":"tb" ,title:'?'},
+    { key: 'Origine', editable: true, width: '120px',"visible":true ,"type":"tb" ,title:'Origine'},
     { key: 'lien_Etape', editable: true, width: '80px',"visible":false ,"type":"tb",title:'Lien Etape' },
     
     { key: 'CVfile', editable: true, width: '80px',"visible":false ,"type":"tb",title:'CVfile' },
@@ -168,7 +168,7 @@ function loadTableData(callback) {
             const dir_path = filePath.substring(0, filePath.lastIndexOf('/'));
             //console.log("<<-1---dir_path--->>",dir_path);
             const isCvRef = item.Commentaire && item.Commentaire.includes('<CV-REF>');
-            const isOnDay = item.type_question && item.type_question.includes('DAY');
+            const isOnDay = item.Commentaire && item.Commentaire.includes('DAY');
             const isrefus = item.todo && item.todo.includes('refus');
             let fichier_annonce = dir_path + '/' + item.dossier+window.CONSTANTS['FILE_NAMES']['ANNONCE_SUFFIX'];
             //console.log("<<-2-fichier_annonce>>",fichier_annonce);
@@ -760,7 +760,7 @@ function openEditModal(rowId) {
     const tabGroups = {
         'Informations principales': ['dossier', 'description', 'id', 'entreprise', 'categorie'],
         'Statut': ['etat', 'lien_Etape','annonce_pdf','CV','CVfile'],
-        'suivi': [ 'Date','Date_rep','todo','commetaires'],
+        'suivi': [ 'Date','Date_rep','todo','commetaires','Origine'],
         'Contact': [ 'contact','tel', 'mail','url'],
         'Détails': ['Commentaire', 'type', 'Lieux'], 
         'GPT': ['GptSum', 'instructions']
