@@ -182,6 +182,7 @@ function loadTableData(callback) {
             
             
             const file_notes = dir_path + '/' + item.dossier+window.CONSTANTS['FILE_NAMES']['NOTES_FILE'];
+            const file_RQ = dir_path + '/' + item.dossier+window.CONSTANTS['FILE_NAMES']['RQ_FILE'];
             //console.log("<<-5-file_notes>>",file_notes);
             
             const row = document.createElement('tr');
@@ -190,10 +191,9 @@ function loadTableData(callback) {
             row.style.position = 'relative'; // Ajout du positionnement relatif sur la ligne
               if (isrefus) {
                 row.classList.add('refus-row');
-              }
-            else {
-                    row.classList.add('normal-row');
-                }
+            } else {
+                row.classList.add('normal-row');
+            }
           
             if (isOnDay) {
                 row.style.backgroundColor = '#ADD8E6'; // Light blue color
@@ -208,12 +208,11 @@ function loadTableData(callback) {
                    
                     if (col.key === 'list_RQ') 
                     {
-                        //const heartIcon = document.createElement('span');
-                        //heartIcon.textContent = '❤️'; // Heart icon
+                     
                         const button = document.createElement('button');
                         button.textContent = ''; // Heart icon
                         button.style.cursor = 'pointer';
-                        button.addEventListener('click', () => open_notes(file_notes,false));
+                        button.addEventListener('click', () => open_notes(file_RQ));
                         cell.appendChild(button);
                         //heartIcon.style.cursor = 'pointer';
                         //heartIcon.addEventListener('click', () => open_notes(file_notes));
@@ -1727,21 +1726,10 @@ function closeAnnouncementForm() {
 
 
 
-async function selectvalue(file_SK) {
-   // ouvrir la popup de selection
-    const popupResult  = await open_notes(file_SK,true);
-    if (popupResult) {
-        // Mettre à jour la valeur du champ
-        return popupResult;
-    } else {
-        return null;
-    } 
-}
-
 
 // ...existing code...
 
-function open_notes(file_notes,isSelected,indexRow,idcol) {
+function open_notes(file_notes) {
     fetch('/read_notes', {
         method: 'POST',
         headers: {
@@ -1753,7 +1741,7 @@ function open_notes(file_notes,isSelected,indexRow,idcol) {
     .then(data => {
         if (data.status === "success") {
             const notesContent = data.content;
-            showNotesPopup(notesContent, file_notes,isSelected);
+            showNotesPopup(notesContent, file_notes);
         } else {
             alert('Erreur lors de la lecture des notes: ' + data.message);
         }
