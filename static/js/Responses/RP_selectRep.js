@@ -29,6 +29,56 @@ function selectRep() {
     // Show form
     const form = document.getElementById('directoryForm');
     form.showModal();
+   
+    // Add styles for directoryForm
+    let style6 = document.createElement('style');
+    style6.textContent = `
+        .directory-form {
+            width: 50%;
+            min-width: 50%;
+            height: 30%;
+            min-height: 30%;
+            padding: 20px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            index: 1000;
+        }
+        .directory-form .form-group {
+            margin-bottom: 15px;
+        }
+        .directory-form .form-group label {
+            display: block;
+            margin-bottom: 5px;
+        }
+        .directory-form .form-group input {
+            width: 100%;
+            padding: 8px;
+            box-sizing: border-box;
+        }
+        .directory-form .button-group {
+            display: flex;
+            justify-content: space-between;
+        }
+        .directory-form .button-group button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .directory-form .button-group button:first-child {
+            background-color: #4CAF50;
+            color: white;
+        }
+        .directory-form .button-group button:last-child {
+            background-color: #f44336;
+            color: white;
+        }
+    `;
+    document.head.appendChild(style6);
 }
 
 function submitDirectory() {
@@ -78,54 +128,5 @@ function closeDirectoryForm() {
         form.remove(); // Ensure the form is removed from the DOM
     }
 }
-
-// Add styles for directoryForm
-const style5 = document.createElement('style');
-style5.textContent = `
-    .directory-form {
-        width: 50%;
-        min-width: 50%;
-        height: 30%;
-        min-height: 30%;
-        padding: 20px;
-        border: 1px solid #ccc;
-        border-radius: 8px;
-        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-        display: flex;
-        flex-direction: column;
-        justify-content: space-between;
-        index: 1000;
-    }
-    .directory-form .form-group {
-        margin-bottom: 15px;
-    }
-    .directory-form .form-group label {
-        display: block;
-        margin-bottom: 5px;
-    }
-    .directory-form .form-group input {
-        width: 100%;
-        padding: 8px;
-        box-sizing: border-box;
-    }
-    .directory-form .button-group {
-        display: flex;
-        justify-content: space-between;
-    }
-    .directory-form .button-group button {
-        padding: 10px 20px;
-        border: none;
-        border-radius: 4px;
-        cursor: pointer;
-    }
-    .directory-form .button-group button:first-child {
-        background-color: #4CAF50;
-        color: white;
-    }
-    .directory-form .button-group button:last-child {
-        background-color: #f44336;
-        color: white;
-    }
-`;
 
 // ...existing code...

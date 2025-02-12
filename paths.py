@@ -35,8 +35,8 @@ def GetDirState():
     new_path = new_path.replace('\\', '/') 
     return new_path
 
-def GetDirCRQ():
-    path_CRQ =os.getenv("DIR_CRQ_FILE")
+def GetDirCRQ(dir):
+    path_CRQ =os.getenv(dir)
     dirroot = GetRoot()
     new_path=os.path.join(dirroot,path_CRQ)
     #print("dbg652 filter dir = ",new_path)
@@ -86,14 +86,21 @@ def buildAllPaths():
     dirstate= GetDirState()
     MakeNecessariesDir(dirstate)
     '''repertoire des requetes pour extraire les infos de classements'''
-    DirCRQ = GetDirCRQ()
-    MakeNecessariesDir(DirCRQ)
+    #DirCRQ = GetDirCRQ()
+    #MakeNecessariesDir(DirCRQ)
     
     '''repertoire des realisations'''
     DirREA = GetDirREA()
     MakeNecessariesDir(DirREA)
     
-    
+def GetDirRQ():
+    path_request =os.getenv("DIR_RQ_FILE")
+    dirroot = GetRoot()
+    print("dbg234d root = ",dirroot)
+    new_path=os.path.join(dirroot,path_request)
+    new_path = new_path.replace('\\', '/')
+    print("dbg234c requests dir = ",new_path)
+    return new_path
     
     
 def MakeNecessariesDir(directory):

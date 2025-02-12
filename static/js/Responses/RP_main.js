@@ -212,11 +212,9 @@ function loadTableData(callback) {
                         const button = document.createElement('button');
                         button.textContent = ''; // Heart icon
                         button.style.cursor = 'pointer';
-                        button.addEventListener('click', () => open_notes(file_RQ));
+                        button.addEventListener('click', () => open_liste_requests());
                         cell.appendChild(button);
-                        //heartIcon.style.cursor = 'pointer';
-                        //heartIcon.addEventListener('click', () => open_notes(file_notes));
-                        //cell.appendChild(button);
+                      
                     } 
                     else if (col.key === 'GptSum' ) 
                     {
@@ -1045,6 +1043,8 @@ window.addEventListener('load', async function() {
     document.head.appendChild(style1);
     document.head.appendChild(style3);
     document.head.appendChild(style4);
+    document.head.appendChild(style5);
+   
     // constant
     await loadConstants();  // Ensure loadConstants is completed
 
@@ -1723,7 +1723,6 @@ function closeAnnouncementForm() {
         form.remove(); // Ensure the form is removed from the DOM
     }
 }
-
 
 
 

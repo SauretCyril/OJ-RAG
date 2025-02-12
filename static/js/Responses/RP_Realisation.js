@@ -165,7 +165,7 @@ function handleDoubleClick(id) {
             const file = data.filePath;
             //alert('Chemin du fichier récupéré avec succès: ' + file);
             // Handle the file path as needed
-            open_notes(file,true,index, id);
+            open_notes(file);
         } else {
             alert('Erreur 147 : lors de la récupération du chemin du fichier: ' + data.message);
         }
@@ -215,7 +215,7 @@ function sortRealizationsByOrder() {
 // Ajouter un écouteur d'événement pour trier le tableau lorsque la colonne "Ordre" est modifiée
 document.addEventListener('change', function(event) {
     if (event.target && event.target.matches('input[type="number"]')) {
-        //sortRealizationsByOrder();
+        sortRealizationsByOrder();
     }
 });
 

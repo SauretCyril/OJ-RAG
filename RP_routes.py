@@ -761,7 +761,7 @@ def save_reseaux_link_update():
 async def list_CRQ_files():
     list_CRQ = []
     try:
-        directory_path = GetDirCRQ()
+        directory_path = GetDirCRQ('DIR_DRQ_FILE')
         defaultfile = os.path.join(directory_path, 'default.txt')
         if not os.path.exists(directory_path):
             #logger.info("Directory does not exist, creating: %s", directory_path)
@@ -825,18 +825,20 @@ def save_CRQ_text(file_name, text_data):
 @routes.route('/load-CRQ-text', methods=['POST'])
 def route_load_CRQ_text():
     file_name = request.json.get('file_name')
+    dir=request.json.get('dir')
+    #"DIR_CRQ_FILE"
     #print("dbg788 :fichier instructions",file_name)     
-    text=load_CRQ_text(file_name)
+    text=load_CRQ_text(file_name,dir)
     #print("dbg790 :text ",text)   
     return jsonify(text)
     
-def load_CRQ_text(file_name):
+def load_CRQ_text(file_name,dir):
     try:
         text=""
         file_name_txt = file_name+".txt"
-        filepath = os.path.join(GetDirCRQ(), file_name_txt)
+        filepath = os.path.join(GetOneDir(dir), file_name_txt)
         filepath = filepath.replace('\\', '/')
-        
+        print("dbg3434 :fichier requete",filepath)
         #print("dbg789 :fichier instructions",filepath)
         if os.path.exists(filepath):
             if not file_name:

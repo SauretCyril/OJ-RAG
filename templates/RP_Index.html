@@ -62,6 +62,7 @@
         <button class="tab" onclick="changeTab('RDV3')">Etape 3</button>
         <button class="tab" onclick="changeTab('Profiles')">Profiles</button>
         <button class="tab" onclick="changeTab('Suivi')">Suivi</button>
+        <button class="tab" onclick="changeTab('Atteliers')">Atteliers</button>
         <button class="tab" onclick="changeTab('Tests')">Tests</button>
         <div style="float: right">
           <select id="Excluded">
@@ -120,9 +121,10 @@
     <script src="{{ url_for('static', filename='js/Responses/RP_main.js') }}"></script>
     <script src="{{ url_for('static', filename='js/Responses/RP_notes.js') }}"></script>
     <script src="{{ url_for('static', filename='js/Responses/RP_CRQ.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/Responses/export.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/Responses/selectRep.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/Responses/Realisation.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/Responses/RP_request.js') }}"></script>
+
+    <script src="{{ url_for('static', filename='js/Responses/RP_selectRep.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/Responses/RP_Realisation.js') }}"></script>
     
   </body>
 </html>

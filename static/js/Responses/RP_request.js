@@ -1,6 +1,6 @@
-function open_CRQ() {
-      // Call the function and wait for it to complete    ;
-    fetch('/list-CRQ-files', {
+function open_liste_requests() {
+    // Call the function and wait for it to complete;
+    fetch('/list-requests', {
         method: 'GET',
         headers: {
             'Content-Type': 'application/json'
@@ -8,20 +8,20 @@ function open_CRQ() {
     })
     .then(response => response.json())
     .then(fileList => {
-        show_CRQ_Popup(fileList);
+        show_requests_popup(fileList);
     })
     .catch(error => {
         console.error('Error fetching file list:', error);
         alert('Erreur lors de la récupération des fichiers.');
     }); 
 } 
-function show_CRQ_Popup(fileList) {
+function show_requests_popup(fileList) {
     //alert(fileList);
     
     const popupHtml = `
-        <dialog id="CRQPopup" class="CRQ-popup">
+        <dialog id="DRQPopup" class="CRQ-popup">
             <form method="dialog">
-                <h2>les instructions de classements</h2>
+                <h2>Les questions</h2>
                 <div id="CRQContentContainer">
                     <ul id="fileList">
                         ${fileList.map(file => `
@@ -33,16 +33,16 @@ function show_CRQ_Popup(fileList) {
                     </ul>
                 </div>
                 <div class="button-group">
-                    <button type="button" onclick="save_current_instruction()" id="saveButton" style="display: none;">Enregistrer</button>
+                    <button type="button" onclick="save_current_request()" id="saveButton" style="display: none;">Enregistrer</button>
                     <button type="button" onclick="editText()" id="editButton" style="display: none;">Edite</button>
-                    <button type="button" onclick="closeCRQPopup()">Fermer</button>
+                    <button type="button" onclick="closeDRQPopup()">Fermer</button>
                 </div>
             </form>
         </dialog>
     `;
     // ...existing code...
     // Remove existing popup if any
-    const existingPopup = document.getElementById('CRQPopup');
+    const existingPopup = document.getElementById('DRQPopup');
     if (existingPopup) {
         existingPopup.remove();
     }
@@ -51,7 +51,7 @@ function show_CRQ_Popup(fileList) {
     document.body.insertAdjacentHTML('beforeend', popupHtml);
 
     // Show popup
-    const popup = document.getElementById('CRQPopup');
+    const popup = document.getElementById('DRQPopup');
     popup.showModal();
 }
 
@@ -79,7 +79,7 @@ function editText(file) {
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({ file_name: settingValue ,dir:'DIR_CRQ_FILE'})
+            body: JSON.stringify({ file_name: settingValue ,dir:'DIR_RQ_FILE'})
         })
         .then(response => response.json())
         .then(data => {
@@ -160,18 +160,17 @@ function closeEditTextPopup() {
 
 
 
-function closeCRQPopup() {
-    const popup = document.getElementById('CRQPopup');
+function closeDRQPopup() {
+    const popup = document.getElementById('DRQPopup');
     if (popup) {
         popup.close();
     }
 }
 
-// Add styles for CRQPopup
-
-const style4 = document.createElement('style');
-style4.textContent = `
-    .CRQ-popup {
+// Add styles for DRQPopup
+const style5 = document.createElement('style');
+style5.textContent = `
+    .DRQ-popup {
         width: 400px;
         height: 300px;
         padding: 20px;
@@ -179,24 +178,24 @@ style4.textContent = `
         border-radius: 8px;
         box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
     }
-    .CRQ-popup #fileList {
+    .DRQ-popup #fileList {
         list-style-type: none;
         padding: 0;
     }
-    .CRQ-popup #fileList li {
+    .DRQ-popup #fileList li {
         padding: 8px;
         border-bottom: 1px solid #ccc;
         cursor: pointer;
     }
-    .CRQ-popup #fileList li.selected {
+    .DRQ-popup #fileList li.selected {
         background-color: #007bff;
         color: white;
     }
-    .CRQ-popup .button-group {
+    .DRQ-popup .button-group {
         display: flex;
         justify-content: flex-end;
     }
-    .CRQ-popup .button-group button {
+    .DRQ-popup .button-group button {
         padding: 10px 20px;
         border: none;
         border-radius: 4px;
@@ -205,14 +204,14 @@ style4.textContent = `
         color: white;
     }
 `;
-function save_current_instruction() {
+function save_current_requests() {
    value=document.querySelector('.selected').innerText;
-    CookieName='current_instruction';
+    CookieName='current_request';
     const selectedElement = document.querySelector('.selected');
     if (selectedElement) {
         const selected = selectedElement.innerText;
-        alert('ck00->current_instruction = '+selected);
-        save_cookie('current_instruction',selected);
+        alert('ck00->current_request = '+selected);
+        save_cookie('current_request',selected);
         
 
      }
