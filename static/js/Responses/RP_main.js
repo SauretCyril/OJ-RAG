@@ -37,9 +37,10 @@ window.columns = [
     },
     { key: 'id', editable: true, width: '100px',"visible":true,"type":"tb",title:'ID' },
     { key: 'entreprise', editable: true, width: '150px',"visible":true ,"type":"tb",title:'Entreprise' },
-    { key: 'list_RQ', editable: false, width: '40px',"visible":true ,"type":"tb",title:'RQ' },
+    { key: 'list_RQ', editable: false, width: '100px',"visible":true ,"type":"tb",title:'RQ' },
     { key: 'isJo', editable: false, width: '50px',"visible":true ,"type":"tb",title:'Manu' },
     { key: 'isSteal', editable: false, width: '50px',"visible":true ,"type":"tb",title:'Steal' },
+    { key: 'request', editable: false, width: '100px',"visible":false ,"type":"tb",title:'request' },
     { key: 'GptSum', editable: false, width: '50px',"visible":true,"type":"tb",title:'Resum' },
     { key: 'CV', editable: false, width: '50px',"visible":true ,"type":"tb",title:'CV' },
     { key: 'CVpdf', editable: false, width: '50px',"visible":true ,"type":"tb",title:'.pdf' },
@@ -210,9 +211,9 @@ function loadTableData(callback) {
                     {
                      
                         const button = document.createElement('button');
-                        button.textContent = ''; // Heart icon
+                        button.textContent = item['request']; // Heart icon
                         button.style.cursor = 'pointer';
-                        button.addEventListener('click', () => open_liste_requests());
+                        button.addEventListener('click', () => open_liste_requests(row.id));
                         cell.appendChild(button);
                       
                     } 
@@ -746,7 +747,7 @@ function updateFilterValues(filters) {
 
 // Function to load filter values from JSON file and update input fields
 
-
+//onfiche
 function openEditModal(rowId) {
     // Find the annonce data
     const index = window.annonces.findIndex(a => Object.keys(a)[0] === rowId);
@@ -760,7 +761,7 @@ function openEditModal(rowId) {
         'suivi': [ 'Date','Date_rep','todo','commetaires','Origine'],
         'Contact': [ 'contact','tel', 'mail','url'],
         'Détails': ['Commentaire', 'type', 'Lieux'], 
-        'GPT': ['GptSum', 'instructions']
+        'GPT': ['GptSum', 'instructions','request']
     };
 
     // Create modal HTML with tabs

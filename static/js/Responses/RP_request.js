@@ -1,21 +1,22 @@
-function open_liste_requests() {
+function open_liste_requests(rowid) {
     // Call the function and wait for it to complete;
     fetch('/list-requests', {
-        method: 'GET',
+        method: 'POST',
         headers: {
             'Content-Type': 'application/json'
-        }
+        },
+        body: JSON.stringify({rowid:rowid})
     })
     .then(response => response.json())
     .then(fileList => {
-        show_requests_popup(fileList);
+        show_requests_popup(fileList,rowid);
     })
     .catch(error => {
         console.error('Error fetching file list:', error);
         alert('Erreur lors de la récupération des fichiers.');
     }); 
 } 
-function show_requests_popup(fileList) {
+function show_requests_popup(fileList,rowid) {
     //alert(fileList);
     
     const popupHtml = `
@@ -33,7 +34,7 @@ function show_requests_popup(fileList) {
                     </ul>
                 </div>
                 <div class="button-group">
-                    <button type="button" onclick="save_current_request()" id="saveButton" style="display: none;">Enregistrer</button>
+                    <button type="button" onclick="save_current_request('${rowid}')" id="saveButton" style="display: none;">Enregistrer</button>
                     <button type="button" onclick="editText()" id="editButton" style="display: none;">Edite</button>
                     <button type="button" onclick="closeDRQPopup()">Fermer</button>
                 </div>
@@ -204,15 +205,14 @@ style5.textContent = `
         color: white;
     }
 `;
-function save_current_requests() {
+function save_current_request(rowid) {
    value=document.querySelector('.selected').innerText;
-    CookieName='current_request';
+    
     const selectedElement = document.querySelector('.selected');
     if (selectedElement) {
         const selected = selectedElement.innerText;
-        alert('ck00->current_request = '+selected);
-        save_cookie('current_request',selected);
-        
+        alert('ck00->current_request = '+selected + " file ="+rowid);
+        updateAnnonces_byfile(rowid,"request",selected);
 
      }
 }

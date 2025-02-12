@@ -222,6 +222,7 @@ async def read_annonces_json():
                                 data["CV"] = isCVin
                                 data["CVpdf"] = isCVinpdf
                                 data["list_RQ"]=list_RQ
+                                data["request"]="default"
                                 data["delay"]=calculate_delay(data)
                                 jData = {file_path: data}
                                 annonces_list.append(jData)
@@ -292,6 +293,7 @@ async def read_annonces_json():
                             data["etat"] = "New"
                             data["list_RQ"]=list_RQ
                             data["instructions"]=the_request
+                            data["request"]="default"
                             print("DBG-234 -> file_path_nodata: " + file_path_nodata)
                             print("DBG-5487 -> file_path: " + file_path) 
                             jData = {file_path_nodata:data}  

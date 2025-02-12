@@ -9,7 +9,7 @@ logger = logging.getLogger(__name__)
 
 requests = Blueprint('requests', __name__)
 
-@requests.route('/list-requests', methods=['GET'])
+@requests.route('/list-requests', methods=['POST'])
 def list_requests(): 
     
     list_RQ = []
