@@ -134,7 +134,6 @@ def favicon():
     return ""
 
 
-
 '''
 get info of pdf file and return'''
 def get_info(file_path,role, question):
@@ -192,3 +191,4 @@ def response_me(question,url,role):
     except Exception as e:
         print(f"Erreur lors de l'analyse: {str(e)}")
         return f"Une erreur s'est produite: {str(e)}"
+

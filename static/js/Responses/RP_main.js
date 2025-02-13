@@ -37,11 +37,11 @@ window.columns = [
     },
     { key: 'id', editable: true, width: '100px',"visible":true,"type":"tb",title:'ID' },
     { key: 'entreprise', editable: true, width: '150px',"visible":true ,"type":"tb",title:'Entreprise' },
-    { key: 'list_RQ', editable: false, width: '100px',"visible":true ,"type":"tb",title:'RQ' },
-    { key: 'isJo', editable: false, width: '50px',"visible":true ,"type":"tb",title:'Manu' },
-    { key: 'isSteal', editable: false, width: '50px',"visible":true ,"type":"tb",title:'Steal' },
+    { key: 'list_RQ', editable: false, width: '125px',"visible":true ,"type":"tb",title:'RQ' },
+    { key: 'isJo', editable: false, width: '50px',"visible":true ,"type":"tb",title:'M.' },
+    { key: 'isSteal', editable: false, width: '50px',"visible":true ,"type":"tb",title:'St' },
     { key: 'request', editable: false, width: '100px',"visible":false ,"type":"tb",title:'request' },
-    { key: 'GptSum', editable: false, width: '50px',"visible":true,"type":"tb",title:'Resum' },
+    { key: 'GptSum', editable: false, width: '50px',"visible":true,"type":"tb",title:'Res' },
     { key: 'CV', editable: false, width: '50px',"visible":true ,"type":"tb",title:'CV' },
     { key: 'CVpdf', editable: false, width: '50px',"visible":true ,"type":"tb",title:'.pdf' },
     
@@ -209,12 +209,14 @@ function loadTableData(callback) {
                    
                     if (col.key === 'list_RQ') 
                     {
-                     
+                       //cell.textContent = item['request']; // Green book icon
+                       
+                       //index, col.key, cell.textContent
                         const button = document.createElement('button');
                         button.textContent = item['request']; // Heart icon
                         button.style.cursor = 'pointer';
-                        button.addEventListener('click', () => open_liste_requests(row.id));
-                        cell.appendChild(button);
+                        button.addEventListener('click', () => open_liste_requests(row.id, index, "request"));
+                        cell.appendChild(button); 
                       
                     } 
                     else if (col.key === 'GptSum' ) 
@@ -608,25 +610,14 @@ function filterTable() {
 
 // Function to update the global array when a cell is edited
 
-function updateAnnonces_byfile(root, key, value) {
+function updateAnnonces_byfile(file, key, value) {
     try {
-        // Assuming this code is running in a Node.js environment
-        const fs = require('fs');
-        const path = require('path');
-
-        const file_path = path.join(root, ".data.json");
-
-        if (fs.existsSync(file_path)) {
-            const data = fs.readFileSync(file_path, 'utf8');
-            const jsonData = JSON.parse(data);
-
-            jsonData[key] = value;
-
-            fs.writeFileSync(file_path, JSON.stringify(jsonData, null, 2), 'utf8');
-            console.log("File updated successfully:", file_path);
-        } else {
-            console.error("File not found:", file_path);
-        }
+        const index = window.annonces.findIndex(a => Object.keys(a)[0] === file);
+        alert("updateAnnonces_byfile" + " - " + index +"- " +file +" - "+key + " - " + value);
+        if (index === -1) return;
+        
+        window.annonces[index][file][key] = value;
+        refresh();
     } catch (err) {
         console.error("update annonce", err);
     }
@@ -634,10 +625,26 @@ function updateAnnonces_byfile(root, key, value) {
 
 function updateAnnonces(index, key, value) {
     const filePath = Object.keys(window.annonces[index])[0];
+    
     window.annonces[index][filePath][key] = value;
+    //alert("updateAnnonces =" + window.annonces[index][filePath][key]);
     
     
 }
+
+function updateAnnonces_externe(index, key, value) {
+    return new Promise((resolve, reject) => {
+        try {
+            const filePath = Object.keys(window.annonces[index])[0];
+            window.annonces[index][filePath][key] = value;
+            resolve();
+        } catch (error) {
+            reject(error);
+        }
+    });
+}
+
+
 
 function UpdateState(rowId,col,value) {
     const selectedRow = document.getElementById(rowId);
@@ -673,7 +680,7 @@ function saveTableData() {
         .then(response => response.json())
         .then(data => {
             if (data.status === "success") {
-                //console.log('Data successfully saved.');
+                console.log('dbg445 Data successfully saved.');
                 resolve();
             } else {
                 console.error('Error saving data:', data.message);

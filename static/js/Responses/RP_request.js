@@ -1,4 +1,4 @@
-function open_liste_requests(rowid) {
+function open_liste_requests(rowid,index, colName) {
     // Call the function and wait for it to complete;
     fetch('/list-requests', {
         method: 'POST',
@@ -9,15 +9,15 @@ function open_liste_requests(rowid) {
     })
     .then(response => response.json())
     .then(fileList => {
-        show_requests_popup(fileList,rowid);
+        show_requests_popup(fileList,index,colName);
     })
     .catch(error => {
         console.error('Error fetching file list:', error);
         alert('Erreur lors de la récupération des fichiers.');
     }); 
 } 
-function show_requests_popup(fileList,rowid) {
-    //alert(fileList);
+function show_requests_popup(fileList,index,colName) {
+    alert(colName);
     
     const popupHtml = `
         <dialog id="DRQPopup" class="CRQ-popup">
@@ -34,7 +34,7 @@ function show_requests_popup(fileList,rowid) {
                     </ul>
                 </div>
                 <div class="button-group">
-                    <button type="button" onclick="save_current_request('${rowid}')" id="saveButton" style="display: none;">Enregistrer</button>
+                    <button type="button" onclick="save_current_request('${index}','${colName}')" id="saveButton" style="display: none;">Enregistrer</button>
                     <button type="button" onclick="editText()" id="editButton" style="display: none;">Edite</button>
                     <button type="button" onclick="closeDRQPopup()">Fermer</button>
                 </div>
@@ -159,8 +159,6 @@ function closeEditTextPopup() {
     }
 }
 
-
-
 function closeDRQPopup() {
     const popup = document.getElementById('DRQPopup');
     if (popup) {
@@ -205,17 +203,24 @@ style5.textContent = `
         color: white;
     }
 `;
-function save_current_request(rowid) {
-   value=document.querySelector('.selected').innerText;
-    
+function save_current_request(index,colName) {
     const selectedElement = document.querySelector('.selected');
     if (selectedElement) {
         const selected = selectedElement.innerText;
-        alert('ck00->current_request = '+selected + " file ="+rowid);
-        updateAnnonces_byfile(rowid,"request",selected);
-
-     }
+        //alert('dbg664 : nouvelle valeur  = ' + selected + " index =" + index + " colName =" + colName);
+        updateAnnonces_externe(index, colName, selected).then(() => {
+            closeDRQPopup();
+            refresh();
+        }).catch(error => {
+            console.error('Error updating annonces:', error);
+            alert('Erreur lors de la mise à jour des annonces.');
+        });
+      
+        
+    }
 }
+
+
 
 
 

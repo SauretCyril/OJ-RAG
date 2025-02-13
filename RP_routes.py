@@ -222,7 +222,7 @@ async def read_annonces_json():
                                 data["CV"] = isCVin
                                 data["CVpdf"] = isCVinpdf
                                 data["list_RQ"]=list_RQ
-                                data["request"]="default"
+                               
                                 data["delay"]=calculate_delay(data)
                                 jData = {file_path: data}
                                 annonces_list.append(jData)
@@ -268,7 +268,7 @@ async def read_annonces_json():
                         if not current_instruction:
                            current_instruction="annonce"
                             
-                        the_request = load_CRQ_text(current_instruction)
+                        the_request = load_CRQ_text(current_instruction,'DIR_CRQ_FILE')
                         
                         print("RP-2158", the_request)  
                         role="analyse le texte suivant et réponds à cette question, peux tu renvoyer les informations sous forme de données json, les champs son définie dans la question entre [ et ]"
