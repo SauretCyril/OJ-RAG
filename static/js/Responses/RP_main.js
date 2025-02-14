@@ -37,10 +37,13 @@ window.columns = [
     },
     { key: 'id', editable: true, width: '100px',"visible":true,"type":"tb",title:'ID' },
     { key: 'entreprise', editable: true, width: '150px',"visible":true ,"type":"tb",title:'Entreprise' },
-    { key: 'list_RQ', editable: false, width: '125px',"visible":true ,"type":"tb",title:'RQ' },
+    { key: 'list_RQ', editable: false, width: '125px',"visible":false ,"type":"tb",title:'RQ' },
+    { key: 'request', editable: false, width: '100px',"visible":true ,"type":"tb",title:'request' },
+    { key: 'role', editable: false, width: '100px',"visible":true,"type":"tb",title:'role' },
     { key: 'isJo', editable: false, width: '50px',"visible":true ,"type":"tb",title:'M.' },
     { key: 'isSteal', editable: false, width: '50px',"visible":true ,"type":"tb",title:'St' },
-    { key: 'request', editable: false, width: '100px',"visible":false ,"type":"tb",title:'request' },
+    
+    { key: 'role', editable: false, width: '100px',"visible":false ,"type":"tb",title:'role' },
     { key: 'GptSum', editable: false, width: '50px',"visible":true,"type":"tb",title:'Res' },
     { key: 'CV', editable: false, width: '50px',"visible":true ,"type":"tb",title:'CV' },
     { key: 'CVpdf', editable: false, width: '50px',"visible":true ,"type":"tb",title:'.pdf' },
@@ -207,7 +210,7 @@ function loadTableData(callback) {
                     const cell = document.createElement('td');
                     cell.setAttribute('data-key', col.key);
                    
-                    if (col.key === 'list_RQ') 
+                    if (col.key === 'request') 
                     {
                        //cell.textContent = item['request']; // Green book icon
                        
@@ -440,7 +443,7 @@ function loadTableData(callback) {
                             set_current_row();       
                             // call the function get answers
                             //get_job_answer(item.url,item.dossier, item.type,true);
-                            get_job_answer(thefile,item.dossier, item.type,false);
+                            get_job_answer(thefile,item.dossier, item.type,false,item.request);
                             
                             }
                     } else

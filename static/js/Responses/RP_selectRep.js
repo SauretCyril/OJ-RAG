@@ -4,7 +4,7 @@ async function selectRep() {
     const formHtml = `
         <dialog id="directoryForm" class="directory-form">
             <form method="dialog">
-                <h2>Créer un nouveau dossier</h2>
+                <h2>Sélectionner une autre racine</h2>
                 <div class="form-group">
                     <label for="directoryPath">Répertoire:</label>
                     <input type="text" id="directoryPath" class="rich-text-field">
