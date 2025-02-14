@@ -310,6 +310,7 @@ async def read_annonces_json():
                 
                
                                 
+        generate_html_index(annonces_list)
         return annonces_list 
     except Exception as e:
         print(f"Cyr_error_145 An unexpected error occurred while reading annonces: {e}")
@@ -862,3 +863,49 @@ async def SelectDirectory():
     selected_dir = filedialog.askdirectory()
     root.destroy()
     return selected_dir
+
+def generate_html_index(annonces_list):
+    try:
+        # Sort the annonces_list by the 'todo' field
+        sorted_annonces_list = sorted(annonces_list, key=lambda x: list(x.values())[0].get('todo', ''))
+        
+        index_path = os.path.join(GetRoot(), 'index.html')
+        # Check if the file exists to add table headers only once
+        file_exists = os.path.exists(index_path)
+        if file_exists:
+            os.remove(index_path)
+        
+        with open(index_path, 'a', encoding='utf-8') as index_file:
+            index_file.write("<html><body><table border='1'>")
+            index_file.write("<tr>")
+            index_file.write("<th>N°</th>")
+            index_file.write("<th>Entreprise</th>")
+            index_file.write("<th>Description du Poste</th>")
+            index_file.write("<th>Date de Réponse</th>")
+            index_file.write("<th>Todo</th>")
+            index_file.write("<th>Commentaire</th>")
+            index_file.write("</tr>")
+            
+            for item in sorted_annonces_list:
+                for file_path, data in item.items():
+                    index_file.write("<tr>")
+                    dossier = data.get('dossier')
+                    categorie = data.get('categorie')
+                    desc=f"{data.get('categorie', '')} - {data.get('description', '')}"
+                    url = data.get('url')
+                    index_file.write(f"<td><a href='{dossier}/{dossier}_annonce_.pdf'>{dossier}</a></td>")
+                    index_file.write(f"<td>{data.get('entreprise', '')}</td>")
+                    index_file.write(f"<td><a href='{url}'>{desc}</a></td>")
+                    if categorie == 'Profile':
+                        index_file.write(f"<td>{data.get('Date', '')}</td>")
+                    elif categorie == 'Annonce':
+                        index_file.write(f"<td>{data.get('date_rep', '')}</td>")
+                    else:
+                        index_file.write(f"<td>{data.get('Date_from', '')}</td>")
+                    index_file.write(f"<td>{data.get('todo', '')}</td>")
+                    index_file.write(f"<td>{data.get('Commentaire', '')}</td>")
+                    index_file.write("</tr>")
+            
+            index_file.write("</table></body></html>")
+    except Exception as e:
+        print(f"Error generating HTML index: {e}")

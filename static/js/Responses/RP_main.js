@@ -1512,11 +1512,17 @@ function createAnnouncementForm() {
                     <label for="announcementContent">Contenu de l'annonce:</label>
                     <textarea id="announcementContent" class="rich-text-field"></textarea>
                 </div>
+<div class="form-group">
+                    <label for="creationMode">Mode de création:</label>
+                    <select id="creationMode" class="rich-text-field">
+                        <option value="submitAnnouncement">Créer</option>
+                        <option value="scan_url">Scan URL</option>
+                        <option value="scrapeAndFill">Scrape URL</option>
+                    </select>
+                </div>
                 <div class="button-group">
-                    <button type="button" onclick="submitAnnouncement()">Créer</button>
-                    <button type="button" onclick="scan_url()">Scan Url</button>
-                    <button type="button" onclick="scrapeAndFill()">Scrape URL</button>
-                    <button type="button" onclick="closeAnnouncementForm()">Fermer</button>
+                    <button type="button" onclick="executeCreationMode()">Exécuter</button>
+                                        <button type="button" onclick="closeAnnouncementForm()">Fermer</button>
                 </div>
             </form>
         </dialog>
@@ -1536,7 +1542,18 @@ function createAnnouncementForm() {
     form.showModal();
     fillNextDossierName(); // Call the function to fill the next dossier name
 }
+// ...existing code...
 
+function executeCreationMode() {
+    const creationMode = document.getElementById('creationMode').value;
+    if (creationMode === 'submitAnnouncement') {
+        submitAnnouncement();
+    } else if (creationMode === 'scan_url') {
+        scan_url();
+    } else if (creationMode === 'scrapeAndFill') {
+        scrapeAndFill();
+    }
+}
 // Add styles for announcementForm
 const style3 = document.createElement('style');
 style3.textContent = `
