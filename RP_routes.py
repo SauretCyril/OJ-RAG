@@ -310,7 +310,7 @@ async def read_annonces_json():
                 
                
                                 
-        generate_html_index(annonces_list)
+        
         return annonces_list 
     except Exception as e:
         print(f"Cyr_error_145 An unexpected error occurred while reading annonces: {e}")
@@ -864,12 +864,14 @@ async def SelectDirectory():
     root.destroy()
     return selected_dir
 
-def generate_html_index(annonces_list):
+@routes.route('/generate_html_index', methods=['POST'])
+def generate_html_index():
     try:
+        data = request.get_json()
+        annonces_list = data.get('annonces_list', [])
         # Sort the annonces_list by the 'todo' field
         sorted_annonces_list = sorted(annonces_list, key=lambda x: list(x.values())[0].get('todo', ''))
-        
-        index_path = os.path.join(GetRoot(), 'index.html')
+        index_path = os.path.join(GetRoot(), os.getenv("INDEX_DOSSIERS"))
         # Check if the file exists to add table headers only once
         file_exists = os.path.exists(index_path)
         if file_exists:
@@ -907,5 +909,13 @@ def generate_html_index(annonces_list):
                     index_file.write("</tr>")
             
             index_file.write("</table></body></html>")
+        
+        # Open the index_path in the file explorer
+        os.startfile(index_path)
+        
+        return jsonify({"status": "success"}), 200
     except Exception as e:
         print(f"Error generating HTML index: {e}")
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+# ...existing code...

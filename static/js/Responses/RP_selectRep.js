@@ -1,6 +1,6 @@
 // ...existing code...
 
-function selectRep() {
+async function selectRep() {
     const formHtml = `
         <dialog id="directoryForm" class="directory-form">
             <form method="dialog">
@@ -26,10 +26,18 @@ function selectRep() {
     // Add form to document
     document.body.insertAdjacentHTML('beforeend', formHtml);
 
+    const inputField = document.getElementById('directoryPath');
+    if (inputField) {
+        const curdossier = await get_cookie('current_dossier');
+        if (curdossier) {
+            inputField.value = curdossier;  
+        }
+    }
+
     // Show form
     const form = document.getElementById('directoryForm');
     form.showModal();
-   
+
     // Add styles for directoryForm
     let style6 = document.createElement('style');
     style6.textContent = `

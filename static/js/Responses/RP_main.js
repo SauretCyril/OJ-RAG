@@ -694,8 +694,27 @@ function saveTableData() {
     });
 }
 
-
-
+function generate_index_html()
+{
+    fetch('/generate_html_index', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ annonces_list: window.annonces })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === "success") {
+            console.log('dbg4757 Data successfully saved.');
+        } else {
+            console.error('Error saving data:', data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error saving data:', error);
+    });
+}
 
 function saveFilterValues(filters) {
     fetch('/save_filters_json', {
