@@ -1,5 +1,3 @@
-
-
 function showNotesPopup(content, file_notes) {
     const popupHtml = `
         <dialog id="notesPopup" class="notes-popup">
@@ -13,10 +11,9 @@ function showNotesPopup(content, file_notes) {
                             </tr>
                         ` : content.map((item, index) => `
                             <tr>
-                                <td contenteditable="true" onblur="saveNoteChange('${file_notes}', ${index}, 'key', this.textContent)">${item.key}</td>
-                                <td contenteditable="true" style="width: 300px;" onblur="saveNoteChange('${file_notes}', ${index}, 'value', this.textContent)">${item.value}</td>
+                                <td contenteditable="true" class="rich-text" style="width: 10%;"onblur="saveNoteChange('${file_notes}', ${index}, 'key', this.innerHTML)">${item.key}</td>
+                                <td contenteditable="true" class="rich-text" style="width: 90%;" onblur="saveNoteChange('${file_notes}', ${index}, 'value', this.innerHTML)">${item.value}</td>
                                 <td style="width: 50px;"><span class="remove-icon" onclick="removeNoteRow('${file_notes}', ${index})">&times;</span></td>
-                               
                             </tr>
                         `).join('')}
                     </table>
@@ -150,12 +147,15 @@ function closeNotesPopup() {
 const style1 = document.createElement('style');
 style1.textContent = `
     .notes-popup {
-        width: 800px;
-        height: 500px;
+        width: 1000px;
+        height: 700px;
         padding: 20px;
         border: 1px solid #ccc;
         border-radius: 8px;
         box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        font-family: Arial, sans-serif;
+        font-size: 16px;
+        overflow-y: auto; /* Added for scrollable content */
     }
     .notes-popup .notes-table {
         width: 100%;
@@ -164,6 +164,9 @@ style1.textContent = `
     .notes-popup .notes-table td {
         border: 1px solid #ccc;
         padding: 8px;
+    }
+    .notes-popup .notes-table td.rich-text {
+        white-space: pre-wrap;
     }
     .notes-popup .remove-icon {
         cursor: pointer;

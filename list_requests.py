@@ -14,7 +14,10 @@ def list_requests():
     
     list_RQ = []
     try:
-        directory_path = GetDirRQ()
+        dir=request.json.get('dir')
+        #print("dbg1456-----", data
+        directory_path = GetOneDir(dir)
+        print("dbg7456-----", directory_path)
         defaultfile = os.path.join(directory_path, 'default.txt')
         if not os.path.exists(directory_path):
             #logger.info("Directory does not exist, creating: %s", directory_path)

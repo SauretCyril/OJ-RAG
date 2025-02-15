@@ -1,11 +1,11 @@
-function open_liste_requests(rowid,index, colName) {
+function open_liste_requests(rowid,index, colName,dir) {
     // Call the function and wait for it to complete;
     fetch('/list-requests', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'
         },
-        body: JSON.stringify({rowid:rowid})
+        body: JSON.stringify({rowid:rowid, colName:colName, dir: dir})
     })
     .then(response => response.json())
     .then(fileList => {
@@ -22,7 +22,7 @@ function show_requests_popup(fileList,index,colName) {
     const popupHtml = `
         <dialog id="DRQPopup" class="CRQ-popup">
             <form method="dialog">
-                <h2>Les questions</h2>
+                <h2>${colName} possible(s)</h2>
                 <div id="CRQContentContainer">
                     <ul id="fileList">
                         ${fileList.map(file => `

@@ -38,12 +38,11 @@ window.columns = [
     { key: 'id', editable: true, width: '100px',"visible":true,"type":"tb",title:'ID' },
     { key: 'entreprise', editable: true, width: '150px',"visible":true ,"type":"tb",title:'Entreprise' },
     { key: 'list_RQ', editable: false, width: '125px',"visible":false ,"type":"tb",title:'RQ' },
-    { key: 'request', editable: false, width: '100px',"visible":true ,"type":"tb",title:'request' },
-    { key: 'role', editable: false, width: '100px',"visible":true,"type":"tb",title:'role' },
+    { key: 'role', editable: false, width: '120px',"visible":true,"type":"tb",title:'role',dir:'DIR_ROLE_FILE' },   
+    { key: 'request', editable: false, width: '120px',"visible":true ,"type":"tb",title:'request',dir:'DIR_RQ_FILE' },
     { key: 'isJo', editable: false, width: '50px',"visible":true ,"type":"tb",title:'M.' },
     { key: 'isSteal', editable: false, width: '50px',"visible":true ,"type":"tb",title:'St' },
     
-    { key: 'role', editable: false, width: '100px',"visible":false ,"type":"tb",title:'role' },
     { key: 'GptSum', editable: false, width: '50px',"visible":true,"type":"tb",title:'Res' },
     { key: 'CV', editable: false, width: '50px',"visible":true ,"type":"tb",title:'CV' },
     { key: 'CVpdf', editable: false, width: '50px',"visible":true ,"type":"tb",title:'.pdf' },
@@ -212,13 +211,24 @@ function loadTableData(callback) {
                    
                     if (col.key === 'request') 
                     {
-                       //cell.textContent = item['request']; // Green book icon
-                       
-                       //index, col.key, cell.textContent
+                      
                         const button = document.createElement('button');
                         button.textContent = item['request']; // Heart icon
                         button.style.cursor = 'pointer';
-                        button.addEventListener('click', () => open_liste_requests(row.id, index, "request"));
+                        const dir=col.dir;
+                        
+                        button.addEventListener('click', () => open_liste_requests(row.id, index, "request",dir));
+                        cell.appendChild(button); 
+                      
+                    } 
+                     else if (col.key === 'role') 
+                    {
+                     
+                        const button = document.createElement('button');
+                        button.textContent = item['role']; // Heart icon
+                        button.style.cursor = 'pointer';
+                        const dir=col.dir;
+                        button.addEventListener('click', () => open_liste_requests(row.id, index, "role",dir));
                         cell.appendChild(button); 
                       
                     } 
@@ -1540,6 +1550,7 @@ function createAnnouncementForm() {
                         <option value="submitAnnouncement">Créer</option>
                         <option value="scan_url">Scan URL</option>
                         <option value="scrapeAndFill">Scrape URL</option>
+                        <option value="NewAteller">Scrape URL</option>
                     </select>
                 </div>
                 <div class="button-group">
@@ -1574,6 +1585,9 @@ function executeCreationMode() {
         scan_url();
     } else if (creationMode === 'scrapeAndFill') {
         scrapeAndFill();
+    } else if (creationMode === 'NewAteller') {
+
+        newAteller();
     }
 }
 // Add styles for announcementForm
@@ -1695,6 +1709,10 @@ function scan_url() {
     }
 
 } 
+
+function newAtelier() {
+    alert("newAtelier => to do");
+}
 
 function submitAnnouncement() {
     let content = document.getElementById('announcementContent').value;

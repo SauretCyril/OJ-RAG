@@ -5,7 +5,7 @@ from tkinter import filedialog
 
 def GetRoot():
     root_dir = os.getenv("ANNONCES_FILE_DIR")
-    newroot=get_cookie_value("current_dossier")
+    newroot = get_cookie_value("current_dossier")
     #print(f"dbg5698: newroot = {newroot}")
     if os.path.exists(newroot):
         root_dir = newroot
@@ -21,8 +21,10 @@ def GetDirFilter():
     #print("dbg648 dirroot",dirroot)
     
     new_path=os.path.join(dirroot,path_filter)
-    #print("dbg649 filter dir = ",new_path)
-    new_path = new_path.replace('\\', '/') 
+    
+    new_path = os.path.join(dirroot, path_filter)
+    new_path = new_path.replace('\\', '/')
+    print("dbg649 filter dir = ", new_path)
     return new_path
 
 
