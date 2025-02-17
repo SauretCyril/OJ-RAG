@@ -45,6 +45,12 @@ def load_constants():
 CONSTANTS = load_constants()
 #print('Loaded constants:', CONSTANTS)
 
+@routes.route('/get_constants_TypeDossier', methods=['POST'])
+def get_constants_TypeDossier():
+     data = request.get_json()
+     type = data.get('type')
+     typ = CONSTANTS['TYPE_DOSSIER'][type]
+     return jsonify(typ)
 
 @routes.route('/get_constants', methods=['GET'])
 def get_constants():

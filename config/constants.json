@@ -8,6 +8,7 @@
     "GPT_REQUEST_SUFFIX_NAME": "_gpt_request",
     "DATA_FILE": ".data.json",
     "NOTES_FILE": "_notes.txt",
-    "RQ_FILE": "_RQ.json"
+    "RQ_FILE": "_RQ.json",
+    "TYPE_DOSSIER": [{ "_annonce_": "AN" }]
   }
 }
