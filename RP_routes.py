@@ -43,14 +43,10 @@ def load_constants():
         return json.load(f)
 
 CONSTANTS = load_constants()
+
+
 #print('Loaded constants:', CONSTANTS)
 
-@routes.route('/get_constants_TypeDossier', methods=['POST'])
-def get_constants_TypeDossier():
-     data = request.get_json()
-     type = data.get('type')
-     typ = CONSTANTS['TYPE_DOSSIER'][type]
-     return jsonify(typ)
 
 @routes.route('/get_constants', methods=['GET'])
 def get_constants():
@@ -95,6 +91,9 @@ def calculate_delay(data):
         return 'N/A'
 
 
+    
+
+
 @routes.route('/read_annonces_json', methods=['POST'])
 async def read_annonces_json():
     try:
@@ -120,21 +119,26 @@ async def read_annonces_json():
 
             #print(f"RP-2 ------repertoire {root}")
             
-            file_annonce = parent_dir + CONSTANTS['FILE_NAMES']['ANNONCE_SUFFIX']
-            file_annonce_steal=parent_dir + CONSTANTS['FILE_NAMES']['STEAL_ANNONCE_SUFFIX']
-            file_annonce_path = os.path.join(root, file_annonce)
+            file_annonce = parent_dir + CONSTANTS['FILE_NAMES']['ANNONCE_SUFFIX']+ ".pdf"
+            file_description= parent_dir + CONSTANTS['FILE_NAMES']['DESCRIPTION_SUFFIX']+ ".pdf"
+            
+            file_std = parent_dir + CONSTANTS['FILE_NAMES']['STD_SUFFIX']+ ".pdf"
+            
+            file_annonce_steal=parent_dir + CONSTANTS['FILE_NAMES']['STEAL_ANNONCE_SUFFIX']+ ".pdf"
+            file_std_steal=parent_dir + CONSTANTS['FILE_NAMES']['STEAL_STD_SUFFIX']+ ".pdf"
+            
+            #file_annonce_path = os.path.join(root, file_annonce)
             
             # résumé gpt
             file_isGptResum = parent_dir + CONSTANTS['FILE_NAMES']['GPT_REQUEST_SUFFIX']
             file_isGptResum_Path1 = os.path.join(root, file_isGptResum)
             file_isGptResum_Path1 = file_isGptResum_Path1.replace('\\', '/')
             
-           
-            
+                       
             # CV 
             file_cv = parent_dir + CONSTANTS['FILE_NAMES']['CV_SUFFIX'] + ".docx"
-            
             file_cv_pdf = parent_dir + CONSTANTS['FILE_NAMES']['CV_SUFFIX'] + ".pdf"
+            
             
             file_cv_New = parent_dir + CONSTANTS['FILE_NAMES']['CV_SUFFIX_NEW'] + ".docx"
             file_cv_pdf_New = parent_dir + CONSTANTS['FILE_NAMES']['CV_SUFFIX_NEW'] + ".pdf"
@@ -153,9 +157,7 @@ async def read_annonces_json():
            
             list_RQ = {}
             for filename in files:
-                
-               
-                   #print ("dbg4625-------filename=file_annonce",data_json_file)
+                               
                 if filename  == file_cv or filename == file_cv_New:
                     isCVin="O"
                     #print("###---->BINGO")
@@ -165,12 +167,17 @@ async def read_annonces_json():
                 if (filename ==  file_annonce_steal):
                     isSteal="O"
                     file_path_steal = os.path.join(root, file_annonce_steal)
-                  
+                elif (filename ==  file_std_steal):
+                    isSteal="O"
+                    file_path_steal = os.path.join(root, file_std_steal)
                 else :      
-                    if (filename ==  file_annonce):
+                    if ((filename ==  file_annonce) ):
                         isJo="O"
-                        file_path_isJo = os.path.join(root, file_annonce)
-                   
+                        file_path_isJo = os.path.join(root, file_annonce)   
+                    elif (filename ==  file_std):
+                        isJo="O"
+                        file_path_isJo = os.path.join(root, file_std)
+                    
                     else:
                         if (filename ==  file_isGptResum ):
                             isGptResum="O"
@@ -241,11 +248,11 @@ async def read_annonces_json():
                     except json.JSONDecodeError:
                         errordata = {"id": parent_dir, "description": "?", "etat": "invalid JSON"}
                         print(f"Cyr_Error: The file {file_path} contains invalid JSON.")
-            #print(f"RP-7 ------dossier {parent_dir}-----data json = {isData_json_file}")   
+           
             Piece_exist=False
             
             if not record_added:
-                #print ("RP-7234  fichier .data.json :", isData_json_file)
+              
                 thefile=""
                 Piece_exist=False
                 

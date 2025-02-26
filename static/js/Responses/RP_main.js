@@ -173,10 +173,10 @@ function loadTableData(callback) {
             const isCvRef = item.Commentaire && item.Commentaire.includes('<CV-REF>');
             const isOnDay = item.Commentaire && item.Commentaire.includes('DAY');
             const isrefus = item.todo && item.todo.includes('refus');
-            let fichier_annonce = dir_path + '/' + item.dossier+window.CONSTANTS['FILE_NAMES']['ANNONCE_SUFFIX'];
+            let fichier_annonce = dir_path + '/' + item.dossier+window.CONSTANTS['FILE_NAMES']['ANNONCE_SUFFIX']+".pdf";
             //console.log("<<-2-fichier_annonce>>",fichier_annonce);
             
-            let fichier_annonce_steal = dir_path + '/' + item.dossier+window.CONSTANTS['FILE_NAMES']['STEAL_ANNONCE_SUFFIX'];
+            let fichier_annonce_steal = dir_path + '/' + item.dossier+window.CONSTANTS['FILE_NAMES']['STEAL_ANNONCE_SUFFIX']+".pdf";
             //console.log("<<-3-ffichier_annonce_steal>>",fichier_annonce_steal);
             
             
