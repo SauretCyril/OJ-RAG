@@ -124,8 +124,8 @@ async def read_annonces_json():
             
             file_std = parent_dir + CONSTANTS['FILE_NAMES']['STD_SUFFIX']+ ".pdf"
             
-            file_annonce_steal=parent_dir + CONSTANTS['FILE_NAMES']['STEAL_ANNONCE_SUFFIX']+ ".pdf"
-            file_std_steal=parent_dir + CONSTANTS['FILE_NAMES']['STEAL_STD_SUFFIX']+ ".pdf"
+            """  file_annonce_steal=parent_dir + CONSTANTS['FILE_NAMES']['STEAL_ANNONCE_SUFFIX']+ ".pdf"
+            file_std_steal=parent_dir + CONSTANTS['FILE_NAMES']['STEAL_STD_SUFFIX']+ ".pdf" """
             
             #file_annonce_path = os.path.join(root, file_annonce)
             
@@ -157,34 +157,19 @@ async def read_annonces_json():
            
             list_RQ = {}
             isJoTyp=""
-            for filename in files:
-                               
+            for filename in files:              
                 if filename  == file_cv or filename == file_cv_New:
                     isCVin="O"
                     #print("###---->BINGO")
                 if filename  == file_cv_pdf or filename == file_cv_pdf_New:
                     isCVinpdf="O"
-                
-                if (filename ==  file_annonce_steal):
-                    isSteal="O"
-                    file_path_steal = os.path.join(root, file_annonce_steal)
-                elif (filename ==  file_std_steal):
-                    isSteal="O"
-                    file_path_steal = os.path.join(root, file_std_steal)
-                else :      
-                    if ((filename ==  file_annonce) ):
-                        isJo="O"   
-                        file_path_isJo = os.path.join(root, file_annonce)   
-                    else:
-                        if (filename ==  file_isGptResum ):
-                            isGptResum="O"
-                            file_path_gpt = os.path.join(root, file_isGptResum)
-                            
-                            file_gpt_name= parent_dir+CONSTANTS['FILE_NAMES']['GPT_REQUEST_SUFFIX_NAME'] 
-                        
-                           
-                            
-                  
+                if ((filename ==  file_annonce) ):
+                    isJo="O"   
+                    file_path_isJo = os.path.join(root, file_annonce)   
+                if (filename ==  file_isGptResum ):
+                    isGptResum="O"
+                    file_path_gpt = os.path.join(root, file_isGptResum)
+
             for filename in files:
                 file_path = os.path.join(root, filename)
                 file_path = file_path.replace('\\', '/')  # Normalize path

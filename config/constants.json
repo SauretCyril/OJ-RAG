@@ -3,7 +3,7 @@
     "ANNONCE_SUFFIX": "_annonce_",
     "STD_SUFFIX": "_std_",
     "STEAL_STD_SUFFIX": "_std_steal",
-    "STEAL_ANNONCE_SUFFIX": "_annonce_steal",
+    
     "CV_SUFFIX": "_CyrilSauret",
     "CV_SUFFIX_NEW": "_CV_CyrilSauret",
     "GPT_REQUEST_SUFFIX": "_gpt_request.pdf",

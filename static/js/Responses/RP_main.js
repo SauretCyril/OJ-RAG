@@ -41,11 +41,11 @@ window.columns = [
     { key: 'role', editable: false, width: '120px',"visible":true,"type":"tb",title:'role',dir:'DIR_ROLE_FILE' },   
     { key: 'request', editable: false, width: '120px',"visible":true ,"type":"tb",title:'request',dir:'DIR_RQ_FILE' },
     { key: 'isJo', editable: false, width: '50px',"visible":true ,"type":"tb",title:'M.' },
-    { key: 'isSteal', editable: false, width: '50px',"visible":true ,"type":"tb",title:'St' },
+    // { key: 'isSteal', editable: false, width: '50px',"visible":true ,"type":"tb",title:'St' },
     
     { key: 'GptSum', editable: false, width: '50px',"visible":true,"type":"tb",title:'Res' },
-    { key: 'CV', editable: false, width: '50px',"visible":true ,"type":"tb",title:'CV' },
-    { key: 'CVpdf', editable: false, width: '50px',"visible":true ,"type":"tb",title:'.pdf' },
+    { key: 'CV', editable: false, width: '50px',"visible":false ,"type":"tb",title:'CV' },
+    { key: 'CVpdf', editable: false, width: '50px',"visible":true ,"type":"tb",title:'CV' },
     
     { key: 'categorie', editable: true, class: 'category-badge', prefix: 'category-', width: '100px',"visible":true,"type":"tb",title:'Cat'  },
     { key: 'etat', editable: true, width: '100px',"visible":true ,"type":"tb",title:'Etat'  },
@@ -176,7 +176,7 @@ function loadTableData(callback) {
             let fichier_annonce = dir_path + '/' + item.dossier+window.CONSTANTS['FILE_NAMES']['ANNONCE_SUFFIX']+".pdf";
             //console.log("<<-2-fichier_annonce>>",fichier_annonce);
             
-            let fichier_annonce_steal = dir_path + '/' + item.dossier+window.CONSTANTS['FILE_NAMES']['STEAL_ANNONCE_SUFFIX']+".pdf";
+            //let fichier_annonce_steal = dir_path + '/' + item.dossier+window.CONSTANTS['FILE_NAMES']['STEAL_ANNONCE_SUFFIX']+".pdf";
             //console.log("<<-3-ffichier_annonce_steal>>",fichier_annonce_steal);
             
             
