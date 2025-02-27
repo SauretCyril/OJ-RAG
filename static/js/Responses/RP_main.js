@@ -317,15 +317,18 @@ function loadTableData(callback) {
                     {
                         const icon = document.createElement('span');
                          if (item[col.key] === 'O') {
+                            if (item['type']=='RP') {
+                                fichier_annonce = dir_path + '/' + item.dossier+window.CONSTANTS['FILE_NAMES']['REPONSE_SUFFIX']+".pdf";
+                            }
+                            
                             //console.log('#### blanc:');
-                            icon.textContent = '📗'; // Green book icon
+                            icon.textContent = '🔵';
                             icon.style.cursor = 'pointer';
                             icon.addEventListener('click', () => open_url(fichier_annonce));
                             
                         } else  {
                             //console.log('#### vert:');
-                            icon.textContent = '⚪'; // Red book icon
-                            //icon.style.color = 'red';
+                            icon.textContent = '⚪'; // White circle icon
                         } 
                         icon.style.position = 'absolute';
                         icon.style.alignContent='center';
@@ -452,7 +455,7 @@ function loadTableData(callback) {
                             window.CurrentRow=contextMenu.dataset.targetRow;
                             set_current_row();       
                             // call the function get answers
-                            //get_job_answer(item.url,item.dossier, item.type,true);
+                          
                             get_job_answer(thefile,item.dossier, item.type,false,item.request);
                             
                             }
@@ -1309,7 +1312,7 @@ function createMenu() {
 
 
 
-async function get_job_answer(thepath,num_job,isUrl)
+async function get_job_answer(thepath,num_job,typ,isUrl)
 {
  if (thepath.length === 0) {
     alert("Veuillez renseigner le chemin du fichier ou l'URL");
@@ -1334,27 +1337,16 @@ async function get_job_answer(thepath,num_job,isUrl)
         "- autres (toutes informations autre utile à connaitre, comme descriptif de l'entreprise, secteur d'activité, pourquoi l'entreprise recrute...)"+
         
         "- en onclusion : peux tu faire une présentation rapide sur 3 lignes du candidat idéal"+
-        "- il faut ajouter la donnée suivante telque : <- "+thepath+" -> afin que je puisse garder la référence"
-
-        ;
+        "- il faut ajouter la donnée suivante telque : <- "+thepath+" -> afin que je puisse garder la référence" ;
  
-   
- /*  q2_job = " peux tu me faire un plan détaillé de du profile du candidat avec les sections" +
-        "- Titre du profile," +
-        "- le résumé du texte mis en avant du profile," +
-        "- savoirs faire ou sof skills ," +
-        "- EXPERIENCES PROFESSIONNELLES: (Entreprise, date début et fin, domaine de l'entreprise,poste occupé) sachant qu'il peut y avoir plusieurs expériences pour une entreprise, il faut lister en sous section les functions occupées avec la description de la tache, les outils, langages et environnement " +
-        "- les compétences," +
-        "- autres (toutes informations autre utile à connaitre)" */
  
    
     showLoadingOverlay();
 
     try {
         
-        let jobTextResponse="";
-        if (! isUrl)
-        {
+        let jobTextResponse = "";
+        if (!isUrl) {
             jobTextResponse = await fetch('/get_job_answer', {
                 method: 'POST',
                 headers: {
@@ -1547,10 +1539,12 @@ function createAnnouncementForm() {
 <div class="form-group">
                     <label for="creationMode">Mode de création:</label>
                     <select id="creationMode" class="rich-text-field">
-                        <option value="submitAnnouncement">Créer</option>
-                        <option value="scan_url">Scan URL</option>
+                        <option value="creer_annonce">Ajouter Annonce à partir de contenu</option>
+                        <option value="creer_reponse">Ajouter Réponse à partir de contenu</option>
+                        <option value="scan_url_annonce">Ajouter une Annonce à parir d'une Url</option>
                         <option value="scrapeAndFill">Scrape URL</option>
                         <option value="NewAteller">Scrape URL</option>
+
                     </select>
                 </div>
                 <div class="button-group">
@@ -1579,16 +1573,17 @@ function createAnnouncementForm() {
 
 function executeCreationMode() {
     const creationMode = document.getElementById('creationMode').value;
-    if (creationMode === 'submitAnnouncement') {
-        submitAnnouncement();
-    } else if (creationMode === 'scan_url') {
-        scan_url();
-    } else if (creationMode === 'scrapeAndFill') {
-        scrapeAndFill();
-    } else if (creationMode === 'NewAteller') {
+    if (creationMode === 'creer_annonce') {
+        submitAnnouncement(window.CONSTANTS["ANNONCE_SUFFIX"]);
 
-        newAteller();
+    } else if (creationMode === 'scan_url_annonce') {
+        scan_url_annonce();
+    }   else if (creationMode === 'creer_reponse') {
+        submitAnnouncement(window.CONSTANTS["REPONSE_SUFFIX"]);
+    } else if (creationMode === 'scan_reponse') {
+         scan_url_annonce();
     }
+
 }
 // Add styles for announcementForm
 const style3 = document.createElement('style');
@@ -1686,7 +1681,7 @@ function scrapeAndFill() {
     });
 }
 
-function scan_url() {
+function scan_url_annonce() {
       const contentUrl = document.getElementById('announcementURL').value;
     if (contentUrl )
     {
@@ -1714,7 +1709,7 @@ function newAtelier() {
     alert("newAtelier => to do");
 }
 
-function submitAnnouncement() {
+function submitAnnouncement(type) {
     let content = document.getElementById('announcementContent').value;
     if (content.trim() === '') {
         alert('Le contenu de l\'annonce ne peut pas être vide !!!');
@@ -1727,11 +1722,11 @@ function submitAnnouncement() {
     }
 
     const contentUrl = document.getElementById('announcementURL').value;
-    if (contentUrl.trim() === '' && !isValidURL(contentUrl)) {
+   /*  if (contentUrl.trim() === '' && !isValidURL(contentUrl)) {
         alert("L'URL ne peut pas être null !!!");
         return;
     }
-   
+    */
     contentUrlembed = "<- " + contentUrl + " ->";
 
     // Remove all spaces inside content
@@ -1747,7 +1742,8 @@ function submitAnnouncement() {
         body: JSON.stringify({
             contentNum: contentNum,
             content: content,
-            url:contentUrl
+            url:contentUrl,
+            type: type,
         })
     })
     .then(response => response.json())

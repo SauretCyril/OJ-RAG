@@ -1,7 +1,7 @@
 {
   "FILE_NAMES": {
     "ANNONCE_SUFFIX": "_annonce_",
-    "DESCRIPTION_SUFFIX": "_description_",
+    "REPONSE_SUFFIX": "_reponse_",
     "STD_SUFFIX": "_std_",
     "STEAL_STD_SUFFIX": "_std_steal",
     "STEAL_ANNONCE_SUFFIX": "_annonce_steal",
