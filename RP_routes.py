@@ -120,7 +120,7 @@ async def read_annonces_json():
             #print(f"RP-2 ------repertoire {root}")
             
             file_annonce = parent_dir + CONSTANTS['FILE_NAMES']['ANNONCE_SUFFIX']+ ".pdf"
-            file_description= parent_dir + CONSTANTS['FILE_NAMES']['DESCRIPTION_SUFFIX']+ ".pdf"
+          
             
             file_std = parent_dir + CONSTANTS['FILE_NAMES']['STD_SUFFIX']+ ".pdf"
             
@@ -156,6 +156,7 @@ async def read_annonces_json():
             isGptResum=""
            
             list_RQ = {}
+            isJoTyp=""
             for filename in files:
                                
                 if filename  == file_cv or filename == file_cv_New:
@@ -172,28 +173,15 @@ async def read_annonces_json():
                     file_path_steal = os.path.join(root, file_std_steal)
                 else :      
                     if ((filename ==  file_annonce) ):
-                        isJo="O"
+                        isJo="O"   
                         file_path_isJo = os.path.join(root, file_annonce)   
-                    elif (filename ==  file_std):
-                        isJo="O"
-                        file_path_isJo = os.path.join(root, file_std)
-                    
                     else:
                         if (filename ==  file_isGptResum ):
                             isGptResum="O"
                             file_path_gpt = os.path.join(root, file_isGptResum)
                             
-                            file_gpt_name= parent_dir+CONSTANTS['FILE_NAMES']['GPT_REQUEST_SUFFIX_NAME']
-                            file_gpt_name_pdf=os.path.join(root,file_gpt_name+".pdf").replace('\\', '/') 
-                            file_path_RQ=os.path.join(root,file_gpt_name+"RQ.txt").replace('\\', '/')
-                            
-                            index = 1
-                            while os.path.exists(file_gpt_name_pdf):
-                                list_RQ[index] = {"reponse":file_gpt_name_pdf,"question":file_path_RQ,"exist":os.path.exists(file_path_RQ)}
-                                file_gpt_name_pdf = os.path.join(file_path, f"{file_gpt_name}({index}).pdf").replace('\\', '/')
-                                file_path_RQ =os.path.join(file_path, f"{file_gpt_name}({index})_RQ.txt").replace('\\', '/')
-                                index += 1
-                            #print ("----file_path_gpt_name    ==", list_RQ)
+                            file_gpt_name= parent_dir+CONSTANTS['FILE_NAMES']['GPT_REQUEST_SUFFIX_NAME'] 
+                        
                            
                             
                   
