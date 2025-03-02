@@ -1,6 +1,11 @@
 Flask
 numpy<2
 torch
-docx
+python-docx
 docx2pdf
 fpdf
+transformers
+openai
+beautifulsoup4
+python-dotenv
+aiofiles

@@ -30,11 +30,12 @@ from dotenv import load_dotenv
 
 load_dotenv()
 routes = Blueprint('routes', __name__)
-logging.basicConfig(level=DEBUG, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+logging.basicConfig(level=DEBUG, format='%(asctime)s - (name)s - (levelname)s - (message)s')
 logger = logging.getLogger(__name__)
 
 # Define excluded directories
 EXCLUDED_DIRECTORIES = ["suivi", "pile", "conf"]  # Add your excluded directories here
+files_type=[{"suffix":"ANNONCE_SUFFIX","type":"AN"}]
 
 # Load shared constants
 def load_constants():
@@ -117,25 +118,15 @@ async def read_annonces_json():
                 continue
                 
 
-            #print(f"RP-2 ------repertoire {root}")
+                continue
             
-            file_annonce = parent_dir + CONSTANTS['FILE_NAMES']['ANNONCE_SUFFIX']+ ".pdf"
-          
-            
-            file_std = parent_dir + CONSTANTS['FILE_NAMES']['STD_SUFFIX']+ ".pdf"
-            
-            """  file_annonce_steal=parent_dir + CONSTANTS['FILE_NAMES']['STEAL_ANNONCE_SUFFIX']+ ".pdf"
-            file_std_steal=parent_dir + CONSTANTS['FILE_NAMES']['STEAL_STD_SUFFIX']+ ".pdf" """
-            
-            #file_annonce_path = os.path.join(root, file_annonce)
+            file_doc = parent_dir + CONSTANTS['FILE_NAMES']['ANNONCE_SUFFIX'] + ".pdf"
             
             # résumé gpt
             file_isGptResum = parent_dir + CONSTANTS['FILE_NAMES']['GPT_REQUEST_SUFFIX']
             file_isGptResum_Path1 = os.path.join(root, file_isGptResum)
             file_isGptResum_Path1 = file_isGptResum_Path1.replace('\\', '/')
-            
-                       
-            # CV 
+              # CV 
             file_cv = parent_dir + CONSTANTS['FILE_NAMES']['CV_SUFFIX'] + ".docx"
             file_cv_pdf = parent_dir + CONSTANTS['FILE_NAMES']['CV_SUFFIX'] + ".pdf"
             
@@ -163,20 +154,30 @@ async def read_annonces_json():
                     #print("###---->BINGO")
                 if filename  == file_cv_pdf or filename == file_cv_pdf_New:
                     isCVinpdf="O"
-                if ((filename ==  file_annonce) ):
+                """ if ((filename ==  file_doc) ):
                     isJo="O"   
-                    file_path_isJo = os.path.join(root, file_annonce)   
+                    file_path_isJo = os.path.join(root, file_doc)   """ 
                 if (filename ==  file_isGptResum ):
                     isGptResum="O"
                     file_path_gpt = os.path.join(root, file_isGptResum)
-
+            for filename in files:
+                for file_type in files_type:
+                    suf = file_type["suffix"]
+                    if suf in filename:
+                        file_doc = parent_dir + CONSTANTS['FILE_NAMES'][suf] + ".pdf"
+                        if ((filename ==  file_doc) ):
+                            isJo="O"
+                            isJoType=file_type["type"]
+                            file_path_isJo = os.path.join(root, file_doc)
+                            
+                       
             for filename in files:
                 file_path = os.path.join(root, filename)
                 file_path = file_path.replace('\\', '/')  # Normalize path
                 file_path_nodata=os.path.join(root, ".data.json")
                 file_path_nodata =file_path_nodata.replace('\\', '/') 
                 
-                if filename == ".data.json":
+                if filename == data_json_file :
                     record_added = True
                     try:
                         with open(file_path, 'r', encoding='utf-8') as file:

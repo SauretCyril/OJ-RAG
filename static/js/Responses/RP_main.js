@@ -38,7 +38,7 @@ window.columns = [
     { key: 'id', editable: true, width: '100px',"visible":true,"type":"tb",title:'ID' },
     { key: 'entreprise', editable: true, width: '150px',"visible":true ,"type":"tb",title:'Entreprise' },
     { key: 'list_RQ', editable: false, width: '125px',"visible":false ,"type":"tb",title:'RQ' },
-    { key: 'role', editable: false, width: '120px',"visible":true,"type":"tb",title:'role',dir:'DIR_ROLE_FILE' },   
+    { key: 'role', editable: false, width: '120px',"visible":false,"type":"tb",title:'role',dir:'DIR_ROLE_FILE' },   
     { key: 'request', editable: false, width: '120px',"visible":true ,"type":"tb",title:'request',dir:'DIR_RQ_FILE' },
     { key: 'isJo', editable: false, width: '50px',"visible":true ,"type":"tb",title:'M.' },
     // { key: 'isSteal', editable: false, width: '50px',"visible":true ,"type":"tb",title:'St' },
