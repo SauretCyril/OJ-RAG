@@ -163,11 +163,15 @@ async def read_annonces_json():
             for filename in files:
                 for file_type in files_type:
                     suf = file_type["suffix"]
-                    if suf in filename:
-                        file_doc = parent_dir + CONSTANTS['FILE_NAMES'][suf] + ".pdf"
-                        if ((filename ==  file_doc) ):
-                            isJo="O"
-                            isJoType=file_type["type"]
+                    suftext=CONSTANTS['FILE_NAMES'][suf]
+                    #print("###-3 suffixe = ",suftext)
+                    
+                    if suftext in filename:
+                        file_doc = parent_dir + suftext + ".pdf"
+                        #print("###-3 file_doc a trouver= ", file_doc)
+                        if ((filename == file_doc)):
+                            isJo = "O"
+                            isJoType = file_type["type"]
                             file_path_isJo = os.path.join(root, file_doc)
                             
                        

@@ -109,6 +109,24 @@ function save_config_col() {
 }
 //save_config_col();
 
+function analyser_experiences(){
+    alert("Analyse des experiences en cours...");
+fetch('/analyser_experiences', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+
+        console.log('Experience analysis data received:', data);
+
+    })
+    .catch(error => {
+        console.error('Error during experience analysis:', error);
+    });
+} 
 
 function loadFilterValues(tabActive) {
     fetch('/read_filters_json', {
@@ -365,7 +383,7 @@ function loadTableData(callback) {
                             cell.appendChild(heartIcon);
                         
                         }
-                    else 
+                    else
                     {
                         isurl=false;
                         if (col.key === 'description' && item.url) {
@@ -444,9 +462,8 @@ function loadTableData(callback) {
                 {
                     let thefile="";
                     resuReady=false;
-                    if (item.isSteal=="O")
-                        {thefile=fichier_annonce_steal,resuReady=true;}
-                        else if (item.isJo=="O"){thefile=fichier_annonce,resuReady=true;}
+                    if (item.isJo=="O")
+                        {thefile=fichier_annonce,resuReady=true;}
                    
                     if (resuReady) 
                     {
@@ -460,7 +477,7 @@ function loadTableData(callback) {
                             
                             }
                     } else
-                    {alert("il faut que l'annonce soit sauvegardée en pdf")}
+                    {alert("document à résumer non trouvée")}
                 }
 
                 document.getElementById('Delete').onclick = () => {

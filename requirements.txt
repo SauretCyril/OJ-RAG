@@ -9,3 +9,5 @@ openai
 beautifulsoup4
 python-dotenv
 aiofiles
+python-docx
+openai

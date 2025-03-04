@@ -110,7 +110,7 @@ def extract_text(source, is_url=False):
 def get_answer(question, role,context=""):
     try:
         
-        client = OpenAI()  # Assurez-vous que OPENAI_API_KEY est défini dans vos variables d'environnement
+        client = OpenAI(api_key=os.getenv("OPENAI_API_KEY")) #api_key=os.getenv("OPENAI_API_KEY")
         full_context = f"""{role}: {question}\n\nContexte:\n{context}"""
         
         response = client.chat.completions.create(

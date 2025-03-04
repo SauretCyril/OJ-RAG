@@ -8,10 +8,8 @@ from werkzeug.utils import secure_filename
 from JO_analyse import *
 from JO_analyse_gpt import extract_text_from_url  # Import the function from the correct module
 
-
-#from JO_analyse_gpt import *
+# ...existing code...
 import torch
-#import torchvision
 import numpy as np
 import json
 import logging
@@ -21,12 +19,12 @@ import pythoncom
 from fpdf import FPDF
 from dotenv import load_dotenv
 from paths import *
-# ...existing code...
+
+# Load environment variables from .env file
 load_dotenv()
 
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
-
 
 # Définir NumpyEncoder avant de l'utiliser
 class NumpyEncoder(json.JSONEncoder):
@@ -58,7 +56,6 @@ from list_requests import requests
 
 app.register_blueprint(requests)
 
-
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 app.config['UPLOAD_FOLDER'] = os.path.join(BASE_DIR, 'uploads')
 app.static_folder = os.path.join(BASE_DIR, 'static')
@@ -75,12 +72,9 @@ app.config['SAVED_TEXT_FOLDER'] = SAVED_TEXT_FOLDER
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
-
-
 @app.route('/alive')
 def alive():
     return jsonify({'message': 'Im alive'}), 200
-
 
 @app.route('/')
 def index():
@@ -113,9 +107,6 @@ def get_file_path():
         'exist': os.path.exists(filepath)
     })
 
-    
-    
-    
 @app.route('/save-path')
 def getSavePath():
     return SAVED_TEXT_FOLDER
@@ -123,7 +114,6 @@ def getSavePath():
 @app.route('/upload', methods=['POST'])
 def upload_file():
     try:
-        #logger.debug("dbg001.Upload file request received")
         if 'file' not in request.files:
             logger.error("Er001.No file part in the request")
             return jsonify({'Er001': 'No file part'}), 400
@@ -144,7 +134,6 @@ def upload_file():
 
         file = os.path.join(app.config['UPLOAD_FOLDER'],file1.filename)
         file1.save(file)
-        #logger.debug(f"dbg002.File saved to {file}")
 
         return jsonify({
             'path': file,
@@ -159,34 +148,24 @@ def upload_file():
 def job_details():
     return render_template('job_details.html')
 
-# get_answer
 @app.route('/get_job_answer', methods=['POST'])
 def get_job_answer():
     try:
-        #logger.debug(f"dbg003.Request method: {request.method}")
         file = request.json.get('path')
         RQ = request.json.get('RQ')
-        #logger.debug(f"dbg004.Received file path: {file}")
-        #logger.debug(f"dbg004.Received RQ: {RQ}")
 
         if not file or not RQ:
             logger.error("Er005.Missing job file path or question")
             return jsonify({'Er005': 'Missing job file path or question'}), 400
 
-        # Notify front-end that processing has started
-        #yield jsonify({'message': 'Processing started'}), 202
-
-        # Extraction rapide du texte
         text1 = extract_text_from_pdf(file)
         
         if not text1:
             logger.error("Er006.Job text extraction failed")
             return jsonify({'Er006': 'Job text extraction failed'}), 500
 
-        
         role="En tant qu' expert en analyse d'offres d'emploi dans le domaine informatique (développeur, Analyste ou Testeur logiciel) , analyse le texte suivant et réponds à cette question"
         answer = get_answer(RQ,role, text1)
-        #logger.debug(f"dbg005.Generated answer: {answer}")
 
         return jsonify({
             'raw_text': text1,
@@ -200,17 +179,13 @@ def get_job_answer():
 @app.route('/save-answer', methods=['POST'])
 def save_answer():
     try:
-        #logger.debug("dbg006.Save job text request received")
         pythoncom.CoInitialize()  # Initialize COM library
         job_text_data = request.json.get('text_data')
         job_number = request.json.get('number')
         the_path = request.json.get('the_path')
         rq=request.json.get('RQ')
         if the_path == '':
-            #the_path = os.getenv("ANNONCES_FILE_DIR")
             the_path = GetRoot()
-            
-        #logger.debug("dbg007.Received path: %s", the_path)
 
         if not job_text_data or not job_number:
             logger.error(f"Er008.error.Missing job text data or job number: job_text_data={job_text_data}, job_number={job_number}")
@@ -227,13 +202,6 @@ def save_answer():
         
         file_path_docx = os.path.join(file_path, file_name + ".docx")
         file_path_RQ = os.path.join(file_path, file_name + "_RQ.txt")
-        
-        # Handle file indexing if the file already exists
-        """  index = 1
-        while os.path.exists(file_path_docx):
-            file_path_docx = os.path.join(file_path, f"{file_name}({index}).docx")
-            file_path_RQ =os.path.join(file_path, f"{file_name}({index})_RQ.txt")
-            index += 1 """
 
         doc = format_text_as_word_style(job_text_data, job_number)
         doc.save(file_path_docx)
@@ -241,11 +209,8 @@ def save_answer():
         pdf_file_path = file_path_docx.replace('.docx', '.pdf')
         convert(file_path_docx, pdf_file_path)
         
-        #logger.debug(f"dbg009.Job text saved successfully as {pdf_file_path}")
-        
         os.remove(file_path_docx)
 
-        # Save RQ to text file
         save_rq_to_text_file(file_path_RQ, rq)
         
         return jsonify({'dbg009': 'Job text saved successfully', 'pdf_file_path': pdf_file_path})
@@ -260,7 +225,6 @@ def save_answer():
 def save_rq_to_text_file(file_path, rq):
     with open(file_path, 'w') as file:
         file.write(rq)
-    #logger.debug(f"dbg010.RQ saved successfully as {file_path}")
 
 def format_text_as_word_style(job_text, job_number):
     doc = Document()
@@ -274,50 +238,27 @@ def format_text_as_word_style(job_text, job_number):
     
     return doc
 
-
-    
-    """--------------------------- Analyse_
-    
-    """
 @app.route('/extract_features', methods=['POST'])
 def extract_features(text):
-    #logger.debug("dbg010.2. Extracting features...")
     cv_features = extract_features(cv_text)
     job_features = extract_features(job_text)
-    #logger.debug("dbg011.3. Computing similarity...")
     raw_similarity = cosine_similarity(cv_features, job_features)
     adjusted_similarity = calculate_similarity_score(cv_features, job_features)
         
-    #logger.debug("dbg012.4.Results:")
     raw_similarity_s=f"{raw_similarity:.4f}"
     adjusted_similarity_s=f"{adjusted_similarity:.4f}"
-    #logger.debug("dbg013.Raw similarity score: {raw_similarity_s}")
-    #logger.debug("dbg014.Adjusted similarity score: {adjusted_similarity_s}")
     return jsonify({'Raw_similarity_score': raw_similarity_s, 'Adjusted_similarity_score':adjusted_similarity_s})
 
-
-     
-    
-# get_answer
 @app.route('/get_job_answer_from_url', methods=['POST'])
 def et_job_answer_from_url():
     try:
-        #logger.debug(f"dbg010.Request method: {request.method}")
-        #logger.debug(f"dbg011.Request data: {request.get_data(as_text=True)}")  # Log the raw request data
         file = request.json.get('url')
         RQ = request.json.get('RQ')
-        
-        #logger.debug(f"dbg012.Received file path: {file}")
-        #logger.debug(f"dbg013.Received RQ: {RQ}")
 
         if not file or not RQ:
             logger.error("Er014.Missing job file path or question")
             return jsonify({'Er014': 'Missing job file path or question'}), 400
 
-        # Notify front-end that processing has started
-        #yield jsonify({'message': 'Processing started'}), 202
-
-        # Extraction rapide du texte
         text1 = extract_text_from_url(file)
         
         if not text1:
@@ -325,7 +266,6 @@ def et_job_answer_from_url():
             return jsonify({'Er016': 'Job text extraction failed'}), 500
         role="En tant qu' expert en analyse d'offres d'emploi dans le domaine informatique (développeur, Analyste ou Testeur logiciel) , analyse le texte suivant et réponds à cette question"
         answer = get_answer(RQ,role, text1)
-        #logger.debug(f"dbg017.Generated answer: {answer}")
 
         return jsonify({
             'raw_text': text1,
@@ -339,11 +279,9 @@ def et_job_answer_from_url():
 @app.route('/check_dossier_exists', methods=['POST'])
 def check_dossier_exist():
     try:
-        #directory_path = os.getenv("ANNONCES_FILE_DIR")
         directory_path = GetRoot()
         dossier = request.json.get('dossier')
         dossier_path = os.path.join(directory_path, dossier)
-        #print("#### dbg2471 : dossier_path", dossier_path)
         if not dossier_path:
             return jsonify({'error': 'Missing dossier path'}), 400
 
@@ -355,13 +293,82 @@ def check_dossier_exist():
         return jsonify({'error': str(e)}), 500
 
 
+
+
+
+
+def extract_text_from_word(file_path):
+    doc = Document(file_path)
+    full_text = []
+    for para in doc.paragraphs:
+        full_text.append(para.text)
+    return '\n'.join(full_text)
+
+
+def process_directory(directory, question, role, output_file):
+    results = []
+    
+    print(f"dbg_658a start processing directory {directory}")
+    for root, dirs, files in os.walk(directory):
+        for file in files:
+            if file.endswith(".docx"):
+                print(f"dbg_658 : traiter le fichier {file}")
+                file_path = os.path.join(root, file)
+                text = extract_text_from_word(file_path)
+                answer = get_answer(question, role, text)
+               
+                # Extract specific sections from the text
+                context = extract_section(text, "Contexte de réalisation")
+                main_steps = extract_section(text, "Les principales étapes")
+                result = extract_section(text, "Le résultat obtenu")
+                
+                # Get savoir-faire and savoir-être
+                savoir_faire = get_answer("Quels sont les savoir-faire démontrés ?", role, text)
+                savoir_etre = get_answer("Quels sont les savoir-être démontrés ?", role, text)
+                
+                result_entry = {
+                    "nom du doc": file,
+                    "titre de la réalisation": answer,
+                    "résumé du context": context,
+                    "résultat obtenu": result,
+                    "savoir-faire": savoir_faire,
+                    "savoir-être": savoir_etre
+                }
+                results.append(result_entry)
+    
+    with open(output_file, 'w', encoding='utf-8') as f:
+        json.dump(results, f, ensure_ascii=False, indent=4)
+
+def extract_section(text, section_title):
+    # This function extracts the section of the text based on the section title
+    start_index = text.find(section_title)
+    if start_index == -1:
+        return ""
+    end_index = text.find("\n", start_index)
+    if end_index == -1:
+        end_index = len(text)
+    return text[start_index:end_index].strip()
+
+   
+@app.route('/analyser_experiences', methods=['POST'])
+def analyser_experiences():
+    try:
+        directory = "G:/OneDrive/Entreprendre/Actions-4/M488/RDV.6_Du_28-02-2025/Realisations"
+        question = "Quelle est la réalisation professionnelle de ce document ?"
+        role = "En tant qu'expert en recrutement, analysez le texte suivant et répondez à la question."
+        output_file = "resultats.json"
+        process_directory(directory, question, role, output_file)
+        return jsonify({'status': 'success', 'message': 'Analysis completed successfully'}), 200
+    except Exception as e:
+        logger.error(f"Error during analysis: {str(e)}")
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+
 if __name__ == '__main__':
     from multiprocessing import freeze_support
     from JO_analyse import *
+   
     freeze_support()
-    # Votre code pour démarrer l'application Flask
     app.run(debug=True)
 
-
-# fonction pour load un simple texte
 
