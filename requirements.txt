@@ -1,4 +1,4 @@
-Flask
+Flask[async]
 numpy<2
 torch
 python-docx
