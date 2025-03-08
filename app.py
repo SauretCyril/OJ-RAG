@@ -5,8 +5,9 @@ from flask import Flask, render_template, jsonify, request, url_for
 import os
 
 from werkzeug.utils import secure_filename
-from JO_analyse import *
-from JO_analyse_gpt import extract_text_from_url  # Import the function from the correct module
+#from JO_analyse import *
+from JO_analyse_gpt import * # Import the function from the correct module
+from JO_analyse_mistral import *
 
 # ...existing code...
 import torch
@@ -19,9 +20,15 @@ import pythoncom
 from fpdf import FPDF
 from dotenv import load_dotenv
 from paths import *
-
+from transformers import pipeline
+from huggingface_hub import snapshot_download
+from pathlib import Path
+from sentence_transformers import SentenceTransformer
+import numpy as np
 # Load environment variables from .env file
 load_dotenv()
+from transformers import AutoModelForCausalLM, AutoTokenizer
+from huggingface_hub import snapshot_download
 
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
@@ -84,23 +91,24 @@ def index():
 def get_file_path():
     dirname = request.json.get('dirName')
     filename = request.json.get('filename')
-    print("dbg3214 : dirName", dirname)
-    print("dbg3215 : filename", filename)
+   
+    #print("dbg3214 : dirName", dirname)
+    #print("dbg3215 : filename", filename)
 
     if not dirname or not filename:
         return jsonify({'error': 'Invalid parameters'}), 400    
     
     dirnamevalue = GetOneDir(dirname)
-    print(f"dbg3216a repertoire du fichier {dirname}: filepath", dirnamevalue)
+    #print(f"dbg3216a repertoire du fichier {dirname}: filepath", dirnamevalue)
     
     filenamevalue = os.getenv(filename)
-    print(f"dbg3216b nom du fichier = {filenamevalue}")
+    #print(f"dbg3216b nom du fichier = {filenamevalue}")
     
     if not filenamevalue:
         return jsonify({'error': 'Filename not found in environment variables'}), 404
     
     filepath = os.path.join(dirnamevalue, filenamevalue)
-    print("dbg3216c : fichier ", filepath)
+    #print("dbg3216c : fichier ", filepath)
     
     return jsonify({
         'filePath': filepath,
@@ -153,19 +161,21 @@ def get_job_answer():
     try:
         file = request.json.get('path')
         RQ = request.json.get('RQ')
-
+        #print (f"dbg A023b : file {file}")
+        print (f"dbg A023b : RQ {RQ}")
         if not file or not RQ:
             logger.error("Er005.Missing job file path or question")
             return jsonify({'Er005': 'Missing job file path or question'}), 400
 
         text1 = extract_text_from_pdf(file)
-        
+        #print (f"dbg A023c : text1 {text1}")
         if not text1:
             logger.error("Er006.Job text extraction failed")
             return jsonify({'Er006': 'Job text extraction failed'}), 500
 
         role="En tant qu' expert en analyse d'offres d'emploi dans le domaine informatique (développeur, Analyste ou Testeur logiciel) , analyse le texte suivant et réponds à cette question"
-        answer = get_answer(RQ,role, text1)
+       
+        answer = get_mistral_answer(RQ,role, text1)
 
         return jsonify({
             'raw_text': text1,
@@ -183,7 +193,7 @@ def save_answer():
         job_text_data = request.json.get('text_data')
         job_number = request.json.get('number')
         the_path = request.json.get('the_path')
-        rq=request.json.get('RQ')
+        #rq=request.json.get('RQ')
         if the_path == '':
             the_path = GetRoot()
 
@@ -201,7 +211,7 @@ def save_answer():
             os.makedirs(file_path)
         
         file_path_docx = os.path.join(file_path, file_name + ".docx")
-        file_path_RQ = os.path.join(file_path, file_name + "_RQ.txt")
+        #file_path_RQ = os.path.join(file_path, file_name + "_RQ.txt")
 
         doc = format_text_as_word_style(job_text_data, job_number)
         doc.save(file_path_docx)
@@ -211,7 +221,7 @@ def save_answer():
         
         os.remove(file_path_docx)
 
-        save_rq_to_text_file(file_path_RQ, rq)
+        #save_rq_to_text_file(file_path_RQ, rq)
         
         return jsonify({'dbg009': 'Job text saved successfully', 'pdf_file_path': pdf_file_path})
 
@@ -238,19 +248,19 @@ def format_text_as_word_style(job_text, job_number):
     
     return doc
 
-@app.route('/extract_features', methods=['POST'])
-def extract_features(text):
-    cv_features = extract_features(cv_text)
-    job_features = extract_features(job_text)
-    raw_similarity = cosine_similarity(cv_features, job_features)
-    adjusted_similarity = calculate_similarity_score(cv_features, job_features)
+# @app.route('/extract_features', methods=['POST'])
+# def extract_features(text):
+#     cv_features = extract_features(cv_text)
+#     job_features = extract_features(job_text)
+#     raw_similarity = cosine_similarity(cv_features, job_features)
+#     adjusted_similarity = calculate_similarity_score(cv_features, job_features)
         
-    raw_similarity_s=f"{raw_similarity:.4f}"
-    adjusted_similarity_s=f"{adjusted_similarity:.4f}"
-    return jsonify({'Raw_similarity_score': raw_similarity_s, 'Adjusted_similarity_score':adjusted_similarity_s})
+#     raw_similarity_s=f"{raw_similarity:.4f}"
+#     adjusted_similarity_s=f"{adjusted_similarity:.4f}"
+#     return jsonify({'Raw_similarity_score': raw_similarity_s, 'Adjusted_similarity_score':adjusted_similarity_s})
 
 @app.route('/get_job_answer_from_url', methods=['POST'])
-def et_job_answer_from_url():
+def get_job_answer_from_url():
     try:
         file = request.json.get('url')
         RQ = request.json.get('RQ')
@@ -265,8 +275,8 @@ def et_job_answer_from_url():
             logger.error("Er0016.Job text extraction failed")
             return jsonify({'Er016': 'Job text extraction failed'}), 500
         role="En tant qu' expert en analyse d'offres d'emploi dans le domaine informatique (développeur, Analyste ou Testeur logiciel) , analyse le texte suivant et réponds à cette question"
-        answer = get_answer(RQ,role, text1)
-
+        answer = get_mistral_answer(RQ,role, text1)
+      
         return jsonify({
             'raw_text': text1,
             'formatted_text': answer
@@ -293,82 +303,10 @@ def check_dossier_exist():
         return jsonify({'error': str(e)}), 500
 
 
-
-
-
-
-def extract_text_from_word(file_path):
-    doc = Document(file_path)
-    full_text = []
-    for para in doc.paragraphs:
-        full_text.append(para.text)
-    return '\n'.join(full_text)
-
-
-def process_directory(directory, question, role, output_file):
-    results = []
-    
-    print(f"dbg_658a start processing directory {directory}")
-    for root, dirs, files in os.walk(directory):
-        for file in files:
-            if file.endswith(".docx"):
-                print(f"dbg_658 : traiter le fichier {file}")
-                file_path = os.path.join(root, file)
-                text = extract_text_from_word(file_path)
-                answer = get_answer(question, role, text)
-               
-                # Extract specific sections from the text
-                context = extract_section(text, "Contexte de réalisation")
-                main_steps = extract_section(text, "Les principales étapes")
-                result = extract_section(text, "Le résultat obtenu")
-                
-                # Get savoir-faire and savoir-être
-                savoir_faire = get_answer("Quels sont les savoir-faire démontrés ?", role, text)
-                savoir_etre = get_answer("Quels sont les savoir-être démontrés ?", role, text)
-                
-                result_entry = {
-                    "nom du doc": file,
-                    "titre de la réalisation": answer,
-                    "résumé du context": context,
-                    "résultat obtenu": result,
-                    "savoir-faire": savoir_faire,
-                    "savoir-être": savoir_etre
-                }
-                results.append(result_entry)
-    
-    with open(output_file, 'w', encoding='utf-8') as f:
-        json.dump(results, f, ensure_ascii=False, indent=4)
-
-def extract_section(text, section_title):
-    # This function extracts the section of the text based on the section title
-    start_index = text.find(section_title)
-    if start_index == -1:
-        return ""
-    end_index = text.find("\n", start_index)
-    if end_index == -1:
-        end_index = len(text)
-    return text[start_index:end_index].strip()
-
-   
-@app.route('/analyser_experiences', methods=['POST'])
-def analyser_experiences():
-    try:
-        directory = "G:/OneDrive/Entreprendre/Actions-4/M488/RDV.6_Du_28-02-2025/Realisations"
-        question = "Quelle est la réalisation professionnelle de ce document ?"
-        role = "En tant qu'expert en recrutement, analysez le texte suivant et répondez à la question."
-        output_file = "resultats.json"
-        process_directory(directory, question, role, output_file)
-        return jsonify({'status': 'success', 'message': 'Analysis completed successfully'}), 200
-    except Exception as e:
-        logger.error(f"Error during analysis: {str(e)}")
-        return jsonify({'status': 'error', 'message': str(e)}), 500
-
-
 if __name__ == '__main__':
     from multiprocessing import freeze_support
-    from JO_analyse import *
-   
+    from huggingface_hub import login
+    token=os.getenv("HUGG")
+    login(token) 
     freeze_support()
     app.run(debug=True)
-
-

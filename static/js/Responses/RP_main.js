@@ -1128,11 +1128,11 @@ window.addEventListener('load', async function() {
     createMenu();
     
     // Ensure loadRealizationsData is defined
-    if (typeof loadRealizationsData === 'function') {
+   /*  if (typeof loadRealizationsData === 'function') {
         await loadRealizationsData();
     } else {
         console.error('loadRealizationsData function is not defined.');
-    }
+    } */
 
     // Ensure the element with id 'Excluded' exists before adding the event listener
     const excludedElement = document.getElementById('Excluded');
@@ -1336,7 +1336,7 @@ async function get_job_answer(thepath,num_job,typ,isUrl)
     return;
  }
  else {
-    alert("Traitement de l'offre d'emploi en cours... : " + thepath );
+    //alert("Traitement de l'offre d'emploi en cours... : " + thepath );
  }
 
 
@@ -1361,9 +1361,10 @@ async function get_job_answer(thepath,num_job,typ,isUrl)
     showLoadingOverlay();
 
     try {
-        
+       
         let jobTextResponse = "";
         if (!isUrl) {
+            console.log("dbg A023a : Traitement du fichier pdf en cours... : " + thepath );
             jobTextResponse = await fetch('/get_job_answer', {
                 method: 'POST',
                 headers: {
@@ -1374,6 +1375,7 @@ async function get_job_answer(thepath,num_job,typ,isUrl)
         } else {
              
             //jobTextResponse = get_job_answer_from_url(thepath,q2_job);
+            //alert("dbg T023 : Traitement de l'url en cours... : " + thepath );
             jobTextResponse= await fetch('/get_job_answer_from_url', {
             method: 'POST',
             headers: {
@@ -1391,9 +1393,9 @@ async function get_job_answer(thepath,num_job,typ,isUrl)
         const jobTextData = await jobTextResponse.json();
         const saved_path = "";
         
-        savetext="[--doc--]\n"+thepath+"\n";
-        savetext+="[--Qestion--]\n"+q2_job+"\n";
-        savetext+="[--Response--]\n"+ jobTextData.formatted_text;
+        //savetext="[--doc--]\n"+thepath+"\n";
+        //savetext+="[--Qestion--]\n"+q2_job+"\n";
+        savetext= jobTextData.formatted_text;
       
        
         const saveResponse = await fetch('/save-answer', {
@@ -1407,7 +1409,7 @@ async function get_job_answer(thepath,num_job,typ,isUrl)
         });
 
         if (saveResponse.ok) {
-            alert("Résumé de l'offre d'emploi effectué");
+           //alert("Résumé de l'offre d'emploi effectué");
         } else {
             alert("Erreur lors de la sauvegarde de l'offre d'emploi");
         }
@@ -1556,11 +1558,9 @@ function createAnnouncementForm() {
 <div class="form-group">
                     <label for="creationMode">Mode de création:</label>
                     <select id="creationMode" class="rich-text-field">
-                        <option value="creer_annonce">Ajouter Annonce à partir de contenu</option>
-                        <option value="creer_reponse">Ajouter Réponse à partir de contenu</option>
-                        <option value="scan_url_annonce">Ajouter une Annonce à parir d'une Url</option>
-                        <option value="scrapeAndFill">Scrape URL</option>
-                        <option value="NewAteller">Scrape URL</option>
+                         <option value="creer_reponse">Contenu</option>
+                         <option value="scan_url_annonce">Url</option>
+                       
 
                     </select>
                 </div>
@@ -1571,7 +1571,11 @@ function createAnnouncementForm() {
             </form>
         </dialog>
     `;
-
+   /*  <option value="creer_annonce">Ajouter Annonce à partir de contenu</option>
+    <option value="creer_reponse">Ajouter Réponse à partir de contenu</option>
+   
+    <option value="scrapeAndFill">Scrape URL</option>
+    <option value="NewAteller">New Atelier</option> */
     // Remove existing form if any
     const existingForm = document.getElementById('announcementForm');
     if (existingForm) {
@@ -1590,6 +1594,16 @@ function createAnnouncementForm() {
 
 function executeCreationMode() {
     const creationMode = document.getElementById('creationMode').value;
+    if (creationMode === 'scan_url_annonce') {
+        scan_url_annonce(); 
+    } else if (creationMode === 'creer_annonce') {
+        submitAnnouncement(window.CONSTANTS["ANNONCE_SUFFIX"]);
+
+    }
+}
+/* 
+function executeCreationMode() {
+    const creationMode = document.getElementById('creationMode').value;
     if (creationMode === 'creer_annonce') {
         submitAnnouncement(window.CONSTANTS["ANNONCE_SUFFIX"]);
 
@@ -1598,10 +1612,10 @@ function executeCreationMode() {
     }   else if (creationMode === 'creer_reponse') {
         submitAnnouncement(window.CONSTANTS["REPONSE_SUFFIX"]);
     } else if (creationMode === 'scan_reponse') {
-         scan_url_annonce();
+        //scan_url_annonce();
     }
 
-}
+} */
 // Add styles for announcementForm
 const style3 = document.createElement('style');
 style3.textContent = `
@@ -1712,8 +1726,8 @@ function scan_url_annonce() {
             return;
         }
         showLoadingOverlay();
-        alert("Scanning URL : "+contentUrl);
-        get_job_answer(contentUrl,contentNum,true);
+        alert("dbg T546 Scanning URL : "+contentUrl);
+        get_job_answer(contentUrl,contentNum,"AN",true);
         hideLoadingOverlay();
         refresh();
     } else {

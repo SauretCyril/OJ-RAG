@@ -1,4 +1,4 @@
-import os
+""" import os
 import google.generativeai as genai
 from dotenv import load_dotenv
 load_dotenv()
@@ -19,4 +19,4 @@ prompt = (
     "A flexbox with a large text logo aligned left and a list of links aligned right."
 )
 response = model.generate_content(prompt)
-print(response.text)
+print(response.text) """

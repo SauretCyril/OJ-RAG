@@ -24,7 +24,7 @@ def GetDirFilter():
     
     new_path = os.path.join(dirroot, path_filter)
     new_path = new_path.replace('\\', '/')
-    print("dbg649 filter dir = ", new_path)
+    #print("dbg649 filter dir = ", new_path)
     return new_path
 
 
@@ -49,25 +49,25 @@ def GetDirCRQ(dir):
 def GetDirREA():
     path_REA =os.getenv("DIR_REA_FILE")
     dirroot = GetRoot()
-    print("dbg651d root = ",dirroot)
+    #print("dbg651d root = ",dirroot)
     new_path=os.path.join(dirroot,path_REA)
     new_path = new_path.replace('\\', '/')
-    print("dbg651c realisation dir = ",new_path)
+    #print("dbg651c realisation dir = ",new_path)
     return new_path
 
 def GetDirSoft_Sk():
     path_soft_sk = os.getenv("DIR_SOFT_SK_FILE")
     dirroot = GetRoot()
-    print("dbg651a root = ",dirroot)
+    #print("dbg651a root = ",dirroot)
     new_path=os.path.join(dirroot,path_soft_sk)
     new_path = new_path.replace('\\', '/')
-    print("dbg651b realisation dir = ",new_path)
+    #print("dbg651b realisation dir = ",new_path)
     return new_path
 
 
 def GetOneDir(envName):
     dirroot = GetRoot()
-    print("dbg651f root = ",dirroot)
+    #print("dbg651f root = ",dirroot)
     
     path = os.getenv(envName)
     print(f"dbg651e path de {envName} = ",path )
@@ -75,7 +75,7 @@ def GetOneDir(envName):
     new_path=os.path.join(dirroot,path)
     new_path = new_path.replace('\\', '/')
     
-    print(f"dbg651g GetOneDir ({envName}) => ",new_path)
+    #print(f"dbg651g GetOneDir ({envName}) => ",new_path)
     return new_path
 
 
@@ -98,10 +98,10 @@ def buildAllPaths():
 def GetDirRQ():
     path_request =os.getenv("DIR_RQ_FILE")
     dirroot = GetRoot()
-    print("dbg234d root = ",dirroot)
+    #print("dbg234d root = ",dirroot)
     new_path=os.path.join(dirroot,path_request)
     new_path = new_path.replace('\\', '/')
-    print("dbg234c requests dir = ",new_path)
+    #print("dbg234c requests dir = ",new_path)
     return new_path
     
     

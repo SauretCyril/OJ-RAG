@@ -4,6 +4,7 @@ from PyPDF2 import PdfReader
 from openai import OpenAI
 import requests
 from bs4 import BeautifulSoup
+from JO_analyse_mistral import get_mistral_answer
 import json
 
 DEFAULT_CONTEXT = """
@@ -110,7 +111,7 @@ def extract_text(source, is_url=False):
 def get_answer(question, role,context=""):
     try:
         
-        client = OpenAI(api_key=os.getenv("OPENAI_API_KEY")) #api_key=os.getenv("OPENAI_API_KEY")
+        client = OpenAI() #api_key=os.getenv("OPENAI_API_KEY")
         full_context = f"""{role}: {question}\n\nContexte:\n{context}"""
         
         response = client.chat.completions.create(
@@ -139,25 +140,26 @@ get info of pdf file and return'''
 def get_info(file_path,role, question):
     try:
         
-        client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))  # Assurez-vous que OPENAI_API_KEY est défini dans vos variables d'environnement
+        # client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))  # Assurez-vous que OPENAI_API_KEY est défini dans vos variables d'environnement
+        # context = extract_text_from_pdf(file_path)
+        # if (context == ""):
+        #     return "{'url':'', 'entreprise':'inconnue', 'poste':'Annonce non lisible'}"
+        
+        # #print(f"Contexte extrait: {context[:200]}...")
+        # full_context = f"{question}\n\nContexte:\n{context}"
+        
+        # response = client.chat.completions.create(
+        #     model="gpt-3.5-turbo",
+        #     messages=[
+        #         {"role": "system", "content": "analyse le texte suivant et réponds à cette question, peux tu renvoyer les informations sous forme de données json, les champs son définie dans la question entre [ et ]"},
+        #         {"role": "user", "content": full_context}
+        #     ],
+        #     temperature=0.7,
+        #     max_tokens=1000
+        # )
         context = extract_text_from_pdf(file_path)
-        if (context == ""):
-            return "{'url':'', 'entreprise':'inconnue', 'poste':'Annonce non lisible'}"
-        
-        #print(f"Contexte extrait: {context[:200]}...")
-        full_context = f"{question}\n\nContexte:\n{context}"
-        
-        response = client.chat.completions.create(
-            model="gpt-3.5-turbo",
-            messages=[
-                {"role": "system", "content": "analyse le texte suivant et réponds à cette question, peux tu renvoyer les informations sous forme de données json, les champs son définie dans la question entre [ et ]"},
-                {"role": "user", "content": full_context}
-            ],
-            temperature=0.7,
-            max_tokens=1000
-        )
-        
-        return response.choices[0].message.content
+        response = get_mistral_answer(question, role, context)
+        return response
 
     except Exception as e:
         print(f"Erreur lors de l'analyse: {str(e)}")

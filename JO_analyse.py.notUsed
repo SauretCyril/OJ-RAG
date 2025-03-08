@@ -3,7 +3,6 @@ import torch
 import numpy as np
 from PyPDF2 import PdfReader
 import re
-from JO_analyse_gpt import extract_text_from_pdf,get_answer
 from functools import lru_cache
 import concurrent.futures
 from typing import Dict, List, Tuple
@@ -1058,7 +1057,7 @@ def optimize_check_requirements_in_cv(cv_text: str, requirements: Dict) -> Dict:
         results['soft_skills_matches'] = matches
     
     return results
-
+""" 
 # Modifier le main pour utiliser cette nouvelle fonction
 if __name__ == "__main__":
     
@@ -1195,3 +1194,4 @@ if __name__ == "__main__":
 
     except Exception as e:
         print(f"Error during execution: {str(e)}")
+ """

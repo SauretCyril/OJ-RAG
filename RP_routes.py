@@ -5,6 +5,7 @@ import platform
 import csv
 import subprocess
 from werkzeug.utils import secure_filename
+from PyPDF2 import PdfFileReader
 
 import tkinter as tk
 from tkinter import filedialog
@@ -24,7 +25,8 @@ import aiofiles
 
 from paths import *
 from cookies import *
-from JO_analyse_gpt import get_info
+from JO_analyse_gpt import extract_text_from_pdf
+from JO_analyse_mistral import get_mistral_answer
 
 from dotenv import load_dotenv
 
@@ -69,7 +71,7 @@ def calculate_delay(data):
         if date_rep:
             try:
                 date_rep_c = datetime.strptime(date_rep, '%d-%m-%Y')
-                print("dbg778 => date_from_c = "+date_from_c)
+                #print("dbg778 => date_from_c = "+date_from_c)
                 return (today - date_rep_c).days
             except ValueError:
                 print ("err dbg456= " +  ValueError )
@@ -78,7 +80,7 @@ def calculate_delay(data):
         if date_from:
             try:
                 date_from_c = datetime.strptime(date_from, '%d-%m-%Y')
-                print("dbg778 => date_from_c = "+date_from_c)
+                #print("dbg778 => date_from_c = "+date_from_c)
                 return (today - date_from_c).days
             except ValueError:
                 print ("err dbg457= " +  ValueError )
@@ -98,6 +100,7 @@ def calculate_delay(data):
 @routes.route('/read_annonces_json', methods=['POST'])
 async def read_annonces_json():
     try:
+        isDetectNew="O"
         buildAllPaths()
         data = request.get_json()
         excluedFile = data.get('excluded')
@@ -106,7 +109,7 @@ async def read_annonces_json():
         if not os.path.exists(directory_path):
             print("dbg676 -> Root path not exist")
             return []
-        print("dbg675 -> directory_path",directory_path)
+        #print("dbg675 -> directory_path",directory_path)
         annonces_list = []
         crit_annonces = load_crit_annonces(excluedFile)
         #print(f"RP-0 scan repertoire annonces for--------------------------------")
@@ -115,9 +118,6 @@ async def read_annonces_json():
             parent_dir = os.path.basename(root)
             if parent_dir in EXCLUDED_DIRECTORIES:
                 #print(f"RP-1 --Skipping directory: {parent_dir}")
-                continue
-                
-
                 continue
             
             file_doc = parent_dir + CONSTANTS['FILE_NAMES']['ANNONCE_SUFFIX'] + ".pdf"
@@ -154,9 +154,9 @@ async def read_annonces_json():
                     #print("###---->BINGO")
                 if filename  == file_cv_pdf or filename == file_cv_pdf_New:
                     isCVinpdf="O"
-                """ if ((filename ==  file_doc) ):
+                if ((filename ==  file_doc) ):
                     isJo="O"   
-                    file_path_isJo = os.path.join(root, file_doc)   """ 
+                    file_path_isJo = os.path.join(root, file_doc)   
                 if (filename ==  file_isGptResum ):
                     isGptResum="O"
                     file_path_gpt = os.path.join(root, file_isGptResum)
@@ -203,7 +203,7 @@ async def read_annonces_json():
                             if not isExclued:
                                 data["dossier"] = parent_dir  # Add parent directory name to data
                                 if os.path.exists(file_isGptResum_Path1):
-                                    isGptResum = "O"
+                                    isGptResum = "O"# Ensure to handle the case when the file exists.
                                 else:
                                     isGptResum = "N"
                                 # block ctrl document
@@ -235,19 +235,14 @@ async def read_annonces_json():
                 Piece_exist=False
                 
                     
-                if isSteal =="O":
-                    thefile= file_path_steal
-                    #print ("###-4 file_path_steal trouvé = ",file_path_steal)
-                    Piece_exist=True
-                else :
-                        if isJo =="O":
-                            thefile= file_path_isJo
-                            #print ("###-5 file_path_isJo trouvé = ",file_path_isJo)
-                            Piece_exist=True
-                        else:
-                            if isGptResum =="O":
-                                thefile =file_path_gpt
-                                Piece_exist=True
+                if isDetectNew  =="O":
+                    if isJo =="O":
+                        thefile= file_path_isJo
+                        #print ("###-5 file_path_isJo trouvé = ",file_path_isJo)
+                        Piece_exist=True
+                    elif isGptResum =="O":
+                        thefile =file_path_gpt
+                        Piece_exist=True
                 
                 if Piece_exist:
                     
@@ -263,40 +258,90 @@ async def read_annonces_json():
                             
                         the_request = load_CRQ_text(current_instruction,'DIR_CRQ_FILE')
                         
-                        print("RP-2158", the_request)  
+                        #print("RP-2158", the_request)  
                         role="analyse le texte suivant et réponds à cette question, peux tu renvoyer les informations sous forme de données json, les champs son définie dans la question entre [ et ]"
-                        infos = get_info(thefile,role,the_request)
-                        print ("RP-9 infos = ",infos)    
-                        if (infos):
-                            infos = json.loads(infos)  # Parse the JSON response 
-                            data["url"] = infos["url"]
+                        texte=extract_text_from_pdf(thefile)
+                        infos = get_mistral_answer(the_request, role, texte)
+                        print("RP-999 infos = ", infos)
+                        if infos:
+                            try:
+                                # Tenter de parser comme JSON
+                                parsed_json = json.loads(infos)
+                                data["url"] = parsed_json.get("url", "N/A")
+                                data["Date"] = parsed_json.get("Date", "N/A") 
+                                data["entreprise"] = parsed_json.get("entreprise", "N/A")
+                                data["description"] = parsed_json.get("poste", "N/A")
+                                data["Lieu"] = parsed_json.get("lieu", "N/A")
+                            except json.JSONDecodeError:
+                                # La réponse n'est pas du JSON valide
+                                print("RP-1000 : Réponse non JSON, tentative d'extraction des infos du texte")
+                                # Extraction basique (peut être améliorée)
+                                try:
+                                    # Tenter de trouver des données structurées dans la réponse texte
+                                    import re
+                                    
+                                    # Chercher un objet JSON dans la réponse
+                                    json_match = re.search(r'(\{.*\})', infos, re.DOTALL)
+                                    if json_match:
+                                        try:
+                                            extracted_json = json.loads(json_match.group(1))
+                                            data["url"] = extracted_json.get("url", "N/A")
+                                            data["Date"] = extracted_json.get("Date", "N/A")
+                                            data["entreprise"] = extracted_json.get("entreprise", "N/A")
+                                            data["description"] = extracted_json.get("poste", "N/A")
+                                            data["Lieu"] = extracted_json.get("lieu", "N/A")
+                                        except:
+                                            # Utiliser le texte brut
+                                            data["url"] = "N/A"
+                                            data["Date"] = "N/A" 
+                                            data["entreprise"] = "N/A"
+                                            data["description"] = infos[:50] + "..." if len(infos) > 50 else infos
+                                            data["Lieu"] = "N/A"
+                                    else:
+                                        # Utiliser le texte brut
+                                        data["url"] = "N/A"
+                                        data["Date"] = "N/A" 
+                                        data["entreprise"] = "N/A"
+                                        data["description"] = infos[:50] + "..." if len(infos) > 50 else infos
+                                        data["Lieu"] = "N/A"
+                                except Exception as extraction_error:
+                                    print(f"RP-1001 : Erreur lors de l'extraction: {str(extraction_error)}")
+                                    # Fallback en cas d'échec total
+                                    data["url"] = "N/A"
+                                    data["Date"] = "N/A"
+                                    data["entreprise"] = "N/A"  
+                                    data["description"] = "Erreur lors du traitement"
+                                    data["Lieu"] = "N/A"
+                            print ("RP-999 infos = ",infos)    
+                            # if (infos):
+                            #     infos = json.loads(infos)  # Parse the JSON response 
+                            #     data["url"] = infos["url"]
+                            #     data["Date"] = infos["Date"]
+                            #     data["entreprise"] = infos["entreprise"]
+                            #     data["description"] = infos["poste"] 
+                            #     data["Lieu"] = infos["lieu"]  
+                                 
                             data["dossier"] = parent_dir    
-                            #print("DBG-234 -> url: %s" % infos["url"])
-                            # block ctrl document
+                                #print("DBG-234 -> url: %s" % infos["url"])
+                                # block ctrl document
                             data["isJo"] = isJo
                             data['isSteal'] = isSteal
                             data["GptSum"] = isGptResum
-                            data["Date"] = infos["Date"]
                             data["CV"] = isCVin
                             data["CVpdf"] = isCVinpdf
-                            # block info piece         
-                            data["entreprise"] = infos["entreprise"]
-                            data["description"] = infos["poste"]
-                            data["Lieu"] = infos["lieu"]  
+                                # block info piece         
                             data["etat"] = "New"
                             data["list_RQ"]=list_RQ
                             data["instructions"]=the_request
                             data["request"]="default"
                             data['role']="default"
-                            print("DBG-234 -> file_path_nodata: " + file_path_nodata)
-                            print("DBG-5487 -> file_path: " + file_path) 
                             jData = {file_path_nodata:data}  
-                            
+                                
                             annonces_list.append(jData)
                             record_added = True
                             #file_path_nodata = file_path_nodata.replace('\\', '/')  # Normalize path
                             with open(file_path_nodata, 'w', encoding='utf-8') as file:
-                                json.dump(data, file, ensure_ascii=False, indent=4)
+                                    json.dump(data, file, ensure_ascii=False, indent=4)
                     except Exception as e:   
                         print(f"Cyr_Error 14578: An error occurred while trying to retrieve information from {thefile}: {str(e)}")
                         return []
@@ -440,7 +485,7 @@ def save_filters_json():
         dirfilter = GetDirFilter()
         file_path = os.path.join(dirfilter, tab_active + "_filter") + ".json"
         file_path = file_path.replace('\\', '/')  # Normalize path
-        print(f"##-9998-saving filters to {file_path}")    
+        #print(f"##-9998-saving filters to {file_path}")    
         with open(file_path, 'w', encoding='utf-8') as file:
             json.dump(filters, file, ensure_ascii=False, indent=4)
         return jsonify({"status": "success"}), 200
@@ -835,7 +880,7 @@ def load_CRQ_text(file_name,dir):
         file_name_txt = file_name+".txt"
         filepath = os.path.join(GetOneDir(dir), file_name_txt)
         filepath = filepath.replace('\\', '/')
-        print("dbg3434 :fichier requete",filepath)
+        #print("dbg3434 :fichier requete",filepath)
         #print("dbg789 :fichier instructions",filepath)
         if os.path.exists(filepath):
             if not file_name:

@@ -42,8 +42,8 @@ def list_requests():
         
         return jsonify(list_RQ), 200
     except Exception as e:
-        logger.error("Unable to scan directory: %s", str(e))
-        return jsonify({"error": f"Unable to scan directory: {str(e)}"}), 500
+        logger.error("dbg-632a Unable to scan directory: %s", str(e))
+        return jsonify({"dbg-632a error ": f"Unable to scan directory: {str(e)}"}), 500
     
     
     
