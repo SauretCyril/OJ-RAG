@@ -11,6 +11,8 @@
     "DATA_FILE": ".data.json",
     "NOTES_FILE": "_notes.txt",
     "RQ_FILE": "_RQ.json",
+    "EXPERIENCES_DATA": "experiences.json",
     "TYPE_DOSSIERS": [{ "_annonce_": "AN" }]
+
   }
 }

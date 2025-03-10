@@ -345,11 +345,6 @@ async def read_annonces_json():
                     except Exception as e:   
                         print(f"Cyr_Error 14578: An error occurred while trying to retrieve information from {thefile}: {str(e)}")
                         return []
-                 
-                
-               
-                                
-        
         return annonces_list 
     except Exception as e:
         print(f"Cyr_error_145 An unexpected error occurred while reading annonces: {e}")

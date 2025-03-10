@@ -15,8 +15,11 @@ realizations = Blueprint('realisations', __name__)
 def read_realizations():
     dirRea=GetDirREA()
     filerea=os.getenv("REA_FILE")
-    realizations_file_path=os.path.join(dirRea,filerea)
-    print ("dbg4452 : loading.file rea....",realizations_file_path)
+    root= GetRoot()
+    realizations_file=os.path.join(dirRea,filerea)
+    realizations_file_path = os.path.join(root,realizations_file)
+    
+    print("dbg4452 : loading.file rea....", realizations_file_path)
     if os.path.exists(realizations_file_path):
         print("dbg4453 : loading.....", realizations_file_path)
         with open(realizations_file_path, 'r') as file:

@@ -5,10 +5,9 @@ from flask import Flask, render_template, jsonify, request, url_for
 import os
 
 from werkzeug.utils import secure_filename
-#from JO_analyse import *
-from JO_analyse_gpt import * # Import the function from the correct module
-from JO_analyse_mistral import *
-
+from JO_analyse import *
+from JO_analyse_gpt import extract_text_from_url, extract_text_from_pdf, get_answer  # Import the functions from the correct module
+from JO_analyse_mistral import get_mistral_answer, mistral  # Import the function and Blueprint
 # ...existing code...
 import torch
 import numpy as np
@@ -20,15 +19,9 @@ import pythoncom
 from fpdf import FPDF
 from dotenv import load_dotenv
 from paths import *
-from transformers import pipeline
-from huggingface_hub import snapshot_download
-from pathlib import Path
-from sentence_transformers import SentenceTransformer
-import numpy as np
+
 # Load environment variables from .env file
 load_dotenv()
-from transformers import AutoModelForCausalLM, AutoTokenizer
-from huggingface_hub import snapshot_download
 
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
@@ -60,8 +53,10 @@ from list_realisations import realizations
 app.register_blueprint(realizations)
 
 from list_requests import requests
-
 app.register_blueprint(requests)
+
+# Enregistrer le Blueprint mistral
+app.register_blueprint(mistral)  # Register the mistral blueprint
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 app.config['UPLOAD_FOLDER'] = os.path.join(BASE_DIR, 'uploads')
@@ -91,24 +86,23 @@ def index():
 def get_file_path():
     dirname = request.json.get('dirName')
     filename = request.json.get('filename')
-   
-    #print("dbg3214 : dirName", dirname)
-    #print("dbg3215 : filename", filename)
+    print("dbg3214 : dirName", dirname)
+    print("dbg3215 : filename", filename)
 
     if not dirname or not filename:
         return jsonify({'error': 'Invalid parameters'}), 400    
     
     dirnamevalue = GetOneDir(dirname)
-    #print(f"dbg3216a repertoire du fichier {dirname}: filepath", dirnamevalue)
+    print(f"dbg3216a repertoire du fichier {dirname}: filepath", dirnamevalue)
     
     filenamevalue = os.getenv(filename)
-    #print(f"dbg3216b nom du fichier = {filenamevalue}")
+    print(f"dbg3216b nom du fichier = {filenamevalue}")
     
     if not filenamevalue:
         return jsonify({'error': 'Filename not found in environment variables'}), 404
     
     filepath = os.path.join(dirnamevalue, filenamevalue)
-    #print("dbg3216c : fichier ", filepath)
+    print("dbg3216c : fichier ", filepath)
     
     return jsonify({
         'filePath': filepath,
@@ -161,22 +155,21 @@ def get_job_answer():
     try:
         file = request.json.get('path')
         RQ = request.json.get('RQ')
-        #print (f"dbg A023b : file {file}")
-        print (f"dbg A023b : RQ {RQ}")
+
         if not file or not RQ:
             logger.error("Er005.Missing job file path or question")
             return jsonify({'Er005': 'Missing job file path or question'}), 400
 
         text1 = extract_text_from_pdf(file)
-        #print (f"dbg A023c : text1 {text1}")
+        
         if not text1:
             logger.error("Er006.Job text extraction failed")
             return jsonify({'Er006': 'Job text extraction failed'}), 500
 
         role="En tant qu' expert en analyse d'offres d'emploi dans le domaine informatique (développeur, Analyste ou Testeur logiciel) , analyse le texte suivant et réponds à cette question"
-       
-        answer = get_mistral_answer(RQ,role, text1)
-
+        #answer = get_answer(RQ,role, text1)
+        
+        answer = get_mistral_answer(RQ,role,text1)
         return jsonify({
             'raw_text': text1,
             'formatted_text': answer
@@ -193,7 +186,7 @@ def save_answer():
         job_text_data = request.json.get('text_data')
         job_number = request.json.get('number')
         the_path = request.json.get('the_path')
-        #rq=request.json.get('RQ')
+        rq=request.json.get('RQ')
         if the_path == '':
             the_path = GetRoot()
 
@@ -211,7 +204,7 @@ def save_answer():
             os.makedirs(file_path)
         
         file_path_docx = os.path.join(file_path, file_name + ".docx")
-        #file_path_RQ = os.path.join(file_path, file_name + "_RQ.txt")
+        file_path_RQ = os.path.join(file_path, file_name + "_RQ.txt")
 
         doc = format_text_as_word_style(job_text_data, job_number)
         doc.save(file_path_docx)
@@ -221,7 +214,7 @@ def save_answer():
         
         os.remove(file_path_docx)
 
-        #save_rq_to_text_file(file_path_RQ, rq)
+        save_rq_to_text_file(file_path_RQ, rq)
         
         return jsonify({'dbg009': 'Job text saved successfully', 'pdf_file_path': pdf_file_path})
 
@@ -248,35 +241,36 @@ def format_text_as_word_style(job_text, job_number):
     
     return doc
 
-# @app.route('/extract_features', methods=['POST'])
-# def extract_features(text):
-#     cv_features = extract_features(cv_text)
-#     job_features = extract_features(job_text)
-#     raw_similarity = cosine_similarity(cv_features, job_features)
-#     adjusted_similarity = calculate_similarity_score(cv_features, job_features)
+@app.route('/extract_features', methods=['POST'])
+def extract_features(text):
+    cv_features = extract_features("cv_text")
+    job_features = extract_features("job_text")
+    raw_similarity = cosine_similarity(cv_features, job_features)
+    adjusted_similarity = calculate_similarity_score(cv_features, job_features)
         
-#     raw_similarity_s=f"{raw_similarity:.4f}"
-#     adjusted_similarity_s=f"{adjusted_similarity:.4f}"
-#     return jsonify({'Raw_similarity_score': raw_similarity_s, 'Adjusted_similarity_score':adjusted_similarity_s})
+    raw_similarity_s=f"{raw_similarity:.4f}"
+    adjusted_similarity_s=f"{adjusted_similarity:.4f}"
+    return jsonify({'Raw_similarity_score': raw_similarity_s, 'Adjusted_similarity_score':adjusted_similarity_s})
 
 @app.route('/get_job_answer_from_url', methods=['POST'])
-def get_job_answer_from_url():
+def et_job_answer_from_url():
     try:
-        file = request.json.get('url')
+        url = request.json.get('url')
         RQ = request.json.get('RQ')
 
-        if not file or not RQ:
+        if not url or not RQ:
             logger.error("Er014.Missing job file path or question")
             return jsonify({'Er014': 'Missing job file path or question'}), 400
 
-        text1 = extract_text_from_url(file)
+        text1 = extract_text_from_url(url)
+        text1 += "<-"+url+"->"
         
         if not text1:
             logger.error("Er0016.Job text extraction failed")
             return jsonify({'Er016': 'Job text extraction failed'}), 500
-        role="En tant qu' expert en analyse d'offres d'emploi dans le domaine informatique (développeur, Analyste ou Testeur logiciel) , analyse le texte suivant et réponds à cette question"
-        answer = get_mistral_answer(RQ,role, text1)
-      
+        role = "En tant qu' expert en analyse d'offres d'emploi dans le domaine informatique (développeur, Analyste ou Testeur logiciel), analyse le texte suivant et réponds à cette question"
+        answer = get_mistral_answer(RQ, role, text1)
+
         return jsonify({
             'raw_text': text1,
             'formatted_text': answer
@@ -302,11 +296,9 @@ def check_dossier_exist():
         logger.error(f"Error checking dossier existence: {str(e)}")
         return jsonify({'error': str(e)}), 500
 
-
 if __name__ == '__main__':
     from multiprocessing import freeze_support
-    from huggingface_hub import login
-    token=os.getenv("HUGG")
-    login(token) 
+    from JO_analyse import *
     freeze_support()
     app.run(debug=True)
+

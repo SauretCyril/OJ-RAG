@@ -90,7 +90,7 @@ def extract_text_from_url(url):
             print("-> L'URL ne contient pas de texte extractible")
             return "L'URL ne contient pas de texte extractible"
             
-        #print(f"-> Texte extrait de l'URL: {text[:200]}...")
+        print(f"dbg 6523 -> Texte extrait de l'URL: {text[:200]}...")
         return text
         
     except Exception as e:
