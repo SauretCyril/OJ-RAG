@@ -4,7 +4,7 @@ from PyPDF2 import PdfReader
 from openai import OpenAI
 import requests
 from bs4 import BeautifulSoup
-from JO_analyse_mistral import get_mistral_answer
+from RQ_001 import get_mistral_answer
 import json
 
 DEFAULT_CONTEXT = """

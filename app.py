@@ -7,7 +7,9 @@ import os
 from werkzeug.utils import secure_filename
 from JO_analyse import *
 from JO_analyse_gpt import extract_text_from_url, extract_text_from_pdf, get_answer  # Import the functions from the correct module
-from JO_analyse_mistral import get_mistral_answer, mistral  # Import the function and Blueprint
+
+''' Procédures'''
+from RQ_001 import get_mistral_answer, mistral  # Import the function and Blueprint
 # ...existing code...
 import torch
 import numpy as np
@@ -57,6 +59,11 @@ app.register_blueprint(requests)
 
 # Enregistrer le Blueprint mistral
 app.register_blueprint(mistral)  # Register the mistral blueprint
+
+# Ajoutez ce code dans votre app.py après avoir enregistré le Blueprint
+""" print("Routes disponibles:")
+for rule in app.url_map.iter_rules():
+    print(f"{rule} - {rule.endpoint}") """
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 app.config['UPLOAD_FOLDER'] = os.path.join(BASE_DIR, 'uploads')
@@ -253,7 +260,7 @@ def extract_features(text):
     return jsonify({'Raw_similarity_score': raw_similarity_s, 'Adjusted_similarity_score':adjusted_similarity_s})
 
 @app.route('/get_job_answer_from_url', methods=['POST'])
-def et_job_answer_from_url():
+def get_job_answer_from_url():
     try:
         url = request.json.get('url')
         RQ = request.json.get('RQ')

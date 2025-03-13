@@ -26,7 +26,7 @@ import aiofiles
 from paths import *
 from cookies import *
 from JO_analyse_gpt import extract_text_from_pdf
-from JO_analyse_mistral import get_mistral_answer
+from RQ_001 import get_mistral_answer
 
 from dotenv import load_dotenv
 

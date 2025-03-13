@@ -20,7 +20,8 @@
            
             <li><a href="#New" onclick="createAnnouncementForm()">New</a></li>
             <li><a href="#Save" onclick="refresh()">Refresh</a></li>
-            <li><a href="#REA" onclick="analyser_experiences()">Realisations</a></li>
+              <!-- <li><a href="#REA" onclick="mistral_analyser_experiences()">Realisations</a></li>
+            <li><a href="#REA" onclick="mistral_analyser_annonces()">Realisations</a></li>-->
             <li><a href="#index" onclick="generate_index_html()">index</a></li>
             
             
@@ -128,7 +129,10 @@
     <script src="{{ url_for('static', filename='js/Responses/RP_request.js') }}"></script>
 
     <script src="{{ url_for('static', filename='js/Responses/RP_selectRep.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/Responses/RP_Realisation.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/Responses/RP_index.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/Responses/RQ_realisation.js') }}"></script>
+
+    RP_RQ_realisation
     
   </body>
 </html>
