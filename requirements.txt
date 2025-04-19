@@ -1,5 +1,6 @@
-Flask[async]
-numpy<2
+flask
+werkzeug
+numpy
 torch
 python-docx
 docx2pdf
@@ -10,3 +11,9 @@ beautifulsoup4
 python-dotenv
 aiofiles
 requests
+PyPDF2
+pywin32
+pandas
+reportlab
+langchain
+mistralai

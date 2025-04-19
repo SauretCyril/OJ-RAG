@@ -306,6 +306,22 @@ def check_dossier_exist():
 if __name__ == '__main__':
     from multiprocessing import freeze_support
     from JO_analyse import *
+    import webbrowser
+    import threading
+    import time
+    
+    def open_browser():
+        """Ouvre le navigateur après un court délai"""
+        time.sleep(1.5)  # Attendre que le serveur démarre
+        webbrowser.open('http://127.0.0.1:5000')
+    
+    # Lancer l'ouverture du navigateur dans un thread séparé
+    threading.Thread(target=open_browser).start()
+    
+    # Initialiser multiprocessing
     freeze_support()
+    
+    # Démarrer le serveur Flask (cette ligne est bloquante)
     app.run(debug=True)
+
 

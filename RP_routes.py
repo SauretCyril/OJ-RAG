@@ -121,7 +121,9 @@ async def read_annonces_json():
                 continue
             
             file_doc = parent_dir + CONSTANTS['FILE_NAMES']['ANNONCE_SUFFIX'] + ".pdf"
+            file_doc_Action = parent_dir + CONSTANTS['FILE_NAMES']['ACTION_SUFFIX'] + ".pdf"
             
+            file_doc_new = parent_dir + CONSTANTS['FILE_NAMES']['SOURCE_SUFFIX_NEW'] + ".pdf"
             # résumé gpt
             file_isGptResum = parent_dir + CONSTANTS['FILE_NAMES']['GPT_REQUEST_SUFFIX']
             file_isGptResum_Path1 = os.path.join(root, file_isGptResum)
@@ -129,7 +131,8 @@ async def read_annonces_json():
               # CV 
             file_cv = parent_dir + CONSTANTS['FILE_NAMES']['CV_SUFFIX'] + ".docx"
             file_cv_pdf = parent_dir + CONSTANTS['FILE_NAMES']['CV_SUFFIX'] + ".pdf"
-            
+            file_BA_pdf = parent_dir + CONSTANTS['FILE_NAMES']['BA_SUFFIX_NAME'] + ".pdf"
+            file_BA_docx = parent_dir + CONSTANTS['FILE_NAMES']['BA_SUFFIX_NAME'] + ".docx"
             
             file_cv_New = parent_dir + CONSTANTS['FILE_NAMES']['CV_SUFFIX_NEW'] + ".docx"
             file_cv_pdf_New = parent_dir + CONSTANTS['FILE_NAMES']['CV_SUFFIX_NEW'] + ".pdf"
@@ -139,24 +142,37 @@ async def read_annonces_json():
             record_added = False
             data = {}
             isCVin="N"
+            isBAdocx="N"
             isCVinpdf="N"
-            isSteal="N"
+            isBAinpdf="N"
+            isAction="N"
             isJo="N"
-            file_path_steal=""
+          
             file_path_isJo=""
             isGptResum=""
            
-            list_RQ = {}
+        
             isJoTyp=""
-            for filename in files:              
+            for filename in files:   
+                if filename == file_BA_docx: 
+                   isBAdocx="O"          
                 if filename  == file_cv or filename == file_cv_New:
                     isCVin="O"
                     #print("###---->BINGO")
                 if filename  == file_cv_pdf or filename == file_cv_pdf_New:
                     isCVinpdf="O"
-                if ((filename ==  file_doc) ):
+                if filename  == file_BA_pdf:
+                    isBAinpdf="O"
+                if ((filename ==  file_doc) or (filename == file_doc_new) or (filename == file_doc_Action)):
                     isJo="O"   
-                    file_path_isJo = os.path.join(root, file_doc)   
+                    if not filename == file_doc_Action:
+                        if (filename == file_doc_new):
+                            file_path_isJo = os.path.join(root, file_doc_new)
+                        else:
+                            file_path_isJo = os.path.join(root, file_doc)
+                    else:
+                        isAction="O"
+                        file_path_isJo = os.path.join(root, file_doc_Action)
                 if (filename ==  file_isGptResum ):
                     isGptResum="O"
                     file_path_gpt = os.path.join(root, file_isGptResum)
@@ -208,11 +224,14 @@ async def read_annonces_json():
                                     isGptResum = "N"
                                 # block ctrl document
                                 data["isJo"] = isJo
-                                data['isSteal'] = isSteal
+                               
                                 data["GptSum"] = isGptResum
                                 data["CV"] = isCVin
                                 data["CVpdf"] = isCVinpdf
-                                data["list_RQ"]=list_RQ
+                                data["BA"] = isBAdocx
+                                data["isAction"] = isAction
+                                data["BApdf"] = isBAinpdf
+                                
                                
                                 if "role" not in data:
                                     data["role"] = "default"
@@ -252,9 +271,10 @@ async def read_annonces_json():
 
                         # Use the value of 'current_instruction' from cookies
                         #current_instruction = get_cookie_value('current_instruction')
-                        current_instruction="annonce"
-                        if not current_instruction:
-                           current_instruction="annonce"
+                        if isAction == "O":
+                            current_instruction="action"
+                        else:    
+                            current_instruction="annonce"
                             
                         the_request = load_CRQ_text(current_instruction,'DIR_CRQ_FILE')
                         
@@ -325,14 +345,12 @@ async def read_annonces_json():
                                 #print("DBG-234 -> url: %s" % infos["url"])
                                 # block ctrl document
                             data["isJo"] = isJo
-                            data['isSteal'] = isSteal
+                            data["isAction"] = isAction
                             data["GptSum"] = isGptResum
                             data["CV"] = isCVin
                             data["CVpdf"] = isCVinpdf
                                 # block info piece         
                             data["etat"] = "New"
-                            data["list_RQ"]=list_RQ
-                            data["instructions"]=the_request
                             data["request"]="default"
                             data['role']="default"
                             jData = {file_path_nodata:data}  
@@ -595,12 +613,13 @@ def select_cv():
         file = request.files.get('file_path')
         dossier_number = request.form.get('num_dossier')
         target_directory = request.form.get('repertoire_annonce')
+        prefix= request.form.get('prefix')
         #print("##2-------------------------------", dossier_number, target_directory)
         
         if not dossier_number or not target_directory or not file:
             return jsonify({"status": "error", "message": "Missing parameters"}), 400 
         
-        filename = secure_filename(f"{dossier_number}_CV_CyrilSauret.docx")
+        filename = secure_filename(f"{dossier_number}_{prefix}_CyrilSauret.docx")
         target_path = os.path.join(target_directory, filename)
         target_path = target_path.replace('\\', '/') 
         #print("##3-------------------------------", target_path)
@@ -659,7 +678,7 @@ def define_default_data():
         "type": "AN",
         "type_question": "pdf",
         "title":"",
-        "isSteal": "N",
+       
     }
 
 @routes.route('/save_announcement', methods=['POST'])
@@ -751,21 +770,21 @@ def save_notes():
 
 # ...existing code...
 
-@routes.route('/load_reseaux_link', methods=['GET'])
-def load_reseaux_link():
-    try:
-       file_path = os.path.join(os.getenv("RESEAUX_FILE"))
-       file_path = file_path.replace('\\', '/')  # Normalize path
-       if not os.path.exists(file_path):
-           return jsonify([])  # Return empty list if file does not exist
-       with open(file_path, 'r', encoding='utf-8') as file:
-           file = json.load(file)
-           return jsonify(file)  # Return JSON response
-    except Exception as e:
-        print(f"Cyr_error_552 An unexpected error occurred while reading reseaux: {e}")
-        return jsonify([])
+# @routes.route('/load_reseaux_link', methods=['GET'])
+# def load_reseaux_link():
+#     try:
+#        file_path = os.path.join(os.getenv("RESEAUX_FILE"))
+#        file_path = file_path.replace('\\', '/')  # Normalize path
+#        if not os.path.exists(file_path):
+#            return jsonify([])  # Return empty list if file does not exist
+#        with open(file_path, 'r', encoding='utf-8') as file:
+#            file = json.load(file)
+#            return jsonify(file)  # Return JSON response
+#     except Exception as e:
+#         print(f"Cyr_error_552 An unexpected error occurred while reading reseaux: {e}")
+#         return jsonify([])
 
-@routes.route('/save_reseaux_link_update', methods=['POST'])
+""" @routes.route('/save_reseaux_link_update', methods=['POST'])
 def save_reseaux_link_update():
     try:
         link_data = request.get_json()
@@ -791,7 +810,7 @@ def save_reseaux_link_update():
     except Exception as e:
         print(f"Cyr_error_579 An error occurred while saving reseaux link update: {e}")
         return jsonify({"status": "error", "message": "579>"+str(e)}), 500
-
+ """
 # ...existing code...
 
 @routes.route('/list-CRQ-files', methods=['GET'])

@@ -30,39 +30,41 @@ window.columns = [
         style: { cursor: 'pointer', color: 'blue', textDecoration: 'underline' }, 
         event: 'click', 
         eventHandler: 'openUrlHandler', // Store function name as string
-        width: '200px',
+        width: '300px',
         visible: true,
         type: 'tb',
         title:'Description'
     },
-    { key: 'id', editable: true, width: '100px',"visible":true,"type":"tb",title:'ID' },
-    { key: 'entreprise', editable: true, width: '150px',"visible":true ,"type":"tb",title:'Entreprise' },
-    { key: 'list_RQ', editable: false, width: '125px',"visible":false ,"type":"tb",title:'RQ' },
+    { key: 'id', editable: true, width: '200px',"visible":true,"type":"tb",title:'Lot' },
+    { key: 'entreprise', editable: true, width: '300px',"visible":true ,"type":"tb",title:'Entreprise' },
+    
     { key: 'role', editable: false, width: '120px',"visible":false,"type":"tb",title:'role',dir:'DIR_ROLE_FILE' },   
-    { key: 'request', editable: false, width: '120px',"visible":true ,"type":"tb",title:'request',dir:'DIR_RQ_FILE' },
+    { key: 'request', editable: false, width: '120px',"visible":false ,"type":"tb",title:'request',dir:'DIR_RQ_FILE' },
     { key: 'isJo', editable: false, width: '50px',"visible":true ,"type":"tb",title:'M.' },
-    // { key: 'isSteal', editable: false, width: '50px',"visible":true ,"type":"tb",title:'St' },
+  
     
     { key: 'GptSum', editable: false, width: '50px',"visible":true,"type":"tb",title:'Res' },
-    { key: 'CV', editable: false, width: '50px',"visible":false ,"type":"tb",title:'CV' },
-    { key: 'CVpdf', editable: false, width: '50px',"visible":true ,"type":"tb",title:'CV' },
+    { key: 'CV', editable: false, width: '70px',"visible":true ,"type":"tb",title:'CV' },
+    { key: 'CVpdf', editable: false, width: '70px',"visible":true ,"type":"tb",title:'CV.pdf' },
+    { key: 'BA', editable: false, width: '70px',"visible":true ,"type":"tb",title:'BA' },
+    { key: 'BApdf', editable: false, width: '70px',"visible":true ,"type":"tb",title:'BA.pdf' },
     
     { key: 'categorie', editable: true, class: 'category-badge', prefix: 'category-', width: '100px',"visible":true,"type":"tb",title:'Cat'  },
     { key: 'etat', editable: true, width: '100px',"visible":true ,"type":"tb",title:'Etat'  },
-    { key: 'contact', editable: true, width: '150px',"visible":true ,"type":"tb",title:'Contact' },
+    { key: 'contact', editable: true, width: '150px',"visible":false ,"type":"tb",title:'Contact' },
     { key: 'tel', editable: true, width: '125px',"visible":false ,"type":"tb",title:'Tel.' },
     { key: 'mail', editable: true, width: '125px',"visible":false,"type":"tb",title:'mail' },
     { key: 'Date', editable: true, default: 'N/A', width: '120px',"visible":true ,"type":"tb",title:'Dt pub' },
     { key: 'Date_rep', editable: true, default: 'N/A', width: '120px',"visible":true ,"type":"tb",title:'Dt Rep' },
     { key: 'Date_from', editable: true, default: 'N/A', width: '120px',"visible":true ,"type":"tb",title:'Dt From' },
-    { key: 'delay', editable: false, default: 'N/A', width: '120px',"visible":true ,"type":"tb",title:'Delais' },  
-    { key: 'Commentaire', editable: true, width: '150px',"visible":true,"type":"tb" ,title:'Commentaire' },
-    { key: 'Notes', editable: false, width: '50px',"visible":true,"type":"tb" ,title:'Nt' },
+    { key: 'delay', editable: false, default: 'N/A', width: '120px',"visible":false,"type":"tb",title:'Delais' },  
+    { key: 'Commentaire', editable: true, width: '200px',"visible":true,"type":"tb" ,title:'Commentaire' },
     { key: 'todo', editable: true, width: '120px',"visible":true ,"type":"tb" ,title:'ToDo'},
+    { key: 'Notes', editable: false, width: '50px',"visible":true,"type":"tb" ,title:'Nt' },
     { key: 'url', editable: false, width: '100px',"visible":false ,"type":"tb",title:'Url' },
-    { key: 'type', editable: true, width: '80px',"visible":true ,"type":"tb",title:'Type'  },
+    { key: 'type', editable: true, width: '80px',"visible":false ,"type":"tb",title:'Type'  },
     { key: 'annonce_pdf', editable: true, width: '80px',"visible":false ,"type":"tb",title:'Annonce (pdf)' },
-    { key: 'Origine', editable: true, width: '120px',"visible":true ,"type":"tb" ,title:'Origine'},
+    { key: 'Origine', editable: true, width: '120px',"visible":false ,"type":"tb" ,title:'Origine'},
     { key: 'lien_Etape', editable: true, width: '80px',"visible":false ,"type":"tb",title:'Lien Etape' },
     
     { key: 'CVfile', editable: true, width: '80px',"visible":false ,"type":"tb",title:'CVfile' },
@@ -202,8 +204,10 @@ function loadTableData(callback) {
             
             const fichier_annonce_resum = dir_path + '/' + item.dossier+window.CONSTANTS['FILE_NAMES']['GPT_REQUEST_SUFFIX'];
             //console.log("<<-4-fichier_annonce_resum>>",fichier_annonce_resum);
-            
-            
+            const fichier_cv_pdf = dir_path + '/' + item.dossier+window.CONSTANTS['FILE_NAMES']['CV_SUFFIX_NEW']+".pdf";
+            const fichier_BA_pdf = dir_path + '/' + item.dossier+window.CONSTANTS['FILE_NAMES']['BA_SUFFIX_NAME']+".pdf";
+          
+           
             const file_notes = dir_path + '/' + item.dossier+window.CONSTANTS['FILE_NAMES']['NOTES_FILE'];
             const file_RQ = dir_path + '/' + item.dossier+window.CONSTANTS['FILE_NAMES']['RQ_FILE'];
             //console.log("<<-5-file_notes>>",file_notes);
@@ -255,49 +259,28 @@ function loadTableData(callback) {
                     else if (col.key === 'GptSum' ) 
                     {
                         const icon = document.createElement('span');
+                        icon.style.position = 'absolute';
+                        icon.style.alignContent='center';
                         if (item[col.key] === 'O') {
                             //console.log('#### blanc:');
                             icon.textContent = '📗'; // Green book icon
-                            icon.style.color = 'green';
+                          
                             icon.style.cursor = 'pointer';
                             icon.addEventListener('click', () => open_url(fichier_annonce_resum));
                         } else  {
                             //console.log('#### vert:');
                             icon.textContent = '⚪'; // Green book icon
                             //icon.style.color = 'red';
-                            icon.style.cursor = 'undefined';
+                           
                         } 
-                        icon.style.position = 'absolute';
-                        icon.style.alignContent='center';
+                      
                         //icon.style.top = '0px';
-                        icon.style.zIndex = '10'; // Ensure the icon is above the content
+                        //icon.style.zIndex = '10'; // Ensure the icon is above the content
                         cell.appendChild(icon);
                     }
                    
-                     else if  (col.key === 'CVpdf' && item['CV']=='O' ) 
-                    {
-                        //console.log('#### CV:', item[col.key]);
-                        const icon = document.createElement('span');
-                        if (item[col.key] === 'N') {
-                            //console.log('#### blanc:');
-                            icon.textContent = '⚪'; // Red book icon
-                            // icon.style.color = 'red';
-                        } else if (item[col.key] === 'O') {
-                            //console.log('#### vert:');
-                            icon.textContent = '📗'; // Green book icon
-                             icon.style.color = 'green';
-                        } 
-                        icon.style.position = 'absolute';
-                        icon.style.alignContent='center';
-                        //icon.style.top = '0px';
-                        icon.style.zIndex = '10'; // Ensure the icon is above the content
-                        if (item[col.key] === 'O') {
-                            icon.style.cursor = 'pointer';
-                            icon.addEventListener('click', () => convert_cv(item.dossier, dir_path));
-                        }
-                        cell.appendChild(icon);
-                      } 
-                      else  if (col.key === 'CVpdf' && item['CV']=='N' )
+                 
+                /*       else  if (col.key === 'CVpdf' && item['CV']=='N' )
                       {
                          
                             const icon = document.createElement('span');
@@ -308,40 +291,75 @@ function loadTableData(callback) {
                             icon.style.zIndex = '10';
                             cell.appendChild(icon);
                          
-                     }                      
-                     else if (col.key === 'CV') 
+                     }     */
+                     else if (col.key === 'CVpdf'  )
+                        {
+                            
+                            const icon = document.createElement('span');
+                            icon.style.position = 'absolute';
+                            icon.style.alignContent='center';
+                            if (item['CVpdf']=='O') {
+                                icon.textContent = '📗';
+                                icon.style.cursor = 'pointer';
+                                icon.addEventListener('click', () => open_url(fichier_cv_pdf ));
+                            } else  {
+                            
+                                icon.textContent = '⚪';
+                            }
+                            cell.appendChild(icon);
+                        }      
+                    else if (col.key === 'BApdf'  )
+                            {
+                                const icon = document.createElement('span');
+                                icon.style.position = 'absolute';
+                                icon.style.alignContent='center';
+                                if (item['BApdf']=='O') {
+                                    icon.textContent = '📗';
+                                    icon.style.cursor = 'pointer';
+                                    icon.addEventListener('click', () => open_url(fichier_BA_pdf ));
+                                }    
+                                else {
+                                     icon.textContent = '⚪';
+                                }   
+                                
+                                cell.appendChild(icon);
+                            }                     
+                     else if (col.key === 'CV' || col.key === 'BA' ) 
                      {
                         //console.log('#### CV:', item[col.key]);
                         const icon = document.createElement('span');
-                        if (item[col.key] === 'N') {
+                        icon.style.position = 'absolute';
+                        icon.style.alignContent='center';
+                        icon.style.zIndex = '10'; // Ensure the icon is above the content
+                        icon.style.cursor = 'pointer';
+                        if (item[col.key] === 'N' || item[col.key] === '') {
                             //console.log('#### blanc:');
                             
-                            icon.textContent = '⚪'; // Red book icon
+                            icon.textContent = '📤'; // Pick up icon
                             //icon.style.color = 'red';
                         } else  {
                             //console.log('#### vert:');
-                            icon.textContent = '📗'; // Red book icon
-                             icon.style.color = 'green';
+                            icon.textContent = '⬇️'; // Download icon
+                            //icon.style.color = 'green';
                         } 
-                        icon.style.position = 'absolute';
-                        icon.style.alignContent='center';
+                       
                         //icon.style.top = '0px';
-                        icon.style.zIndex = '10'; // Ensure the icon is above the content
-                        icon.style.cursor = 'pointer';
-                        
-                        icon.addEventListener('click', () => get_cv(item.dossier, dir_path,item[col.key],row.id));
+
+                        let typeDoc = "";
+                        if (col.key === 'CV') {typeDoc="CV";}
+                        if (col.key === 'BA') {typeDoc="BA";}
+                        icon.addEventListener('click', () => get_cv(item.dossier, dir_path,item[col.key],typeDoc));
                         cell.appendChild(icon);
                         
                     } 
                     else if (col.key === 'isJo')
                     {
                         const icon = document.createElement('span');
+                        icon.style.position = 'absolute';
+                        icon.style.alignContent='center';
+                        icon.style.zIndex = '10'; // Ensure the icon is above the content
                          if (item[col.key] === 'O') {
-                            if (item['type']=='RP') {
-                                fichier_annonce = dir_path + '/' + item.dossier+window.CONSTANTS['FILE_NAMES']['REPONSE_SUFFIX']+".pdf";
-                            }
-                            
-                            //console.log('#### blanc:');
+                              //console.log('#### blanc:');
                             icon.textContent = '🔵';
                             icon.style.cursor = 'pointer';
                             icon.addEventListener('click', () => open_url(fichier_annonce));
@@ -350,33 +368,13 @@ function loadTableData(callback) {
                             //console.log('#### vert:');
                             icon.textContent = '⚪'; // White circle icon
                         } 
-                        icon.style.position = 'absolute';
-                        icon.style.alignContent='center';
+                      
                         //icon.style.top = '0px';
-                        icon.style.zIndex = '10'; // Ensure the icon is above the content
+                   
                         
                         cell.appendChild(icon);
                     }
-                    else if (col.key === 'isSteal')
-                    {
-                        const icon = document.createElement('span');
-                        if (item[col.key] === 'O') {
-                            //console.log('#### blanc:');
-                            icon.textContent = '📗'; // Red book icon
-                            icon.addEventListener('click', () => open_url(fichier_annonce_steal));
-                            icon.style.cursor = 'pointer';
-                        } else {
-                            //console.log('#### vert:');
-                            icon.textContent = '⚪'; // Green book icon 
-                            //icon.style.color = 'red';   
-                        } 
-                        icon.style.position = 'absolute';
-                        icon.style.alignContent='center';
-                        //icon.style.top = '0px';
-                        icon.style.zIndex = '10'; // Ensure the icon is above the content
-                        
-                        cell.appendChild(icon);
-                    } else if (col.key === 'Notes' ) 
+                else if (col.key === 'Notes' ) 
                         {
                             const heartIcon = document.createElement('span');
                             heartIcon.textContent = '❤️'; // Heart icon
@@ -626,14 +624,7 @@ function filterTable() {
                     }
                 }
                 cellIndex++;
-               /*  if (cell) {
-                    const cellValue = cell.textContent.toLowerCase();
-                    const filterValue = filters[col.key];
-                    //console.log(`Cell value for ${col.key}: ${cellValue}, Filter value: ${filterValue}`);
-                    if (filterValue && !cellValue.includes(filterValue)) {
-                        shouldDisplay = false;
-                    }
-                } */
+             
             }
         });
         row.style.display = shouldDisplay ? '' : 'none';
@@ -960,7 +951,7 @@ function generateTableHeaders() {
             // Create header cell
             const th = document.createElement('th');
             th.style.width = col.width;
-            th.classList.add('filter-cell');
+            th.classList.add('filter-cell-col');
             //th.textContent = col.title.charAt(0).toUpperCase() + col.key.slice(1);
             th.textContent = col.title;
             thead.appendChild(th);
@@ -1457,7 +1448,7 @@ async function convert_cv(numDossier, repertoire_annonces)
     });
 }
 
-async function get_cv(numDossier, repertoire_annonces,state,rowId) 
+async function get_cv(numDossier, repertoire_annonces,state,prefix) 
 {
     const input = document.createElement('input');
     input.type = 'file';
@@ -1481,6 +1472,7 @@ async function get_cv(numDossier, repertoire_annonces,state,rowId)
                 formData.append('file_path', file);
                 formData.append('num_dossier', numDossier);
                 formData.append('repertoire_annonce', repertoire_annonces);
+                formData.append('prefix', prefix);
                 fpath=repertoire_annonces + '/' + numDossier +  ".data.json";   
                 try 
                 {
@@ -1522,7 +1514,7 @@ async function get_cv(numDossier, repertoire_annonces,state,rowId)
 
 
 function open_url(theurl) {
-     // alert(theurl);
+     //alert(theurl);
             fetch('/open_url', {
                 method: 'POST',
                 headers: {
@@ -1555,8 +1547,8 @@ function createAnnouncementForm() {
                     <label for="creationMode">Mode de création:</label>
                     <select id="creationMode" class="rich-text-field">
                          <option value="creer_annonce">Contenu</option>
+                         <option value="Action">Action</option>
                          <option value="scan_url_annonce">Url</option>
-                       
 
                     </select>
                 </div>
@@ -1594,6 +1586,9 @@ function executeCreationMode() {
         scan_url_annonce(); 
     } else if (creationMode === 'creer_annonce') {
         submitAnnouncement(window.CONSTANTS["ANNONCE_SUFFIX"]);
+    }
+    else if (creationMode === 'Action') {
+        submitAnnouncement(window.CONSTANTS["ACTION_SUFFIX"]);
 
     }
 }
@@ -1739,7 +1734,7 @@ function newAtelier() {
 function submitAnnouncement(type) {
     let content = document.getElementById('announcementContent').value;
     if (content.trim() === '') {
-        alert('Le contenu de l\'annonce ne peut pas être vide !!!');
+        alert('Le contenu de l\'action ne peut pas être vide !!!');
         return;
     }
     const contentNum = document.getElementById('announcementDossier').value;
@@ -1749,15 +1744,12 @@ function submitAnnouncement(type) {
     }
 
     const contentUrl = document.getElementById('announcementURL').value;
-   /*  if (contentUrl.trim() === '' && !isValidURL(contentUrl)) {
-        alert("L'URL ne peut pas être null !!!");
-        return;
-    }
-    */
+  
     contentUrlembed = "<- " + contentUrl + " ->";
 
     // Remove all spaces inside content
-    content = content.replace(/\s+/g, '');
+    
+    //content = content.replace(/\s+/g, '');
 
     globalContent =  content;
     showLoadingOverlay();

@@ -62,10 +62,10 @@ def get_mistral_answer(question, role, content):
     
     # Données à envoyer à l'API Mistral
     data = {
-        "model": "mistral-medium",  # Au lieu de mistral-large
+        "model": "mistral-medium",
         "messages": messages,
         "temperature": 0.7,
-        "max_tokens": 2500
+        "max_tokens": 8000  # Augmenter cette valeur (était 5000)
     }
     
     try:

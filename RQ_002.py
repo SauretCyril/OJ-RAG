@@ -52,6 +52,7 @@ def query_file(file_path, question, role, output_file=None, model="mistral-small
           
               
             # Sauvegarder dans un fichier si demandé
+            print (f"dbg 1102 : Sauvegarder dans un fichier si demandé {output_file}")
             if output_file:
     # Si la réponse est une chaîne JSON
                 try:
@@ -122,8 +123,8 @@ def generate_pdf_from_json(json_file_path, pdf_output=None):
         doc = SimpleDocTemplate(
             pdf_output,
             pagesize=A4,
-            rightMargin=2*cm,
-            leftMargin=2*cm,
+            rightMargin=2.5*cm,  # Augmenter légèrement pour plus de sécurité
+            leftMargin=2.5*cm,
             topMargin=2*cm,
             bottomMargin=2*cm
         )
@@ -155,7 +156,8 @@ def generate_pdf_from_json(json_file_path, pdf_output=None):
                 name='NormalCustom',
                 parent=styles['Normal'],
                 fontSize=10,
-                spaceAfter=6
+                spaceAfter=6,
+                wordWrap='CJK'  # Force le retour à la ligne pour tous les caractères
             ))
         
         if 'List' not in styles:
@@ -185,10 +187,16 @@ def generate_pdf_from_json(json_file_path, pdf_output=None):
         story.append(Spacer(1, 0.5*cm))
         
         # Section d'informations sur la requête
-        info_table_data = [
-            ["Question", data.get('question', 'N/A')],
-            ["Rôle", data.get('role', 'N/A')],
-            ["Modèle utilisé", data.get('model', 'N/A')]
+        # Définir une fonction d'aide pour créer des cellules de tableau avec retour à la ligne
+        def create_table_cell(text, style='NormalCustom'):
+            if not isinstance(text, str):
+                text = str(text)
+            return Paragraph(text, styles[style])
+        
+        """   info_table_data = [
+            [create_table_cell("Question", 'Heading2Custom'), create_table_cell(data.get('question', 'N/A'))],
+            [create_table_cell("Rôle", 'Heading2Custom'), create_table_cell(data.get('role', 'N/A'))],
+            [create_table_cell("Modèle utilisé", 'Heading2Custom'), create_table_cell(data.get('model', 'N/A'))]
         ]
         
         info_table = Table(info_table_data, colWidths=[doc.width*0.3, doc.width*0.7])
@@ -200,10 +208,10 @@ def generate_pdf_from_json(json_file_path, pdf_output=None):
             ('FONTSIZE', (0, 0), (-1, -1), 9),
             ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
             ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
-        ]))
+        ])) """
         
-        story.append(info_table)
-        story.append(Spacer(1, 1*cm))
+        """ story.append(info_table)
+        story.append(Spacer(1, 1*cm)) """
         
         # Extraire la réponse comme avant
         if isinstance(data, dict) and "answer" in data:
@@ -233,14 +241,14 @@ def generate_pdf_from_json(json_file_path, pdf_output=None):
                     
                     # Tableau d'informations sur l'expérience
                     exp_info = [
-                        ["Entreprise", exp.get('entreprise', 'N/A')],
-                        ["Période", exp.get('dates', 'N/A')],
-                        ["Contexte", exp.get('context', 'N/A')],
-                        ["Savoir faire", ', '.join(exp.get('savoir_faire', [])) if isinstance(exp.get('savoir_faire', []), list) else exp.get('savoir_faire', 'N/A')]
-                        # ["Savoir être", get_skill_value(exp, ['savoir_etre', 'savoirEtre', 'savoir être', 'savoir-être'])]
+                        [create_table_cell("Entreprise", 'Heading2Custom'), create_table_cell(exp.get('entreprise', 'N/A'))],
+                        [create_table_cell("Période", 'Heading2Custom'), create_table_cell(exp.get('dates', 'N/A'))],
+                        [create_table_cell("Contexte", 'Heading2Custom'), create_table_cell(exp.get('context', 'N/A'))],
+                        [create_table_cell("Savoir faire", 'Heading2Custom'), create_table_cell(', '.join(exp.get('savoir_faire', [])) if isinstance(exp.get('savoir_faire', []), list) else exp.get('savoir_faire', 'N/A'))]
                     ]
                     
-                    exp_table = Table(exp_info, colWidths=[doc.width*0.2, doc.width*0.7])
+                    # Pour les tableaux d'expérience, donner plus d'espace à la colonne de droite
+                    exp_table = Table(exp_info, colWidths=[doc.width*0.25, doc.width*0.65])  # Ajuster les proportions
                     exp_table.setStyle(TableStyle([
                         ('BACKGROUND', (0, 0), (0, -1), colors.lightgrey),
                         ('TEXTCOLOR', (0, 0), (0, -1), colors.darkblue),
@@ -249,6 +257,8 @@ def generate_pdf_from_json(json_file_path, pdf_output=None):
                         ('FONTSIZE', (0, 0), (-1, -1), 9),
                         ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
                         ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
+                        ('VALIGN', (0, 0), (-1, -1), 'TOP'),  # Alignement vertical en haut
+                        ('WORDWRAP', (0, 0), (-1, -1), True),  # Activer le retour à la ligne
                     ]))
                     
                     story.append(exp_table)
@@ -499,7 +509,13 @@ def structure_answer(text):
     
     return elements
 
-def main():
+# Pour les très longues chaînes, tronquer avec des points de suspension si nécessaire
+def safe_text(text, max_length=500):
+    if isinstance(text, str) and len(text) > max_length:
+        return text[:max_length] + '...'
+    return text
+'''Travaille sur le profile professionel linkedin'''
+def experience_professionnelles():
     """Fonction principale avec interface en ligne de commande"""
     #parser = argparse.ArgumentParser(description='Interrogez une URL avec Mistral AI')
     #parser.add_argument('--url', required=True, help='URL à interroger')
@@ -511,30 +527,28 @@ def main():
     #args = parser.parse_args()
     file_path ="G:/OneDrive/Entreprendre/Actions-4/M544/M544_profile_.pdf"
     
-    question = "Peux tu me donner son profil professionnel ? "
-    question += "Réponds UNIQUEMENT au format JSON suivant: "
-    question += """
+    question = """Peux-tu extraire TOUTES les expériences professionnelles de ce document, 
+sans en omettre aucune? Réponds uniquement au format JSON suivant:
 {
-  "accroche": "résumé de présentation du profil (une seule accroche globale)",
+  "accroche": "résumé global du profil professionnel",
   "experiences": [
     {
-      "titre": "titre de l'expérience professionnelle",
+      "titre": "titre complet du poste",
       "description": {
         "taches": [
-          "tâche 1 réalisée pendant cette expérience",
-          "tâche 2 réalisée pendant cette expérience"
+          "tâche 1 réalisée",
+          "tâche 2 réalisée"
         ]
       },
-      "dates": "période de l'expérience", 
+      "dates": "période complète",
       "entreprise": "nom de l'entreprise",
-      "context": "contexte de l'expérience",
-      "savoir_faire": "compétences techniques démontrées",
-      "savoir_etre": "compétences comportementales démontrées"
+      "context": "contexte du projet",
+      "savoir_faire": ["compétence1", "compétence2"],
+      "savoir_etre": ["qualité1", "qualité2"]
     }
   ]
-}"""
-    
-    question += "\n\nAttention: respecte STRICTEMENT ce format JSON. Fournis UNIQUEMENT le JSON sans commentaire."
+}
+Inclus TOUTES les expériences mentionnées dans le document, du plus récent au plus ancien."""
     
     role = "En tant qu' expert ressources humaines dans le domaine informatique (développeur, Analyste, Testeur logiciel), analyse le texte suivant et réponds à cette question"
     output = "G:/OneDrive/Entreprendre/Actions-4/M544/M544_annonce_.json"
@@ -548,5 +562,7 @@ def main():
         pdf_path = fix_and_generate_pdf(output, output_pdf)
         print(f"PDF generated successfully: {pdf_path}")
 
+
+
 if __name__ == "__main__":
-    main()
+    experience_professionnelles()
