@@ -888,12 +888,14 @@ def load_conf_tabs():
     
     filepath = os.path.join(dir, ".conf")
     filepath = filepath.replace('\\', '/')
-    
-    with open( filepath, 'r', encoding='utf-8') as file:
+    if os.path.exists(filepath):
+        with open(filepath, 'r', encoding='utf-8') as file:
             content = json.load(file)
-    print("dbg897 :fichier conf",filepath)
-    print("dbg897 :content ",content)        
-    return content
+        print("dbg897 :fichier conf",filepath)
+        print("dbg897 :content ",content)        
+        return content
+    else:
+        return jsonify({"error": "Configuration file does not exist"}), 404
     
 
 @routes.route('/load-CRQ-text', methods=['POST'])

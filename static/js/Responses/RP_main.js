@@ -2195,7 +2195,7 @@ function save_cookie(cookieName, value) {
             try {
                 const jsonData = JSON.parse(data);
                 if (jsonData.message === 'done') {
-                    alert(cookieName+ ' saved successfully avec la valeur : ' + value);
+                    console.log(cookieName+ ' saved successfully avec la valeur : ' + value);
                 } else {
                     alert('Error 2478 setting cookie: ' + jsonData.error);
                 }

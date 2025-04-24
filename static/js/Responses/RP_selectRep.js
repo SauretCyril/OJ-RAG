@@ -5,6 +5,9 @@ async function selectRep() {
         <dialog id="directoryForm" class="directory-form">
             <form method="dialog">
                 <h2>Sélectionner une autre racine</h2>
+                <div class="button-group" id="directoryButtons">
+                    <!-- Les boutons pour configurer les répertoires seront ajoutés ici -->
+                </div>
                 <div class="form-group">
                     <label for="directoryPath">Répertoire:</label>
                     <input type="text" id="directoryPath" class="rich-text-field">
@@ -17,43 +20,74 @@ async function selectRep() {
         </dialog>
     `;
 
-    // Remove existing form if any
+    // Supprimer le formulaire existant s'il est déjà présent
     const existingForm = document.getElementById('directoryForm');
     if (existingForm) {
         existingForm.remove();
     }
 
-    // Add form to document
+    // Ajouter le formulaire au DOM
     document.body.insertAdjacentHTML('beforeend', formHtml);
 
+    // Ajouter les boutons pour configurer les répertoires
+    const directories = [
+        { path: 'G:/Actions-4', label: 'Action-4' },
+        { path: 'G:/Actions-5-reseaux', label: 'reseaux' },
+        { path: 'G:/Actions-6-profiles', label: 'Candidat' },
+        { path: 'G:/Actions-7-Publication-Production', label: 'Produire Pub.' },
+        { path: '', label: 'Répertoire 5' },
+        { path: '', label: 'Répertoire 6' },
+        { path: '', label: 'Répertoire 7' },
+        { path: '', label: 'Répertoire 8' },
+        { path: '', label: 'Répertoire 9' },
+        { path: '', label: 'Répertoire 10' }
+    ];
+    const directoryButtonsContainer = document.getElementById('directoryButtons');
+    directories.forEach((directory, index) => {
+        if (directory.path !== "") {
+            const button = document.createElement('button');
+            button.type = 'button';
+            button.id = `directoryButton${index + 1}`;
+            button.textContent = directory.label;
+
+            button.addEventListener('click', () => {
+                OpenSubdirectory(directory.path);
+            });
+
+            directoryButtonsContainer.appendChild(button);
+        }
+    });
+
+    // Pré-remplir le champ input avec la valeur actuelle du cookie
     const inputField = document.getElementById('directoryPath');
     if (inputField) {
         const curdossier = await get_cookie('current_dossier');
         if (curdossier) {
-            inputField.value = curdossier;  
+            inputField.value = curdossier;
         }
     }
 
-    // Show form
+    // Afficher le formulaire
     const form = document.getElementById('directoryForm');
     form.showModal();
 
-    // Add styles for directoryForm
+    // Ajouter les styles pour le formulaire
     let style6 = document.createElement('style');
+    // justify-content: space-between;
+    //z-index: 1000;
     style6.textContent = `
         .directory-form {
             width: 50%;
             min-width: 50%;
-            height: 30%;
-            min-height: 30%;
+            height: 40%;
+            min-height: 40%;
             padding: 20px;
             border: 1px solid #ccc;
             border-radius: 8px;
             box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
             display: flex;
             flex-direction: column;
-            justify-content: space-between;
-            index: 1000;
+           
         }
         .directory-form .form-group {
             margin-bottom: 15px;
@@ -69,6 +103,8 @@ async function selectRep() {
         }
         .directory-form .button-group {
             display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
             justify-content: space-between;
         }
         .directory-form .button-group button {
@@ -76,21 +112,24 @@ async function selectRep() {
             border: none;
             border-radius: 4px;
             cursor: pointer;
-        }
-        .directory-form .button-group button:first-child {
-            background-color: #4CAF50;
+            background-color: #007bff;
             color: white;
         }
-        .directory-form .button-group button:last-child {
-            background-color: #f44336;
-            color: white;
+        .directory-form .button-group button:hover {
+            background-color: #0056b3;
         }
+       
     `;
     document.head.appendChild(style6);
 }
 
 function submitDirectory() {
     const directoryPath = document.getElementById('directoryPath').value;
+    OpenSubdirectory(directoryPath);
+}
+
+function OpenSubdirectory(directoryPath) {
+    
     if (directoryPath.trim() === '') {
         alert('Le répertoire ne peut pas être vide !!!');
         return;
@@ -111,7 +150,7 @@ function submitDirectory() {
     })
     .then(data => {
         if (data.message === "done") {
-            alert('Répertoire enregistré avec succès.');
+            //alert('Répertoire enregistré avec succès.');
             save_cookie('current_dossier', directoryPath);
             show_current_dossier();
             refresh();
@@ -138,5 +177,6 @@ function closeDirectoryForm() {
         window.conf = conf_loadconf();
     }
 }
+
 
 // ...existing code...
