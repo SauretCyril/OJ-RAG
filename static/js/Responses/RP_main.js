@@ -197,14 +197,11 @@ function loadTableData(callback) {
             const isOnDay = item.Commentaire && item.Commentaire.includes('DAY');
             const isrefus = item.todo && item.todo.includes('refus');
             let fichier_annonce = dir_path + '/' + item.dossier+window.CONSTANTS['FILE_NAMES']['ANNONCE_SUFFIX']+".pdf";
-            //console.log("<<-2-fichier_annonce>>",fichier_annonce);
-            
-            //let fichier_annonce_steal = dir_path + '/' + item.dossier+window.CONSTANTS['FILE_NAMES']['STEAL_ANNONCE_SUFFIX']+".pdf";
-            //console.log("<<-3-ffichier_annonce_steal>>",fichier_annonce_steal);
-            
+        
+        
             
             const fichier_annonce_resum = dir_path + '/' + item.dossier+window.CONSTANTS['FILE_NAMES']['GPT_REQUEST_SUFFIX'];
-            //console.log("<<-4-fichier_annonce_resum>>",fichier_annonce_resum);
+            
             const fichier_cv_pdf = dir_path + '/' + item.dossier+window.CONSTANTS['FILE_NAMES']['CV_SUFFIX_NEW']+".pdf";
             const fichier_BA_pdf = dir_path + '/' + item.dossier+window.CONSTANTS['FILE_NAMES']['BA_SUFFIX_NAME']+".pdf";
           
@@ -452,7 +449,7 @@ function loadTableData(callback) {
                  document.getElementById('Sscrape_url').onclick = () => {
                     window.CurrentRow=contextMenu.dataset.targetRow;
                     set_current_row();
-                    //alert("Scraping de l'annonce en cours...",item.url,item.dossier,fichier_annonce_scrap);
+                    
 
                     scrape_url(item.url,item.dossier);
                   
@@ -728,7 +725,8 @@ function generate_index_html()
         headers: {
             'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ annonces_list: window.annonces })
+        body: JSON.stringify({ dossier_list: window.annonces, sufix: window.CONSTANTS['FILE_NAMES']['ANNONCE_SUFFIX'] })
+
     })
     .then(response => response.json())
     .then(data => {
@@ -1012,7 +1010,9 @@ function generateTableHeaders() {
 
 function setNewTab(){
     const activeTab = document.querySelector('.tab.active');
-    window.tabActive=activeTab.textContent;
+    if (activeTab !== null) {
+        window.tabActive=activeTab.textContent;
+    }
 }
 
 function changeTab(tabName) {
@@ -1107,7 +1107,7 @@ window.addEventListener('load', async function() {
     await loadCookies();
     window.conf = conf_loadconf();
     //window.columns = window.conf.Columns; // Corrected to use "Columns"
-    await show_current_instruction();  // Ensure get cookie current_instruction is completed
+    //await show_current_instruction();  // Ensure get cookie current_instruction is completed
     await show_current_dossier();
     
     // Load data
@@ -1118,7 +1118,7 @@ window.addEventListener('load', async function() {
         
     });
     setNewTab();  
-    createMenu();
+    //createMenu();
     
   
     // Ensure the element with id 'Excluded' exists before adding the event listener
@@ -1303,7 +1303,7 @@ function openCSVTable(filePath) {
     window.open(`csv_table.html?${params.toString()}`, '_blank');
 }
 
-// Add menu
+/* // Add menu
 function createMenu() {
     const menu = document.createElement('div');
     menu.id = 'menu';
@@ -1311,7 +1311,7 @@ function createMenu() {
         <button onclick="openCSVTable('Suivi_annonce_apec.csv')">Load CSV File</button>
     `;
     document.body.insertBefore(menu, document.body.firstChild);
-}
+} */
 
 
 
@@ -1753,6 +1753,7 @@ function submitAnnouncement(type) {
 
     globalContent =  content;
     showLoadingOverlay();
+    alert(CONSTANTS['FILE_NAMES']['ANNONCE_SUFFIX'])
     fetch('/save_announcement', {
         method: 'POST',
         headers: {
@@ -1763,6 +1764,7 @@ function submitAnnouncement(type) {
             content: content,
             url:contentUrl,
             type: type,
+            sufix:CONSTANTS['FILE_NAMES']['ANNONCE_SUFFIX']
         })
     })
     .then(response => response.json())
@@ -2147,7 +2149,7 @@ async function get_cookie(cookieName) {
     }
 }
 
-async function show_current_instruction() {
+/* async function show_current_instruction() {
     try {
         const oneCooKie = await get_cookie('current_instruction');
         
@@ -2159,7 +2161,7 @@ async function show_current_instruction() {
     } catch (error) {
         console.error('Error fetching current instruction:', error);
     }
-}
+} */
 
 async function show_current_dossier() {
     try {

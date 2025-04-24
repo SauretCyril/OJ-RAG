@@ -41,7 +41,7 @@ def GetDirCRQ(dir):
     path_CRQ =os.getenv(dir)
     dirroot = GetRoot()
     new_path=os.path.join(dirroot,path_CRQ)
-    #print("dbg652 filter dir = ",new_path)
+    print("dbg652 filter dir = ",new_path)
     new_path = new_path.replace('\\', '/') 
     return new_path
 

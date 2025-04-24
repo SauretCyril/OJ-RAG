@@ -110,7 +110,7 @@ async def read_annonces_json():
             print("dbg676 -> Root path not exist")
             return []
         #print("dbg675 -> directory_path",directory_path)
-        annonces_list = []
+        dossier_list = []
         crit_annonces = load_crit_annonces(excluedFile)
         #print(f"RP-0 scan repertoire annonces for--------------------------------")
         #print(f"###-0 ")
@@ -121,9 +121,9 @@ async def read_annonces_json():
                 continue
             
             file_doc = parent_dir + CONSTANTS['FILE_NAMES']['ANNONCE_SUFFIX'] + ".pdf"
-            file_doc_Action = parent_dir + CONSTANTS['FILE_NAMES']['ACTION_SUFFIX'] + ".pdf"
+            #file_doc_Action = parent_dir + CONSTANTS['FILE_NAMES']['ACTION_SUFFIX'] + ".pdf"
             
-            file_doc_new = parent_dir + CONSTANTS['FILE_NAMES']['SOURCE_SUFFIX_NEW'] + ".pdf"
+            #file_doc_new = parent_dir + CONSTANTS['FILE_NAMES']['SOURCE_SUFFIX_NEW'] + ".pdf"
             # résumé gpt
             file_isGptResum = parent_dir + CONSTANTS['FILE_NAMES']['GPT_REQUEST_SUFFIX']
             file_isGptResum_Path1 = os.path.join(root, file_isGptResum)
@@ -163,32 +163,33 @@ async def read_annonces_json():
                     isCVinpdf="O"
                 if filename  == file_BA_pdf:
                     isBAinpdf="O"
-                if ((filename ==  file_doc) or (filename == file_doc_new) or (filename == file_doc_Action)):
-                    isJo="O"   
-                    if not filename == file_doc_Action:
-                        if (filename == file_doc_new):
-                            file_path_isJo = os.path.join(root, file_doc_new)
-                        else:
-                            file_path_isJo = os.path.join(root, file_doc)
-                    else:
-                        isAction="O"
-                        file_path_isJo = os.path.join(root, file_doc_Action)
+                if (filename ==  file_doc):
+                    file_path_isJo =  os.path.join(root, file_doc.replace('\\', '/'))
+                    
+                    isJo="O"
+                # if (filename ==  file_doc): #or (filename == file_doc_new)):
+                #     isJo="O"   
+                #     if (filename == file_doc_new):
+                #         file_path_isJo = os.path.join(root, file_doc_new)
+                #     else:
+                #         isAction="O"
+                #         file_path_isJo = os.path.join(root, file_doc_Action)
                 if (filename ==  file_isGptResum ):
                     isGptResum="O"
                     file_path_gpt = os.path.join(root, file_isGptResum)
-            for filename in files:
-                for file_type in files_type:
-                    suf = file_type["suffix"]
-                    suftext=CONSTANTS['FILE_NAMES'][suf]
-                    #print("###-3 suffixe = ",suftext)
+            # for filename in files:
+            #     for file_type in files_type:
+            #         suf = file_type["suffix"]
+            #         suftext=CONSTANTS['FILE_NAMES'][suf]
+            #         #print("###-3 suffixe = ",suftext)
                     
-                    if suftext in filename:
-                        file_doc = parent_dir + suftext + ".pdf"
-                        #print("###-3 file_doc a trouver= ", file_doc)
-                        if ((filename == file_doc)):
-                            isJo = "O"
-                            isJoType = file_type["type"]
-                            file_path_isJo = os.path.join(root, file_doc)
+            #         if suftext in filename:
+            #             file_doc = parent_dir + suftext + ".pdf"
+            #             #print("###-3 file_doc a trouver= ", file_doc)
+            #             if ((filename == file_doc)):
+            #                 isJo = "O"
+            #                 isJoType = file_type["type"]
+            #                 file_path_isJo = os.path.join(root, file_doc)
                             
                        
             for filename in files:
@@ -237,7 +238,7 @@ async def read_annonces_json():
                                     data["role"] = "default"
                                 data["delay"] = calculate_delay(data)
                                 jData = {file_path: data}
-                                annonces_list.append(jData)
+                                dossier_list.append(jData)
                                 """  with open(file_path, 'w', encoding='utf-8') as file:
                                     json.dump(jData, file, ensure_ascii=False, indent=4) """
                             
@@ -257,7 +258,7 @@ async def read_annonces_json():
                 if isDetectNew  =="O":
                     if isJo =="O":
                         thefile= file_path_isJo
-                        #print ("###-5 file_path_isJo trouvé = ",file_path_isJo)
+                        print ("dbg-1245 file_path_isJo trouvé = ",file_path_isJo)
                         Piece_exist=True
                     elif isGptResum =="O":
                         thefile =file_path_gpt
@@ -266,22 +267,23 @@ async def read_annonces_json():
                 if Piece_exist:
                     
                     try:
-                        print ("RP-7245 le fichier annonce va être traité = ",thefile)
-                        thefile = thefile.replace('\\', '/')
-
+                        print ("RP-7245 le fichier main va être traité = ",thefile)
+                        #thefile = thefile.replace('\\', '/')
+                        texte=extract_text_from_pdf(thefile)
+                        infos=texte
                         # Use the value of 'current_instruction' from cookies
                         #current_instruction = get_cookie_value('current_instruction')
-                        if isAction == "O":
-                            current_instruction="action"
-                        else:    
-                            current_instruction="annonce"
                             
-                        the_request = load_CRQ_text(current_instruction,'DIR_CRQ_FILE')
-                        
-                        #print("RP-2158", the_request)  
-                        role="analyse le texte suivant et réponds à cette question, peux tu renvoyer les informations sous forme de données json, les champs son définie dans la question entre [ et ]"
-                        texte=extract_text_from_pdf(thefile)
-                        infos = get_mistral_answer(the_request, role, texte)
+                        the_request = await load_Instruction_classement()
+                        print (f"dbg 6789 {the_request}")
+                        if not the_request or the_request.strip() == "":
+                             print("Error: the_request is invalid or empty.")
+                             #return jsonify({"status": "error", "message": "Invalid instruction request"}), 400
+                             infos=texte
+                        else:
+                             print("RP-2158", the_request)  
+                             role="analyse le texte suivant et réponds à cette question, peux tu renvoyer les informations sous forme de données json, les champs son définie dans la question entre [ et ]"
+                             infos = get_mistral_answer(the_request, role, texte)
                         print("RP-999 infos = ", infos)
                         if infos:
                             try:
@@ -315,14 +317,14 @@ async def read_annonces_json():
                                             data["url"] = "N/A"
                                             data["Date"] = "N/A" 
                                             data["entreprise"] = "N/A"
-                                            data["description"] = infos[:50] + "..." if len(infos) > 50 else infos
+                                            data["description"] = "Pas d'infos"
                                             data["Lieu"] = "N/A"
                                     else:
                                         # Utiliser le texte brut
                                         data["url"] = "N/A"
                                         data["Date"] = "N/A" 
                                         data["entreprise"] = "N/A"
-                                        data["description"] = infos[:50] + "..." if len(infos) > 50 else infos
+                                        data["description"] = "Pas d'infos"
                                         data["Lieu"] = "N/A"
                                 except Exception as extraction_error:
                                     print(f"RP-1001 : Erreur lors de l'extraction: {str(extraction_error)}")
@@ -333,17 +335,7 @@ async def read_annonces_json():
                                     data["description"] = "Erreur lors du traitement"
                                     data["Lieu"] = "N/A"
                             print ("RP-999 infos = ",infos)    
-                            # if (infos):
-                            #     infos = json.loads(infos)  # Parse the JSON response 
-                            #     data["url"] = infos["url"]
-                            #     data["Date"] = infos["Date"]
-                            #     data["entreprise"] = infos["entreprise"]
-                            #     data["description"] = infos["poste"] 
-                            #     data["Lieu"] = infos["lieu"]  
-                                 
                             data["dossier"] = parent_dir    
-                                #print("DBG-234 -> url: %s" % infos["url"])
-                                # block ctrl document
                             data["isJo"] = isJo
                             data["isAction"] = isAction
                             data["GptSum"] = isGptResum
@@ -351,11 +343,9 @@ async def read_annonces_json():
                             data["CVpdf"] = isCVinpdf
                                 # block info piece         
                             data["etat"] = "New"
-                            data["request"]="default"
-                            data['role']="default"
                             jData = {file_path_nodata:data}  
                                 
-                            annonces_list.append(jData)
+                            dossier_list.append(jData)
                             record_added = True
                             #file_path_nodata = file_path_nodata.replace('\\', '/')  # Normalize path
                             with open(file_path_nodata, 'w', encoding='utf-8') as file:
@@ -363,7 +353,7 @@ async def read_annonces_json():
                     except Exception as e:   
                         print(f"Cyr_Error 14578: An error occurred while trying to retrieve information from {thefile}: {str(e)}")
                         return []
-        return annonces_list 
+        return dossier_list 
     except Exception as e:
         print(f"Cyr_error_145 An unexpected error occurred while reading annonces: {e}")
         return []
@@ -688,6 +678,7 @@ def save_announcement():
         num_dossier = data.get('contentNum')
         content = data.get('content')
         url = data.get('url')
+        sufix = data.get('sufix')
 
         if not num_dossier or not content or not url:
             return jsonify({"status": "error", "message": "Missing parameters"}), 400
@@ -696,8 +687,8 @@ def save_announcement():
         if not os.path.exists(directory_path):
             os.makedirs(directory_path)
        
-        docx_file_path = os.path.join(directory_path, f"{num_dossier}_annonce_.docx")
-        pdf_file_path = os.path.join(directory_path, f"{num_dossier}_annonce_.pdf")
+        docx_file_path = os.path.join(directory_path, f"{num_dossier}{sufix}.docx")
+        pdf_file_path = os.path.join(directory_path, f"{num_dossier}{sufix}.pdf")
         
         """ if os.path.exists(pdf_file_path):
             return jsonify({"status": "error", "message": f"Fichier {pdf_file_path} existe déjà"}), 400 """
@@ -818,6 +809,8 @@ async def list_CRQ_files():
     list_CRQ = []
     try:
         directory_path = GetDirCRQ('DIR_DRQ_FILE')
+        if not os.path.exists(directory_path):
+           os.makedirs(directory_path) 
         defaultfile = os.path.join(directory_path, 'default.txt')
         if not os.path.exists(directory_path):
             #logger.info("Directory does not exist, creating: %s", directory_path)
@@ -898,28 +891,25 @@ def load_conf_tabs():
         return jsonify({"error": "Configuration file does not exist"}), 404
     
 
-@routes.route('/load-CRQ-text', methods=['POST'])
-def route_load_CRQ_text():
-    file_name = request.json.get('file_name')
-    dir=request.json.get('dir')
+# @routes.route('/load-CRQ-text', methods=['POST'])
+# def route_load_CRQ_text():
+#     file_name = request.json.get('file_name')
+#     dir=request.json.get('dir')
  
-    #print("dbg788 :fichier instructions",file_name)     
-    text=load_CRQ_text(file_name,dir)
-    #print("dbg790 :text ",text)   
-    return jsonify(text)
+#     #print("dbg788 :fichier instructions",file_name)     
+#     text=load_CRQ_text(file_name,dir)
+#     #print("dbg790 :text ",text)   
+#     return jsonify(text)
     
-def load_CRQ_text(file_name,dir):
+async def load_Instruction_classement():
     try:
-        text=""
-        file_name_txt = file_name+".txt"
-        filepath = os.path.join(GetOneDir(dir), file_name_txt)
+        text = ""
+        file_name_txt = "instruction_classement.txt"
+        filepath = os.path.join(GetRoot(), file_name_txt)  # Updated to call GetRoot() correctly
         filepath = filepath.replace('\\', '/')
         #print("dbg3434 :fichier requete",filepath)
         #print("dbg789 :fichier instructions",filepath)
         if os.path.exists(filepath):
-            if not file_name:
-                return jsonify({'error tre245': 'Missing file name'}), 400
-
             with open(filepath, 'r', encoding='utf-8') as file:
                 text = file.read()
         
@@ -941,9 +931,10 @@ async def SelectDirectory():
 def generate_html_index():
     try:
         data = request.get_json()
-        annonces_list = data.get('annonces_list', [])
-        # Sort the annonces_list by the 'todo' field
-        sorted_annonces_list = sorted(annonces_list, key=lambda x: list(x.values())[0].get('todo', ''))
+        dossier_list = data.get('dossier_list', [])
+        sufix = data.get('sufix')
+        # Sort the dossier_list by the 'todo' field
+        sorted_dossier_list = sorted(dossier_list , key=lambda x: list(x.values())[0].get('todo', ''))
         index_path = os.path.join(GetRoot(), os.getenv("INDEX_DOSSIERS"))
         # Check if the file exists to add table headers only once
         file_exists = os.path.exists(index_path)
@@ -961,14 +952,14 @@ def generate_html_index():
             index_file.write("<th>Commentaire</th>")
             index_file.write("</tr>")
             
-            for item in sorted_annonces_list:
+            for item in sorted_dossier_list:
                 for file_path, data in item.items():
                     index_file.write("<tr>")
                     dossier = data.get('dossier')
                     categorie = data.get('categorie')
                     desc=f"{data.get('categorie', '')} - {data.get('description', '')}"
                     url = data.get('url')
-                    index_file.write(f"<td><a href='{dossier}/{dossier}_annonce_.pdf'>{dossier}</a></td>")
+                    index_file.write(f"<td><a href='{dossier}/{dossier}{sufix}.pdf'>{dossier}</a></td>")
                     index_file.write(f"<td>{data.get('entreprise', '')}</td>")
                     index_file.write(f"<td><a href='{url}'>{desc}</a></td>")
                     if categorie == 'Profile':

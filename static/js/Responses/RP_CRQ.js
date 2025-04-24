@@ -8,7 +8,11 @@ function open_CRQ() {
     })
     .then(response => response.json())
     .then(fileList => {
-        show_CRQ_Popup(fileList);
+        if (fileList){
+            show_CRQ_Popup(fileList);
+        } else {
+            alert('Aucun fichier trouvé.');
+        }
     })
     .catch(error => {
         console.error('Error fetching file list:', error);
