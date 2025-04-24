@@ -7,6 +7,7 @@
 
 
 // Declare the global array
+window.conf={};
 window.CONSTANTS=[];
 window.CurrentRow ="";
 window.tabActive = "Campagne";
@@ -1097,16 +1098,15 @@ window.addEventListener('load', async function() {
     document.head.appendChild(style3);
     document.head.appendChild(style4);
     document.head.appendChild(style5);
-   
+ 
     // constant
     await loadConstants();  // Ensure loadConstants is completed
 
 
     // load User settings
     await loadCookies();
-   
-    
-    // show User settings
+    window.conf = conf_loadconf();
+    //window.columns = window.conf.Columns; // Corrected to use "Columns"
     await show_current_instruction();  // Ensure get cookie current_instruction is completed
     await show_current_dossier();
     

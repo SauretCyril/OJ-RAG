@@ -31,10 +31,10 @@ def GetDirFilter():
 
 def GetDirState():
     path_State =os.getenv("ANNONCES_DIR_STATE")
-    dirroot = GetRoot()
-    new_path=os.path.join(dirroot,path_State)
+    #dirroot = GetRoot()
+    #new_path=os.path.join(dirroot,path_State)
     #print("dbg659filter dir = ",new_path)
-    new_path = new_path.replace('\\', '/') 
+    new_path =  path_State.replace('\\', '/') 
     return new_path
 
 def GetDirCRQ(dir):
@@ -97,10 +97,10 @@ def buildAllPaths():
     
 def GetDirRQ():
     path_request =os.getenv("DIR_RQ_FILE")
-    dirroot = GetRoot()
+    #dirroot = GetRoot()
     #print("dbg234d root = ",dirroot)
-    new_path=os.path.join(dirroot,path_request)
-    new_path = new_path.replace('\\', '/')
+    #new_path=os.path.join(dirroot,path_request)
+    new_path = path_request.replace('\\', '/')
     #print("dbg234c requests dir = ",new_path)
     return new_path
     

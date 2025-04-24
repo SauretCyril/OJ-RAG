@@ -127,6 +127,7 @@ function submitDirectory() {
 
     // Close form
     closeDirectoryForm();
+    
 }
 
 function closeDirectoryForm() {
@@ -134,6 +135,7 @@ function closeDirectoryForm() {
     if (form) {
         form.close();
         form.remove(); // Ensure the form is removed from the DOM
+        window.conf = conf_loadconf();
     }
 }
 

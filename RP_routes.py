@@ -878,11 +878,29 @@ def save_CRQ_text(file_name, text_data):
 
 # ...existing code...
 
+
+
+
+@routes.route('/load-conf-tabs', methods=['GET'])
+def load_conf_tabs():
+    
+    dir=GetRoot()
+    
+    filepath = os.path.join(dir, ".conf")
+    filepath = filepath.replace('\\', '/')
+    
+    with open( filepath, 'r', encoding='utf-8') as file:
+            content = json.load(file)
+    print("dbg897 :fichier conf",filepath)
+    print("dbg897 :content ",content)        
+    return content
+    
+
 @routes.route('/load-CRQ-text', methods=['POST'])
 def route_load_CRQ_text():
     file_name = request.json.get('file_name')
     dir=request.json.get('dir')
-    #"DIR_CRQ_FILE"
+ 
     #print("dbg788 :fichier instructions",file_name)     
     text=load_CRQ_text(file_name,dir)
     #print("dbg790 :text ",text)   
