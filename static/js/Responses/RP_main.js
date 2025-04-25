@@ -13,17 +13,21 @@ window.CurrentRow ="";
 window.tabActive = "Campagne";
 window.annonces = [];
 window.portalLinks=[];
-window.portalLinks_columns = [
+/* window.portalLinks_columns = [
     { key: 'name', editable: false, width: '150px', visible: true,title:'name' },
     { key: 'url', editable: false, width: '200px', visible: false,title:'url' },
     { key: 'date', editable: true, width: '150px', visible: true,title:'Date' },
     { key: 'commentaire', editable: false, width: '200px', visible: false,title:'Commentaire' },
     { key: 'update', editable: true, width: '50px', visible: true,title:'update' },
     { key: 'update_date', editable: true, width: '150px', visible: true,title:'Date update' }
-]
+] */
 
 window.columns = [
-    { key: 'dossier', editable: false, width: '80px', visible: true, type: 'tb',title:'Dos' },
+    { key: 'dossier', editable: false, width: '80px', visible: true, type: 'tb',title:'Dos',
+    class: 'description-cell',  
+      style: { cursor: 'pointer', color: 'red', textDecoration: 'underline' }, 
+      event: 'click',  fixed:true // Store function name as string
+    },
     { 
         key: 'description', 
         class: 'description-cell', 
@@ -34,42 +38,46 @@ window.columns = [
         width: '300px',
         visible: true,
         type: 'tb',
-        title:'Description'
+        title:'Description',fixed:false
     },
-    { key: 'id', editable: true, width: '200px',"visible":true,"type":"tb",title:'Lot' },
-    { key: 'entreprise', editable: true, width: '300px',"visible":true ,"type":"tb",title:'Entreprise' },
+    { key: 'id', editable: true, width: '200px',"visible":true,"type":"tb",title:'Lot',fixed:false},
+    { key: 'entreprise', editable: true, width: '300px',"visible":true ,"type":"tb",title:'Entreprise',fixed:false },
     
-    { key: 'role', editable: false, width: '120px',"visible":false,"type":"tb",title:'role',dir:'DIR_ROLE_FILE' },   
-    { key: 'request', editable: false, width: '120px',"visible":false ,"type":"tb",title:'request',dir:'DIR_RQ_FILE' },
-    { key: 'isJo', editable: false, width: '50px',"visible":true ,"type":"tb",title:'M.' },
+    { key: 'role', editable: false, width: '120px',"visible":false,"type":"tb",title:'role',dir:'DIR_ROLE_FILE',fixed:false },   
+    { key: 'request', editable: false, width: '120px',"visible":false ,"type":"tb",title:'request',dir:'DIR_RQ_FILE',fixed:false },
+    { key: 'isJo', editable: false, width: '50px',"visible":true ,"type":"tb",title:'M.',fixed:false },
   
     
-    { key: 'GptSum', editable: false, width: '50px',"visible":true,"type":"tb",title:'Res' },
-    { key: 'CV', editable: false, width: '70px',"visible":true ,"type":"tb",title:'CV' },
-    { key: 'CVpdf', editable: false, width: '70px',"visible":true ,"type":"tb",title:'CV.pdf' },
-    { key: 'BA', editable: false, width: '70px',"visible":true ,"type":"tb",title:'BA' },
-    { key: 'BApdf', editable: false, width: '70px',"visible":true ,"type":"tb",title:'BA.pdf' },
+    { key: 'GptSum', editable: false, width: '50px',"visible":true,"type":"tb",title:'Res',fixed:false },
+    { key: 'CV', editable: false, width: '70px',"visible":true ,"type":"tb",title:'CV',fixed:false },
+    { key: 'CVpdf', editable: false, width: '70px',"visible":true ,"type":"tb",title:'CV.pdf',fixed:false },
+    { key: 'BA', editable: false, width: '70px',"visible":true ,"type":"tb",title:'BA',fixed:false },
+    { key: 'BApdf', editable: false, width: '70px',"visible":true ,"type":"tb",title:'BA.pdf',fixed:false },
     
-    { key: 'categorie', editable: true, class: 'category-badge', prefix: 'category-', width: '100px',"visible":true,"type":"tb",title:'Cat'  },
-    { key: 'etat', editable: true, width: '100px',"visible":true ,"type":"tb",title:'Etat'  },
-    { key: 'contact', editable: true, width: '150px',"visible":false ,"type":"tb",title:'Contact' },
-    { key: 'tel', editable: true, width: '125px',"visible":false ,"type":"tb",title:'Tel.' },
-    { key: 'mail', editable: true, width: '125px',"visible":false,"type":"tb",title:'mail' },
-    { key: 'Date', editable: true, default: 'N/A', width: '120px',"visible":true ,"type":"tb",title:'Dt pub' },
-    { key: 'Date_rep', editable: true, default: 'N/A', width: '120px',"visible":true ,"type":"tb",title:'Dt Rep' },
-    { key: 'Date_from', editable: true, default: 'N/A', width: '120px',"visible":true ,"type":"tb",title:'Dt From' },
-    { key: 'delay', editable: false, default: 'N/A', width: '120px',"visible":false,"type":"tb",title:'Delais' },  
-    { key: 'Commentaire', editable: true, width: '200px',"visible":true,"type":"tb" ,title:'Commentaire' },
-    { key: 'todo', editable: true, width: '120px',"visible":true ,"type":"tb" ,title:'ToDo'},
-    { key: 'Notes', editable: false, width: '50px',"visible":true,"type":"tb" ,title:'Nt' },
-    { key: 'url', editable: false, width: '100px',"visible":false ,"type":"tb",title:'Url' },
-    { key: 'type', editable: true, width: '80px',"visible":false ,"type":"tb",title:'Type'  },
-    { key: 'annonce_pdf', editable: true, width: '80px',"visible":false ,"type":"tb",title:'Annonce (pdf)' },
-    { key: 'Origine', editable: true, width: '120px',"visible":false ,"type":"tb" ,title:'Origine'},
-    { key: 'lien_Etape', editable: true, width: '80px',"visible":false ,"type":"tb",title:'Lien Etape' },
+    { key: 'categorie', editable: true, class: 'category-badge', prefix: 'category-', width: '100px',"visible":true,"type":"tb",title:'Cat',fixed:false  },
+    { key: 'etat', editable: true, width: '100px',"visible":true ,"type":"tb",title:'Etat',fixed:false  },
+    { key: 'contact', editable: true, width: '150px',"visible":false ,"type":"tb",title:'Contact',fixed:false },
+    { key: 'tel', editable: true, width: '125px',"visible":false ,"type":"tb",title:'Tel.',fixed:false },
+    { key: 'mail', editable: true, width: '125px',"visible":false,"type":"tb",title:'mail',fixed:false },
+    { key: 'Date', editable: true, default: 'N/A', width: '120px',"visible":true ,"type":"tb",title:'Dt pub',fixed:false },
+    { key: 'Date_rep', editable: true, default: 'N/A', width: '120px',"visible":true ,"type":"tb",title:'Dt Rep',fixed:false },
+    { key: 'Date_from', editable: true, default: 'N/A', width: '120px',"visible":true ,"type":"tb",title:'Dt From',fixed:false },
+    { key: 'delay', editable: false, default: 'N/A', width: '120px',"visible":false,"type":"tb",title:'Delais',fixed:false },  
+    { key: 'Commentaire', editable: true, width: '200px',"visible":true,"type":"tb" ,title:'Commentaire',fixed:false },
+    { key: 'todo', editable: true, width: '120px',"visible":true ,"type":"tb" ,title:'ToDo',fixed:false},
+    { key: 'Notes', editable: false, width: '50px',"visible":true,"type":"tb" ,title:'Nt',fixed:false },
+    { key: 'url', editable: false, width: '100px',"visible":false ,"type":"tb",title:'Url',fixed:false },
+    { key: 'type', editable: true, width: '80px',"visible":false ,"type":"tb",title:'Type',fixed:false  },
+    { key: 'annonce_pdf', editable: true, width: '80px',"visible":false ,"type":"tb",title:'Annonce (pdf)',fixed:false },
+    { key: 'Origine', editable: true, width: '120px',"visible":false ,"type":"tb" ,title:'Origine',fixed:false},
+    { key: 'lien_Etape', editable: true, width: '80px',"visible":false ,"type":"tb",title:'Lien Etape',fixed:false },
     
-    { key: 'CVfile', editable: true, width: '80px',"visible":false ,"type":"tb",title:'CVfile' },
-   
+    { key: 'CVfile', editable: true, width: '80px',"visible":false ,"type":"tb",title:'CVfile',fixed:false },
+    { key: 'lnk_Youtub', editable: false, width: '80px', visible: false, type: 'lnk', title: 'Youtube',fixed:false },
+    { key: 'lnk_Youtub_value', editable: true, width: '80px', visible: false, type: 'tb', title: 'Youtube value',fixed:false },
+    { key: 'path_dirpartage', editable: false, width: '80px', visible: false, type: 'dir', title: 'partage',fixed:false },
+    { key: 'path_dirpartage_value', editable: true, width: '150px', visible: false, type: 'tb', title: 'dir',fixed:false }
+
     
 ];
 /**
@@ -211,27 +219,54 @@ function loadTableData(callback) {
             //console.log("<<-5-file_notes>>",file_notes);
             
             const row = document.createElement('tr');
-            row.classList.add('normal-row');
+            //row.classList.add('normal-row');
             row.id = filePath;
+                 // Ajouter un gestionnaire de clic pour sélectionner/désélectionner la ligne
+               
+    
             row.style.position = 'relative'; // Ajout du positionnement relatif sur la ligne
               if (isrefus) {
                 row.classList.add('refus-row');
             } else {
                 row.classList.add('normal-row');
-            }
-          
-            if (isOnDay) {
-                row.style.backgroundColor = '#ADD8E6'; // Light blue color
-            }
+            } 
            
+            // if (isOnDay) {
+            //     row.style.backgroundColor = '#ADD8E6'; // Light blue color
+            // }
+            
 // forEach((col
             window.columns.forEach((col, colIndex) => {
-                if (col.type === "tb" && col.visible === true) {
+                if (colisvisible(col.type) && col.visible === true) {
                     
                     const cell = document.createElement('td');
                     cell.setAttribute('data-key', col.key);
                    
-                    if (col.key === 'request') 
+                    if (col.type === 'lnk')
+                    {
+                                
+                       
+                        const icon = document.createElement('span');
+                            icon.style.position = 'absolute';
+                            icon.style.alignContent='center';
+                            icon.style.zIndex = '10';
+                            const colvalue=col.key+"_value";
+                            console.log('#### lnk value:', colvalue);
+                            if (item[colvalue] && item[colvalue].trim() !== '')
+                                {
+                                 //console.log('#### blanc:');
+                                icon.textContent = '🔵';
+                                icon.style.cursor = 'pointer';
+                                icon.addEventListener('click', () => open_url(item[colvalue]));
+                                  
+                               } else  {
+                                  //console.log('#### vert:');
+                                icon.textContent = '⚪'; // White circle icon
+                            } 
+                            cell.appendChild(icon); 
+                    }
+                    
+                    else if (col.key === 'request') 
                     {
                       
                         const button = document.createElement('button');
@@ -278,18 +313,7 @@ function loadTableData(callback) {
                     }
                    
                  
-                /*       else  if (col.key === 'CVpdf' && item['CV']=='N' )
-                      {
-                         
-                            const icon = document.createElement('span');
-                            icon.textContent = '⚪'; // White circle icon
-                            icon.style.position = 'absolute';
-                            icon.style.alignContent='center';
-                            //icon.style.top = '0px';
-                            icon.style.zIndex = '10';
-                            cell.appendChild(icon);
-                         
-                     }     */
+              
                      else if (col.key === 'CVpdf'  )
                         {
                             
@@ -350,6 +374,7 @@ function loadTableData(callback) {
                         cell.appendChild(icon);
                         
                     } 
+                    
                     else if (col.key === 'isJo')
                     {
                         const icon = document.createElement('span');
@@ -380,12 +405,16 @@ function loadTableData(callback) {
                             heartIcon.addEventListener('click', () => open_notes(file_notes));
                             cell.appendChild(heartIcon);
                         
-                        }
+                        } 
+                        
                     else
                     {
+                        isDosier=false;
                         isurl=false;
                         if (col.key === 'description' && item.url) {
                             isurl = true;
+                        } else if (col.key === 'dossier') {
+                            isDosier = true;
                         }
 
                         if (isurl) {
@@ -394,11 +423,29 @@ function loadTableData(callback) {
                             cell.style.textDecoration = col.style.textDecoration;
                             cell.addEventListener(col.event, () => open_url(item.url));
                         } else {
-                            cell.style.color = ''; // Default color
+                            if (isDosier) {
+                                cell.style.color = col.style.color; // Example color for dossier
+                                cell.style.cursor = col.style.cursor;
+                                cell.style.textDecoration = col.style.textDecoration;
+                              
+                                cell.addEventListener('click', function () {
+                                    const currentRow = this.parentElement; // Ensure the row is correctly referenced
+                                    // Deselect all rows
+                                    document.querySelectorAll('.selected-row').forEach(row => {
+                                        row.classList.remove('selected-row');
+                                    });
+                                    // Select the clicked row
+                                    currentRow.classList.add('selected-row');
+                                });
+
+
+                            } else {
+                                cell.style.color = ''; // Default color
+                            }
                             cell.style.textDecoration = ''; // Default text decoration
                         }
                         
-                       
+                     
                       
                         cell.textContent = item[col.key];
                         if (col.class) cell.classList.add(col.class);
@@ -483,7 +530,7 @@ function loadTableData(callback) {
                     if (confirm("Voulez-vous vraiment supprimer ce dossier ?")) {
                            updateAnnonces(index, 'etat', 'DELETED');
                         // Update the 'etat' column in the HTML row
-                        const etatCell = row.querySelector('td:nth-child(' + (window.columns.findIndex(col => col.key === 'etat') + 1) + ')');
+                        const etatCell = row.querySelector('td:nth-child(' + (window.columns.filter(col => col.visible).findIndex(col => col.key === 'etat') + 1) + ')');
                         if (etatCell) {
                             etatCell.textContent = 'DELETED';
                         }
@@ -578,13 +625,20 @@ function getStatus(filepath){
 }
 
 
-
+function colisvisible(coltype)
+{
+    if ((coltype === "tb" || coltype === "lnk" || coltype === "dir"))
+    {
+        return true;
+    }
+    return false;
+}
 // Function to filter table rows based on input values
 function filterTable() {
     const filters = {};
     // Collect filter values
     window.columns.forEach(col => {
-        if (col.type === "tb" && col.visible === true) {
+        if (colisvisible(col.type) && col.visible === true) {
             const filterElement = document.getElementById(`filter-${col.key}`);
             if (filterElement) {
                 filters[col.key] = filterElement.value.toLowerCase();
@@ -602,7 +656,7 @@ function filterTable() {
         let key="";
         let cellIndex=0;
         window.columns.forEach(col => {
-            if (col.type === "tb" && col.visible === true) {
+            if (colisvisible(col.type) && col.visible === true) {
                 
               
                 const cell = row.querySelector(`td:nth-child(${cellIndex})`);
@@ -812,7 +866,8 @@ function openEditModal(rowId) {
         'suivi': [ 'Date','Date_rep','todo','commetaires','Origine'],
         'Contact': [ 'contact','tel', 'mail','url'],
         'Détails': ['Commentaire', 'type', 'Lieux'], 
-        'GPT': ['GptSum', 'instructions','request']
+        'GPT': ['GptSum', 'instructions','request'],
+        'Publication': ['lnk_Youtub_value','path_dirpartage_value']
     };
 
     // Create modal HTML with tabs
@@ -946,7 +1001,7 @@ function generateTableHeaders() {
     filterRow.innerHTML = '';
     
     window.columns.forEach(col => {
-        if (col.type === "tb" && col.visible === true) {
+        if (colisvisible(col.type) && col.visible === true) {
             // Create header cell
             const th = document.createElement('th');
             th.style.width = col.width;
@@ -1105,7 +1160,8 @@ window.addEventListener('load', async function() {
 
     // load User settings
     await loadCookies();
-    window.conf = conf_loadconf();
+    window.conf = await conf_loadconf();
+    await loadColumnsFromServer();
     //window.columns = window.conf.Columns; // Corrected to use "Columns"
     //await show_current_instruction();  // Ensure get cookie current_instruction is completed
     await show_current_dossier();
@@ -1177,7 +1233,10 @@ function reassignEventHandlers(columns) {
     columns.forEach(col => {
         if (col.eventHandler === 'openUrlHandler') {
             col.eventHandler = openUrlHandler;
+        } else if (col.eventHandler === 'SelectHandler') {
+            col.eventHandler = SelectHandler;
         }
+        
         // Add more handlers as needed
     });
 }
@@ -1194,6 +1253,9 @@ function deserializeColumns(columns) {
         }
         if (col.eventHandler === 'openUrlHandler') {
             deserializedCol.eventHandler = openUrlHandler;
+        }
+        if (col.eventHandler === 'SelectHandler') {
+            deserializedCol.eventHandler = SelectHandler;
         }
         // Add more handlers as needed
         return deserializedCol;
@@ -1844,7 +1906,7 @@ function hideReseauxLinks() {
     document.getElementById('reseaux-links-section').style.display = 'none';
     document.getElementById('main-section').style.display = 'block';
 }
-
+/* 
 async function loadReseauxLinks() {
     try {
         const response = await fetch('/load_reseaux_link');
@@ -1922,7 +1984,7 @@ async function loadReseauxLinks() {
     } catch (error) {
         console.error('Error loading reseaux links:', error);
     }
-}
+} */
 
 function saveReseauxLinkUpdate(link) {
     fetch('/save_reseaux_link_update', {
@@ -2212,4 +2274,74 @@ function save_cookie(cookieName, value) {
         });
     
     
+}
+
+
+
+async function loadColumnsFromServer() {
+    try {
+        const response = await fetch('/load-conf-cols', {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+
+        if (!response.ok) {
+            console.log (`Erreur lors du chargement des colonnes : ${response.statusText}`);
+            return;
+        }
+
+        const data = await response.json();
+
+        if (data.error) {
+            console.error('Erreur du serveur :', data.error);
+            return;
+        }
+
+        if (Array.isArray(data)) {
+            // Mettre à jour les colonnes globales
+            updateColumns(data);
+            console.log('Colonnes chargées avec succès depuis le serveur.');
+        } else {
+            console.error('Le fichier .cols ne contient pas un tableau valide.');
+            alert('Le fichier .cols est invalide.');
+        }
+    } catch (error) {
+        console.error('Erreur lors du chargement des colonnes :', error);
+        alert('Erreur lors du chargement des colonnes.');
+    }
+}
+
+
+
+function updateColumns(newColumns) {
+    if (!Array.isArray(newColumns)) {
+        console.error('Le paramètre newColumns doit être un tableau.');
+        return;
+    }
+    oldcols=window.columns;
+    // Créer un dictionnaire pour un accès rapide aux colonnes existantes par clé
+    const columnsMap = new Map(oldcols.map(col => [col.key, col]));
+
+    // Parcourir les nouvelles colonnes
+    newColumns.forEach(newCol => {
+        if (!newCol.key) {
+            console.warn('Une colonne sans clé a été ignorée:', newCol);
+            return;
+        }
+
+        if (columnsMap.has(newCol.key)) {
+            // Mettre à jour la colonne existante
+            const existingCol = columnsMap.get(newCol.key);
+            if (existingCol.fixed != true)
+            {
+                Object.assign(existingCol, newCol); // Fusionner les propriétés
+            }
+        } 
+    });
+    console.log('Mise à jour des colonnes:', oldcols, '=>', window.columns);
+    // Mettre à jour les colonnes globales
+    window.columns = [...oldcols, ...newColumns.filter(col => !columnsMap.has(col.key))];
+    console.log('Mise à jour des colonnes terminée:', window.columns);
 }

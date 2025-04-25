@@ -169,14 +169,14 @@ function OpenSubdirectory(directoryPath) {
     
 }
 
-function closeDirectoryForm() {
+async function closeDirectoryForm() {
     const form = document.getElementById('directoryForm');
     if (form) {
         form.close();
         form.remove(); // Ensure the form is removed from the DOM
         window.conf = conf_loadconf();
+        await loadColumnsFromServer();
     }
 }
-
 
 // ...existing code...

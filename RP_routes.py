@@ -873,6 +873,24 @@ def save_CRQ_text(file_name, text_data):
 
 
 
+@routes.route('/load-conf-cols', methods=['GET'])
+def load_conf_cols():
+    
+    dir=GetRoot()
+    
+    filepath = os.path.join(dir, ".cols")
+    filepath = filepath.replace('\\', '/')
+    if os.path.exists(filepath):
+        with open(filepath, 'r', encoding='utf-8') as file:
+            content = json.load(file)
+        print("dbg12391 :fichier conf",filepath)
+        print("dbg12391 :content ",content)   
+        return content
+    else:
+        return jsonify({"error": "Configuration file does not exist"}), 404
+    
+
+
 
 @routes.route('/load-conf-tabs', methods=['GET'])
 def load_conf_tabs():
@@ -904,7 +922,7 @@ def load_conf_tabs():
 async def load_Instruction_classement():
     try:
         text = ""
-        file_name_txt = "instruction_classement.txt"
+        file_name_txt = ".clas"
         filepath = os.path.join(GetRoot(), file_name_txt)  # Updated to call GetRoot() correctly
         filepath = filepath.replace('\\', '/')
         #print("dbg3434 :fichier requete",filepath)
@@ -983,3 +1001,63 @@ def generate_html_index():
         return jsonify({"status": "error", "message": str(e)}), 500
 
 # ...existing code...
+
+import os
+import shutil
+
+@routes.route('/move_and_rename_directory', methods=['POST'])
+def move_and_rename_directory():
+    data = request.get_json()
+    src_dir = data.get('src_dir')
+    dest_dir = data.get('dest_dir') 
+    old_prefix = data.get('old_prefix')
+    new_prefix = data.get('new_prefix')     
+    """
+    Déplace un répertoire entier avec tous ses fichiers et remplace les fichiers
+    commençant par 'XXXX' par un nouveau préfixe.
+
+    :param src_dir: Chemin du répertoire source à déplacer.
+    :param dest_dir: Chemin du répertoire de destination.
+    :param new_prefix: Nouveau préfixe pour remplacer 'XXXX' dans les noms de fichiers.
+    """
+    try:
+        if not os.path.exists(src_dir):
+            print(f"Le répertoire source '{src_dir}' n'existe pas.")
+            return
+
+        if not os.path.exists(dest_dir):
+            os.makedirs(dest_dir)
+            print(f"Le répertoire de destination '{dest_dir}' a été créé.")
+
+        # Parcourir tous les fichiers et sous-dossiers dans le répertoire source
+        for root, dirs, files in os.walk(src_dir):
+            # Calculer le chemin relatif pour recréer la structure dans le répertoire de destination
+            relative_path = os.path.relpath(root, src_dir)
+            target_path = os.path.join(dest_dir, relative_path)
+
+            # Créer les sous-dossiers dans le répertoire de destination
+            if not os.path.exists(target_path):
+                os.makedirs(target_path)
+
+            # Parcourir les fichiers dans le répertoire actuel
+            for file_name in files:
+                src_file_path = os.path.join(root, file_name)
+
+                # Renommer les fichiers commençant par 'XXXX'
+                if file_name.startswith(old_prefix):
+                    new_file_name = file_name.replace(old_prefix, new_prefix, 1)
+                else:
+                    new_file_name = file_name
+
+                dest_file_path = os.path.join(target_path, new_file_name)
+
+                # Déplacer le fichier
+                shutil.move(src_file_path, dest_file_path)
+                print(f"Fichier déplacé : {src_file_path} -> {dest_file_path}")
+
+        # Supprimer le répertoire source après le déplacement
+        shutil.rmtree(src_dir)
+        print(f"Répertoire source '{src_dir}' supprimé après déplacement.")
+
+    except Exception as e:
+        print(f"Erreur lors du déplacement du répertoire : {e}")
