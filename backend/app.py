@@ -56,8 +56,8 @@ from cy_paths import paths
 app.register_blueprint(paths)  # Register the blueprint
 
 
-from cy_routes import routes 
-app.register_blueprint(routes)  # Register the blueprint
+from cy_routes import cy_routes 
+app.register_blueprint(cy_routes)  # Register the blueprint
 
 from cy_exploreur import exploreur
 app.register_blueprint(exploreur)  # Register the blueprint      

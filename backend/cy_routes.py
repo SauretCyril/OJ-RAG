@@ -32,7 +32,7 @@ from cy_mistral import get_mistral_answer
 
 
 load_dotenv()
-routes = Blueprint('routes', __name__)
+cy_routes = Blueprint('cy_routes', __name__)
 logging.basicConfig(level=DEBUG, format='%(asctime)s - (name)s - (levelname)s - (message)s')
 logger = logging.getLogger(__name__)
 
@@ -52,7 +52,7 @@ CONSTANTS = load_constants()
 #print('Loaded constants:', CONSTANTS)
 
 
-@routes.route('/get_constants', methods=['GET'])
+@cy_routes.route('/get_constants', methods=['GET'])
 def get_constants():
     return jsonify(CONSTANTS)
 
@@ -98,7 +98,7 @@ def calculate_delay(data):
     
 
 
-@routes.route('/read_annonces_json', methods=['POST'])
+@cy_routes.route('/read_annonces_json', methods=['POST'])
 async def read_annonces_json():
     try:
         isDetectNew="O"
@@ -371,7 +371,7 @@ def load_crit_annonces(excluedFile):
         print(f"Cyr_error_156 An error occurred while loading excluded annonces: {e}")
         return jsonify({"status": "error", "message": "156>"+str(e)}), 500
 
-@routes.route('/save_excluded_annonces', methods=['POST'])
+@cy_routes.route('/save_excluded_annonces', methods=['POST'])
 def save_excluded_annonces():
     try:
         data = request.get_json()
@@ -388,7 +388,7 @@ def save_excluded_annonces():
         return jsonify({"status": "error", "message": "171>"+str(e)}), 500
 
 '''save config columns'''
-@routes.route('/save_config_col', methods=['POST'])
+@cy_routes.route('/save_config_col', methods=['POST'])
 def save_config_col():
     try:
         data = request.get_json()
@@ -407,7 +407,7 @@ def save_config_col():
 
 # ...existing code...
 
-@routes.route('/open_url', methods=['POST'])
+@cy_routes.route('/open_url', methods=['POST'])
 def open_url():
     try:
         data = request.get_json()
@@ -425,7 +425,7 @@ def open_url():
 
 # ...existing code...
 
-@routes.route('/file_exists', methods=['POST'])
+@cy_routes.route('/file_exists', methods=['POST'])
 def file_exists():
     try:
         data = request.get_json()
@@ -440,7 +440,7 @@ def file_exists():
         return jsonify({"status": "error", "message": "223>"+str(e)}), 500
 
 
-@routes.route('/read_filters_json', methods=['POST'])
+@cy_routes.route('/read_filters_json', methods=['POST'])
 def read_filters_json():
     try:
         
@@ -464,7 +464,7 @@ def read_filters_json():
 
 # ...existing code...
 
-@routes.route('/save_annonces_json', methods=['POST'])
+@cy_routes.route('/save_annonces_json', methods=['POST'])
 def save_annonces_json():
     try:
         data = request.get_json()
@@ -480,7 +480,7 @@ def save_annonces_json():
 
 # ...existing code...
 
-@routes.route('/save_filters_json', methods=['POST'])
+@cy_routes.route('/save_filters_json', methods=['POST'])
 def save_filters_json():
     try:
         data = request.get_json()
@@ -499,7 +499,7 @@ def save_filters_json():
 
 # ...existing code...
 
-@routes.route('/load_config_col', methods=['POST'])
+@cy_routes.route('/load_config_col', methods=['POST'])
 def load_config_col():
     try:
         data = request.get_json()
@@ -518,7 +518,7 @@ def load_config_col():
 
 # ...existing code...
 
-@routes.route('/read_csv_file', methods=['POST'])
+@cy_routes.route('/read_csv_file', methods=['POST'])
 def read_csv_file():
     try:
         data = request.get_json()
@@ -538,7 +538,7 @@ def read_csv_file():
         return jsonify([])
 
 
-@routes.route('/save_csv_file', methods=['POST'])
+@cy_routes.route('/save_csv_file', methods=['POST'])
 def save_csv_file():
     try:
         data = request.get_json()
@@ -562,7 +562,7 @@ def save_csv_file():
 
 # ...existing code...
 
-@routes.route('/open_parent_directory', methods=['POST'])
+@cy_routes.route('/open_parent_directory', methods=['POST'])
 def open_parent_directory():
     try:
         data = request.get_json()
@@ -583,7 +583,7 @@ def open_parent_directory():
 # ...existing code...
 
 
-@routes.route('/convert_cv', methods=['POST'])
+@cy_routes.route('/convert_cv', methods=['POST'])
 def convert_cv():
     #print ("convertir le cv docx en cv pdf")
     data = request.get_json()
@@ -597,7 +597,7 @@ def convert_cv():
         #print("-->04 pdf removed", target_path_pdf)
     
 
-@routes.route('/share_cv', methods=['POST'])
+@cy_routes.route('/share_cv', methods=['POST'])
 def select_cv():
     try:
         #print("##0---")
@@ -672,7 +672,7 @@ def define_default_data():
        
     }
 
-@routes.route('/save_announcement', methods=['POST'])
+@cy_routes.route('/save_announcement', methods=['POST'])
 def save_announcement():
     try:
         data = request.get_json()
@@ -718,7 +718,7 @@ def save_announcement():
 
 # ...existing code...
 
-@routes.route('/read_notes', methods=['POST'])
+@cy_routes.route('/read_notes', methods=['POST'])
 def read_notes():
     try:
         data = request.get_json()
@@ -742,7 +742,7 @@ def read_notes():
 
 # ...existing code...
 
-@routes.route('/save_notes', methods=['POST'])
+@cy_routes.route('/save_notes', methods=['POST'])
 def save_notes():
     try:
         data = request.get_json()
@@ -760,25 +760,9 @@ def save_notes():
         print(f"Cyr_error_536 An error occurred while saving notes: {e}")
         return jsonify({"status": "error", "message": "536>"+str(e)}), 500
 
-# ...existing code...
-
-# @routes.route('/load_reseaux_link', methods=['GET'])
-# def load_reseaux_link():
-#     try:
-#        file_path = os.path.join(os.getenv("RESEAUX_FILE"))
-#        file_path = file_path.replace('\\', '/')  # Normalize path
-#        if not os.path.exists(file_path):
-#            return jsonify([])  # Return empty list if file does not exist
-#        with open(file_path, 'r', encoding='utf-8') as file:
-#            file = json.load(file)
-#            return jsonify(file)  # Return JSON response
-#     except Exception as e:
-#         print(f"Cyr_error_552 An unexpected error occurred while reading reseaux: {e}")
-#         return jsonify([])
 
 
-
-@routes.route('/load-conf-cols', methods=['GET'])
+@cy_routes.route('/load-conf-cols', methods=['GET'])
 def load_conf_cols():
     try:
         dir=GetRoot()
@@ -796,7 +780,7 @@ def load_conf_cols():
         logger.error(f"Error loading columns configuration: {str(e)}")
         return jsonify({"error": str(e)}), 500
 
-@routes.route('/load-conf-tabs', methods=['GET'])
+@cy_routes.route('/load-conf-tabs', methods=['GET'])
 def load_conf_tabs():
     try:
         dir = GetRoot()
@@ -819,15 +803,7 @@ def load_conf_tabs():
         logger.error(f"Error loading tabs configuration: {str(e)}")
         return jsonify({"error": str(e)}), 500
 
-# @routes.route('/load-CRQ-text', methods=['POST'])
-# def route_load_CRQ_text():
-#     file_name = request.json.get('file_name')
-#     dir=request.json.get('dir')
- 
-#     #print("dbg788 :fichier instructions",file_name)     
-#     text=load_CRQ_text(file_name,dir)
-#     #print("dbg790 :text ",text)   
-#     return jsonify(text)
+
     
 async def load_Instruction_classement():
     try:
@@ -847,7 +823,7 @@ async def load_Instruction_classement():
         logger.error(f"Error loading text: {str(e)}")
         return ""
 
-@routes.route('/select_dir', methods=['GET'])
+@cy_routes.route('/select_dir', methods=['GET'])
 async def SelectDirectory():
     root = tk.Tk()
     root.withdraw()  # Hide the main window
@@ -855,7 +831,7 @@ async def SelectDirectory():
     root.destroy()
     return selected_dir
 
-@routes.route('/generate_html_index', methods=['POST'])
+@cy_routes.route('/generate_html_index', methods=['POST'])
 def generate_html_index():
     try:
         data = request.get_json()
@@ -915,7 +891,7 @@ def generate_html_index():
 import os
 import shutil
 
-@routes.route('/move_and_rename_directory', methods=['POST'])
+@cy_routes.route('/move_and_rename_directory', methods=['POST'])
 def move_and_rename_directory():
     data = request.get_json()
     src_dir = data.get('src_dir')
