@@ -1,12 +1,22 @@
 import warnings
 warnings.filterwarnings("ignore", category=UserWarning)
 
-from flask import Flask, render_template, jsonify, request, url_for
+from flask import Flask, render_template, request, jsonify
 import os
 
+# Set correct paths for templates and static files
+current_dir = os.path.dirname(os.path.abspath(__file__))
+parent_dir = os.path.dirname(current_dir)
+static_folder_path = os.path.join(parent_dir, 'static')
+templates_folder_path = os.path.join(parent_dir, 'templates')
+
+app = Flask(__name__, 
+           static_folder=static_folder_path, 
+           template_folder=templates_folder_path)
+
 from werkzeug.utils import secure_filename
-from JO_analyse import *
-from JO_analyse_gpt import extract_text_from_url, extract_text_from_pdf, get_answer  # Import the functions from the correct module
+#from JO_analyse import *
+from JO_analyse_gpt import extract_text_from_url, extract_text_from_pdf, get_answer
 
 ''' Procédures'''
 from RQ_001 import get_mistral_answer, mistral  # Import the function and Blueprint
@@ -19,6 +29,7 @@ from docx import Document
 from docx2pdf import convert
 import pythoncom
 from fpdf import FPDF
+#from sklearn.metrics.pairwise import cosine_similarity  # Import cosine_similarity
 from dotenv import load_dotenv
 from paths import *
 
@@ -40,7 +51,7 @@ class NumpyEncoder(json.JSONEncoder):
         return super(NumpyEncoder, self).default(obj)
 
 # Configurer Flask pour utiliser le NumpyEncoder
-app = Flask(__name__)
+#app = Flask(__name__)
 app.json_encoder = NumpyEncoder  # Ajouter cette ligne après la création de l'app
 from RP_routes import routes 
 app.register_blueprint(routes)  # Register the blueprint
@@ -70,7 +81,6 @@ for rule in app.url_map.iter_rules():
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 app.config['UPLOAD_FOLDER'] = os.path.join(BASE_DIR, 'uploads')
-app.static_folder = os.path.join(BASE_DIR, 'static')
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max-limit
 
 # Assurer que les dossiers nécessaires existent
@@ -250,7 +260,7 @@ def format_text_as_word_style(job_text, job_number):
             doc.add_paragraph(line)
     
     return doc
-
+""" 
 @app.route('/extract_features', methods=['POST'])
 def extract_features(text):
     cv_features = extract_features("cv_text")
@@ -260,7 +270,7 @@ def extract_features(text):
         
     raw_similarity_s=f"{raw_similarity:.4f}"
     adjusted_similarity_s=f"{adjusted_similarity:.4f}"
-    return jsonify({'Raw_similarity_score': raw_similarity_s, 'Adjusted_similarity_score':adjusted_similarity_s})
+    return jsonify({'Raw_similarity_score': raw_similarity_s, 'Adjusted_similarity_score':adjusted_similarity_s}) """
 
 @app.route('/get_job_answer_from_url', methods=['POST'])
 def get_job_answer_from_url():
@@ -308,7 +318,7 @@ def check_dossier_exist():
 
 if __name__ == '__main__':
     from multiprocessing import freeze_support
-    from JO_analyse import *
+    #from JO_analyse import *
     import webbrowser
     import threading
     import time

@@ -8,7 +8,7 @@ import logging
 import time
 import textwrap
 from functools import lru_cache
-from mistralai import Mistral
+#from mistralai import Mistral
 import requests
 from dotenv import load_dotenv
 

@@ -775,139 +775,43 @@ def save_notes():
 #         print(f"Cyr_error_552 An unexpected error occurred while reading reseaux: {e}")
 #         return jsonify([])
 
-""" @routes.route('/save_reseaux_link_update', methods=['POST'])
-def save_reseaux_link_update():
-    try:
-        link_data = request.get_json()
-        file_path = os.getenv("RESEAUX_FILE")
-        file_path = file_path.replace('\\', '/')  # Normalize path
-        #print(f"Cyr_error_561---",file_path)
-        if not os.path.exists(file_path):
-            return jsonify({"status": "error", "message": "File path does not exist"}), 400
-
-        with open(file_path, 'r', encoding='utf-8') as file:
-            links = json.load(file)
-
-        # Update the link in the list
-        for link in links:
-            if link['name'] == link_data['name']:
-                link.update(link_data)
-                break
-
-        with open(file_path, 'w', encoding='utf-8') as file:
-            json.dump(links, file, ensure_ascii=False, indent=4)
-
-        return jsonify({"status": "success"}), 200
-    except Exception as e:
-        print(f"Cyr_error_579 An error occurred while saving reseaux link update: {e}")
-        return jsonify({"status": "error", "message": "579>"+str(e)}), 500
- """
-# ...existing code...
-
-@routes.route('/list-CRQ-files', methods=['GET'])
-async def list_CRQ_files():
-    list_CRQ = []
-    try:
-        directory_path = GetDirCRQ('DIR_DRQ_FILE')
-        if not os.path.exists(directory_path):
-           os.makedirs(directory_path) 
-        defaultfile = os.path.join(directory_path, 'default.txt')
-        if not os.path.exists(directory_path):
-            #logger.info("Directory does not exist, creating: %s", directory_path)
-            os.makedirs(directory_path)
-            the_request = (
-                " -peux tu trouver : l'url référence de l'annonce ['url'], l'url peut aussi se trouver entre <- et ->, "
-                "-l'entreprise [entreprise], "
-                "-le titre ou l'intiltulé [poste] du poste à pourvoir (ce titre ne doit pas dépasser 20 caractères), "
-                "-la localisation ou lieu dans lieux [lieu], "
-                "-la date de publication ou d'actualisation [Date]"
-            )
-            defaultfile = defaultfile.replace('\\', '/')
-            #print("dbg1456-----", defaultfile)
-            await save_CRQ_text(defaultfile,the_request)
-        
-        text_files = [f for f in os.listdir(directory_path) if f.endswith('.txt')]
-        #for each file in directory_path
-        for file in text_files:
-            file_path = os.path.join(directory_path, file)
-            with open(file_path, 'r', encoding='utf-8') as thefile:
-                list_CRQ.append({
-                    'fichier': file_path,
-                    'name': file,
-                    
-                })
-        
-        return jsonify(list_CRQ), 200
-    except Exception as e:
-        logger.error("Unable to scan directory: %s", str(e))
-        return jsonify({"error": f"Unable to scan directory: {str(e)}"}), 500
-
-# ...existing code...
-
-@routes.route('/save-CRQ-text', methods=['POST'])
-async def route_save_CRQ_text(): 
-    file_name = request.json.get('file_name')
-    text_data = request.json.get('text_data')
-    #print("dbg897 :fichier name", file_name)
-    #print("dbg897a :text_data", text_data)
-    
-    return  save_CRQ_text(file_name, text_data)
-
-def save_CRQ_text(file_name, text_data):
-    try:
-       
-        if not file_name or not text_data:
-            return jsonify({'error': 'Missing file name or text data'}), 400
-        #print("dbg897b :sauvegarde en cours ")
-        with open(file_name, 'w', encoding='utf-8') as file:
-            file.write(text_data)
-        
-        #logger.debug(f"Text saved successfully as {file_name}")
-        return jsonify({'message': 'Text saved successfully'}), 200
-
-    except Exception as e:
-        logger.error(f"Error saving text: {str(e)}")
-        return jsonify({'error': str(e)}), 500
-
-# ...existing code...
-
 
 
 @routes.route('/load-conf-cols', methods=['GET'])
 def load_conf_cols():
-    
-    dir=GetRoot()
-    
-    filepath = os.path.join(dir, ".cols")
-    filepath = filepath.replace('\\', '/')
-    if os.path.exists(filepath):
-        with open(filepath, 'r', encoding='utf-8') as file:
-            content = json.load(file)
-        print("dbg12391 :fichier conf",filepath)
-        print("dbg12391 :content ",content)   
-        return content
-    else:
-        return jsonify({"error": "Configuration file does not exist"}), 404
-    
-
-
+    try:
+        dir=GetRoot()
+        filepath = os.path.join(dir, ".cols")
+        filepath = filepath.replace('\\', '/')
+        if os.path.exists(filepath):
+            with open(filepath, 'r', encoding='utf-8') as file:
+                content = json.load(file)
+            print("dbg12391 :fichier conf",filepath)
+            #print("dbg12391 :content ",content)   
+            return jsonify(content)
+        else:
+            return jsonify({"error": "Configuration file does not exist"}), 404
+    except Exception as e:
+        logger.error(f"Error loading columns configuration: {str(e)}")
+        return jsonify({"error": str(e)}), 500
 
 @routes.route('/load-conf-tabs', methods=['GET'])
 def load_conf_tabs():
-    
-    dir=GetRoot()
-    
-    filepath = os.path.join(dir, ".conf")
-    filepath = filepath.replace('\\', '/')
-    if os.path.exists(filepath):
-        with open(filepath, 'r', encoding='utf-8') as file:
-            content = json.load(file)
-        print("dbg897 :fichier conf",filepath)
-        print("dbg897 :content ",content)        
-        return content
-    else:
-        return jsonify({"error": "Configuration file does not exist"}), 404
-    
+    try:
+        dir=GetRoot()
+        filepath = os.path.join(dir, ".conf")
+        filepath = filepath.replace('\\', '/')
+        if os.path.exists(filepath):
+            with open(filepath, 'r', encoding='utf-8') as file:
+                content = json.load(file)
+            print("dbg897 :fichier conf",filepath)
+            #print("dbg897 :content ",content)        
+            return jsonify(content)
+        else:
+            return jsonify({"error": "Configuration file does not exist"}), 404
+    except Exception as e:
+        logger.error(f"Error loading tabs configuration: {str(e)}")
+        return jsonify({"error": str(e)}), 500
 
 # @routes.route('/load-CRQ-text', methods=['POST'])
 # def route_load_CRQ_text():

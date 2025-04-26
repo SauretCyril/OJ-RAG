@@ -3,15 +3,18 @@ import sys
 
 # Ajouter le dossier du projet au PYTHONPATH
 current_dir = os.path.dirname(os.path.abspath(__file__))
-if current_dir not in sys.path:
-    sys.path.insert(0, current_dir)
+backend_dir = os.path.join(current_dir, "backend")
+print(f"Chemin actuel : {current_dir}")
+print(f"Chemin du backend : {backend_dir}")
+if backend_dir not in sys.path:
+    sys.path.insert(0, backend_dir)
 
 # Configurer les variables d'environnement si nécessaire
 os.environ["PYTHONIOENCODING"] = "utf-8"
 
 # Importer et exécuter l'application
 try:
-    from app import app
+    from backend.app import app
     
     if __name__ == "__main__":
         from multiprocessing import freeze_support
