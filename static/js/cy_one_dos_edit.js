@@ -34,8 +34,8 @@ function openEditModal(rowId) {
                             <div class="form-group">
                                 <label>${field}:</label>
                                 ${field === 'instructions' ? 
-                                    `<textarea id="edit-${field}" rows="5">${annonce[field] || ''}</textarea>` :
-                                    `<input type="text" id="edit-${field}" value="${annonce[field] || ''}" 
+                                    `<textarea id="edit-${field}" class="rich-text-field">${annonce[field] || ''}</textarea>` :
+                                    `<input type="text" id="edit-${field}" class="rich-text-field" value="${annonce[field] || ''}" 
                                        ${field === 'dossier' ? 'readonly' : ''}>`
                                 }
                             </div>
@@ -100,7 +100,6 @@ function saveEdit(rowId) {
     // Save changes and refresh table
     refresh();
   
-
     // Close modal
     document.getElementById('editModal').close();
 }

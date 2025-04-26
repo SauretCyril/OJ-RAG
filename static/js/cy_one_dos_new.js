@@ -1,4 +1,3 @@
-
 function createAnnouncementForm() {
     const formHtml = `
         <dialog id="announcementForm" class="announcement-form">
@@ -16,18 +15,17 @@ function createAnnouncementForm() {
                     <label for="announcementContent">Contenu de l'annonce:</label>
                     <textarea id="announcementContent" class="rich-text-field"></textarea>
                 </div>
-<div class="form-group">
+                <div class="form-group">
                     <label for="creationMode">Mode de création:</label>
                     <select id="creationMode" class="rich-text-field">
                          <option value="creer_annonce">Contenu</option>
                          <option value="Action">Action</option>
                          <option value="scan_url_annonce">Url</option>
-
                     </select>
                 </div>
                 <div class="button-group">
                     <button type="button" onclick="executeCreationMode()">Exécuter</button>
-                                        <button type="button" onclick="closeAnnouncementForm()">Fermer</button>
+                    <button type="button" onclick="closeAnnouncementForm()">Fermer</button>
                 </div>
             </form>
         </dialog>
@@ -135,54 +133,4 @@ function closeAnnouncementForm() {
     }
 }
 
-
-
-// Add styles for announcementForm
-const style3 = document.createElement('style');
-style3.textContent = `
-    .announcement-form {
-        width: 50%;
-        min-width: 50%;
-        height: 50%;
-        min-height: 50%;
-        padding: 20px;
-        border: 1px solid #ccc;
-        border-radius: 8px;
-        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-        display: flex;
-        flex-direction: column;
-        justify-content: space-between;
-        index: 1000;
-    }
-    .announcement-form .form-group {
-        margin-bottom: 15px;
-    }
-    .announcement-form .form-group label {
-        display: block;
-        margin-bottom: 5px;
-    }
-    .announcement-form .form-group input,
-    .announcement-form .form-group textarea {
-        width: 100%;
-        padding: 8px;
-        box-sizing: border-box;
-    }
-    .announcement-form .button-group {
-        display: flex;
-        justify-content: space-between;
-    }
-    .announcement-form .button-group button {
-        padding: 10px 20px;
-        border: none;
-        border-radius: 4px;
-        cursor: pointer;
-    }
-    .announcement-form .button-group button:first-child {
-        background-color: #4CAF50;
-        color: white;
-    }
-    .announcement-form .button-group button:last-child {
-        background-color: #f44336;
-        color: white;
-    }
-`;
+// Les styles ont été déplacés dans la feuille de style dialogs.css
