@@ -41,24 +41,8 @@ function loadTableData(callback) {
             const isrefus = item.todo && item.todo.includes('refus');
             let fichier_annonce = dir_path + '/' + item.dossier+window.CONSTANTS['FILE_NAMES']['ANNONCE_SUFFIX']+".pdf";
         
-        
-            
-            const fichier_annonce_resum = dir_path + '/' + item.dossier+window.CONSTANTS['FILE_NAMES']['GPT_REQUEST_SUFFIX'];
-            
-            const fichier_cv_pdf = dir_path + '/' + item.dossier+window.CONSTANTS['FILE_NAMES']['CV_SUFFIX_NEW']+".pdf";
-            const fichier_BA_pdf = dir_path + '/' + item.dossier+window.CONSTANTS['FILE_NAMES']['BA_SUFFIX_NAME']+".pdf";
-          
-           
-            const file_notes = dir_path + '/' + item.dossier+window.CONSTANTS['FILE_NAMES']['NOTES_FILE'];
-            const file_RQ = dir_path + '/' + item.dossier+window.CONSTANTS['FILE_NAMES']['RQ_FILE'];
-            //console.log("<<-5-file_notes>>",file_notes);
-            
-            const row = document.createElement('tr');
-            //row.classList.add('normal-row');
+            const row = document.createElement('tr');           
             row.id = filePath;
-                 // Ajouter un gestionnaire de clic pour sélectionner/désélectionner la ligne
-               
-    
             row.style.position = 'relative'; // Ajout du positionnement relatif sur la ligne
               if (isrefus) {
                 row.classList.add('refus-row');
@@ -66,11 +50,7 @@ function loadTableData(callback) {
                 row.classList.add('normal-row');
             } 
            
-            // if (isOnDay) {
-            //     row.style.backgroundColor = '#ADD8E6'; // Light blue color
-            // }
-            
-// forEach((col
+ 
             window.columns.forEach((col, colIndex) => {
                 if (colisvisible(col.type) && col.visible === true) {
                     
@@ -80,12 +60,12 @@ function loadTableData(callback) {
                     if (col.type === 'lnk')
                     {
                                 
-                       
                         const icon = document.createElement('span');
+                            const colvalue=col.key+"_value";
                             icon.style.position = 'absolute';
                             icon.style.alignContent='center';
                             icon.style.zIndex = '10';
-                            const colvalue=col.key+"_value";
+                            
                             console.log('#### lnk value:', colvalue);
                             if (item[colvalue] && item[colvalue].trim() !== '')
                                 {
@@ -104,6 +84,7 @@ function loadTableData(callback) {
                    
                     else if (col.key === 'GptSum' ) 
                     {
+                        const fichier = dir_path + '/' + item.dossier+window.CONSTANTS['FILE_NAMES']['GPT_REQUEST_SUFFIX'];
                         const icon = document.createElement('span');
                         icon.style.position = 'absolute';
                         icon.style.alignContent='center';
@@ -112,7 +93,7 @@ function loadTableData(callback) {
                             icon.textContent = '📗'; // Green book icon
                           
                             icon.style.cursor = 'pointer';
-                            icon.addEventListener('click', () => open_url(fichier_annonce_resum));
+                            icon.addEventListener('click', () => open_url(fichier));
                         } else  {
                             //console.log('#### vert:');
                             icon.textContent = '⚪'; // Green book icon
@@ -129,14 +110,14 @@ function loadTableData(callback) {
               
                      else if (col.key === 'CVpdf'  )
                         {
-                            
+                            const fichier = dir_path + '/' + item.dossier+window.CONSTANTS['FILE_NAMES']['CV_SUFFIX_NEW']+".pdf";
                             const icon = document.createElement('span');
                             icon.style.position = 'absolute';
                             icon.style.alignContent='center';
                             if (item['CVpdf']=='O') {
                                 icon.textContent = '📗';
                                 icon.style.cursor = 'pointer';
-                                icon.addEventListener('click', () => open_url(fichier_cv_pdf ));
+                                icon.addEventListener('click', () => open_url(fichier ));
                             } else  {
                             
                                 icon.textContent = '⚪';
@@ -145,13 +126,14 @@ function loadTableData(callback) {
                         }      
                     else if (col.key === 'BApdf'  )
                             {
+                                const fichier = dir_path + '/' + item.dossier+window.CONSTANTS['FILE_NAMES']['BA_SUFFIX_NAME']+".pdf";
                                 const icon = document.createElement('span');
                                 icon.style.position = 'absolute';
                                 icon.style.alignContent='center';
                                 if (item['BApdf']=='O') {
                                     icon.textContent = '📗';
                                     icon.style.cursor = 'pointer';
-                                    icon.addEventListener('click', () => open_url(fichier_BA_pdf ));
+                                    icon.addEventListener('click', () => open_url(fichier));
                                 }    
                                 else {
                                      icon.textContent = '⚪';
@@ -212,6 +194,7 @@ function loadTableData(callback) {
                     }
                 else if (col.key === 'Notes' ) 
                         {
+                            const file_notes = dir_path + '/' + item.dossier+window.CONSTANTS['FILE_NAMES']['NOTES_FILE'];
                             const heartIcon = document.createElement('span');
                             heartIcon.textContent = '❤️'; // Heart icon
                             heartIcon.style.cursor = 'pointer';
