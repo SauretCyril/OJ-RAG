@@ -1,7 +1,11 @@
-from cookies import *
+from backend.cy_cookies import *
 import os
 import tkinter as tk
 from tkinter import filedialog
+import pythoncom
+
+
+paths = Blueprint('cookies', __name__)
 
 def GetRoot():
     root_dir = os.getenv("ANNONCES_FILE_DIR")
@@ -109,3 +113,22 @@ def MakeNecessariesDir(directory):
     if not os.path.exists(directory):
         os.makedirs(directory)
     
+
+
+@paths.route('/check_dossier_exists', methods=['POST'])
+def check_dossier_exist():
+    try:
+        directory_path = GetRoot()
+        dossier = request.json.get('dossier')
+        dossier_path = os.path.join(directory_path, dossier)
+        if not dossier_path:
+            return jsonify({'error': 'Missing dossier path'}), 400
+
+        exists = os.path.exists(dossier_path)
+        return jsonify({'exists': exists}), 200
+
+    except Exception as e:
+        logger.error(f"Error checking dossier existence: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+

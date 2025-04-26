@@ -1,37 +1,25 @@
+from flask import Blueprint, request, jsonify
+import logging
+import pythoncom
 import os
-
-from PyPDF2 import PdfReader
-from openai import OpenAI
-import requests
+from docx2pdf import convert
+from docx import Document
+import openai
 from bs4 import BeautifulSoup
-from RQ_001 import get_mistral_answer
-import json
+from PyPDF2 import PdfReader
+import requests
 
-DEFAULT_CONTEXT = """
-Je peux analyser une offre d'emploi pour :
-- Identifier les compétences clés requises, telles que les langages de programmation (Python, Java, C++, etc.), les frameworks (Django, React, etc.), et les outils (Git, Docker, etc.)
-- Évaluer le niveau attendu pour chaque compétence (débutant, intermédiaire, avancé)
-- Détecter les technologies principales utilisées dans le poste (cloud computing, bases de données, etc.)
-- Comprendre le contexte du poste, y compris les responsabilités et les tâches principales
-- Vérifier l'adéquation entre le profil du candidat et les exigences du poste
-- Suggérer des points d'attention pour le candidat, tels que les certifications ou les expériences spécifiques
+'''My script'''
+from cy_mistral import get_mistral_answer, mistral  # Import the function and Blueprint
+from cy_paths import GetRoot
 
-Exemple d'offre d'emploi :
-- Titre du poste : Développeur Full Stack
-- Compétences requises : 
-  - Langages de programmation : Python, JavaScript
-  - Frameworks : Django, React
-  - Outils : Git, Docker, Kubernetes
-- Responsabilités :
-  - Développer et maintenir des applications web
-  - Collaborer avec les équipes de conception et de produit
-  - Participer aux revues de code et aux tests
-- Qualifications :
-  - Diplôme en informatique ou domaine connexe
-  - Expérience de 3 ans en développement web
-  - Connaissance des pratiques DevOps
-"""
 
+
+# Configure logger
+logging.basicConfig(level=logging.ERROR, format='%(asctime)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
+
+cy_requests = Blueprint('requests', __name__)
 
 def extract_text_from_pdf(pdf_path):
     try:
@@ -58,6 +46,133 @@ def extract_text_from_pdf(pdf_path):
     except Exception as e:
         print(f"An error occurred while extracting text from PDF: {e}")
         return ""
+
+
+@cy_requests.route('/get_job_answer', methods=['POST'])
+
+def get_job_answer():
+    try:
+        file = request.json.get('path')
+        RQ = request.json.get('RQ')
+
+        if not file or not RQ:
+            logger.error("Er005.Missing job file path or question")
+            return jsonify({'Er005': 'Missing job file path or question'}), 400
+
+        text1 = extract_text_from_pdf(file)
+        
+        if not text1:
+            logger.error("Er006.Job text extraction failed")
+            return jsonify({'Er006': 'Job text extraction failed'}), 500
+
+        role="En tant qu' expert en analyse d'offres d'emploi dans le domaine informatique (développeur, Analyste ou Testeur logiciel) , analyse le texte suivant et réponds à cette question"
+        
+        
+        answer = get_mistral_answer(RQ,role,text1)
+        return jsonify({
+            'raw_text': text1,
+            'formatted_text': answer
+        })
+
+    except Exception as e:
+        logger.error(f"Er007.Error: {str(e)}")
+        return jsonify({'Er007': str(e)}), 500
+
+@cy_requests.route('/save-answer', methods=['POST'])
+def save_answer():
+    try:
+        pythoncom.CoInitialize()  # Initialize COM library
+        job_text_data = request.json.get('text_data')
+        job_number = request.json.get('number')
+        the_path = request.json.get('the_path')
+        rq=request.json.get('RQ')
+        if the_path == '':
+            the_path = GetRoot()
+
+        if not job_text_data or not job_number:
+            logger.error(f"Er008.error.Missing job text data or job number: job_text_data={job_text_data}, job_number={job_number}")
+            return jsonify({'Er008': 'Missing job text data or job number'}), 400
+
+        if not the_path:
+            logger.error("Er009.Received path is None")
+            return jsonify({'Er009': 'Missing path'}), 400
+
+        file_name = f"{job_number}_gpt_request"
+        file_path = os.path.join(the_path, job_number)
+        if not os.path.exists(file_path):
+            os.makedirs(file_path)
+        
+        file_path_docx = os.path.join(file_path, file_name + ".docx")
+        file_path_RQ = os.path.join(file_path, file_name + "_RQ.txt")
+
+        doc = format_text_as_word_style(job_text_data, job_number)
+        doc.save(file_path_docx)
+
+        pdf_file_path = file_path_docx.replace('.docx', '.pdf')
+       
+        convert(file_path_docx, pdf_file_path)
+        
+        os.remove(file_path_docx)
+
+        save_rq_to_text_file(file_path_RQ, rq)
+        
+        return jsonify({'dbg009': 'Job text saved successfully', 'pdf_file_path': pdf_file_path})
+
+    except Exception as e:
+        logger.error(f"Er009.Error saving job text: {str(e)}")
+        return jsonify({'Er009': str(e)}), 500
+
+    finally:
+        pythoncom.CoUninitialize()  # Uninitialize COM library
+
+def save_rq_to_text_file(file_path, rq):
+    with open(file_path, 'w') as file:
+        file.write(rq)
+
+def format_text_as_word_style(job_text, job_number):
+    doc = Document()
+    doc.add_heading(f"Job Number: {job_number}", level=1)
+    
+    for line in job_text.split('\n'):
+        if line.startswith('- '):
+            doc.add_paragraph(line, style='ListBullet')
+        else:
+            doc.add_paragraph(line)
+    
+    return doc
+
+
+@cy_requests.route('/get_job_answer_from_url', methods=['POST'])
+def get_job_answer_from_url():
+    try:
+        url = request.json.get('url')
+        RQ = request.json.get('RQ')
+
+        if not url or not RQ:
+            logger.error("Er014.Missing job file path or question")
+            return jsonify({'Er014': 'Missing job file path or question'}), 400
+
+        text1 = extract_text_from_url(url)
+        text1 += "<-"+url+"->"
+        
+        if not text1:
+            logger.error("Er0016.Job text extraction failed")
+            return jsonify({'Er016': 'Job text extraction failed'}), 500
+        role = "En tant qu' expert en analyse d'offres d'emploi dans le domaine informatique (développeur, Analyste ou Testeur logiciel), analyse le texte suivant et réponds à cette question"
+        answer = get_mistral_answer(RQ, role, text1)
+
+        return jsonify({
+            'raw_text': text1,
+            'formatted_text': answer
+        })
+
+    except Exception as e:
+        logger.error(f"Er018.Error: {str(e)}")
+        return jsonify({'Er018': str(e)}), 500
+
+
+
+
 
 def extract_text_from_url(url):
     try:
@@ -111,7 +226,7 @@ def extract_text(source, is_url=False):
 def get_answer(question, role,context=""):
     try:
         
-        client = OpenAI() #api_key=os.getenv("OPENAI_API_KEY")
+        client = openai  # Ensure the openai library is correctly used
         full_context = f"""{role}: {question}\n\nContexte:\n{context}"""
         
         response = client.chat.completions.create(
@@ -170,7 +285,8 @@ def get_info(file_path,role, question):
 
 def response_me(question,url,role):
     try:
-        client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))  # Assurez-vous que OPENAI_API_KEY est défini dans vos variables d'environnement
+        
+        client = openai  # Assurez-vous que OPENAI_API_KEY est défini dans vos variables d'environnement
         context=extract_text_from_url(url)
         if (context == ""):
             return "{'url':'', 'entreprise':'inconnue', 'poste':'Annonce non lisible'}"

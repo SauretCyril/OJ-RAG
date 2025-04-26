@@ -63,3 +63,24 @@ function conf_createTabs(tabs) {
     // Insérer le HTML généré dans l'élément avec l'ID "tabs"
     document.getElementById('tabs').innerHTML = html;   
 }
+
+
+
+function setNewTab(){
+    const activeTab = document.querySelector('.tab.active');
+    if (activeTab !== null) {
+        window.tabActive=activeTab.textContent;
+    }
+}
+
+function changeTab(tabName) {
+    // Remove 'active' class from all tabs
+    document.querySelectorAll('.tab').forEach(tab => {
+        tab.classList.remove('active');
+    });
+    // Add 'active' class to the clicked tab
+    document.querySelector(`.tab[onclick="changeTab('${tabName}')"]`).classList.add('active');
+  
+    setNewTab();
+    refresh();
+}

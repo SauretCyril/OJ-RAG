@@ -5,30 +5,31 @@ import platform
 import csv
 import subprocess
 from werkzeug.utils import secure_filename
-from PyPDF2 import PdfFileReader
+
 
 import tkinter as tk
 from tkinter import filedialog
-import threading
+
 from docx2pdf import convert
 import pythoncom
 from fpdf import FPDF
 from docx import Document
-import requests
+
 import json
 from tqdm import tqdm
 from PyPDF2 import PdfFileReader, PdfFileWriter
 from io import BytesIO
 import logging
 from logging import DEBUG
-import aiofiles
-
-from paths import *
-from cookies import *
-from JO_analyse_gpt import extract_text_from_pdf
-from RQ_001 import get_mistral_answer
 
 from dotenv import load_dotenv
+
+from cy_paths import *
+from cy_cookies import *
+from cy_requests import extract_text_from_pdf
+from cy_mistral import get_mistral_answer
+
+
 
 load_dotenv()
 routes = Blueprint('routes', __name__)
@@ -798,14 +799,19 @@ def load_conf_cols():
 @routes.route('/load-conf-tabs', methods=['GET'])
 def load_conf_tabs():
     try:
-        dir=GetRoot()
+        dir = GetRoot()
+        # Vérifier que dir est une chaîne valide
+        if dir is None or not isinstance(dir, str):
+            logger.error(f"GetRoot() a renvoyé une valeur invalide: {dir}")
+            return jsonify({"error": "Chemin racine invalide"}), 500
+            
         filepath = os.path.join(dir, ".conf")
         filepath = filepath.replace('\\', '/')
         if os.path.exists(filepath):
             with open(filepath, 'r', encoding='utf-8') as file:
                 content = json.load(file)
-            print("dbg897 :fichier conf",filepath)
-            #print("dbg897 :content ",content)        
+            print("dbg897 :fichier conf", filepath)
+            #print("dbg897 :content ", content)        
             return jsonify(content)
         else:
             return jsonify({"error": "Configuration file does not exist"}), 404
