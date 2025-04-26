@@ -10,7 +10,9 @@ logger = logging.getLogger(__name__)
 cy_cookies = Blueprint('cy_cookies', __name__)
 need_reload=True
 # Define the path to the JSON file
-json_file_path = 'cookies.json'
+data_directory = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'data')
+os.makedirs(data_directory, exist_ok=True)
+json_file_path = os.path.join(data_directory, 'cookies.json')
 
 @cy_cookies.route('/save_cookie', methods=['POST'])
 def save_cookie():
