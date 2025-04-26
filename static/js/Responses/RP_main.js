@@ -1,23 +1,33 @@
 // Add status tooltips
 
+// Import the loadRealizationsData function
+//import { loadRealizationsData } from './Realisation.js';
+
+//const { url } = require('inspector');
+
 
 // Declare the global array
+window.conf={};
 window.CONSTANTS=[];
 window.CurrentRow ="";
 window.tabActive = "Campagne";
 window.annonces = [];
 window.portalLinks=[];
-window.portalLinks_columns = [
+/* window.portalLinks_columns = [
     { key: 'name', editable: false, width: '150px', visible: true,title:'name' },
     { key: 'url', editable: false, width: '200px', visible: false,title:'url' },
     { key: 'date', editable: true, width: '150px', visible: true,title:'Date' },
     { key: 'commentaire', editable: false, width: '200px', visible: false,title:'Commentaire' },
     { key: 'update', editable: true, width: '50px', visible: true,title:'update' },
     { key: 'update_date', editable: true, width: '150px', visible: true,title:'Date update' }
-]
+] */
 
 window.columns = [
-    { key: 'dossier', editable: false, width: '80px', visible: true, type: 'tb',title:'Dos' },
+    { key: 'dossier', editable: false, width: '80px', visible: true, type: 'tb',title:'Dos',
+    class: 'description-cell',  
+      style: { cursor: 'pointer', color: 'red', textDecoration: 'underline' }, 
+      event: 'click',  fixed:true // Store function name as string
+    },
     { 
         key: 'description', 
         class: 'description-cell', 
@@ -25,37 +35,49 @@ window.columns = [
         style: { cursor: 'pointer', color: 'blue', textDecoration: 'underline' }, 
         event: 'click', 
         eventHandler: 'openUrlHandler', // Store function name as string
-        width: '200px',
+        width: '300px',
         visible: true,
         type: 'tb',
-        title:'Description'
+        title:'Description',fixed:false
     },
-    { key: 'id', editable: true, width: '100px',"visible":true,"type":"tb",title:'ID' },
-    { key: 'entreprise', editable: true, width: '150px',"visible":true ,"type":"tb",title:'Entreprise' },
+    { key: 'id', editable: true, width: '200px',"visible":true,"type":"tb",title:'Lot',fixed:false},
+    { key: 'entreprise', editable: true, width: '300px',"visible":true ,"type":"tb",title:'Entreprise',fixed:false },
     
-    { key: 'isJo', editable: false, width: '50px',"visible":true ,"type":"tb",title:'Manu' },
-    { key: 'isSteal', editable: false, width: '50px',"visible":true ,"type":"tb",title:'Steal' },
-    { key: 'GptSum', editable: false, width: '50px',"visible":true,"type":"tb",title:'Resum' },
-    { key: 'CV', editable: false, width: '50px',"visible":true ,"type":"tb",title:'CV' },
-    { key: 'CVpdf', editable: false, width: '50px',"visible":true ,"type":"tb",title:'.pdf' },
+    { key: 'role', editable: false, width: '120px',"visible":false,"type":"tb",title:'role',dir:'DIR_ROLE_FILE',fixed:false },   
+    { key: 'request', editable: false, width: '120px',"visible":false ,"type":"tb",title:'request',dir:'DIR_RQ_FILE',fixed:false },
+    { key: 'isJo', editable: false, width: '50px',"visible":true ,"type":"tb",title:'M.',fixed:false },
+  
     
-    { key: 'categorie', editable: true, class: 'category-badge', prefix: 'category-', width: '120px',"visible":true,"type":"tb",title:'Cat'  },
-    { key: 'etat', editable: true, width: '100px',"visible":true ,"type":"tb",title:'Etat'  },
-    { key: 'contact', editable: true, width: '150px',"visible":true ,"type":"tb",title:'Contact' },
-    { key: 'tel', editable: true, width: '125px',"visible":false ,"type":"tb",title:'Tel.' },
-    { key: 'mail', editable: true, width: '125px',"visible":false,"type":"tb",title:'mail' },
-    { key: 'Date', editable: true, default: 'N/A', width: '120px',"visible":true ,"type":"tb",title:'Dt pub' },
-    { key: 'Date_rep', editable: true, default: 'N/A', width: '120px',"visible":true ,"type":"tb",title:'Dt Rep' }, 
-    { key: 'Commentaire', editable: true, width: '150px',"visible":true,"type":"tb" ,title:'Commentaire' },
-    { key: 'Notes', editable: false, width: '50px',"visible":true,"type":"tb" ,title:'Nt' },
-    { key: 'todo', editable: true, width: '120px',"visible":true ,"type":"tb" ,title:'ToDo'},
-    { key: 'url', editable: false, width: '100px',"visible":false ,"type":"tb",title:'Url' },
-    { key: 'type', editable: true, width: '80px',"visible":true ,"type":"tb",title:'Type'  },
-    { key: 'annonce_pdf', editable: true, width: '80px',"visible":false ,"type":"tb",title:'Annonce (pdf)' },
-    { key: 'type_question', editable: true, width: '80px',"visible":false ,"type":"tb" ,title:'type Question'},
-    { key: 'lien_Etape', editable: true, width: '80px',"visible":false ,"type":"tb",title:'Lien Etape' },
+    { key: 'GptSum', editable: false, width: '50px',"visible":true,"type":"tb",title:'Res',fixed:false },
+    { key: 'CV', editable: false, width: '70px',"visible":true ,"type":"tb",title:'CV',fixed:false },
+    { key: 'CVpdf', editable: false, width: '70px',"visible":true ,"type":"tb",title:'CV.pdf',fixed:false },
+    { key: 'BA', editable: false, width: '70px',"visible":true ,"type":"tb",title:'BA',fixed:false },
+    { key: 'BApdf', editable: false, width: '70px',"visible":true ,"type":"tb",title:'BA.pdf',fixed:false },
     
-    { key: 'CVfile', editable: true, width: '80px',"visible":false ,"type":"tb",title:'CVfile' },
+    { key: 'categorie', editable: true, class: 'category-badge', prefix: 'category-', width: '100px',"visible":true,"type":"tb",title:'Cat',fixed:false  },
+    { key: 'etat', editable: true, width: '100px',"visible":true ,"type":"tb",title:'Etat',fixed:false  },
+    { key: 'contact', editable: true, width: '150px',"visible":false ,"type":"tb",title:'Contact',fixed:false },
+    { key: 'tel', editable: true, width: '125px',"visible":false ,"type":"tb",title:'Tel.',fixed:false },
+    { key: 'mail', editable: true, width: '125px',"visible":false,"type":"tb",title:'mail',fixed:false },
+    { key: 'Date', editable: true, default: 'N/A', width: '120px',"visible":true ,"type":"tb",title:'Dt pub',fixed:false },
+    { key: 'Date_rep', editable: true, default: 'N/A', width: '120px',"visible":true ,"type":"tb",title:'Dt Rep',fixed:false },
+    { key: 'Date_from', editable: true, default: 'N/A', width: '120px',"visible":true ,"type":"tb",title:'Dt From',fixed:false },
+    { key: 'delay', editable: false, default: 'N/A', width: '120px',"visible":false,"type":"tb",title:'Delais',fixed:false },  
+    { key: 'Commentaire', editable: true, width: '200px',"visible":true,"type":"tb" ,title:'Commentaire',fixed:false },
+    { key: 'todo', editable: true, width: '120px',"visible":true ,"type":"tb" ,title:'ToDo',fixed:false},
+    { key: 'Notes', editable: false, width: '50px',"visible":true,"type":"tb" ,title:'Nt',fixed:false },
+    { key: 'url', editable: false, width: '100px',"visible":false ,"type":"tb",title:'Url',fixed:false },
+    { key: 'type', editable: true, width: '80px',"visible":false ,"type":"tb",title:'Type',fixed:false  },
+    { key: 'annonce_pdf', editable: true, width: '80px',"visible":false ,"type":"tb",title:'Annonce (pdf)',fixed:false },
+    { key: 'Origine', editable: true, width: '120px',"visible":false ,"type":"tb" ,title:'Origine',fixed:false},
+    { key: 'lien_Etape', editable: true, width: '80px',"visible":false ,"type":"tb",title:'Lien Etape',fixed:false },
+    
+    { key: 'CVfile', editable: true, width: '80px',"visible":false ,"type":"tb",title:'CVfile',fixed:false },
+    { key: 'lnk_Youtub', editable: false, width: '80px', visible: false, type: 'lnk', title: 'Youtube',fixed:false },
+    { key: 'lnk_Youtub_value', editable: true, width: '80px', visible: false, type: 'tb', title: 'Youtube value',fixed:false },
+    { key: 'path_dirpartage', editable: false, width: '80px', visible: false, type: 'dir', title: 'partage',fixed:false },
+    { key: 'path_dirpartage_value', editable: true, width: '150px', visible: false, type: 'tb', title: 'dir',fixed:false }
+
     
 ];
 /**
@@ -99,6 +121,26 @@ function save_config_col() {
 //save_config_col();
 
 
+function  view_results()
+{
+    fetch('/view_results', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ file: 'resultats.json' })
+    })
+    .then(response => response.json())
+    .then(data => {
+        console.log('view_results:', data);
+    })
+    .catch(error => {
+        console.error('Error view_results:', error);
+    });
+}
+
+
+
 function loadFilterValues(tabActive) {
     fetch('/read_filters_json', {
         method: 'POST',
@@ -120,20 +162,22 @@ function loadFilterValues(tabActive) {
         console.error('Error loading filter values:', error);
     });
 }
+
 // Example usage
 function loadTableData(callback) {
     
-    //reassignEventHandlers(window.columns);
+ 
     generateTableHeaders();
-    //state = value de la liste box statusFilter
-    //const state = document.getElementById('statusFilter').value;
+   
+    excludedfile = document.getElementById('Excluded').value+".json";
+  
     fetch('/read_annonces_json', { 
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-        excluded: "excluded_annonces.json"        
+        excluded: excludedfile         
         })
     })
     .then(response => response.json())
@@ -156,157 +200,204 @@ function loadTableData(callback) {
             const filePath = Object.keys(itemWrapper)[0];
             const item = itemWrapper[filePath];
             const dir_path = filePath.substring(0, filePath.lastIndexOf('/'));
-            console.log("<<-1---dir_path--->>",dir_path);
+            //console.log("<<-1---dir_path--->>",dir_path);
             const isCvRef = item.Commentaire && item.Commentaire.includes('<CV-REF>');
-            
-            
-            let fichier_annonce = dir_path + '/' + item.dossier+window.CONSTANTS['FILE_NAMES']['ANNONCE_SUFFIX'];
-            //console.log("<<-2-fichier_annonce>>",fichier_annonce);
-            
-            let fichier_annonce_steal = dir_path + '/' + item.dossier+window.CONSTANTS['FILE_NAMES']['STEAL_ANNONCE_SUFFIX'];
-            //console.log("<<-3-ffichier_annonce_steal>>",fichier_annonce_steal);
-            
+            const isOnDay = item.Commentaire && item.Commentaire.includes('DAY');
+            const isrefus = item.todo && item.todo.includes('refus');
+            let fichier_annonce = dir_path + '/' + item.dossier+window.CONSTANTS['FILE_NAMES']['ANNONCE_SUFFIX']+".pdf";
+        
+        
             
             const fichier_annonce_resum = dir_path + '/' + item.dossier+window.CONSTANTS['FILE_NAMES']['GPT_REQUEST_SUFFIX'];
-            //console.log("<<-4-fichier_annonce_resum>>",fichier_annonce_resum);
             
-            
+            const fichier_cv_pdf = dir_path + '/' + item.dossier+window.CONSTANTS['FILE_NAMES']['CV_SUFFIX_NEW']+".pdf";
+            const fichier_BA_pdf = dir_path + '/' + item.dossier+window.CONSTANTS['FILE_NAMES']['BA_SUFFIX_NAME']+".pdf";
+          
+           
             const file_notes = dir_path + '/' + item.dossier+window.CONSTANTS['FILE_NAMES']['NOTES_FILE'];
+            const file_RQ = dir_path + '/' + item.dossier+window.CONSTANTS['FILE_NAMES']['RQ_FILE'];
             //console.log("<<-5-file_notes>>",file_notes);
             
             const row = document.createElement('tr');
+            //row.classList.add('normal-row');
             row.id = filePath;
+                 // Ajouter un gestionnaire de clic pour sélectionner/désélectionner la ligne
+               
+    
             row.style.position = 'relative'; // Ajout du positionnement relatif sur la ligne
+              if (isrefus) {
+                row.classList.add('refus-row');
+            } else {
+                row.classList.add('normal-row');
+            } 
+           
+            // if (isOnDay) {
+            //     row.style.backgroundColor = '#ADD8E6'; // Light blue color
+            // }
+            
 // forEach((col
             window.columns.forEach((col, colIndex) => {
-                if (col.type === "tb" && col.visible === true) {
+                if (colisvisible(col.type) && col.visible === true) {
                     
                     const cell = document.createElement('td');
                     cell.setAttribute('data-key', col.key);
                    
+                    if (col.type === 'lnk')
+                    {
+                                
+                       
+                        const icon = document.createElement('span');
+                            icon.style.position = 'absolute';
+                            icon.style.alignContent='center';
+                            icon.style.zIndex = '10';
+                            const colvalue=col.key+"_value";
+                            console.log('#### lnk value:', colvalue);
+                            if (item[colvalue] && item[colvalue].trim() !== '')
+                                {
+                                 //console.log('#### blanc:');
+                                icon.textContent = '🔵';
+                                icon.style.cursor = 'pointer';
+                                icon.addEventListener('click', () => open_url(item[colvalue]));
+                                  
+                               } else  {
+                                  //console.log('#### vert:');
+                                icon.textContent = '⚪'; // White circle icon
+                            } 
+                            cell.appendChild(icon); 
+                    }
                     
-                    if (col.key === 'GptSum' ) 
+                    else if (col.key === 'request') 
+                    {
+                      
+                        const button = document.createElement('button');
+                        button.textContent = item['request']; // Heart icon
+                        button.style.cursor = 'pointer';
+                        const dir=col.dir;
+                        
+                        button.addEventListener('click', () => open_liste_requests(row.id, index, "request",dir));
+                        cell.appendChild(button); 
+                      
+                    } 
+                     else if (col.key === 'role') 
+                    {
+                     
+                        const button = document.createElement('button');
+                        button.textContent = item['role']; // Heart icon
+                        button.style.cursor = 'pointer';
+                        const dir=col.dir;
+                        button.addEventListener('click', () => open_liste_requests(row.id, index, "role",dir));
+                        cell.appendChild(button); 
+                      
+                    } 
+                    else if (col.key === 'GptSum' ) 
                     {
                         const icon = document.createElement('span');
+                        icon.style.position = 'absolute';
+                        icon.style.alignContent='center';
                         if (item[col.key] === 'O') {
                             //console.log('#### blanc:');
                             icon.textContent = '📗'; // Green book icon
-                            icon.style.color = 'green';
+                          
                             icon.style.cursor = 'pointer';
                             icon.addEventListener('click', () => open_url(fichier_annonce_resum));
                         } else  {
                             //console.log('#### vert:');
                             icon.textContent = '⚪'; // Green book icon
                             //icon.style.color = 'red';
-                            icon.style.cursor = 'undefined';
+                           
                         } 
-                        icon.style.position = 'absolute';
-                        icon.style.alignContent='center';
+                      
                         //icon.style.top = '0px';
-                        icon.style.zIndex = '10'; // Ensure the icon is above the content
+                        //icon.style.zIndex = '10'; // Ensure the icon is above the content
                         cell.appendChild(icon);
                     }
                    
-                     else if  (col.key === 'CVpdf' && item['CV']=='O' ) 
-                    {
-                        //console.log('#### CV:', item[col.key]);
-                        const icon = document.createElement('span');
-                        if (item[col.key] === 'N') {
-                            //console.log('#### blanc:');
-                            icon.textContent = '⚪'; // Red book icon
-                            // icon.style.color = 'red';
-                        } else if (item[col.key] === 'O') {
-                            //console.log('#### vert:');
-                            icon.textContent = '📗'; // Green book icon
-                             icon.style.color = 'green';
-                        } 
-                        icon.style.position = 'absolute';
-                        icon.style.alignContent='center';
-                        //icon.style.top = '0px';
-                        icon.style.zIndex = '10'; // Ensure the icon is above the content
-                        if (item[col.key] === 'O') {
-                            icon.style.cursor = 'pointer';
-                            icon.addEventListener('click', () => convert_cv(item.dossier, dir_path));
-                        }
-                        cell.appendChild(icon);
-                      } 
-                      else  if (col.key === 'CVpdf' && item['CV']=='N' )
-                      {
-                         
+                 
+              
+                     else if (col.key === 'CVpdf'  )
+                        {
+                            
                             const icon = document.createElement('span');
-                            icon.textContent = '⚪'; // White circle icon
                             icon.style.position = 'absolute';
                             icon.style.alignContent='center';
-                            //icon.style.top = '0px';
-                            icon.style.zIndex = '10';
+                            if (item['CVpdf']=='O') {
+                                icon.textContent = '📗';
+                                icon.style.cursor = 'pointer';
+                                icon.addEventListener('click', () => open_url(fichier_cv_pdf ));
+                            } else  {
+                            
+                                icon.textContent = '⚪';
+                            }
                             cell.appendChild(icon);
-                         
-                     }                      
-                     else if (col.key === 'CV') 
+                        }      
+                    else if (col.key === 'BApdf'  )
+                            {
+                                const icon = document.createElement('span');
+                                icon.style.position = 'absolute';
+                                icon.style.alignContent='center';
+                                if (item['BApdf']=='O') {
+                                    icon.textContent = '📗';
+                                    icon.style.cursor = 'pointer';
+                                    icon.addEventListener('click', () => open_url(fichier_BA_pdf ));
+                                }    
+                                else {
+                                     icon.textContent = '⚪';
+                                }   
+                                
+                                cell.appendChild(icon);
+                            }                     
+                     else if (col.key === 'CV' || col.key === 'BA' ) 
                      {
                         //console.log('#### CV:', item[col.key]);
                         const icon = document.createElement('span');
-                        if (item[col.key] === 'N') {
+                        icon.style.position = 'absolute';
+                        icon.style.alignContent='center';
+                        icon.style.zIndex = '10'; // Ensure the icon is above the content
+                        icon.style.cursor = 'pointer';
+                        if (item[col.key] === 'N' || item[col.key] === '') {
                             //console.log('#### blanc:');
                             
-                            icon.textContent = '⚪'; // Red book icon
+                            icon.textContent = '📤'; // Pick up icon
                             //icon.style.color = 'red';
                         } else  {
                             //console.log('#### vert:');
-                            icon.textContent = '📗'; // Red book icon
-                             icon.style.color = 'green';
+                            icon.textContent = '⬇️'; // Download icon
+                            //icon.style.color = 'green';
                         } 
-                        icon.style.position = 'absolute';
-                        icon.style.alignContent='center';
+                       
                         //icon.style.top = '0px';
-                        icon.style.zIndex = '10'; // Ensure the icon is above the content
-                        icon.style.cursor = 'pointer';
-                        
-                        icon.addEventListener('click', () => get_cv(item.dossier, dir_path,item[col.key],row.id));
+
+                        let typeDoc = "";
+                        if (col.key === 'CV') {typeDoc="CV";}
+                        if (col.key === 'BA') {typeDoc="BA";}
+                        icon.addEventListener('click', () => get_cv(item.dossier, dir_path,item[col.key],typeDoc));
                         cell.appendChild(icon);
                         
                     } 
+                    
                     else if (col.key === 'isJo')
                     {
                         const icon = document.createElement('span');
+                        icon.style.position = 'absolute';
+                        icon.style.alignContent='center';
+                        icon.style.zIndex = '10'; // Ensure the icon is above the content
                          if (item[col.key] === 'O') {
-                            //console.log('#### blanc:');
-                            icon.textContent = '📗'; // Green book icon
+                              //console.log('#### blanc:');
+                            icon.textContent = '🔵';
                             icon.style.cursor = 'pointer';
                             icon.addEventListener('click', () => open_url(fichier_annonce));
                             
                         } else  {
                             //console.log('#### vert:');
-                            icon.textContent = '⚪'; // Red book icon
-                            //icon.style.color = 'red';
+                            icon.textContent = '⚪'; // White circle icon
                         } 
-                        icon.style.position = 'absolute';
-                        icon.style.alignContent='center';
+                      
                         //icon.style.top = '0px';
-                        icon.style.zIndex = '10'; // Ensure the icon is above the content
+                   
                         
                         cell.appendChild(icon);
                     }
-                    else if (col.key === 'isSteal')
-                    {
-                        const icon = document.createElement('span');
-                        if (item[col.key] === 'O') {
-                            //console.log('#### blanc:');
-                            icon.textContent = '📗'; // Red book icon
-                            icon.addEventListener('click', () => open_url(fichier_annonce_steal));
-                            icon.style.cursor = 'pointer';
-                        } else {
-                            //console.log('#### vert:');
-                            icon.textContent = '⚪'; // Green book icon 
-                            //icon.style.color = 'red';   
-                        } 
-                        icon.style.position = 'absolute';
-                        icon.style.alignContent='center';
-                        //icon.style.top = '0px';
-                        icon.style.zIndex = '10'; // Ensure the icon is above the content
-                        
-                        cell.appendChild(icon);
-                    } else if (col.key === 'Notes' ) 
+                else if (col.key === 'Notes' ) 
                         {
                             const heartIcon = document.createElement('span');
                             heartIcon.textContent = '❤️'; // Heart icon
@@ -314,12 +405,16 @@ function loadTableData(callback) {
                             heartIcon.addEventListener('click', () => open_notes(file_notes));
                             cell.appendChild(heartIcon);
                         
-                        }
-                    else 
+                        } 
+                        
+                    else
                     {
+                        isDosier=false;
                         isurl=false;
                         if (col.key === 'description' && item.url) {
                             isurl = true;
+                        } else if (col.key === 'dossier') {
+                            isDosier = true;
                         }
 
                         if (isurl) {
@@ -328,11 +423,29 @@ function loadTableData(callback) {
                             cell.style.textDecoration = col.style.textDecoration;
                             cell.addEventListener(col.event, () => open_url(item.url));
                         } else {
-                            cell.style.color = ''; // Default color
+                            if (isDosier) {
+                                cell.style.color = col.style.color; // Example color for dossier
+                                cell.style.cursor = col.style.cursor;
+                                cell.style.textDecoration = col.style.textDecoration;
+                              
+                                cell.addEventListener('click', function () {
+                                    const currentRow = this.parentElement; // Ensure the row is correctly referenced
+                                    // Deselect all rows
+                                    document.querySelectorAll('.selected-row').forEach(row => {
+                                        row.classList.remove('selected-row');
+                                    });
+                                    // Select the clicked row
+                                    currentRow.classList.add('selected-row');
+                                });
+
+
+                            } else {
+                                cell.style.color = ''; // Default color
+                            }
                             cell.style.textDecoration = ''; // Default text decoration
                         }
                         
-                       
+                     
                       
                         cell.textContent = item[col.key];
                         if (col.class) cell.classList.add(col.class);
@@ -345,10 +458,8 @@ function loadTableData(callback) {
                 }
             });
             
-            if (isCvRef) {
-                row.style.backgroundColor = '#8be28b';
-            }
-            /*   */
+         
+          
             
             
             //tableBody.appendChild(row);
@@ -385,7 +496,7 @@ function loadTableData(callback) {
                  document.getElementById('Sscrape_url').onclick = () => {
                     window.CurrentRow=contextMenu.dataset.targetRow;
                     set_current_row();
-                    //alert("Scraping de l'annonce en cours...",item.url,item.dossier,fichier_annonce_scrap);
+                    
 
                     scrape_url(item.url,item.dossier);
                   
@@ -396,25 +507,22 @@ function loadTableData(callback) {
                 {
                     let thefile="";
                     resuReady=false;
-                    if (item.isSteal=="O")
-                        {thefile=fichier_annonce_steal,resuReady=true;}
-                        else if (item.isJo=="O"){thefile=fichier_annonce,resuReady=true;}
-                    if (item.GptSum == "O")
-                    {
-                        let resumexist="Attention cela va écraser le résumé existant...";
-                    }
+                    if (item.isJo=="O")
+                        {thefile=fichier_annonce,resuReady=true;}
+                   
                     if (resuReady) 
                     {
                         const rowId = contextMenu.dataset.targetRow;
-                        if (confirm("Voulez vous résumer le document ? "+resumexist +"->" +thefile+ ": " + item.dossier )) {
+                        if (confirm("Voulez vous résumer le document ? "+resumexist +"->" +thefile+ " dans le dossier " + item.dossier )) {
                             window.CurrentRow=contextMenu.dataset.targetRow;
                             set_current_row();       
                             // call the function get answers
-                            get_job_answer(thefile,item.dossier, item.type);
+                          
+                            get_job_answer(thefile,item.dossier, item.type,false,item.request);
                             
                             }
                     } else
-                    {alert("il faut que l'annonce soit sauvegardée en pdf")}
+                    {alert("document à résumer non trouvée")}
                 }
 
                 document.getElementById('Delete').onclick = () => {
@@ -422,7 +530,7 @@ function loadTableData(callback) {
                     if (confirm("Voulez-vous vraiment supprimer ce dossier ?")) {
                            updateAnnonces(index, 'etat', 'DELETED');
                         // Update the 'etat' column in the HTML row
-                        const etatCell = row.querySelector('td:nth-child(' + (window.columns.findIndex(col => col.key === 'etat') + 1) + ')');
+                        const etatCell = row.querySelector('td:nth-child(' + (window.columns.filter(col => col.visible).findIndex(col => col.key === 'etat') + 1) + ')');
                         if (etatCell) {
                             etatCell.textContent = 'DELETED';
                         }
@@ -517,13 +625,20 @@ function getStatus(filepath){
 }
 
 
-
+function colisvisible(coltype)
+{
+    if ((coltype === "tb" || coltype === "lnk" || coltype === "dir"))
+    {
+        return true;
+    }
+    return false;
+}
 // Function to filter table rows based on input values
 function filterTable() {
     const filters = {};
     // Collect filter values
     window.columns.forEach(col => {
-        if (col.type === "tb" && col.visible === true) {
+        if (colisvisible(col.type) && col.visible === true) {
             const filterElement = document.getElementById(`filter-${col.key}`);
             if (filterElement) {
                 filters[col.key] = filterElement.value.toLowerCase();
@@ -541,7 +656,7 @@ function filterTable() {
         let key="";
         let cellIndex=0;
         window.columns.forEach(col => {
-            if (col.type === "tb" && col.visible === true) {
+            if (colisvisible(col.type) && col.visible === true) {
                 
               
                 const cell = row.querySelector(`td:nth-child(${cellIndex})`);
@@ -561,14 +676,7 @@ function filterTable() {
                     }
                 }
                 cellIndex++;
-               /*  if (cell) {
-                    const cellValue = cell.textContent.toLowerCase();
-                    const filterValue = filters[col.key];
-                    //console.log(`Cell value for ${col.key}: ${cellValue}, Filter value: ${filterValue}`);
-                    if (filterValue && !cellValue.includes(filterValue)) {
-                        shouldDisplay = false;
-                    }
-                } */
+             
             }
         });
         row.style.display = shouldDisplay ? '' : 'none';
@@ -580,25 +688,14 @@ function filterTable() {
 
 // Function to update the global array when a cell is edited
 
-function updateAnnonces_byfile(root, key, value) {
+function updateAnnonces_byfile(file, key, value) {
     try {
-        // Assuming this code is running in a Node.js environment
-        const fs = require('fs');
-        const path = require('path');
-
-        const file_path = path.join(root, ".data.json");
-
-        if (fs.existsSync(file_path)) {
-            const data = fs.readFileSync(file_path, 'utf8');
-            const jsonData = JSON.parse(data);
-
-            jsonData[key] = value;
-
-            fs.writeFileSync(file_path, JSON.stringify(jsonData, null, 2), 'utf8');
-            console.log("File updated successfully:", file_path);
-        } else {
-            console.error("File not found:", file_path);
-        }
+        const index = window.annonces.findIndex(a => Object.keys(a)[0] === file);
+        alert("updateAnnonces_byfile" + " - " + index +"- " +file +" - "+key + " - " + value);
+        if (index === -1) return;
+        
+        window.annonces[index][file][key] = value;
+        refresh();
     } catch (err) {
         console.error("update annonce", err);
     }
@@ -606,10 +703,26 @@ function updateAnnonces_byfile(root, key, value) {
 
 function updateAnnonces(index, key, value) {
     const filePath = Object.keys(window.annonces[index])[0];
+    
     window.annonces[index][filePath][key] = value;
+    //alert("updateAnnonces =" + window.annonces[index][filePath][key]);
     
     
 }
+
+function updateAnnonces_externe(index, key, value) {
+    return new Promise((resolve, reject) => {
+        try {
+            const filePath = Object.keys(window.annonces[index])[0];
+            window.annonces[index][filePath][key] = value;
+            resolve();
+        } catch (error) {
+            reject(error);
+        }
+    });
+}
+
+
 
 function UpdateState(rowId,col,value) {
     const selectedRow = document.getElementById(rowId);
@@ -645,7 +758,7 @@ function saveTableData() {
         .then(response => response.json())
         .then(data => {
             if (data.status === "success") {
-                //console.log('Data successfully saved.');
+                console.log('dbg445 Data successfully saved.');
                 resolve();
             } else {
                 console.error('Error saving data:', data.message);
@@ -659,8 +772,28 @@ function saveTableData() {
     });
 }
 
+function generate_index_html()
+{
+    fetch('/generate_html_index', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ dossier_list: window.annonces, sufix: window.CONSTANTS['FILE_NAMES']['ANNONCE_SUFFIX'] })
 
-
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === "success") {
+            console.log('dbg4757 Data successfully saved.');
+        } else {
+            console.error('Error saving data:', data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error saving data:', error);
+    });
+}
 
 function saveFilterValues(filters) {
     fetch('/save_filters_json', {
@@ -673,7 +806,12 @@ function saveFilterValues(filters) {
             tabActive: window.tabActive
         })
     })
-    .then(response => response.json())
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        return response.json();
+    })
     .then(data => {
         if (data.status === "success") {
             //console.log('Filter values successfully saved.');
@@ -682,7 +820,7 @@ function saveFilterValues(filters) {
         }
     })
     .catch(error => {
-        console.error('Error saving filter values:', error);
+        console.error('An unexpected error occurred while saving filter values:', error);
     });
 }
 
@@ -714,7 +852,7 @@ function updateFilterValues(filters) {
 
 // Function to load filter values from JSON file and update input fields
 
-
+//onfiche
 function openEditModal(rowId) {
     // Find the annonce data
     const index = window.annonces.findIndex(a => Object.keys(a)[0] === rowId);
@@ -725,12 +863,13 @@ function openEditModal(rowId) {
     const tabGroups = {
         'Informations principales': ['dossier', 'description', 'id', 'entreprise', 'categorie'],
         'Statut': ['etat', 'lien_Etape','annonce_pdf','CV','CVfile'],
-        'suivi': [ 'Date','Date_rep','todo','commetaires'],
+        'suivi': [ 'Date','Date_rep','todo','commetaires','Origine'],
         'Contact': [ 'contact','tel', 'mail','url'],
         'Détails': ['Commentaire', 'type', 'Lieux'], 
-        'GPT': ['GptSum']
+        'GPT': ['GptSum', 'instructions','request'],
+        'Publication': ['lnk_Youtub_value','path_dirpartage_value']
     };
-//'annonce_pdf'
+
     // Create modal HTML with tabs
     let modalHtml = `
         <dialog id="editModal" class="edit-modal">
@@ -748,8 +887,11 @@ function openEditModal(rowId) {
                         ${fields.map(field => `
                             <div class="form-group">
                                 <label>${field}:</label>
-                                <input type="text" id="edit-${field}" value="${annonce[field] || ''}" 
-                                       ${field === 'dossier' ? 'readonly' : ''}>
+                                ${field === 'instructions' ? 
+                                    `<textarea id="edit-${field}" rows="5">${annonce[field] || ''}</textarea>` :
+                                    `<input type="text" id="edit-${field}" value="${annonce[field] || ''}" 
+                                       ${field === 'dossier' ? 'readonly' : ''}>`
+                                }
                             </div>
                         `).join('')}
                     </div>
@@ -859,11 +1001,11 @@ function generateTableHeaders() {
     filterRow.innerHTML = '';
     
     window.columns.forEach(col => {
-        if (col.type === "tb" && col.visible === true) {
+        if (colisvisible(col.type) && col.visible === true) {
             // Create header cell
             const th = document.createElement('th');
             th.style.width = col.width;
-            th.classList.add('filter-cell');
+            th.classList.add('filter-cell-col');
             //th.textContent = col.title.charAt(0).toUpperCase() + col.key.slice(1);
             th.textContent = col.title;
             thead.appendChild(th);
@@ -923,7 +1065,9 @@ function generateTableHeaders() {
 
 function setNewTab(){
     const activeTab = document.querySelector('.tab.active');
-    window.tabActive=activeTab.textContent;
+    if (activeTab !== null) {
+        window.tabActive=activeTab.textContent;
+    }
 }
 
 function changeTab(tabName) {
@@ -982,21 +1126,66 @@ function toggleColumnVisibilityForm() {
         }
     }
 }
+async function loadCookies() {
+        try {
+            const response = await fetch('/load_cookies', {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            const cookies = await response.json();
+            // Process the cookies as needed
+            console.log('Cookies loaded:', cookies);
+        } catch (error) {
+            console.error('Error loading cookies:', error);
+        }
+    }
 
 // Call the function to generate the form when the page loads
-window.addEventListener('load', function() {
-    loadConstants();
-    setNewTab();
-    //setNewTab();  
-    loadTableData(function() {
+//onload
+window.addEventListener('load', async function() {
+    // Style
+    document.head.appendChild(style1);
+    document.head.appendChild(style3);
+    document.head.appendChild(style4);
+    document.head.appendChild(style5);
+ 
+    // constant
+    await loadConstants();  // Ensure loadConstants is completed
+
+
+    // load User settings
+    await loadCookies();
+    window.conf = await conf_loadconf();
+    await loadColumnsFromServer();
+    //window.columns = window.conf.Columns; // Corrected to use "Columns"
+    //await show_current_instruction();  // Ensure get cookie current_instruction is completed
+    await show_current_dossier();
+    
+    // Load data
+    
+    await loadTableData(function() {
         //console.log('Table data loaded and callback executed.');
         // Add any additional code to execute after loading table data here
+        
     });
-    createMenu();
-    loadReseauxLinks();
+    setNewTab();  
+    //createMenu();
     
-
+  
+    // Ensure the element with id 'Excluded' exists before adding the event listener
+    const excludedElement = document.getElementById('Excluded');
+    if (excludedElement) {
+        excludedElement.addEventListener('change', loadTableData);
+    } else {
+        console.error('Element with id "Excluded" not found.');
+    }
 });
+
 
 // ...existing code...
 
@@ -1044,7 +1233,10 @@ function reassignEventHandlers(columns) {
     columns.forEach(col => {
         if (col.eventHandler === 'openUrlHandler') {
             col.eventHandler = openUrlHandler;
+        } else if (col.eventHandler === 'SelectHandler') {
+            col.eventHandler = SelectHandler;
         }
+        
         // Add more handlers as needed
     });
 }
@@ -1061,6 +1253,9 @@ function deserializeColumns(columns) {
         }
         if (col.eventHandler === 'openUrlHandler') {
             deserializedCol.eventHandler = openUrlHandler;
+        }
+        if (col.eventHandler === 'SelectHandler') {
+            deserializedCol.eventHandler = SelectHandler;
         }
         // Add more handlers as needed
         return deserializedCol;
@@ -1103,7 +1298,6 @@ function AIQ(ispdf, value, oneitem) {
    
     window.open(`qa.html?${params.toString()}`, '_blank');
 }
-
 
 // ...existing code...
 
@@ -1171,7 +1365,7 @@ function openCSVTable(filePath) {
     window.open(`csv_table.html?${params.toString()}`, '_blank');
 }
 
-// Add menu
+/* // Add menu
 function createMenu() {
     const menu = document.createElement('div');
     menu.id = 'menu';
@@ -1179,63 +1373,92 @@ function createMenu() {
         <button onclick="openCSVTable('Suivi_annonce_apec.csv')">Load CSV File</button>
     `;
     document.body.insertBefore(menu, document.body.firstChild);
-}
+} */
 
 
 
 
-async function get_job_answer(path,num_job,type)
+async function get_job_answer(thepath,num_job,typ,isUrl)
 {
- let q2_job = "";
- if (type === 'AN') {
+ if (thepath.length === 0) {
+    alert("Veuillez renseigner le chemin du fichier ou l'URL");
+    return;
+ }
+ else {
+    //alert("Traitement de l'offre d'emploi en cours... : " + thepath );
+ }
+
+
 
  q2_job = 
         "peux tu me faire un plan détaillé de l'offre avec les sections en précisant bien ce qui est obligatoire, optionnelle :" +
         "- Titre poste proposé," +
+        "- le nom de l'entrerise qui recrute," +
+        "- le lieux ou se situe le poste," +
+        "- la date de publication ou d'actualisation de l'annonce,"+
         "- Duties (Description du poste décomposée en tache ou responsabilité)," +
         "- requirements (expérience attendues, )," +
-        "- skills (languages, outils obligatoires)," +
+        "- skills (languages, outils obligatoires, framework)," +
         "- Savoir-être (soft skill)," +
-        "- autres (toutes informations autre utile à connaitre)"
-        ;
- } else if (type=="PF" ) {
-  
-  q2_job = " peux tu me faire un plan détaillé de du frofile du candidat avec les sections" +
-        "- Titre du profile," +
-        "- le résumé du texte mis en avant du profile," +
-        "- savoirs faire ou sof skills ," +
-        "- EXPERIENCES PROFESSIONNELLES: (Entreprise, date début et fin, domaine de l'entreprise,poste occupé) sachant qu'il peut y avoir plusieurs expériences pour une entreprise, il faut lister en sous section les functions occupées avec la description de la tache, les outils, langages et environnement " +
-        "- les compétences," +
-        "- autres (toutes informations autre utile à connaitre)"
- }
-    alert("Q2_job=",q2_job );
+        "- autres (toutes informations autre utile à connaitre, comme descriptif de l'entreprise, secteur d'activité, pourquoi l'entreprise recrute...)"+
+        
+        "- en conclusion : peux tu faire une présentation rapide sur 3 lignes du candidat idéal"+
+        "- il faut ajouter la donnée suivante telque : <- "+thepath+" -> afin que je puisse garder la référence" ;
+ 
+ 
+   
     showLoadingOverlay();
 
     try {
-        const jobTextResponse = await fetch('/get_job_answer', {
+       
+        let jobTextResponse = "";
+        if (!isUrl) {
+            console.log("dbg A023a : Traitement du fichier pdf en cours... : " + thepath );
+            jobTextResponse = await fetch('/get_job_answer', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ path: thepath, RQ: q2_job })
+            });
+        } else {
+             
+            //jobTextResponse = get_job_answer_from_url(thepath,q2_job);
+            //alert("dbg T023 : Traitement de l'url en cours... : " + thepath );
+            jobTextResponse= await fetch('/get_job_answer_from_url', {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json',
+                'Content-Type': 'application/json'
             },
-            body: JSON.stringify({ path: path, RQ: q2_job })
-        });
-
+            body: JSON.stringify({ url: thepath, RQ: q2_job }) 
+            });
+           
+        }
+        
         if (!jobTextResponse.ok) {
             throw new Error('Erreur lors de l\'extraction du texte de l\'offre');
         }
-
+        
         const jobTextData = await jobTextResponse.json();
         const saved_path = "";
+        
+        //savetext="[--doc--]\n"+thepath+"\n";
+        //savetext+="[--Qestion--]\n"+q2_job+"\n";
+        savetext= jobTextData.formatted_text;
+      
+       
         const saveResponse = await fetch('/save-answer', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({ text_data: jobTextData.formatted_text, number: num_job, the_path: saved_path })
+            body: JSON.stringify({ text_data: savetext, number: num_job, the_path: saved_path 
+                , RQ: q2_job
+            })
         });
 
         if (saveResponse.ok) {
-            alert("Résumé de l'offre d'emploi effectué");
+           //alert("Résumé de l'offre d'emploi effectué");
         } else {
             alert("Erreur lors de la sauvegarde de l'offre d'emploi");
         }
@@ -1287,7 +1510,7 @@ async function convert_cv(numDossier, repertoire_annonces)
     });
 }
 
-async function get_cv(numDossier, repertoire_annonces,state,rowId) 
+async function get_cv(numDossier, repertoire_annonces,state,prefix) 
 {
     const input = document.createElement('input');
     input.type = 'file';
@@ -1311,6 +1534,7 @@ async function get_cv(numDossier, repertoire_annonces,state,rowId)
                 formData.append('file_path', file);
                 formData.append('num_dossier', numDossier);
                 formData.append('repertoire_annonce', repertoire_annonces);
+                formData.append('prefix', prefix);
                 fpath=repertoire_annonces + '/' + numDossier +  ".data.json";   
                 try 
                 {
@@ -1352,7 +1576,7 @@ async function get_cv(numDossier, repertoire_annonces,state,rowId)
 
 
 function open_url(theurl) {
-     // alert(theurl);
+     //alert(theurl);
             fetch('/open_url', {
                 method: 'POST',
                 headers: {
@@ -1368,7 +1592,7 @@ function createAnnouncementForm() {
     const formHtml = `
         <dialog id="announcementForm" class="announcement-form">
             <form method="dialog">
-                <h2>Créer une annonce</h2>
+                <h2>Créer un dossier</h2>
                 <div class="form-group">
                     <label for="announcementDossier">Dossier:</label>
                     <input type="text" id="announcementDossier" class="rich-text-field">
@@ -1381,15 +1605,27 @@ function createAnnouncementForm() {
                     <label for="announcementContent">Contenu de l'annonce:</label>
                     <textarea id="announcementContent" class="rich-text-field"></textarea>
                 </div>
+<div class="form-group">
+                    <label for="creationMode">Mode de création:</label>
+                    <select id="creationMode" class="rich-text-field">
+                         <option value="creer_annonce">Contenu</option>
+                         <option value="Action">Action</option>
+                         <option value="scan_url_annonce">Url</option>
+
+                    </select>
+                </div>
                 <div class="button-group">
-                    <button type="button" onclick="submitAnnouncement()">Créer</button>
-                    <button type="button" onclick="scrapeAndFill()">Scrape URL</button>
-                    <button type="button" onclick="closeAnnouncementForm()">Annuler</button>
+                    <button type="button" onclick="executeCreationMode()">Exécuter</button>
+                                        <button type="button" onclick="closeAnnouncementForm()">Fermer</button>
                 </div>
             </form>
         </dialog>
     `;
-
+   /*  <option value="creer_annonce">Ajouter Annonce à partir de contenu</option>
+    <option value="creer_reponse">Ajouter Réponse à partir de contenu</option>
+   
+    <option value="scrapeAndFill">Scrape URL</option>
+    <option value="NewAteller">New Atelier</option> */
     // Remove existing form if any
     const existingForm = document.getElementById('announcementForm');
     if (existingForm) {
@@ -1402,9 +1638,90 @@ function createAnnouncementForm() {
     // Show form
     const form = document.getElementById('announcementForm');
     form.showModal();
+    fillNextDossierName(); // Call the function to fill the next dossier name
 }
+// ...existing code...
 
-// Ajouter cette nouvelle fonction
+function executeCreationMode() {
+    const creationMode = document.getElementById('creationMode').value;
+    if (creationMode === 'scan_url_annonce') {
+        scan_url_annonce(); 
+    } else if (creationMode === 'creer_annonce') {
+        submitAnnouncement(window.CONSTANTS["ANNONCE_SUFFIX"]);
+    }
+    else if (creationMode === 'Action') {
+        submitAnnouncement(window.CONSTANTS["ACTION_SUFFIX"]);
+
+    }
+}
+/* 
+function executeCreationMode() {
+    const creationMode = document.getElementById('creationMode').value;
+    if (creationMode === 'creer_annonce') {
+        submitAnnouncement(window.CONSTANTS["ANNONCE_SUFFIX"]);
+
+    } else if (creationMode === 'scan_url_annonce') {
+        scan_url_annonce();
+    }   else if (creationMode === 'creer_reponse') {
+        submitAnnouncement(window.CONSTANTS["REPONSE_SUFFIX"]);
+    } else if (creationMode === 'scan_reponse') {
+        //scan_url_annonce();
+    }
+
+} */
+// Add styles for announcementForm
+const style3 = document.createElement('style');
+style3.textContent = `
+    .announcement-form {
+        width: 50%;
+        min-width: 50%;
+        height: 50%;
+        min-height: 50%;
+        padding: 20px;
+        border: 1px solid #ccc;
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        index: 1000;
+    }
+    .announcement-form .form-group {
+        margin-bottom: 15px;
+    }
+    .announcement-form .form-group label {
+        display: block;
+        margin-bottom: 5px;
+    }
+    .announcement-form .form-group input,
+    .announcement-form .form-group textarea {
+        width: 100%;
+        padding: 8px;
+        box-sizing: border-box;
+    }
+    .announcement-form .button-group {
+        display: flex;
+        justify-content: space-between;
+    }
+    .announcement-form .button-group button {
+        padding: 10px 20px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+    }
+    .announcement-form .button-group button:first-child {
+        background-color: #4CAF50;
+        color: white;
+    }
+    .announcement-form .button-group button:last-child {
+        background-color: #f44336;
+        color: white;
+    }
+`;
+
+
+// ...existing code...
+
 function scrapeAndFill() {
     const url = document.getElementById('announcementURL').value;
     const dossier = document.getElementById('announcementDossier').value;
@@ -1448,10 +1765,38 @@ function scrapeAndFill() {
     });
 }
 
-function submitAnnouncement() {
+function scan_url_annonce() {
+      const contentUrl = document.getElementById('announcementURL').value;
+    if (contentUrl )
+    {
+        if (contentUrl.trim() === '' && !isValidURL(contentUrl)) {
+            alert("L'URL ne peut pas être null !!! ou invalide");
+            return;
+        }
+        const contentNum = document.getElementById('announcementDossier').value;
+        if (contentNum.trim() === '') {
+            alert('Le numéro du dossier ne peut pas être vide !!!');
+            return;
+        }
+        showLoadingOverlay();
+        alert("dbg T546 Scanning URL : "+contentUrl);
+        get_job_answer(contentUrl,contentNum,"AN",true);
+        hideLoadingOverlay();
+        refresh();
+    } else {
+        alert("il y a un problême houston");
+    }
+
+} 
+
+function newAtelier() {
+    alert("newAtelier => to do");
+}
+
+function submitAnnouncement(type) {
     let content = document.getElementById('announcementContent').value;
     if (content.trim() === '') {
-        alert('Le contenu de l\'annonce ne peut pas être vide !!!');
+        alert('Le contenu de l\'action ne peut pas être vide !!!');
         return;
     }
     const contentNum = document.getElementById('announcementDossier').value;
@@ -1461,18 +1806,16 @@ function submitAnnouncement() {
     }
 
     const contentUrl = document.getElementById('announcementURL').value;
-    if (contentUrl.trim() === '' && !isValidURL(contentUrl)) {
-        alert("L'URL ne peut pas être null !!!");
-        return;
-    }
-   
+  
     contentUrlembed = "<- " + contentUrl + " ->";
 
     // Remove all spaces inside content
-    content = content.replace(/\s+/g, '');
+    
+    //content = content.replace(/\s+/g, '');
 
     globalContent =  content;
     showLoadingOverlay();
+    alert(CONSTANTS['FILE_NAMES']['ANNONCE_SUFFIX'])
     fetch('/save_announcement', {
         method: 'POST',
         headers: {
@@ -1481,7 +1824,9 @@ function submitAnnouncement() {
         body: JSON.stringify({
             contentNum: contentNum,
             content: content,
-            url:contentUrl
+            url:contentUrl,
+            type: type,
+            sufix:CONSTANTS['FILE_NAMES']['ANNONCE_SUFFIX']
         })
     })
     .then(response => response.json())
@@ -1519,8 +1864,11 @@ function closeAnnouncementForm() {
     const form = document.getElementById('announcementForm');
     if (form) {
         form.close();
+        form.remove(); // Ensure the form is removed from the DOM
     }
 }
+
+
 
 // ...existing code...
 
@@ -1547,192 +1895,6 @@ function open_notes(file_notes) {
     });
 }
 
-function showNotesPopup(content, file_notes) {
-    const popupHtml = `
-        <dialog id="notesPopup" class="notes-popup">
-            <form method="dialog">
-                <h2>Notes</h2>
-                <div id="notesContentContainer">
-                    <table id="notesTable" class="notes-table">
-                        ${content.map((item, index) => `
-                            <tr>
-                                <td contenteditable="true" onblur="saveNoteChange('${file_notes}', ${index}, 'key', this.textContent)">${item.key}</td>
-                                <td contenteditable="true" style="width: 300px;" onblur="saveNoteChange('${file_notes}', ${index}, 'value', this.textContent)">${item.value}</td>
-                                <td style="width: 50px;"><span class="remove-icon" onclick="removeNoteRow('${file_notes}', ${index})">&times;</span></td>
-                            </tr>
-                        `).join('')}
-                    </table>
-                </div>
-                <div class="button-group">
-                    <button type="button" onclick="addNoteRow('${file_notes}')">Ajouter</button>
-                    <button type="button" onclick="closeNotesPopup()">Fermer</button>
-                </div>
-            </form>
-        </dialog>
-    `;
-
-    // Remove existing popup if any
-    const existingPopup = document.getElementById('notesPopup');
-    if (existingPopup) {
-        existingPopup.remove();
-    }
-
-    // Add popup to document
-    document.body.insertAdjacentHTML('beforeend', popupHtml);
-
-    // Show popup
-    const popup = document.getElementById('notesPopup');
-    popup.showModal();
-}
-
-function saveNoteChange(file_notes, index, key, value) {
-    fetch('/read_notes', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ file_path: file_notes })
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.status === "success") {
-            const notesContent = data.content;
-            notesContent[index][key] = value;
-            saveNotes(file_notes, notesContent);
-        } else {
-            alert('Erreur lors de la lecture des notes: ' + data.message);
-        }
-    })
-    .catch(error => {
-        console.error('Error reading notes:', error);
-        alert('Erreur lors de la lecture des notes.');
-    });
-}
-
-function saveNotes(file_notes, content) {
-    fetch('/save_notes', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ file_path: file_notes, content: content })
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.status === "success") {
-            console.log('Notes enregistrées avec succès.');
-        } else {
-            alert('Erreur lors de l\'enregistrement des notes: ' + data.message);
-        }
-    })
-    .catch(error => {
-        console.error('Error saving notes:', error);
-        alert('Erreur lors de l\'enregistrement des notes.');
-    });
-}
-
-function addNoteRow(file_notes) {
-    fetch('/read_notes', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ file_path: file_notes })
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.status === "success") {
-            const notesContent = data.content;
-            notesContent.push({ key: '', value: '' });
-            saveNotes(file_notes, notesContent);
-            showNotesPopup(notesContent, file_notes);
-        } else {
-            alert('Erreur lors de la lecture des notes: ' + data.message);
-        }
-    })
-    .catch(error => {
-        console.error('Error reading notes:', error);
-        alert('Erreur lors de la lecture des notes.');
-    });
-}
-
-function removeNoteRow(file_notes, index) {
-    fetch('/read_notes', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ file_path: file_notes })
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.status === "success") {
-            const notesContent = data.content;
-            notesContent.splice(index, 1);
-            saveNotes(file_notes, notesContent);
-            showNotesPopup(notesContent, file_notes);
-        } else {
-            alert('Erreur lors de la lecture des notes: ' + data.message);
-        }
-    })
-    .catch(error => {
-        console.error('Error reading notes:', error);
-        alert('Erreur lors de la lecture des notes.');
-    });
-}
-
-function closeNotesPopup() {
-    const popup = document.getElementById('notesPopup');
-    if (popup) {
-        popup.close();
-    }
-}
-
-// Add styles for notesPopup
-const style1 = document.createElement('style');
-style1.textContent = `
-    .notes-popup {
-        width: 800px;
-        height: 500px;
-        padding: 20px;
-        border: 1px solid #ccc;
-        border-radius: 8px;
-        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-    }
-    .notes-popup .notes-table {
-        width: 100%;
-        border-collapse: collapse;
-    }
-    .notes-popup .notes-table td {
-        border: 1px solid #ccc;
-        padding: 8px;
-    }
-    .notes-popup .remove-icon {
-        cursor: pointer;
-        color: red;
-        font-size: 20px;
-    }
-    .notes-popup .button-group {
-        display: flex;
-        justify-content: space-between;
-    }
-    .notes-popup .button-group button {
-        padding: 10px 20px;
-        border: none;
-        border-radius: 4px;
-        cursor: pointer;
-    }
-    .notes-popup .button-group button:first-child {
-        background-color: #4CAF50;
-        color: white;
-    }
-    .notes-popup .button-group button:last-child {
-        background-color: #f44336;
-        color: white;
-    }
-`;
-document.head.appendChild(style1);
-
 // ...existing code...
 
 function showReseauxLinks() {
@@ -1744,7 +1906,7 @@ function hideReseauxLinks() {
     document.getElementById('reseaux-links-section').style.display = 'none';
     document.getElementById('main-section').style.display = 'block';
 }
-
+/* 
 async function loadReseauxLinks() {
     try {
         const response = await fetch('/load_reseaux_link');
@@ -1822,7 +1984,7 @@ async function loadReseauxLinks() {
     } catch (error) {
         console.error('Error loading reseaux links:', error);
     }
-}
+} */
 
 function saveReseauxLinkUpdate(link) {
     fetch('/save_reseaux_link_update', {
@@ -1873,4 +2035,313 @@ async function scrape_url(item_url, num_job, the_path) {
         console.error('Error in scrape_url:', error);
         alert('Error in scrape_url: ' + error.message);
     }
+}
+
+// ...existing code...
+
+async function fillNextDossierName() {
+    let lastDossier = window.annonces.reduce((last, current) => {
+        const currentDossier = Object.values(current)[0].dossier;
+        return currentDossier > last ? currentDossier : last;
+    }, "A000");
+   
+    let letter = lastDossier.charAt(0);
+    let number = parseInt(lastDossier.slice(1)) + 1;
+    let nextDossier = letter + number.toString().padStart(3, '0');
+    //alert(nextDossier)
+    while (await checkDossierExists(nextDossier)) {
+        number += 1;
+        nextDossier = letter + number.toString().padStart(3, '0');
+    }
+
+    document.getElementById('announcementDossier').value = nextDossier;
+}
+
+async function checkDossierExists(dossier) {
+    try {
+        const response = await fetch('/check_dossier_exists', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ dossier: dossier })
+        });
+        const data = await response.json();
+        return data.exists;
+    } catch (error) {
+        console.error('Error checking dossier existence:', error);
+        return false;
+    }
+}
+
+// ...existing code...
+
+// ...existing code...
+
+function exportToHTML() {
+    let htmlContent = `
+        <html>
+        <head>
+            <style>
+                table { width: 100%; border-collapse: collapse; }
+                th, td { border: 1px solid black; padding: 8px; text-align: left; }
+                .hidden { display: none; }
+                .filter-buttons { margin-bottom: 10px; }
+                .filter-buttons button { margin-right: 5px; }
+            </style>
+            <script>
+                function toggleNotes(id) {
+                    const notesRow = document.getElementById('notes-' + id);
+                    if (notesRow.classList.contains('hidden')) {
+                        notesRow.classList.remove('hidden');
+                    } else {
+                        notesRow.classList.add('hidden');
+                    }
+                }
+
+                function filterAnnonces(filterType) {
+                    const rows = document.querySelectorAll('tbody tr');
+                    rows.forEach(row => {
+                        row.style.display = '';
+                    });
+
+                    if (filterType) {
+                        rows.forEach(row => {
+                            const etat = row.querySelector('td[data-key="etat"]').textContent;
+                            const todo = row.querySelector('td[data-key="todo"]').textContent;
+                            const categorie = row.querySelector('td[data-key="categorie"]').textContent;
+
+                            if ((filterType === 'done' && etat !== 'done') ||
+                                (filterType === 'repondu' && todo !== 'Répondu') ||
+                                (filterType === 'rdv' && categorie !== 'RDV')) {
+                                row.style.display = 'none';
+                            }
+                        });
+                    }
+                }
+            </script>
+        </head>
+        <body>
+            <div class="filter-buttons">
+                <button onclick="filterAnnonces()">All</button>
+                <button onclick="filterAnnonces('done')">Déjà réalisée</button>
+                <button onclick="filterAnnonces('repondu')">Répondue</button>
+                <button onclick="filterAnnonces('rdv')">RDV</button>
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>+</th>
+                        <th>Dossier</th>
+                        <th>Description</th>
+                        <th>Entreprise</th>
+                        <th>Categorie</th>
+                        <th>Etat</th>
+                        <th>Date</th>
+                        <th>Date Rep</th>
+                        <th>Notes</th>
+                        <th>Todo</th>
+                    </tr>
+                </thead>
+                <tbody>
+    `;
+
+    window.annonces.forEach((annonceWrapper, index) => {
+        const filePath = Object.keys(annonceWrapper)[0];
+        const annonce = annonceWrapper[filePath];
+        htmlContent += `
+            <tr>
+                <td><button onclick="toggleNotes(${index})">+</button></td>
+                <td data-key="dossier">${annonce.dossier}</td>
+                <td data-key="description">${annonce.description}</td>
+                <td data-key="entreprise">${annonce.entreprise}</td>
+                <td data-key="categorie">${annonce.categorie}</td>
+                <td data-key="etat">${annonce.etat}</td>
+                <td data-key="Date">${annonce.Date}</td>
+                <td data-key="Date_rep">${annonce.Date_rep}</td>
+                <td data-key="Notes">${annonce.Notes || ''}</td>
+                <td data-key="todo">${annonce.todo}</td>
+            </tr>
+            <tr id="notes-${index}" class="hidden">
+                <td colspan="10">
+                    <strong>URL:</strong> ${annonce.url || ''}<br>
+                    <strong>Commentaire:</strong> ${annonce.Commentaire || ''}<br>
+                    <strong>Notes:</strong>
+                    <table>
+                        ${(annonce.Notes || '').split('\n').map(note => note ? `<tr><td>${note}</td></tr>` : '').join('')}
+                    </table>
+                </td>
+            </tr>
+        `;
+    });
+
+    htmlContent += `
+                </tbody>
+            </table>
+        </body>
+        </html>
+    `;
+
+    const blob = new Blob([htmlContent], { type: 'text/html' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'annonces.html';
+    a.click();
+    URL.revokeObjectURL(url);
+}
+
+async function get_cookie(cookieName) {
+    try {
+        const response = await fetch('/get_cookie', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ cookie_name: cookieName })
+        });
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        const data = await response.json();
+        return data[cookieName];
+    } catch (error) {
+        console.error('Error fetching cookie:', error);
+        throw error;
+    }
+}
+
+/* async function show_current_instruction() {
+    try {
+        const oneCooKie = await get_cookie('current_instruction');
+        
+        if (oneCooKie) {
+            document.getElementById('current-instruction').textContent = oneCooKie;
+        } else {
+            document.getElementById('current-instruction').textContent = 'No current';
+        }
+    } catch (error) {
+        console.error('Error fetching current instruction:', error);
+    }
+} */
+
+async function show_current_dossier() {
+    try {
+        const oneCooKie = await get_cookie('current_dossier');
+        //alert("oneCookie",oneCooKie);
+        if (oneCooKie) {
+            document.getElementById('current-dir').textContent = oneCooKie;
+        } else {
+            document.getElementById('current-dir').textContent = 'No current';
+        }
+    } catch (error) {
+        console.error('Error fetching current dossier:', error);
+    }
+}
+
+
+// ...existing code...
+function save_cookie(cookieName, value) {
+       
+        //alert("current_instruction = " + selected);
+        fetch('/save_cookie', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ 'cookie_name':  cookieName, 'cookie_value':value}) // Use CookieName as the key
+        }).then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.text();  // Changed from response.json() to response.text()
+        }).then(data => {
+            try {
+                const jsonData = JSON.parse(data);
+                if (jsonData.message === 'done') {
+                    console.log(cookieName+ ' saved successfully avec la valeur : ' + value);
+                } else {
+                    alert('Error 2478 setting cookie: ' + jsonData.error);
+                }
+            } catch (error) {
+                console.error('Error 2547 parsing JSON:', error);
+                alert('Error 2547 parsing server response.');
+            }
+        })
+        .catch(error => {
+            console.error('Error 1244 setting cookie: ', error);
+            alert('Error 1244 setting cookie.');
+        });
+    
+    
+}
+
+
+
+async function loadColumnsFromServer() {
+    try {
+        const response = await fetch('/load-conf-cols', {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+
+        if (!response.ok) {
+            console.log (`Erreur lors du chargement des colonnes : ${response.statusText}`);
+            return;
+        }
+
+        const data = await response.json();
+
+        if (data.error) {
+            console.error('Erreur du serveur :', data.error);
+            return;
+        }
+
+        if (Array.isArray(data)) {
+            // Mettre à jour les colonnes globales
+            updateColumns(data);
+            console.log('Colonnes chargées avec succès depuis le serveur.');
+        } else {
+            console.error('Le fichier .cols ne contient pas un tableau valide.');
+            alert('Le fichier .cols est invalide.');
+        }
+    } catch (error) {
+        console.error('Erreur lors du chargement des colonnes :', error);
+        alert('Erreur lors du chargement des colonnes.');
+    }
+}
+
+
+
+function updateColumns(newColumns) {
+    if (!Array.isArray(newColumns)) {
+        console.error('Le paramètre newColumns doit être un tableau.');
+        return;
+    }
+    oldcols=window.columns;
+    // Créer un dictionnaire pour un accès rapide aux colonnes existantes par clé
+    const columnsMap = new Map(oldcols.map(col => [col.key, col]));
+
+    // Parcourir les nouvelles colonnes
+    newColumns.forEach(newCol => {
+        if (!newCol.key) {
+            console.warn('Une colonne sans clé a été ignorée:', newCol);
+            return;
+        }
+
+        if (columnsMap.has(newCol.key)) {
+            // Mettre à jour la colonne existante
+            const existingCol = columnsMap.get(newCol.key);
+            if (existingCol.fixed != true)
+            {
+                Object.assign(existingCol, newCol); // Fusionner les propriétés
+            }
+        } 
+    });
+    console.log('Mise à jour des colonnes:', oldcols, '=>', window.columns);
+    // Mettre à jour les colonnes globales
+    window.columns = [...oldcols, ...newColumns.filter(col => !columnsMap.has(col.key))];
+    console.log('Mise à jour des colonnes terminée:', window.columns);
 }

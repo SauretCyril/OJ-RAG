@@ -1,10 +1,22 @@
 {
   "FILE_NAMES": {
-    "ANNONCE_SUFFIX": "_annonce_.pdf",
-    "STEAL_ANNONCE_SUFFIX": "_annonce_steal.pdf",
+    "ANNONCE_SUFFIX": "_annonce_",
+    "ACTION_SUFFIX": "_action_",
+    "SOURCE_SUFFIX_NEW": "_source_",
+    "STD_SUFFIX": "_std_",
+    "STEAL_STD_SUFFIX": "_std_steal",
+    
     "CV_SUFFIX": "_CyrilSauret",
+    "CV_SUFFIX_NEW": "_CV_CyrilSauret",
+    "BA_SUFFIX_NAME": "_BA_CyrilSauret",
+    
     "GPT_REQUEST_SUFFIX": "_gpt_request.pdf",
+    "GPT_REQUEST_SUFFIX_NAME": "_gpt_request",
     "DATA_FILE": ".data.json",
-    "NOTES_FILE": "_notes.txt"
+    "NOTES_FILE": "_notes.txt",
+    "RQ_FILE": "_RQ.json",
+    "EXPERIENCES_DATA": "experiences.json",
+    "TYPE_DOSSIERS": [{ "_annonce_": "AN" }]
+
   }
 }
