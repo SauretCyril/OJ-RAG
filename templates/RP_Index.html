@@ -44,44 +44,11 @@
       </header>
       <div id="settings-section">
         <h3>Settings</h3>
-         <!--<label for="current-instruction">Current Instruction :</label>
-        <a href="#CRQ" id="current-instruction" onclick="open_CRQ()"></a>-->
-        <label for="current-dossier">Current Dossier :</label>
+         <label for="current-dossier">Current Dossier :</label>
         <a href="#CurrenDir" id="current-dir" onclick="selectRep()"></a>
       </div>
       <div class="tabs" id="tabs">
-        <!--<button class="tab active" onclick="changeTab('Actions')">Actions</button>-->
-        <!-- Vérifiez que "typeEnete" est défini dans votre JavaScript -->
-     
-        
-  
-       <!-- <script>
-          if (typeof typeEnete !== "undefined" && typeEnete === "Annonces") {
-            document.write(`
-              <button class="tab" onclick="changeTab('All')">Campagne</button>
-              <button class="tab" onclick="changeTab('New-Dev')">New-Dev</button>
-              <button class="tab" onclick="changeTab('New-Analyste')">New-Analyste</button>
-              <button class="tab" onclick="changeTab('New-Div')">New-Div</button>
-              <button class="tab" onclick="changeTab('ToDo')">ToDo</button>
-              <button class="tab" onclick="changeTab('Repondu')">Répondue</button>
-              <button class="tab" onclick="changeTab('RDV')">Etape 1</button>
-              <button class="tab" onclick="changeTab('RDV2')">Etape 2</button>
-              <button class="tab" onclick="changeTab('RDV3')">Etape 3</button>
-              <button class="tab" onclick="changeTab('Profiles')">Profiles</button>
-              <button class="tab" onclick="changeTab('Suivi')">Suivi</button>
-              <button class="tab" onclick="changeTab('Atteliers')">Atteliers</button>
-              <button class="tab" onclick="changeTab('CV')">CV</button>
-              <button class="tab" onclick="changeTab('reseaux')">Réseaux</button>
-              <button class="tab" onclick="changeTab('Publications')">Publications</button>
-              <button class="tab" onclick="changeTab('Formations')">Formations</button>
-              <button class="tab" onclick="changeTab('Infos')">Infos</button>
-              <button class="tab" onclick="changeTab('Tests')">Tests</button>
-              <button class="tab" onclick="changeTab('Support')">Support</button>
-            `);
-          }
-       
-        <button class="tab" onclick="changeTab('New')">New</button>
-        </script>-->
+        <!-- tab will be dynamically added here -->
       </div>
         <div style="float: right">
           <select id="Excluded">
@@ -135,11 +102,11 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="{{ url_for('static', filename='js/Responses/RP_main.js') }}"></script>
     <script src="{{ url_for('static', filename='js/Responses/RP_notes.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/Responses/RP_CRQ.js') }}"></script>
+    <!--<script src="{{ url_for('static', filename='js/Responses/RP_CRQ.js') }}"></script>-->
     <script src="{{ url_for('static', filename='js/Responses/RP_request.js') }}"></script>
     <script src="{{ url_for('static', filename='js/Responses/RP_selectRep.js') }}"></script>
     
-    <script src="{{ url_for('static', filename='js/Responses/RQ_realisation.js') }}"></script>
+    <!--<script src="{{ url_for('static', filename='js/Responses/RQ_realisation.js') }}"></script>-->
     <script src="{{ url_for('static', filename='js/Responses/RP_conf.js') }}"></script>
     
   </body>

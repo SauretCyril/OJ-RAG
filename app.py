@@ -48,17 +48,17 @@ app.register_blueprint(routes)  # Register the blueprint
 from exploreur import exploreur
 app.register_blueprint(exploreur)  # Register the blueprint      
 
-from ST_steal import Steal 
-app.register_blueprint(Steal)  # Register the blueprint
+#from ST_steal import Steal 
+#app.register_blueprint(Steal)  # Register the blueprint
 
 from cookies import cookies
 app.register_blueprint(cookies)  # Register the blueprint
 
-from list_realisations import realizations
-app.register_blueprint(realizations)
+#from list_realisations import realizations
+#app.register_blueprint(realizations)
 
-from list_requests import requests
-app.register_blueprint(requests)
+#from list_requests import requests
+#app.register_blueprint(requests)
 
 # Enregistrer le Blueprint mistral
 app.register_blueprint(mistral)  # Register the mistral blueprint

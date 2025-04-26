@@ -1,7 +1,5 @@
 // Add status tooltips
 
-// Import the loadRealizationsData function
-//import { loadRealizationsData } from './Realisation.js';
 
 //const { url } = require('inspector');
 
@@ -266,29 +264,7 @@ function loadTableData(callback) {
                             cell.appendChild(icon); 
                     }
                     
-                    else if (col.key === 'request') 
-                    {
-                      
-                        const button = document.createElement('button');
-                        button.textContent = item['request']; // Heart icon
-                        button.style.cursor = 'pointer';
-                        const dir=col.dir;
-                        
-                        button.addEventListener('click', () => open_liste_requests(row.id, index, "request",dir));
-                        cell.appendChild(button); 
-                      
-                    } 
-                     else if (col.key === 'role') 
-                    {
-                     
-                        const button = document.createElement('button');
-                        button.textContent = item['role']; // Heart icon
-                        button.style.cursor = 'pointer';
-                        const dir=col.dir;
-                        button.addEventListener('click', () => open_liste_requests(row.id, index, "role",dir));
-                        cell.appendChild(button); 
-                      
-                    } 
+                   
                     else if (col.key === 'GptSum' ) 
                     {
                         const icon = document.createElement('span');
@@ -1151,8 +1127,8 @@ window.addEventListener('load', async function() {
     // Style
     document.head.appendChild(style1);
     document.head.appendChild(style3);
-    document.head.appendChild(style4);
-    document.head.appendChild(style5);
+    //document.head.appendChild(style4); RP_CRQ.js
+    //document.head.appendChild(style5);
  
     // constant
     await loadConstants();  // Ensure loadConstants is completed
