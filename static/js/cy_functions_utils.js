@@ -140,6 +140,98 @@ const ColumnUtils = {
     }
 };
 
+/**
+ * Creates a URL icon that changes appearance based on whether a URL is available
+ * and adds click functionality to open the URL when clicked.
+ * 
+ * @param {string} colKey - The key identifying the column
+ * @param {object} item - The data item containing values
+ * @returns {HTMLElement} - The created icon element
+ */
+//colKey = colKey + "_value"
+//value=item[colvalue]
+function createCell_lnk(colKey,item){
+    const icon = document.createElement('span');
+    const colvalue = colKey + "_value";
+    
+    icon.style.position = 'absolute';
+    icon.style.alignContent = 'center';
+    icon.style.zIndex = '10';
+   
+    if (item[colvalue] && item[colvalue].trim() !== '') {
+        //console.log('#### blanc:');
+        icon.textContent = '🔵';
+        icon.style.cursor = 'pointer';
+        icon.addEventListener('click', () => open_url(item[colvalue]));
+    } else {
+        //console.log('#### vert:');
+        icon.textContent = '⚪'; // White circle icon
+    }
+    
+    return icon;
+}
+
+function createCell_PdfView(colkey, item, fichier)
+{
+    const icon = document.createElement('span');
+    icon.style.position = 'absolute';
+    icon.style.alignContent='center';
+    if (item[colkey] === 'O') {
+        //console.log('#### blanc:');
+        icon.textContent = '📗'; // Green book icon
+                          
+        icon.style.cursor = 'pointer';
+        icon.addEventListener('click', () => open_url(fichier));
+        } else  
+        { 
+            icon.textContent = '⚪'; // Green book icon
+        }                      
+    return icon;
+}
+
+function createCell_getFile(colkey, item,dir_path)
+{
+    const icon = document.createElement('span');
+    icon.style.position = 'absolute';
+    icon.style.alignContent='center';
+    icon.style.zIndex = '10'; // Ensure the icon is above the content
+    icon.style.cursor = 'pointer';
+    if (item[colkey] === 'N' || item[colkey] === '') {
+        //console.log('#### blanc:');
+        
+        icon.textContent = '📤'; // Pick up icon
+        //icon.style.color = 'red';
+    } else  {
+        //console.log('#### vert:');
+        icon.textContent = '⬇️'; // Download icon
+        //icon.style.color = 'green';
+    } 
+   
+    //icon.style.top = '0px';
+
+    let typeDoc = "";
+    if (colkey === 'CV') {typeDoc="CV";}
+    if (colkey === 'BA') {typeDoc="BA";}
+    icon.addEventListener('click', () => get_cv(item.dossier, dir_path,item[colkey],typeDoc));              
+    return icon;
+}
+
+const icon = document.createElement('span');
+icon.style.position = 'absolute';
+icon.style.alignContent='center';
+icon.style.zIndex = '10'; // Ensure the icon is above the content
+ if (item[col.key] === 'O') {
+      //console.log('#### blanc:');
+    icon.textContent = '🔵';
+    icon.style.cursor = 'pointer';
+    icon.addEventListener('click', () => open_url(fichier_annonce));
+    
+} else  {
+    //console.log('#### vert:');
+    icon.textContent = '⚪'; // White circle icon
+} 
+
+
 // Exposer les fonctions et objets globalement
 window.showLoadingOverlay = LoadingOverlay.show.bind(LoadingOverlay);
 window.hideLoadingOverlay = LoadingOverlay.hide.bind(LoadingOverlay);

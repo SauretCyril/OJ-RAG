@@ -39,7 +39,7 @@ function loadTableData(callback) {
             const isCvRef = item.Commentaire && item.Commentaire.includes('<CV-REF>');
             const isOnDay = item.Commentaire && item.Commentaire.includes('DAY');
             const isrefus = item.todo && item.todo.includes('refus');
-            let fichier_annonce = dir_path + '/' + item.dossier+window.CONSTANTS['FILE_NAMES']['ANNONCE_SUFFIX']+".pdf";
+           
         
             const row = document.createElement('tr');           
             row.id = filePath;
@@ -59,120 +59,41 @@ function loadTableData(callback) {
                    
                     if (col.type === 'lnk')
                     {
-                                
-                        const icon = document.createElement('span');
-                            const colvalue=col.key+"_value";
-                            icon.style.position = 'absolute';
-                            icon.style.alignContent='center';
-                            icon.style.zIndex = '10';
-                            
-                            console.log('#### lnk value:', colvalue);
-                            if (item[colvalue] && item[colvalue].trim() !== '')
-                                {
-                                 //console.log('#### blanc:');
-                                icon.textContent = '🔵';
-                                icon.style.cursor = 'pointer';
-                                icon.addEventListener('click', () => open_url(item[colvalue]));
-                                  
-                               } else  {
-                                  //console.log('#### vert:');
-                                icon.textContent = '⚪'; // White circle icon
-                            } 
-                            cell.appendChild(icon); 
-                    }
-                    
-                   
+                        icon = createCell_lnk(col.key, item);        
+                        cell.appendChild(icon); 
+                    }                  
                     else if (col.key === 'GptSum' ) 
                     {
                         const fichier = dir_path + '/' + item.dossier+window.CONSTANTS['FILE_NAMES']['GPT_REQUEST_SUFFIX'];
-                        const icon = document.createElement('span');
-                        icon.style.position = 'absolute';
-                        icon.style.alignContent='center';
-                        if (item[col.key] === 'O') {
-                            //console.log('#### blanc:');
-                            icon.textContent = '📗'; // Green book icon
-                          
-                            icon.style.cursor = 'pointer';
-                            icon.addEventListener('click', () => open_url(fichier));
-                        } else  {
-                            //console.log('#### vert:');
-                            icon.textContent = '⚪'; // Green book icon
-                            //icon.style.color = 'red';
-                           
-                        } 
-                      
-                        //icon.style.top = '0px';
-                        //icon.style.zIndex = '10'; // Ensure the icon is above the content
+                        icon=createCell_PdfView(col.key, item, fichier);
                         cell.appendChild(icon);
+                       
                     }
-                   
-                 
-              
-                     else if (col.key === 'CVpdf'  )
+                    else if (col.key === 'CVpdf'  )
                         {
                             const fichier = dir_path + '/' + item.dossier+window.CONSTANTS['FILE_NAMES']['CV_SUFFIX_NEW']+".pdf";
-                            const icon = document.createElement('span');
-                            icon.style.position = 'absolute';
-                            icon.style.alignContent='center';
-                            if (item['CVpdf']=='O') {
-                                icon.textContent = '📗';
-                                icon.style.cursor = 'pointer';
-                                icon.addEventListener('click', () => open_url(fichier ));
-                            } else  {
-                            
-                                icon.textContent = '⚪';
-                            }
+                            icon=createCell_PdfView(col.key, item, fichier);
                             cell.appendChild(icon);
                         }      
                     else if (col.key === 'BApdf'  )
-                            {
-                                const fichier = dir_path + '/' + item.dossier+window.CONSTANTS['FILE_NAMES']['BA_SUFFIX_NAME']+".pdf";
-                                const icon = document.createElement('span');
-                                icon.style.position = 'absolute';
-                                icon.style.alignContent='center';
-                                if (item['BApdf']=='O') {
-                                    icon.textContent = '📗';
-                                    icon.style.cursor = 'pointer';
-                                    icon.addEventListener('click', () => open_url(fichier));
-                                }    
-                                else {
-                                     icon.textContent = '⚪';
-                                }   
-                                
-                                cell.appendChild(icon);
-                            }                     
+                        {
+                            const fichier = dir_path + '/' + item.dossier+window.CONSTANTS['FILE_NAMES']['BA_SUFFIX_NAME']+".pdf";
+                            icon=createCell_PdfView(col.key, item, fichier);
+                            cell.appendChild(icon);
+                        }                     
                      else if (col.key === 'CV' || col.key === 'BA' ) 
                      {
                         //console.log('#### CV:', item[col.key]);
-                        const icon = document.createElement('span');
-                        icon.style.position = 'absolute';
-                        icon.style.alignContent='center';
-                        icon.style.zIndex = '10'; // Ensure the icon is above the content
-                        icon.style.cursor = 'pointer';
-                        if (item[col.key] === 'N' || item[col.key] === '') {
-                            //console.log('#### blanc:');
-                            
-                            icon.textContent = '📤'; // Pick up icon
-                            //icon.style.color = 'red';
-                        } else  {
-                            //console.log('#### vert:');
-                            icon.textContent = '⬇️'; // Download icon
-                            //icon.style.color = 'green';
-                        } 
-                       
-                        //icon.style.top = '0px';
-
-                        let typeDoc = "";
-                        if (col.key === 'CV') {typeDoc="CV";}
-                        if (col.key === 'BA') {typeDoc="BA";}
-                        icon.addEventListener('click', () => get_cv(item.dossier, dir_path,item[col.key],typeDoc));
-                        cell.appendChild(icon);
-                        
+                       icon=createCell_getFile(col.key, item,dir_path);
+                       cell.appendChild(icon);
                     } 
                     
                     else if (col.key === 'isJo')
                     {
-                        const icon = document.createElement('span');
+                        let fichier = dir_path + '/' + item.dossier+window.CONSTANTS['FILE_NAMES']['ANNONCE_SUFFIX']+".pdf";
+                        icon=createCell_PdfView(col.key, item, fichier);
+                        
+                        /* const icon = document.createElement('span');
                         icon.style.position = 'absolute';
                         icon.style.alignContent='center';
                         icon.style.zIndex = '10'; // Ensure the icon is above the content
@@ -185,11 +106,8 @@ function loadTableData(callback) {
                         } else  {
                             //console.log('#### vert:');
                             icon.textContent = '⚪'; // White circle icon
-                        } 
-                      
-                        //icon.style.top = '0px';
-                   
-                        
+                        }  */
+
                         cell.appendChild(icon);
                     }
                 else if (col.key === 'Notes' ) 

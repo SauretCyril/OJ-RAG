@@ -17,3 +17,4 @@ pandas
 reportlab
 langchain
 mistralai
+scikit-learn
