@@ -365,9 +365,10 @@ def read_filters_json():
         
         data = request.get_json()
         tab_active = data.get('tabActive')
-        
+        if not tab_active:
+            return {}
         dirfilter=GetDirFilter()
-        
+        print(f"dbg-545-loading filters from {dirfilter}")
         file_path = os.path.join(dirfilter, tab_active + "_filter") + ".json"
         file_path = file_path.replace('\\', '/')  # Normalize path
         #print(f"##01-loading filters from {file_path}")
@@ -405,12 +406,23 @@ def save_filters_json():
         data = request.get_json()
         filters = data.get('filters')
         tab_active = data.get('tabActive')
+        
+        # Vérifier si tab_active est vide ou null
+        if not tab_active:
+            print("DEBUG: tab_active est vide, impossible de sauvegarder les filtres")
+            return jsonify({"status": "warning", "message": "Onglet actif non spécifié, filtres non sauvegardés"}), 200
+            
         dirfilter = GetDirFilter()
         file_path = os.path.join(dirfilter, tab_active + "_filter") + ".json"
         file_path = file_path.replace('\\', '/')  # Normalize path
-        #print(f"##-9998-saving filters to {file_path}")    
+        print(f"DEBUG: Sauvegarde des filtres dans {file_path}")
+        
+        # S'assurer que le répertoire existe
+        os.makedirs(os.path.dirname(file_path), exist_ok=True)
+        
         with open(file_path, 'w', encoding='utf-8') as file:
             json.dump(filters, file, ensure_ascii=False, indent=4)
+            
         return jsonify({"status": "success"}), 200
     except Exception as e:
         print(f"Cyr_error_277 An unexpected error occurred while saving filter values: {e}")
@@ -727,7 +739,7 @@ def load_conf_tabs():
             # Create a default .conf file if it doesn't exist
             print(f"DEBUG: File does not exist at {filepath}, creating default configuration")
             default_conf = {
-                "tabs": [
+                "Tabs": [
                   
                 ]
             }

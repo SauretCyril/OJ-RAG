@@ -24,32 +24,18 @@ function updateFilterValues(filters) {
 }
 
 function saveFilterValues(filters) {
-    fetch('/save_filters_json', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-            filters: filters,
-            tabActive: window.tabActive
+    // Utilisation du nouveau système d'état via ApiClient
+    ApiClient.config.saveFilters(filters, window.tabActive)
+        .then(data => {
+            if (data.status === "success") {
+                //console.log('Filter values successfully saved.');
+            } else {
+                console.error('Error saving filter values:', data.message);
+            }
         })
-    })
-    .then(response => {
-        if (!response.ok) {
-            throw new Error('Network response was not ok');
-        }
-        return response.json();
-    })
-    .then(data => {
-        if (data.status === "success") {
-            //console.log('Filter values successfully saved.');
-        } else {
-            console.error('Error saving filter values:', data.message);
-        }
-    })
-    .catch(error => {
-        console.error('An unexpected error occurred while saving filter values:', error);
-    });
+        .catch(error => {
+            console.error('An unexpected error occurred while saving filter values:', error);
+        });
 }
 
 // Function to filter table rows based on input values
