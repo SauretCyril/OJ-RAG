@@ -693,7 +693,7 @@ def save_notes():
 
 
 
-@cy_routes.route('/load-conf-cols', methods=['GET'])
+@cy_routes.route('/load_conf_cols', methods=['GET'])
 def load_conf_cols():
     try:
         dir=GetRoot()
@@ -706,7 +706,7 @@ def load_conf_cols():
             #print("dbg12391 :content ",content)   
             return jsonify(content)
         else:
-            return jsonify({"error": "Configuration file does not exist"}), 404
+           return jsonify({})
     except Exception as e:
         logger.error(f"Error loading columns configuration: {str(e)}")
         return jsonify({"error": str(e)}), 500

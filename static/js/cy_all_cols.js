@@ -4,7 +4,7 @@
  */
 async function loadColumnsFromServer() {
     try {
-        const response = await fetch('/load-conf-cols', {
+        const response = await fetch('/load_conf_cols', {
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json'
@@ -33,13 +33,13 @@ async function loadColumnsFromServer() {
             console.log('Colonnes chargées avec succès depuis le serveur.');
         } else {
             console.error('Le fichier .cols ne contient pas un tableau valide.');
-            alert('Le fichier .cols est invalide.');
+            //alert('Le fichier .cols est invalide.');
             // En cas de format invalide, on s'assure que les colonnes par défaut sont utilisées
             setState('columns', [...window.columns]);
         }
     } catch (error) {
         console.error('Erreur lors du chargement des colonnes :', error);
-        alert('Erreur lors du chargement des colonnes.');
+        //alert('Erreur lors du chargement des colonnes.');
         // En cas d'exception, on s'assure que les colonnes par défaut sont utilisées
         setState('columns', [...window.columns]);
     }
