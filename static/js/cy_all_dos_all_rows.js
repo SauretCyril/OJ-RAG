@@ -92,32 +92,18 @@ function loadTableData(callback) {
                     {
                         let fichier = dir_path + '/' + item.dossier+window.CONSTANTS['FILE_NAMES']['ANNONCE_SUFFIX']+".pdf";
                         icon=createCell_PdfView(col.key, item, fichier);
-                        
-                        /* const icon = document.createElement('span');
-                        icon.style.position = 'absolute';
-                        icon.style.alignContent='center';
-                        icon.style.zIndex = '10'; // Ensure the icon is above the content
-                         if (item[col.key] === 'O') {
-                              //console.log('#### blanc:');
-                            icon.textContent = '🔵';
-                            icon.style.cursor = 'pointer';
-                            icon.addEventListener('click', () => open_url(fichier_annonce));
-                            
-                        } else  {
-                            //console.log('#### vert:');
-                            icon.textContent = '⚪'; // White circle icon
-                        }  */
-
                         cell.appendChild(icon);
                     }
                 else if (col.key === 'Notes' ) 
                         {
                             const file_notes = dir_path + '/' + item.dossier+window.CONSTANTS['FILE_NAMES']['NOTES_FILE'];
-                            const heartIcon = document.createElement('span');
+                            icon= createCell_Notes(file_notes);
+                            cell.appendChild(icon);
+                            /* const heartIcon = document.createElement('span');
                             heartIcon.textContent = '❤️'; // Heart icon
                             heartIcon.style.cursor = 'pointer';
                             heartIcon.addEventListener('click', () => open_notes(file_notes));
-                            cell.appendChild(heartIcon);
+                            cell.appendChild(heartIcon); */
                         
                         } 
                         

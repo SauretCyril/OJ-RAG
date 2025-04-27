@@ -216,20 +216,14 @@ function createCell_getFile(colkey, item,dir_path)
     return icon;
 }
 
-const icon = document.createElement('span');
-icon.style.position = 'absolute';
-icon.style.alignContent='center';
-icon.style.zIndex = '10'; // Ensure the icon is above the content
- if (item[col.key] === 'O') {
-      //console.log('#### blanc:');
-    icon.textContent = '🔵';
-    icon.style.cursor = 'pointer';
-    icon.addEventListener('click', () => open_url(fichier_annonce));
-    
-} else  {
-    //console.log('#### vert:');
-    icon.textContent = '⚪'; // White circle icon
-} 
+function createCell_Notes(file_notes) {
+    const Icon = document.createElement('span');
+    Icon.textContent = '❤️'; // Heart icon
+    Icon.style.cursor = 'pointer';
+    Icon.addEventListener('click', () => open_notes(file_notes));
+    return Icon;
+}
+
 
 
 // Exposer les fonctions et objets globalement
