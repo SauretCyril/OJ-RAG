@@ -76,6 +76,41 @@ async function getCookie(cookieName) {
 }
 
 /**
+ * Efface le cache de l'explorateur
+ * @returns {Promise} - Promise contenant le résultat de l'opération
+ */
+async function clearExplorerCache() {
+    showLoadingOverlay("Effacement du cache en cours...");
+    
+    try {
+        const response = await fetch('/clear_explorer_cache', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        const data = await response.json();
+        
+        if (data.status === "success") {
+            alert(data.message);
+            // Rechargement de la page pour appliquer les changements
+            window.location.reload();
+        } else {
+            alert("Erreur lors de l'effacement du cache : " + data.message);
+        }
+        
+        return data;
+    } catch (error) {
+        console.error('Erreur lors de l\'effacement du cache :', error);
+        alert("Erreur lors de l'effacement du cache");
+        throw error;
+    } finally {
+        hideLoadingOverlay();
+    }
+}
+
+/**
  * Enregistre un cookie côté serveur
  * @param {string} cookieName - Nom du cookie
  * @param {string} value - Valeur du cookie
@@ -234,3 +269,4 @@ window.get_cookie = getCookie;  // Garder l'ancien nom pour compatibilité
 window.save_cookie = saveCookie; // Garder l'ancien nom pour compatibilité
 window.serializeColumns = ColumnUtils.serialize;
 window.deserializeColumns = ColumnUtils.deserialize;
+window.clearExplorerCache = clearExplorerCache; // Exposer la fonction d'effacement du cache

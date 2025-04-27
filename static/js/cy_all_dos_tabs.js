@@ -1,6 +1,6 @@
 async function conf_loadconf() {
     try {
-        const response = await fetch('/load-conf-tabs');
+        const response = await fetch('/load_conf_tabs');
         
         // Vérifier si la réponse est OK
         if (!response.ok) {

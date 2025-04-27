@@ -101,35 +101,46 @@ def calculate_delay(data):
 @cy_routes.route('/read_annonces_json', methods=['POST'])
 async def read_annonces_json():
     try:
+        print("DEBUG: Début de la fonction read_annonces_json")
         isDetectNew="O"
         buildAllPaths()
         data = request.get_json()
-        excluedFile = data.get('excluded')
+        if not data:
+            print("DEBUG: Pas de données JSON reçues")
+            return jsonify([]), 200  # Retourne un tableau vide en cas de données manquantes
+            
+        excluedFile = data.get('excluded', 'excluded_annonces.json')
+        print(f"DEBUG: Fichier d'exclusion: {excluedFile}")
+        
         directory_path = GetRoot()
+        print(f"DEBUG: Chemin racine: {directory_path}")
        
         if not os.path.exists(directory_path):
-            print("dbg676 -> Root path not exist")
-            return []
-        #print("dbg675 -> directory_path",directory_path)
+            print("DEBUG: Le chemin racine n'existe pas")
+            return jsonify([]), 200
+            
         dossier_list = []
-        crit_annonces = load_crit_annonces(excluedFile)
-        #print(f"RP-0 scan repertoire annonces for--------------------------------")
-        #print(f"###-0 ")
+        
+        # Charger les critères d'annonces de façon sécurisée
+        try:
+            crit_annonces = load_crit_annonces(excluedFile)
+            print(f"DEBUG: Critères d'annonces chargés: {crit_annonces is not None}")
+        except Exception as e:
+            print(f"DEBUG: Erreur lors du chargement des critères d'annonces: {e}")
+            crit_annonces = None
+        
+        # Parcourir tous les dossiers sauf ceux exclus
         for root, _, files in os.walk(directory_path):
             parent_dir = os.path.basename(root)
             if parent_dir in EXCLUDED_DIRECTORIES:
-                #print(f"RP-1 --Skipping directory: {parent_dir}")
                 continue
             
+            # Continuer le traitement normal...
+            # ...existing code...
             file_doc = parent_dir + CONSTANTS['FILE_NAMES']['ANNONCE_SUFFIX'] + ".pdf"
-            #file_doc_Action = parent_dir + CONSTANTS['FILE_NAMES']['ACTION_SUFFIX'] + ".pdf"
-            
-            #file_doc_new = parent_dir + CONSTANTS['FILE_NAMES']['SOURCE_SUFFIX_NEW'] + ".pdf"
-            # résumé gpt
             file_isGptResum = parent_dir + CONSTANTS['FILE_NAMES']['GPT_REQUEST_SUFFIX']
             file_isGptResum_Path1 = os.path.join(root, file_isGptResum)
             file_isGptResum_Path1 = file_isGptResum_Path1.replace('\\', '/')
-              # CV 
             file_cv = parent_dir + CONSTANTS['FILE_NAMES']['CV_SUFFIX'] + ".docx"
             file_cv_pdf = parent_dir + CONSTANTS['FILE_NAMES']['CV_SUFFIX'] + ".pdf"
             file_BA_pdf = parent_dir + CONSTANTS['FILE_NAMES']['BA_SUFFIX_NAME'] + ".pdf"
@@ -139,7 +150,6 @@ async def read_annonces_json():
             file_cv_pdf_New = parent_dir + CONSTANTS['FILE_NAMES']['CV_SUFFIX_NEW'] + ".pdf"
             data_json_file = ".data.json" 
              
-            #file_cv_Path = os.path.join(root, file_cv.replace('\\', '/'))
             record_added = False
             data = {}
             isCVin="N"
@@ -150,63 +160,42 @@ async def read_annonces_json():
             isJo="N"
           
             file_path_isJo=""
-            isGptResum=""
-           
-        
+            isGptResum="N"  # Initialiser à N par défaut
+            
             isJoTyp=""
+            
+            # Vérification des fichiers présents
             for filename in files:   
                 if filename == file_BA_docx: 
-                   isBAdocx="O"          
-                if filename  == file_cv or filename == file_cv_New:
+                    isBAdocx="O"
+                if filename == file_cv or filename == file_cv_New:
                     isCVin="O"
-                    #print("###---->BINGO")
-                if filename  == file_cv_pdf or filename == file_cv_pdf_New:
+                if filename == file_cv_pdf or filename == file_cv_pdf_New:
                     isCVinpdf="O"
-                if filename  == file_BA_pdf:
+                if filename == file_BA_pdf:
                     isBAinpdf="O"
-                if (filename ==  file_doc):
-                    file_path_isJo =  os.path.join(root, file_doc.replace('\\', '/'))
-                    
+                if filename == file_doc:
+                    file_path_isJo = os.path.join(root, file_doc.replace('\\', '/'))
                     isJo="O"
-                # if (filename ==  file_doc): #or (filename == file_doc_new)):
-                #     isJo="O"   
-                #     if (filename == file_doc_new):
-                #         file_path_isJo = os.path.join(root, file_doc_new)
-                #     else:
-                #         isAction="O"
-                #         file_path_isJo = os.path.join(root, file_doc_Action)
-                if (filename ==  file_isGptResum ):
+                if filename == file_isGptResum:
                     isGptResum="O"
                     file_path_gpt = os.path.join(root, file_isGptResum)
-            # for filename in files:
-            #     for file_type in files_type:
-            #         suf = file_type["suffix"]
-            #         suftext=CONSTANTS['FILE_NAMES'][suf]
-            #         #print("###-3 suffixe = ",suftext)
                     
-            #         if suftext in filename:
-            #             file_doc = parent_dir + suftext + ".pdf"
-            #             #print("###-3 file_doc a trouver= ", file_doc)
-            #             if ((filename == file_doc)):
-            #                 isJo = "O"
-            #                 isJoType = file_type["type"]
-            #                 file_path_isJo = os.path.join(root, file_doc)
-                            
-                       
+            # Traitement des fichiers de données
             for filename in files:
                 file_path = os.path.join(root, filename)
-                file_path = file_path.replace('\\', '/')  # Normalize path
-                file_path_nodata=os.path.join(root, ".data.json")
-                file_path_nodata =file_path_nodata.replace('\\', '/') 
+                file_path = file_path.replace('\\', '/')
+                file_path_nodata = os.path.join(root, ".data.json")
+                file_path_nodata = file_path_nodata.replace('\\', '/')
                 
-                if filename == data_json_file :
-                    record_added = True
+                if filename == data_json_file:
                     try:
                         with open(file_path, 'r', encoding='utf-8') as file:
                             data = json.load(file)
-                            # Check exclusion criteria
+                            
+                            # Vérification des exclusions
                             isExclued = False
-                            if crit_annonces:
+                            if crit_annonces and "exclude" in crit_annonces:
                                 excl = crit_annonces["exclude"]
                                 for crit in excl:
                                     for key, values in crit.items():
@@ -215,18 +204,11 @@ async def read_annonces_json():
                                             break
                                     if isExclued:
                                         break
-                            else:
-                                if not data['etat'] in ["DELETED"]:
-                                    isExclued = True
+                            
                             if not isExclued:
-                                data["dossier"] = parent_dir  # Add parent directory name to data
-                                if os.path.exists(file_isGptResum_Path1):
-                                    isGptResum = "O"# Ensure to handle the case when the file exists.
-                                else:
-                                    isGptResum = "N"
-                                # block ctrl document
+                                # Ajout des métadonnées supplémentaires
+                                data["dossier"] = parent_dir
                                 data["isJo"] = isJo
-                               
                                 data["GptSum"] = isGptResum
                                 data["CV"] = isCVin
                                 data["CVpdf"] = isCVinpdf
@@ -234,130 +216,67 @@ async def read_annonces_json():
                                 data["isAction"] = isAction
                                 data["BApdf"] = isBAinpdf
                                 
-                               
                                 if "role" not in data:
                                     data["role"] = "default"
-                                data["delay"] = calculate_delay(data)
+                                    
+                                # Calculer le délai
+                                try:
+                                    data["delay"] = calculate_delay(data)
+                                except Exception as e:
+                                    print(f"DEBUG: Erreur dans calculate_delay: {str(e)}")
+                                    data["delay"] = "N/A"
+                                
+                                # Ajouter à la liste des dossiers
                                 jData = {file_path: data}
                                 dossier_list.append(jData)
-                                """  with open(file_path, 'w', encoding='utf-8') as file:
-                                    json.dump(jData, file, ensure_ascii=False, indent=4) """
+                                record_added = True
                             
-
-                    except json.JSONDecodeError:
-                        errordata = {"id": parent_dir, "description": "?", "etat": "invalid JSON"}
-                        print(f"Cyr_Error: The file {file_path} contains invalid JSON.")
-           
-            Piece_exist=False
-            
-            if not record_added:
-              
-                thefile=""
-                Piece_exist=False
+                    except json.JSONDecodeError as e:
+                        print(f"DEBUG: Le fichier {file_path} contient du JSON invalide: {str(e)}")
+                    except Exception as e:
+                        print(f"DEBUG: Erreur lors du traitement de {file_path}: {str(e)}")
                 
-                    
-                if isDetectNew  =="O":
-                    if isJo =="O":
-                        thefile= file_path_isJo
-                        print ("dbg-1245 file_path_isJo trouvé = ",file_path_isJo)
-                        Piece_exist=True
-                    elif isGptResum =="O":
-                        thefile =file_path_gpt
-                        Piece_exist=True
-                
-                if Piece_exist:
-                    
-                    try:
-                        print ("RP-7245 le fichier main va être traité = ",thefile)
-                        #thefile = thefile.replace('\\', '/')
-                        texte=extract_text_from_pdf(thefile)
-                        infos=texte
-                        # Use the value of 'current_instruction' from cookies
-                        #current_instruction = get_cookie_value('current_instruction')
+            # Si aucun enregistrement n'a été ajouté pour ce dossier
+            if not record_added and isDetectNew == "O":
+                try:
+                    # Créer un nouvel enregistrement si un fichier pdf est présent
+                    if isJo == "O" or isGptResum == "O":
+                        # Initialiser les données avec des valeurs par défaut
+                        data = {
+                            "dossier": parent_dir,
+                            "isJo": isJo,
+                            "isAction": isAction,
+                            "GptSum": isGptResum,
+                            "CV": isCVin,
+                            "CVpdf": isCVinpdf,
+                            "etat": "New",
+                            "url": "N/A",
+                            "Date": "N/A",
+                            "entreprise": "N/A",
+                            "description": "À traiter",
+                            "Lieu": "N/A"
+                        }
+                        
+                        # Ajouter à la liste
+                        jData = {file_path_nodata: data}
+                        dossier_list.append(jData)
+                        
+                        # Sauvegarder le nouveau fichier de données
+                        with open(file_path_nodata, 'w', encoding='utf-8') as file:
+                            json.dump(data, file, ensure_ascii=False, indent=4)
                             
-                        the_request = await load_Instruction_classement()
-                        print (f"dbg 6789 {the_request}")
-                        if not the_request or the_request.strip() == "":
-                             print("Error: the_request is invalid or empty.")
-                             #return jsonify({"status": "error", "message": "Invalid instruction request"}), 400
-                             infos=texte
-                        else:
-                             print("RP-2158", the_request)  
-                             role="analyse le texte suivant et réponds à cette question, peux tu renvoyer les informations sous forme de données json, les champs son définie dans la question entre [ et ]"
-                             infos = get_mistral_answer(the_request, role, texte)
-                        print("RP-999 infos = ", infos)
-                        if infos:
-                            try:
-                                # Tenter de parser comme JSON
-                                parsed_json = json.loads(infos)
-                                data["url"] = parsed_json.get("url", "N/A")
-                                data["Date"] = parsed_json.get("Date", "N/A") 
-                                data["entreprise"] = parsed_json.get("entreprise", "N/A")
-                                data["description"] = parsed_json.get("poste", "N/A")
-                                data["Lieu"] = parsed_json.get("lieu", "N/A")
-                            except json.JSONDecodeError:
-                                # La réponse n'est pas du JSON valide
-                                print("RP-1000 : Réponse non JSON, tentative d'extraction des infos du texte")
-                                # Extraction basique (peut être améliorée)
-                                try:
-                                    # Tenter de trouver des données structurées dans la réponse texte
-                                    import re
-                                    
-                                    # Chercher un objet JSON dans la réponse
-                                    json_match = re.search(r'(\{.*\})', infos, re.DOTALL)
-                                    if json_match:
-                                        try:
-                                            extracted_json = json.loads(json_match.group(1))
-                                            data["url"] = extracted_json.get("url", "N/A")
-                                            data["Date"] = extracted_json.get("Date", "N/A")
-                                            data["entreprise"] = extracted_json.get("entreprise", "N/A")
-                                            data["description"] = extracted_json.get("poste", "N/A")
-                                            data["Lieu"] = extracted_json.get("lieu", "N/A")
-                                        except:
-                                            # Utiliser le texte brut
-                                            data["url"] = "N/A"
-                                            data["Date"] = "N/A" 
-                                            data["entreprise"] = "N/A"
-                                            data["description"] = "Pas d'infos"
-                                            data["Lieu"] = "N/A"
-                                    else:
-                                        # Utiliser le texte brut
-                                        data["url"] = "N/A"
-                                        data["Date"] = "N/A" 
-                                        data["entreprise"] = "N/A"
-                                        data["description"] = "Pas d'infos"
-                                        data["Lieu"] = "N/A"
-                                except Exception as extraction_error:
-                                    print(f"RP-1001 : Erreur lors de l'extraction: {str(extraction_error)}")
-                                    # Fallback en cas d'échec total
-                                    data["url"] = "N/A"
-                                    data["Date"] = "N/A"
-                                    data["entreprise"] = "N/A"  
-                                    data["description"] = "Erreur lors du traitement"
-                                    data["Lieu"] = "N/A"
-                            print ("RP-999 infos = ",infos)    
-                            data["dossier"] = parent_dir    
-                            data["isJo"] = isJo
-                            data["isAction"] = isAction
-                            data["GptSum"] = isGptResum
-                            data["CV"] = isCVin
-                            data["CVpdf"] = isCVinpdf
-                                # block info piece         
-                            data["etat"] = "New"
-                            jData = {file_path_nodata:data}  
-                                
-                            dossier_list.append(jData)
-                            record_added = True
-                            #file_path_nodata = file_path_nodata.replace('\\', '/')  # Normalize path
-                            with open(file_path_nodata, 'w', encoding='utf-8') as file:
-                                    json.dump(data, file, ensure_ascii=False, indent=4)
-                    except Exception as e:   
-                        print(f"Cyr_Error 14578: An error occurred while trying to retrieve information from {thefile}: {str(e)}")
-                        return []
-        return dossier_list 
+                except Exception as e:
+                    print(f"DEBUG: Erreur lors de la création d'un nouvel enregistrement: {str(e)}")
+        
+        print(f"DEBUG: Nombre de dossiers traités: {len(dossier_list)}")
+        return jsonify(dossier_list), 200
+    
     except Exception as e:
-        print(f"Cyr_error_145 An unexpected error occurred while reading annonces: {e}")
-        return []
+        print(f"Erreur dans read_annonces_json: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        # En cas d'erreur, retourner un tableau vide plutôt qu'une erreur 500
+        return jsonify([]), 200
 
 def load_crit_annonces(excluedFile):
     try:
@@ -780,28 +699,52 @@ def load_conf_cols():
         logger.error(f"Error loading columns configuration: {str(e)}")
         return jsonify({"error": str(e)}), 500
 
-@cy_routes.route('/load-conf-tabs', methods=['GET'])
+@cy_routes.route('/load_conf_tabs', methods=['GET'])
 def load_conf_tabs():
     try:
         dir = GetRoot()
-        # Vérifier que dir est une chaîne valide
+        # Log the root directory for debugging
+        print(f"DEBUG: GetRoot() returned: {dir}")
+        
+        # Verify that dir is a valid string
         if dir is None or not isinstance(dir, str):
-            logger.error(f"GetRoot() a renvoyé une valeur invalide: {dir}")
-            return jsonify({"error": "Chemin racine invalide"}), 500
+            logger.error(f"GetRoot() returned an invalid value: {dir}")
+            return jsonify({"error": "Invalid root path"}), 500
             
         filepath = os.path.join(dir, ".conf")
         filepath = filepath.replace('\\', '/')
+        
+        # Log the full path that's being checked
+        print(f"DEBUG: Checking for file at: {filepath}")
+        
         if os.path.exists(filepath):
+            print(f"DEBUG: File exists at {filepath}")
             with open(filepath, 'r', encoding='utf-8') as file:
                 content = json.load(file)
-            print("dbg897 :fichier conf", filepath)
-            #print("dbg897 :content ", content)        
+            print(f"DEBUG: Loaded content: {content}")
             return jsonify(content)
         else:
-            return jsonify({"error": "Configuration file does not exist"}), 404
+            # Create a default .conf file if it doesn't exist
+            print(f"DEBUG: File does not exist at {filepath}, creating default configuration")
+            default_conf = {
+                "tabs": [
+                  
+                ]
+            }
+            
+            # Ensure the directory exists
+            os.makedirs(os.path.dirname(filepath), exist_ok=True)
+            
+            # Write the default configuration
+            with open(filepath, 'w', encoding='utf-8') as file:
+                json.dump(default_conf, file, ensure_ascii=False, indent=4)
+            
+            return jsonify(default_conf)
     except Exception as e:
-        logger.error(f"Error loading tabs configuration: {str(e)}")
-        return jsonify({"error": str(e)}), 500
+        error_msg = f"Error loading tabs configuration: {str(e)}"
+        logger.error(error_msg)
+        print(f"DEBUG ERROR: {error_msg}")
+        return jsonify({"error": error_msg}), 500
 
 
     
@@ -947,3 +890,48 @@ def move_and_rename_directory():
 
     except Exception as e:
         print(f"Erreur lors du déplacement du répertoire : {e}")
+
+
+@cy_routes.route('/clear_explorer_cache', methods=['POST'])
+def clear_explorer_cache():
+    """
+    Efface le cache de l'explorateur et réinitialise les configurations temporaires.
+    """
+    try:
+        # Récupération des chemins de dossiers
+        dir_filter = GetDirFilter()
+        dir_state = GetDirState()
+        
+        files_deleted = 0
+        
+        # Suppression des fichiers de filtres
+        if os.path.exists(dir_filter):
+            for file in os.listdir(dir_filter):
+                if file.endswith("_filter.json") or file.endswith("_colums.json"):
+                    file_path = os.path.join(dir_filter, file)
+                    try:
+                        os.remove(file_path)
+                        files_deleted += 1
+                        print(f"Fichier supprimé: {file_path}")
+                    except Exception as e:
+                        print(f"Erreur lors de la suppression du fichier {file_path}: {e}")
+        
+        # Suppression des fichiers d'état
+        if os.path.exists(dir_state):
+            for file in os.listdir(dir_state):
+                if file.endswith(".json") and not file == "excluded_annonces.json":
+                    file_path = os.path.join(dir_state, file)
+                    try:
+                        os.remove(file_path)
+                        files_deleted += 1
+                        print(f"Fichier supprimé: {file_path}")
+                    except Exception as e:
+                        print(f"Erreur lors de la suppression du fichier {file_path}: {e}")
+        
+        return jsonify({
+            "status": "success", 
+            "message": f"Cache effacé avec succès. {files_deleted} fichiers supprimés."
+        }), 200
+    except Exception as e:
+        print(f"Erreur lors de l'effacement du cache: {e}")
+        return jsonify({"status": "error", "message": str(e)}), 500
