@@ -109,15 +109,33 @@ function loadTableData(callback) {
                         
                     else
                     {
-                        isDosier=false;
-                        isurl=false;
+                        // isDosier=false;
+                        // isurl=false;
                         if (col.key === 'description' && item.url) {
-                            isurl = true;
+                            cell.style.cursor = col.style.cursor;
+                            cell.style.color = col.style.color;
+                            cell.style.textDecoration = col.style.textDecoration;
+                            cell.addEventListener(col.event, () => open_url(item.url));
                         } else if (col.key === 'dossier') {
-                            isDosier = true;
+                            cell.style.color = col.style.color; // Example color for dossier
+                                cell.style.cursor = col.style.cursor;
+                                cell.style.textDecoration = col.style.textDecoration;
+                              
+                                cell.addEventListener('click', function () {
+                                    const currentRow = this.parentElement; // Ensure the row is correctly referenced
+                                    // Deselect all rows
+                                    document.querySelectorAll('.selected-row').forEach(row => {
+                                        row.classList.remove('selected-row');
+                                    });
+                                    // Select the clicked row
+                                    currentRow.classList.add('selected-row');
+                                });
+                        } else {
+                            cell.style.textDecoration = '';
+                            cell.style.color = ''; 
                         }
 
-                        if (isurl) {
+                       /*  if (isurl) {
                             cell.style.cursor = col.style.cursor;
                             cell.style.color = col.style.color;
                             cell.style.textDecoration = col.style.textDecoration;
@@ -143,7 +161,7 @@ function loadTableData(callback) {
                                 cell.style.color = ''; // Default color
                             }
                             cell.style.textDecoration = ''; // Default text decoration
-                        }
+                        } */
                         
                      
                       
