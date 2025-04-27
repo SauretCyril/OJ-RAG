@@ -90,7 +90,7 @@ const ApiClient = {
     // Gestion de la configuration
     config: {
         loadConstants: () => httpGet('/get_constants'),
-        loadColumns: () => httpGet('/load_conf_cols'),
+        loadColumns: () => httpGet('/charger_cols_file'),
         saveColumns: (columns, tabActive) => httpPost('/save_config_col', { columns, tabActive }),
         loadTabs: () => httpGet('/load_conf_tabs'),
         loadFilters: (tabActive) => httpPost('/read_filters_json', { tabActive }),

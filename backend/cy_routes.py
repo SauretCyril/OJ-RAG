@@ -693,7 +693,7 @@ def save_notes():
 
 
 
-@cy_routes.route('/load_conf_cols', methods=['GET'])
+@cy_routes.route('/charger_cols_file', methods=['GET'])
 def load_conf_cols():
     try:
         dir=GetRoot()

@@ -4,7 +4,7 @@
  */
 async function loadColumnsFromServer() {
     try {
-        const response = await fetch('/load_conf_cols', {
+        const response = await fetch('/charger_cols_file', {
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json'
