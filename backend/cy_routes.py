@@ -109,13 +109,14 @@ async def read_annonces_json():
             print("DEBUG: Pas de données JSON reçues")
             return jsonify([]), 200  # Retourne un tableau vide en cas de données manquantes
             
-        excluedFile = data.get('excluded', 'excluded_annonces.json')
+        #excluedFile = data.get('excluded', 'excluded_annonces.json')
+        excluedFile =".exclued"
         print(f"DEBUG: Fichier d'exclusion: {excluedFile}")
         
         directory_path = GetRoot()
         print(f"DEBUG: Chemin racine: {directory_path}")
        
-        if not os.path.exists(directory_path):
+        if not os.path.exists(GetRoot()):
             print("DEBUG: Le chemin racine n'existe pas")
             return jsonify([]), 200
             
@@ -192,7 +193,7 @@ async def read_annonces_json():
                     try:
                         with open(file_path, 'r', encoding='utf-8') as file:
                             data = json.load(file)
-                            
+                           
                             # Vérification des exclusions
                             isExclued = False
                             if crit_annonces and "exclude" in crit_annonces:
@@ -204,6 +205,9 @@ async def read_annonces_json():
                                             break
                                     if isExclued:
                                         break
+                                if isExclued:
+                                    break
+                            
                             
                             if not isExclued:
                                 # Ajout des métadonnées supplémentaires
@@ -214,56 +218,124 @@ async def read_annonces_json():
                                 data["CVpdf"] = isCVinpdf
                                 data["BA"] = isBAdocx
                                 data["isAction"] = isAction
-                                data["BApdf"] = isBAinpdf
-                                
-                                if "role" not in data:
-                                    data["role"] = "default"
-                                    
-                                # Calculer le délai
-                                try:
-                                    data["delay"] = calculate_delay(data)
-                                except Exception as e:
-                                    print(f"DEBUG: Erreur dans calculate_delay: {str(e)}")
-                                    data["delay"] = "N/A"
-                                
-                                # Ajouter à la liste des dossiers
+                                data["BApdf"] = isBAinpdf 
+                                    # Ajouter à la liste des dossiers
                                 jData = {file_path: data}
                                 dossier_list.append(jData)
                                 record_added = True
+                         
                             
                     except json.JSONDecodeError as e:
                         print(f"DEBUG: Le fichier {file_path} contient du JSON invalide: {str(e)}")
                     except Exception as e:
                         print(f"DEBUG: Erreur lors du traitement de {file_path}: {str(e)}")
-                
+           
+                    #ici
             # Si aucun enregistrement n'a été ajouté pour ce dossier
             if not record_added and isDetectNew == "O":
                 try:
-                    # Créer un nouvel enregistrement si un fichier pdf est présent
-                    if isJo == "O" or isGptResum == "O":
-                        # Initialiser les données avec des valeurs par défaut
-                        data = {
-                            "dossier": parent_dir,
-                            "isJo": isJo,
-                            "isAction": isAction,
-                            "GptSum": isGptResum,
-                            "CV": isCVin,
-                            "CVpdf": isCVinpdf,
-                            "etat": "New",
-                            "url": "N/A",
-                            "Date": "N/A",
-                            "entreprise": "N/A",
-                            "description": "À traiter",
-                            "Lieu": "N/A"
-                        }
+                    
+                    Piece_exist=False
+                    if not record_added:
+                        thefile=""
+                        Piece_exist=False
+                        if isDetectNew  =="O":
+                            if isJo =="O":
+                                thefile= file_path_isJo
+                                print ("dbg-1245 file_path_isJo trouvé = ",file_path_isJo)
+                                Piece_exist=True
+                            elif isGptResum =="O":
+                                thefile =file_path_gpt
+                                Piece_exist=True
+                    if Piece_exist:
+                        print ("RP-7245 le fichier main va être traité = ",thefile)
+                        #thefile = thefile.replace('\\', '/')
+                        texte=extract_text_from_pdf(thefile)
+                        infos=texte
+                        the_request = await load_Instruction_classement()
+                        print("dbg 6789-------------------------------", the_request)
+                        if not the_request or the_request.strip() == "":
+                             print("Error: the_request is invalid or empty.")
+                             #return jsonify({"status": "error", "message": "Invalid instruction request"}), 400
+                             infos=texte
+                        else:
+                             print("RP-2158", the_request)  
+                             role="analyse le texte suivant et réponds à cette question, peux tu renvoyer les informations sous forme de données json, les champs son définie dans la question entre [ et ]"
+                             infos = get_mistral_answer(the_request, role, texte)
+                        print("RP-999 infos = ", infos)
+                        if infos:
+                            try:
+                                # Tenter de parser comme JSON
+                                parsed_json = json.loads(infos)
+                                data["url"] = parsed_json.get("url", "N/A")
+                                data["Date"] = parsed_json.get("Date", "N/A") 
+                                data["entreprise"] = parsed_json.get("entreprise", "N/A")
+                                data["description"] = parsed_json.get("poste", "N/A")
+                                data["Lieu"] = parsed_json.get("lieu", "N/A")
+                            except json.JSONDecodeError:
+                                # La réponse n'est pas du JSON valide
+                                print("RP-1000 : Réponse non JSON, tentative d'extraction des infos du texte")
+                                # Extraction basique (peut être améliorée)
+                                try:
+                                    # Tenter de trouver des données structurées dans la réponse texte
+                                    import re
+                                    
+                                    # Chercher un objet JSON dans la réponse
+                                    json_match = re.search(r'(\{.*\})', infos, re.DOTALL)
+                                    if json_match:
+                                        try:
+                                            extracted_json = json.loads(json_match.group(1))
+                                            data["url"] = extracted_json.get("url", "N/A")
+                                            data["Date"] = extracted_json.get("Date", "N/A")
+                                            data["entreprise"] = extracted_json.get("entreprise", "N/A")
+                                            data["description"] = extracted_json.get("poste", "N/A")
+                                            data["Lieu"] = extracted_json.get("lieu", "N/A")
+                                        except:
+                                            # Utiliser le texte brut
+                                            data["url"] = "N/A"
+                                            data["Date"] = "N/A" 
+                                            data["entreprise"] = "N/A"
+                                            data["description"] = "Pas d'infos"
+                                            data["Lieu"] = "N/A"
+                                    else:
+                                        # Utiliser le texte brut
+                                        data["url"] = "N/A"
+                                        data["Date"] = "N/A" 
+                                        data["entreprise"] = "N/A"
+                                        data["description"] = "Pas d'infos"
+                                        data["Lieu"] = "N/A"
+                                except Exception as extraction_error:
+                                    print(f"RP-1001 : Erreur lors de l'extraction: {str(extraction_error)}")
+                                    # Fallback en cas d'échec total
+                                    data["url"] = "N/A"
+                                    data["Date"] = "N/A"
+                                    data["entreprise"] = "N/A"  
+                                    data["description"] = "Erreur lors du traitement"
+                                    data["Lieu"] = "N/A"
+                            print ("RP-999 infos = ",infos)    
+                            data["dossier"] = parent_dir    
+                            data["isJo"] = isJo
+                            data["isAction"] = isAction
+                            data["GptSum"] = isGptResum
+                            data["CV"] = isCVin
+                            data["CVpdf"] = isCVinpdf
+                                # block info piece         
+                            data["etat"] = "New"
+                            jData = {file_path_nodata:data}  
+                                
+                            dossier_list.append(jData)
+                            record_added = True
+                            #file_path_nodata = file_path_nodata.replace('\\', '/')  # Normalize path
+                            with open(file_path_nodata, 'w', encoding='utf-8') as file:
+                                    json.dump(data, file, ensure_ascii=False, indent=4)
+                          
+                            # Ajouter à la liste
+                            jData = {file_path_nodata: data}
+                            dossier_list.append(jData)
                         
-                        # Ajouter à la liste
-                        jData = {file_path_nodata: data}
-                        dossier_list.append(jData)
-                        
-                        # Sauvegarder le nouveau fichier de données
-                        with open(file_path_nodata, 'w', encoding='utf-8') as file:
-                            json.dump(data, file, ensure_ascii=False, indent=4)
+                            # Sauvegarder le nouveau fichier de données
+                            with open(file_path_nodata, 'w', encoding='utf-8') as file:
+                                json.dump(data, file, ensure_ascii=False, indent=4)
                             
                 except Exception as e:
                     print(f"DEBUG: Erreur lors de la création d'un nouvel enregistrement: {str(e)}")
@@ -281,7 +353,7 @@ async def read_annonces_json():
 def load_crit_annonces(excluedFile):
     try:
         #file="excluded_annonces.json"
-        config_path = os.path.join(GetDirState(), excluedFile)
+        config_path = os.path.join(GetRoot(), excluedFile)
         if os.path.exists(config_path):
             with open(config_path, 'r', encoding='utf-8') as file:
                 return json.load(file)
@@ -528,7 +600,7 @@ def convert_cv():
         #print("-->04 pdf removed", target_path_pdf)
     
 
-@cy_routes.route('/share_cv', methods=['POST'])
+@cy_routes.route('/upload_doc', methods=['POST'])
 def select_cv():
     try:
         #print("##0---")
@@ -613,10 +685,12 @@ def save_announcement():
         sufix = data.get('sufix')
 
         if not num_dossier or not content or not url:
+            print("dbg4456 -------------------------------", num_dossier, content, url)
             return jsonify({"status": "error", "message": "Missing parameters"}), 400
 
         directory_path = os.path.join(GetRoot(), num_dossier)
         if not os.path.exists(directory_path):
+            #print("dbg-4456 creating directory", directory_path)
             os.makedirs(directory_path)
        
         docx_file_path = os.path.join(directory_path, f"{num_dossier}{sufix}.docx")
@@ -636,7 +710,9 @@ def save_announcement():
             doc.add_paragraph(content)
             
             doc.save(docx_file_path)
+            
             # Convert DOCX to PDF
+            print (f"dbg-5434 : Converting {docx_file_path} to {pdf_file_path}")
             convert(docx_file_path, pdf_file_path)
         finally:
             # Uninitialize COM library

@@ -6,16 +6,7 @@ function loadTableData(callback) {
    
     excludedfile = document.getElementById('Excluded').value+".json";
   
-    fetch('/read_annonces_json', { 
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-        excluded: excludedfile         
-        })
-    })
-    .then(response => response.json())
+    ApiClient.annonces.read({ excluded: excludedfile })
     .then(data => {
         // Store the data in the global array
         window.annonces = data;
@@ -26,7 +17,7 @@ function loadTableData(callback) {
         }
 
         tableBody.innerHTML = ''; // Clear existing rows
-
+       
         const categories = new Set();
         const etats = new Set();
         const todos = new Set();
@@ -39,7 +30,7 @@ function loadTableData(callback) {
             const isCvRef = item.Commentaire && item.Commentaire.includes('<CV-REF>');
             const isOnDay = item.Commentaire && item.Commentaire.includes('DAY');
             const isrefus = item.todo && item.todo.includes('refus');
-           
+            let fichier_annonce = dir_path + '/' + item.dossier+window.CONSTANTS['FILE_NAMES']['ANNONCE_SUFFIX']+".pdf";
         
             const row = document.createElement('tr');           
             row.id = filePath;
@@ -90,21 +81,15 @@ function loadTableData(callback) {
                     
                     else if (col.key === 'isJo')
                     {
-                        let fichier = dir_path + '/' + item.dossier+window.CONSTANTS['FILE_NAMES']['ANNONCE_SUFFIX']+".pdf";
-                        icon=createCell_PdfView(col.key, item, fichier);
+                        //let fichier = dir_path + '/' + item.dossier+window.CONSTANTS['FILE_NAMES']['ANNONCE_SUFFIX']+".pdf";
+                        icon=createCell_PdfView(col.key, item, fichier_annonce);
                         cell.appendChild(icon);
                     }
                 else if (col.key === 'Notes' ) 
                         {
                             const file_notes = dir_path + '/' + item.dossier+window.CONSTANTS['FILE_NAMES']['NOTES_FILE'];
                             icon= createCell_Notes(file_notes);
-                            cell.appendChild(icon);
-                            /* const heartIcon = document.createElement('span');
-                            heartIcon.textContent = '❤️'; // Heart icon
-                            heartIcon.style.cursor = 'pointer';
-                            heartIcon.addEventListener('click', () => open_notes(file_notes));
-                            cell.appendChild(heartIcon); */
-                        
+                            cell.appendChild(icon);                        
                         } 
                         
                     else
@@ -135,34 +120,7 @@ function loadTableData(callback) {
                             cell.style.color = ''; 
                         }
 
-                       /*  if (isurl) {
-                            cell.style.cursor = col.style.cursor;
-                            cell.style.color = col.style.color;
-                            cell.style.textDecoration = col.style.textDecoration;
-                            cell.addEventListener(col.event, () => open_url(item.url));
-                        } else {
-                            if (isDosier) {
-                                cell.style.color = col.style.color; // Example color for dossier
-                                cell.style.cursor = col.style.cursor;
-                                cell.style.textDecoration = col.style.textDecoration;
-                              
-                                cell.addEventListener('click', function () {
-                                    const currentRow = this.parentElement; // Ensure the row is correctly referenced
-                                    // Deselect all rows
-                                    document.querySelectorAll('.selected-row').forEach(row => {
-                                        row.classList.remove('selected-row');
-                                    });
-                                    // Select the clicked row
-                                    currentRow.classList.add('selected-row');
-                                });
-
-
-                            } else {
-                                cell.style.color = ''; // Default color
-                            }
-                            cell.style.textDecoration = ''; // Default text decoration
-                        } */
-                        
+                      
                      
                       
                         cell.textContent = item[col.key];
@@ -225,8 +183,10 @@ function loadTableData(callback) {
                 {
                     let thefile="";
                     resuReady=false;
-                    if (item.isJo=="O")
-                        {thefile=fichier_annonce,resuReady=true;}
+                    if (item.isJo=="O") {
+                        thefile= fichier_annonce;
+                        resuReady=true;
+                    }
                    
                     if (resuReady) 
                     {

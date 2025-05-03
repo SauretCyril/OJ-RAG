@@ -31,11 +31,13 @@ async function selectRep() {
 
     // Ajouter les boutons pour configurer les répertoires
     const directories = [
-        { path: 'G:/Actions-4', label: 'Action-4' },
-        { path: 'G:/Actions-5-reseaux', label: 'reseaux' },
-        { path: 'G:/Actions-6-profiles', label: 'Candidat' },
-        { path: 'G:/Actions-7-Publication-Production', label: 'Produire Pub.' },
-        { path: '', label: 'Répertoire 5' },
+        { path: 'G:/Actions-4a_new', label: 'Annonces' },
+        { path: 'G:/Actions-5-reseaux', label: 'Reseaux' },
+        { path: 'G:/Actions-6-profiles', label: 'Profiles' },
+        { path: 'G:/Actions-7-Publications', label: 'Publications' },
+        { path: 'G:/Actions-8-Entretiens', label: 'Entretiens' },
+        { path: 'G:/Actions-9-portails', label: 'Portails' },
+        { path: 'G:/Actions-10-Perso', label: 'Perso' },
         { path: '', label: 'Répertoire 6' },
         { path: '', label: 'Répertoire 7' },
         { path: '', label: 'Répertoire 8' },
@@ -46,7 +48,7 @@ async function selectRep() {
     directories.forEach((directory, index) => {
         if (directory.path !== "") {
             const button = document.createElement('button');
-            button.type = 'button';
+            button.type = 'tab-button';
             button.id = `directoryButton${index + 1}`;
             button.textContent = directory.label;
 

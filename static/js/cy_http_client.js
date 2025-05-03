@@ -77,8 +77,22 @@ const ApiClient = {
         openDirectory: (filePath) => httpPost('/open_parent_directory', { file_path: filePath }),
         openUrl: (url) => httpPost('/open_url', { url }),
         readNotes: (filePath) => httpPost('/read_notes', { file_path: filePath }),
-        saveNotes: (filePath, content) => httpPost('/save_notes', { file_path: filePath, content })
-    },
+        saveNotes: (filePath, content) => httpPost('/save_notes', { file_path: filePath, content }),
+        // Fonction centralisée pour upload_doc
+        upload: (formData) => {
+            // Cette fonction nécessite un FormData pour l'upload de fichiers
+            // formData doit contenir : file_path (le fichier), num_dossier, repertoire_annonce, et prefix
+            return fetch('/upload_doc', {
+                method: 'POST',
+                body: formData
+            }).then(response => {
+                if (!response.ok) {
+                    throw new Error(`Erreur HTTP: ${response.status}`);
+                }
+                return response.json();
+            });
+        }
+      },
     
     // Gestion des cookies
     cookies: {

@@ -118,27 +118,17 @@ async function get_cv(numDossier, repertoire_annonces, state, prefix) {
             const file = event.target.files[0];
             if (file) {
                 const formData = new FormData();
-                formData.append('file', file);
+                formData.append('file_path', file); // Le fichier à uploader
                 formData.append('num_dossier', numDossier);
-                formData.append('repertoire_annonces', repertoire_annonces);
-                formData.append('prefix', prefix || 'CV');
-                
+                formData.append('repertoire_annonce', repertoire_annonces);
+                formData.append('prefix', prefix || 'CV'); // Optionnel selon votre cas
+
                 showLoadingOverlay();
                 
                 try {
-                    const response = await fetch('/upload_cv', {
-                        method: 'POST',
-                        body: formData
-                    });
-                    
-                    const data = await response.json();
-                    
-                    if (data.status === "success") {
-                        alert("Fichier téléchargé avec succès.");
-                        refresh();
-                    } else {
-                        alert("Erreur lors du téléchargement du fichier : " + data.message);
-                    }
+                    await ApiClient.files.upload(formData);
+                    alert("Fichier téléchargé avec succès.");
+                    refresh();
                 } catch (error) {
                     console.error('Erreur lors du téléchargement du fichier :', error);
                     alert("Erreur lors du téléchargement du fichier.");
