@@ -155,7 +155,18 @@ function open_url(theurl) {
 
 function open_dossier(chemin) {
     const path = chemin.replace(/\\/g, '/');
-    alert (path);
+    alert("Ouverture de l'explorateur de fichiers pour le chemin : " + path);
+    ApiClient.files.openexploreur(path)
+        .then(response => {
+            if (response.status === "success") {
+                console.log("Directory explorer opened successfully.");
+            } else {
+                console.error("Error opening directory explorer:", response.message);
+            }
+        })
+        .catch(error => {
+            console.error("Error opening directory explorer:", error);
+        });
 }
 
 

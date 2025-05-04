@@ -92,43 +92,61 @@ function loadTableData(callback) {
                             cell.appendChild(icon);                        
                         } 
                         
-                    else
-                    {
-                        // isDosier=false;
-                        // isurl=false;
-                        if (col.key === 'description' && item.url) {
-                            cell.style.cursor = col.style.cursor;
-                            cell.style.color = col.style.color;
-                            cell.style.textDecoration = col.style.textDecoration;
-                            cell.addEventListener(col.event, () => open_url(item.url));
-                        } else if (col.key === 'dossier') {
-                          
-                            cell.style.color = col.style.color; // Example color for dossier
-                                cell.style.cursor = col.style.cursor;
-                                cell.style.textDecoration = col.style.textDecoration;
-                              
-                                cell.addEventListener('click', function () {
-                                    const currentRow = this.parentElement; // Ensure the row is correctly referenced
-                                    // Deselect all rows
-                                    document.querySelectorAll('.selected-row').forEach(row => {
-                                        row.classList.remove('selected-row');
-                                    });
-                                    // Select the clicked row
-                                    currentRow.classList.add('selected-row');
-                                });
-                        } else {
-                            cell.style.textDecoration = '';
-                            cell.style.color = ''; 
+                    else if (col.key === 'dossier') {
+                        // Créer la cellule pour le numéro de dossier avec un icône
+                        cell.style.position = 'relative'; // Pour positionner l'icône correctement
+                        
+                        // Ajouter le numéro de dossier à la cellule
+                        cell.textContent = item[col.key];
+                        
+                        // Appliquer les styles de la colonne
+                        if (col.style) {
+                            if (col.style.color) cell.style.color = col.style.color;
+                            if (col.style.cursor) cell.style.cursor = col.style.cursor;
+                            if (col.style.textDecoration) cell.style.textDecoration = col.style.textDecoration;
                         }
-
-                      
-                     
-                      
+                        
+                        // Ajouter l'icône de dossier
+                        const folderIcon = document.createElement('span');
+                        folderIcon.textContent = '📂'; // Icône de dossier
+                        folderIcon.style.cursor = 'pointer';
+                        folderIcon.style.position = 'absolute';
+                        folderIcon.style.right = '-10px';
+                        folderIcon.style.top = '50%';
+                        folderIcon.style.transform = 'translateY(-50%)';
+                        
+                        // Utilisez la fonction correcte pour ouvrir le dossier
+                        folderIcon.addEventListener('click', (e) => {
+                            e.stopPropagation(); // Empêcher le déclenchement de l'événement sur la ligne
+                            open_dossier(dir_path );
+                        });
+                        
+                        cell.appendChild(folderIcon);
+                        
+                        // Assurer que la cellule est assez large pour accommoder le texte et l'icône
+                        if (col.width) {
+                            cell.style.width = col.width;
+                            cell.style.minWidth = col.width;
+                        } else {
+                            cell.style.minWidth = '100px'; // Largeur minimale pour accommoder le texte et l'icône
+                        }
+                        
+                 /*        // Ajouter des classes et rendre éditable si nécessaire
+                        if (col.class) cell.classList.add(col.class);
+                        if (col.editable) cell.contentEditable = "true";
+                        
+                        // Ajouter l'événement onblur pour mettre à jour les annonces
+                        cell.onblur = () => updateAnnonces(index, col.key, cell.textContent); */
+                    } else {
+                        // Le traitement normal pour les autres cellules
+                        cell.style.textDecoration = '';
+                        cell.style.color = '';
+                        
                         cell.textContent = item[col.key];
                         if (col.class) cell.classList.add(col.class);
                         if (col.editable) cell.contentEditable = "true";
                         if (col.width) cell.style.width = col.width;
-                    
+                        
                         cell.onblur = () => updateAnnonces(index, col.key, cell.textContent);
                     }
                     row.appendChild(cell);

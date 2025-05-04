@@ -18,3 +18,4 @@ reportlab
 langchain
 mistralai
 scikit-learn
+Pillow

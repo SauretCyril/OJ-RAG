@@ -1,0 +1,81 @@
+   #🥟✳️🔶🔷🧿🔍👁️‍🗨️👁️💭💭💬🛠️🔨⚙️🔑👷📋📌🗺️
+   'doc': '📝',      # Document Word
+    'pdf': '📕',      # Document PDF
+    'txt': '📃',      # Fichier texte
+    'jpg': '🖼️',      # Image
+    'jpeg': '🖼️',     # Image
+    'png': '🖼️',      # Image
+    'gif': '🖼️',      # Image
+    'mp3': '🎵',      # Audio
+    'wav': '🎵',      # Audio
+    'ogg': '🎵',      # Audio
+    'mp4': '🎬',      # Vidéo
+    'avi': '🎬',      # Vidéo
+    'mkv': '🎬',      # Vidéo
+    'mov': '🎬',      # Vidéo
+    'zip': '🗜️',      # Archive
+    'rar': '🗜️',      # Archive
+    '7z': '🗜️',       # Archive
+    'tar': '🗜️',      # Archive
+    'gz': '🗜️',       # Archive
+    'py': '🐍',       # Python
+    'js': '📜',       # JavaScript
+    'ts': '📜',       # TypeScript
+    'html': '🌐',     # HTML
+    'htm': '🌐',      # HTML
+    'css': '🎨',      # CSS
+    'scss': '🎨',     # SCSS
+    'json': '{ }',    # JSON
+    'xml': '⟨⟩',      # XML
+    'yaml': '📋',     # YAML
+    'yml': '📋',      # YAML
+    'md': '📝',       # Markdown
+    'markdown': '📝', # Markdown
+    'xls': '📊',      # Excel
+    'xlsx': '📊',     # Excel
+    'csv': '📊',      # CSV
+    'sql': '🛢️',      # Base de données
+    'db': '🛢️',       # Base de données
+    'sqlite': '🛢️',   # Base de données SQLite
+    'exe': '⚙️',      # Exécutable
+    'bat': '⚙️',      # Script batch
+    'sh': '⚙️',       # Script shell
+    'c': '©️',         # C
+    'cpp': '©️',       # C++
+    'h': '©️',         # Header C
+    'hpp': '©️',       # Header C++
+    'java': '☕',      # Java
+    'class': '☕',     # Java Class
+    'jar': '☕',       # Java Archive
+    'php': '🐘',      # PHP
+    'rb': '💎',       # Ruby
+    'go': '🔹',       # Go
+    'rs': '🦀',       # Rust
+    'swift': '🦅',    # Swift
+    'kt': '🧩',       # Kotlin
+    'dart': '🎯',     # Dart
+    'lua': '🌙',      # Lua
+    'r': '📊',        # R
+    'pl': '🐪',       # Perl
+    'ico': '🏷️',      # Icône
+    'svg': '🖋️',      # SVG
+    'ttf': '🔤',      # Font
+    'otf': '🔤',      # Font
+    'woff': '🔤',     # Font
+    'woff2': '🔤',    # Font
+    'eot': '🔤',      # Font
+    'psd': '🎨',      # Photoshop
+    'ai': '🖌️',       # Illustrator
+    'eps': '🖌️',      # EPS
+    'indd': '📰',     # InDesign
+    'log': '📜',      # Fichier log
+    'ini': '⚙️',      # Configuration
+    'cfg': '⚙️',      # Configuration
+    'config': '⚙️',   # Configuration
+    'env': '⚙️',      # Environment
+    'gitignore': '🔄',# Git
+    'gitattributes': '🔄', # Git
+    'lock': '🔒',     # Lock file
+    'bak': '🔙',      # Backup
+    'tmp': '⏱️',       # Temporary
+    'temp': '⏱️', 
