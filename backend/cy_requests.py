@@ -48,13 +48,21 @@ def extract_text_from_pdf(pdf_path):
         return ""
 
 
-@cy_requests.route('/get_job_answer', methods=['POST'])
+@cy_requests.route('/get_AI_answer', methods=['POST'])
 
-def get_job_answer():
+async def get_job_answer():
     try:
         file = request.json.get('path')
         RQ = request.json.get('RQ')
-
+        NumDos = request.json.get('NumDos')
+        ##
+        ## load the request from the file if it exists
+        ##  
+        print (f"dbg 21547 : RQ : {NumDos}")
+        the_request = await load_AI_Instructions(".ask", NumDos)
+        
+        if the_request != "":
+            RQ = the_request
         if not file or not RQ:
             logger.error("Er005.Missing job file path or question")
             return jsonify({'Er005': 'Missing job file path or question'}), 400
@@ -66,8 +74,11 @@ def get_job_answer():
             return jsonify({'Er006': 'Job text extraction failed'}), 500
 
         role="En tant qu' expert en analyse d'offres d'emploi dans le domaine informatique (développeur, Analyste ou Testeur logiciel) , analyse le texte suivant et réponds à cette question"
+        ## Load the role from the file if it exists
+        the_role = await load_AI_Instructions(".role", NumDos)
         
-        
+        if the_role != "":
+            role = the_role
         answer = get_mistral_answer(RQ,role,text1)
         return jsonify({
             'raw_text': text1,
@@ -81,11 +92,10 @@ def get_job_answer():
 @cy_requests.route('/save-answer', methods=['POST'])
 def save_answer():
     try:
-        pythoncom.CoInitialize()  # Initialize COM library
         job_text_data = request.json.get('text_data')
         job_number = request.json.get('number')
         the_path = request.json.get('the_path')
-        rq=request.json.get('RQ')
+        rq = request.json.get('RQ')
         if the_path == '':
             the_path = GetRoot()
 
@@ -110,10 +120,34 @@ def save_answer():
 
         pdf_file_path = file_path_docx.replace('.docx', '.pdf')
        
-        convert(file_path_docx, pdf_file_path)
-        
-        os.remove(file_path_docx)
+        # Gérer la conversion de façon plus robuste
+        pythoncom.CoInitialize()  # Initialize COM library
+        try:
+            # Ajouter un timeout pour éviter que Word reste bloqué
+            import time
+            start_time = time.time()
+            
+            # Convertir le fichier
+            convert(file_path_docx, pdf_file_path)
+            
+            # Si la conversion a réussi et que le fichier PDF existe, supprimer le DOCX
+            if os.path.exists(pdf_file_path):
+                os.remove(file_path_docx)
+                
+        except Exception as convert_error:
+            logger.error(f"Er009a.Error during conversion: {str(convert_error)}")
+            # Essayer de tuer toutes les instances de Word qui pourraient être bloquées
+            try:
+                import subprocess
+                subprocess.run(['taskkill', '/f', '/im', 'WINWORD.EXE'], shell=True)
+            except:
+                pass
+            raise convert_error
+        finally:
+            # S'assurer que COM est bien désinitializé
+            pythoncom.CoUninitialize()
 
+        # Sauvegarder la requête dans un fichier texte
         save_rq_to_text_file(file_path_RQ, rq)
         
         return jsonify({'dbg009': 'Job text saved successfully', 'pdf_file_path': pdf_file_path})
@@ -121,9 +155,6 @@ def save_answer():
     except Exception as e:
         logger.error(f"Er009.Error saving job text: {str(e)}")
         return jsonify({'Er009': str(e)}), 500
-
-    finally:
-        pythoncom.CoUninitialize()  # Uninitialize COM library
 
 def save_rq_to_text_file(file_path, rq):
     with open(file_path, 'w') as file:
@@ -142,7 +173,7 @@ def format_text_as_word_style(job_text, job_number):
     return doc
 
 
-@cy_requests.route('/get_job_answer_from_url', methods=['POST'])
+@cy_requests.route('/get_AI_answer_from_url', methods=['POST'])
 def get_job_answer_from_url():
     try:
         url = request.json.get('url')
@@ -310,3 +341,29 @@ def response_me(question,url,role):
         print(f"Erreur lors de l'analyse: {str(e)}")
         return f"Une erreur s'est produite: {str(e)}"
 
+async def load_AI_Instructions(file_name, NumDos):
+    try:
+        text = ""
+        file_name_txt = file_name
+        
+        dossier = os.path.join(GetRoot(),  NumDos)
+        specif_filepath = os.path.join(dossier,file_name_txt)
+        print("dbg4578 :fichier requete",specif_filepath)
+        
+        if os.path.exists(specif_filepath):
+            filepath =specif_filepath 
+        else:
+            default_filepath = os.path.join(GetRoot(), file_name_txt)  # Updated to call GetRoot() correctly
+            default_filepath = default_filepath.replace('\\', '/')
+            filepath=default_filepath
+        #print("dbg3434 :fichier requete",filepath)
+        #print("dbg789 :fichier instructions",filepath)
+        if os.path.exists(filepath):
+            with open(filepath, 'r', encoding='utf-8') as file:
+                text = file.read()
+        
+        return text
+
+    except Exception as e:
+        logger.error(f"Error loading text: {str(e)}")
+        return ""

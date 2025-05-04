@@ -60,9 +60,9 @@ async function get_job_answer(thepath, num_job, typ, isUrl) {
         
         if (!isUrl) {
             console.log("dbg A023a : Traitement du fichier pdf en cours... : " + thepath);
-            jobTextResponse = await ApiClient.jobs.getAnswer(thepath, q2_job);
+            jobTextResponse = await ApiClient.jobs.getAnswer(thepath, q2_job,num_job);
         } else {
-            jobTextResponse = await ApiClient.jobs.getAnswerFromUrl(thepath, q2_job);
+            jobTextResponse = await ApiClient.jobs.getAnswerFromUrl(thepath, q2_job,num_job);
         }
         
         const savetext = jobTextResponse.formatted_text;
@@ -151,6 +151,13 @@ async function get_cv(numDossier, repertoire_annonces, state, prefix) {
 function open_url(theurl) {
     return ApiClient.files.openUrl(theurl);
 }
+
+
+function open_dossier(chemin) {
+    const path = chemin.replace(/\\/g, '/');
+    alert (path);
+}
+
 
 /**
  * Ouvre les notes d'un fichier

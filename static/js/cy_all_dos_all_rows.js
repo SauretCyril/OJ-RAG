@@ -102,6 +102,7 @@ function loadTableData(callback) {
                             cell.style.textDecoration = col.style.textDecoration;
                             cell.addEventListener(col.event, () => open_url(item.url));
                         } else if (col.key === 'dossier') {
+                          
                             cell.style.color = col.style.color; // Example color for dossier
                                 cell.style.cursor = col.style.cursor;
                                 cell.style.textDecoration = col.style.textDecoration;

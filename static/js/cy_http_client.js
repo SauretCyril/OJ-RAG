@@ -113,8 +113,8 @@ const ApiClient = {
     
     // Traitement des jobs
     jobs: {
-        getAnswer: (path, RQ) => httpPost('/get_job_answer', { path, RQ }),
-        getAnswerFromUrl: (url, RQ) => httpPost('/get_job_answer_from_url', { url, RQ }),
+        getAnswer: (path, RQ, NumDos) => httpPost('/get_AI_answer', { path, RQ, NumDos }),
+        getAnswerFromUrl: (url, RQ,NumDos) => httpPost('/get_AI_answer_from_url', { url, RQ,NumDos }),
         saveAnswer: (textData, number, thePath, RQ) => httpPost('/save-answer', { text_data: textData, number, the_path: thePath, RQ })
     }
 };

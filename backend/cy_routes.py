@@ -102,7 +102,7 @@ def calculate_delay(data):
 async def read_annonces_json():
     try:
         print("DEBUG: Début de la fonction read_annonces_json")
-        isDetectNew="O"
+        isDetectNew="N"
         buildAllPaths()
         data = request.get_json()
         if not data:
@@ -835,7 +835,8 @@ def load_conf_tabs():
         return jsonify({"error": error_msg}), 500
 
 
-    
+
+
 async def load_Instruction_classement():
     try:
         text = ""

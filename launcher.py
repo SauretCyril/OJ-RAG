@@ -14,7 +14,7 @@ if backend_dir not in sys.path:
 # Configurer les variables d'environnement si nécessaire
 os.environ["PYTHONIOENCODING"] = "utf-8"
 
-# Vérifier si Flask est installé avec le support async
+""" # Vérifier si Flask est installé avec le support async
 try:
     pkg_resources.get_distribution('flask[async]')
     print("Flask avec support async est déjà installé")
@@ -25,7 +25,7 @@ except pkg_resources.DistributionNotFound:
         print("Flask avec support async a été installé avec succès")
     except subprocess.CalledProcessError:
         print("Erreur lors de l'installation de Flask avec support async")
-
+ """
 # Importer et exécuter l'application
 try:
     from backend.app import app

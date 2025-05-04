@@ -259,6 +259,13 @@ function createCell_Notes(file_notes) {
     return Icon;
 }
 
+function createCell_OpenDossier(path) {
+    const Icon = document.createElement('span');
+    Icon.textContent = '📂'; // Folder icon
+    Icon.style.cursor = 'pointer';
+    Icon.addEventListener('click', () => open_dossier(path));
+    return Icon;
+}
 
 
 // Exposer les fonctions et objets globalement
