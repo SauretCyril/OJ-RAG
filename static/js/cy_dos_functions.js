@@ -155,7 +155,7 @@ function open_url(theurl) {
 
 function open_dossier(chemin) {
     const path = chemin.replace(/\\/g, '/');
-    alert("Ouverture de l'explorateur de fichiers pour le chemin : " + path);
+    //alert("Ouverture de l'explorateur de fichiers pour le chemin : " + path);
     ApiClient.files.openexploreur(path)
         .then(response => {
             if (response.status === "success") {

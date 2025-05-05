@@ -79,3 +79,39 @@
     'bak': '🔙',      # Backup
     'tmp': '⏱️',       # Temporary
     'temp': '⏱️', 
+
+    'default': {'icon': '📄', 'color': '#e0e0e0'},      # Gris clair
+    'folder': {'icon': '📁', 'color': '#4a6db5'},       # Bleu dossier
+    'docx': {'icon': '📝', 'color': '#2b579a'},         # Bleu Word
+    'doc': {'icon': '📝', 'color': '#2b579a'},          # Bleu Word
+    'pdf': {'icon': '📕', 'color': '#c43e1c'},          # Rouge PDF
+    'txt': {'icon': '📃', 'color': '#7c8ea9'},          # Gris bleuté
+    'jpg': {'icon': '🖼️', 'color': '#9a329b'},         # Violet
+    'jpeg': {'icon': '🖼️', 'color': '#9a329b'},        # Violet
+    'png': {'icon': '🖼️', 'color': '#6a4c93'},         # Violet foncé
+    'gif': {'icon': '🖼️', 'color': '#8b4fcb'},         # Violet moyen
+    'mp3': {'icon': '🎵', 'color': '#1db954'},          # Vert Spotify
+    'wav': {'icon': '🎵', 'color': '#66b3cc'},          # Bleu ciel
+    'mp4': {'icon': '🎬', 'color': '#2793e6'},          # Bleu vidéo
+    'avi': {'icon': '🎬', 'color': '#3d85c6'},          # Bleu vidéo foncé
+    'zip': {'icon': '🗜️', 'color': '#7e6551'},         # Marron clair
+    'rar': {'icon': '🗜️', 'color': '#6a5043'},         # Marron foncé
+    '7z': {'icon': '🗜️', 'color': '#8e6b5d'},          # Marron moyen
+    'py': {'icon': '🐍', 'color': '#3775a9'},           # Bleu Python
+    'js': {'icon': '📜', 'color': '#f7df1e'},           # Jaune JavaScript
+    'html': {'icon': '🌐', 'color': '#e34c26'},         # Orange HTML
+    'css': {'icon': '🎨', 'color': '#264de4'},          # Bleu CSS
+    'json': {'icon': '{ }', 'color': '#5ba478'},        # Vert JSON
+    'xml': {'icon': '⟨⟩', 'color': '#666666'},          # Gris foncé
+    'xls': {'icon': '📊', 'color': '#217346'},          # Vert Excel
+    'xlsx': {'icon': '📊', 'color': '#217346'},         # Vert Excel
+    'csv': {'icon': '📊', 'color': '#41a14a'},          # Vert clair
+    'sql': {'icon': '🛢️', 'color': '#f29111'},         # Orange SQL
+    'db': {'icon': '🛢️', 'color': '#527c9a'},          # Bleu-gris
+    'exe': {'icon': '⚙️', 'color': '#6f42c1'},          # Violet exécutable
+    'bat': {'icon': '⚙️', 'color': '#8c6f41'},          # Marron batch
+    'sh': {'icon': '⚙️', 'color': '#3c873a'},           # Vert shell
+    'md': {'icon': '📝', 'color': '#546e7a'},           # Gris bleuté markdown
+    'col': {'icon': '🔨', 'color': '#b56d47'},          # Orange-marron
+    'ask': {'icon': '💬', 'color': '#9c27b0'},          # Violet
+    'role': {'icon': '👷', 'color': '#ff9800'},         # Orange

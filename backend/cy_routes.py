@@ -102,7 +102,7 @@ def calculate_delay(data):
 async def read_annonces_json():
     try:
         print("DEBUG: Début de la fonction read_annonces_json")
-        isDetectNew="N"
+        isDetectNew="O"
         buildAllPaths()
         data = request.get_json()
         if not data:
