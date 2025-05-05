@@ -149,6 +149,10 @@ async function get_cv(numDossier, repertoire_annonces, state, prefix) {
  * @returns {Promise} - Promise contenant le résultat de l'opération
  */
 function open_url(theurl) {
+    if (!theurl || typeof theurl !== 'string') {
+        alert(`URL ${theurl} invalide ou non fournie`);
+        return Promise.reject(new Error("URL invalide ou non fournie"));
+    }
     return ApiClient.files.openUrl(theurl);
 }
 

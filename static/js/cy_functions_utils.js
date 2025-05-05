@@ -185,6 +185,7 @@ const ColumnUtils = {
  */
 //colKey = colKey + "_value"
 //value=item[colvalue]
+
 function createCell_lnk(colKey,item){
     const icon = document.createElement('span');
     const colvalue = colKey + "_value";

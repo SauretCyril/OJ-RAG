@@ -137,7 +137,23 @@ function loadTableData(callback) {
                         
                         // Ajouter l'événement onblur pour mettre à jour les annonces
                         cell.onblur = () => updateAnnonces(index, col.key, cell.textContent); */
-                    } else {
+                    }   else if (col.key === 'description') {
+                        // Create a link for the description field
+                        const link = document.createElement('a');
+                        link.textContent = item[col.key];
+                        if (item['url']!=="") {
+                           
+                            link.style.textDecoration = 'underline';
+                            link.style.color = 'blue';
+                            link.target = '_blank'; // Open in a new tab
+                            link.style.cursor = 'pointer';
+                            cell.addEventListener('click', () => open_url(item['url']));
+                            
+                        }
+                        cell.appendChild(link);
+                    }
+
+                    else {
                         // Le traitement normal pour les autres cellules
                         cell.style.textDecoration = '';
                         cell.style.color = '';

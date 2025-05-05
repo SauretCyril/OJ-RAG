@@ -31,7 +31,10 @@ FILE_TYPES = {
     'col': {'icon': '🔨', 'color': '#5ba478'},        # Orange-marron
     'ask': {'icon': '💬', 'color': '#5ba478'},        # Violet
     'role': {'icon': '👷', 'color': '#5ba478'},       # Orange
-    'data.json': {'icon': '📊', 'color': '#5ba478'}   # Vert JSON
+    'data.json': {'icon': '📊', 'color': '#5ba478'},# Vert JSON
+    'clas': {'icon': '⚙️', 'color': '#5ba478'},
+     'conf': {'icon': '🛠️', 'color': '#5ba478'},
+     'exclued': {'icon': '👁️', 'color': '#5ba478'}
 }
 
 def get_file_type(path):

@@ -129,7 +129,7 @@ async def read_annonces_json():
         except Exception as e:
             print(f"DEBUG: Erreur lors du chargement des critères d'annonces: {e}")
             crit_annonces = None
-        
+        record_added=False
         # Parcourir tous les dossiers sauf ceux exclus
         for root, _, files in os.walk(directory_path):
             parent_dir = os.path.basename(root)
@@ -151,7 +151,7 @@ async def read_annonces_json():
             file_cv_pdf_New = parent_dir + CONSTANTS['FILE_NAMES']['CV_SUFFIX_NEW'] + ".pdf"
             data_json_file = ".data.json" 
              
-            record_added = False
+            
             data = {}
             isCVin="N"
             isBAdocx="N"
@@ -190,6 +190,7 @@ async def read_annonces_json():
                 file_path_nodata = file_path_nodata.replace('\\', '/')
                 
                 if filename == data_json_file:
+                   
                     try:
                         with open(file_path, 'r', encoding='utf-8') as file:
                             data = json.load(file)
@@ -232,113 +233,116 @@ async def read_annonces_json():
            
                     #ici
             # Si aucun enregistrement n'a été ajouté pour ce dossier
-            if not record_added and isDetectNew == "O":
-                try:
-                    
-                    Piece_exist=False
-                    if not record_added:
+            if isDetectNew == "O":
+                if not record_added :
+                    try:
+                        Piece_exist=False
                         thefile=""
                         Piece_exist=False
-                        if isDetectNew  =="O":
-                            if isJo =="O":
-                                thefile= file_path_isJo
-                                print ("dbg-1245 file_path_isJo trouvé = ",file_path_isJo)
-                                Piece_exist=True
-                            elif isGptResum =="O":
-                                thefile =file_path_gpt
-                                Piece_exist=True
-                    if Piece_exist:
-                        print ("RP-7245 le fichier main va être traité = ",thefile)
-                        #thefile = thefile.replace('\\', '/')
-                        texte=extract_text_from_pdf(thefile)
-                        infos=texte
-                        the_request = await load_Instruction_classement()
-                        print("dbg 6789-------------------------------", the_request)
-                        if not the_request or the_request.strip() == "":
-                             print("Error: the_request is invalid or empty.")
-                             #return jsonify({"status": "error", "message": "Invalid instruction request"}), 400
-                             infos=texte
-                        else:
-                             print("RP-2158", the_request)  
-                             role="analyse le texte suivant et réponds à cette question, peux tu renvoyer les informations sous forme de données json, les champs son définie dans la question entre [ et ]"
-                             infos = get_mistral_answer(the_request, role, texte)
-                        print("RP-999 infos = ", infos)
-                        if infos:
-                            try:
-                                # Tenter de parser comme JSON
-                                parsed_json = json.loads(infos)
-                                data["url"] = parsed_json.get("url", "N/A")
-                                data["Date"] = parsed_json.get("Date", "N/A") 
-                                data["entreprise"] = parsed_json.get("entreprise", "N/A")
-                                data["description"] = parsed_json.get("poste", "N/A")
-                                data["Lieu"] = parsed_json.get("lieu", "N/A")
-                            except json.JSONDecodeError:
-                                # La réponse n'est pas du JSON valide
-                                print("RP-1000 : Réponse non JSON, tentative d'extraction des infos du texte")
-                                # Extraction basique (peut être améliorée)
+                        if isJo =="O":
+                            thefile= file_path_isJo
+                            print ("dbg-1245 file_path_isJo trouvé = ",file_path_isJo)
+                            Piece_exist=True
+                        elif isGptResum =="O":
+                            thefile =file_path_gpt
+                            Piece_exist=True
+                        
+                        if Piece_exist:
+                            print ("RP-7245 le fichier main va être traité = ",thefile)
+                            #thefile = thefile.replace('\\', '/')
+                            texte=extract_text_from_pdf(thefile)
+                            infos=texte
+                            the_request = await load_Instruction_classement()
+                            print("dbg 6789-------------------------------", the_request)
+                            if not the_request or the_request.strip() == "":
+                                print("Error: the_request is invalid or empty.")
+                                #return jsonify({"status": "error", "message": "Invalid instruction request"}), 400
+                                infos=texte
+                            else:
+                                print("RP-2158", the_request)  
+                                role="analyse le texte suivant et réponds à cette question, peux tu renvoyer les informations sous forme de données json, les champs son définie dans la question entre [ et ]"
+                                infos = get_mistral_answer(the_request, role, texte)
+                            print("RP-999 infos = ", infos)
+                            if infos:
                                 try:
-                                    # Tenter de trouver des données structurées dans la réponse texte
-                                    import re
-                                    
-                                    # Chercher un objet JSON dans la réponse
-                                    json_match = re.search(r'(\{.*\})', infos, re.DOTALL)
-                                    if json_match:
-                                        try:
-                                            extracted_json = json.loads(json_match.group(1))
-                                            data["url"] = extracted_json.get("url", "N/A")
-                                            data["Date"] = extracted_json.get("Date", "N/A")
-                                            data["entreprise"] = extracted_json.get("entreprise", "N/A")
-                                            data["description"] = extracted_json.get("poste", "N/A")
-                                            data["Lieu"] = extracted_json.get("lieu", "N/A")
-                                        except:
+                                    # Tenter de parser comme JSON
+                                    parsed_json = json.loads(infos)
+                                    data["url"] = parsed_json.get("url", "N/A")
+                                    data["Date"] = parsed_json.get("Date", "N/A") 
+                                    data["entreprise"] = parsed_json.get("entreprise", "N/A")
+                                    data["description"] = parsed_json.get("poste", "N/A")
+                                    data["Lieu"] = parsed_json.get("lieu", "N/A")
+                                except json.JSONDecodeError:
+                                    # La réponse n'est pas du JSON valide
+                                    print("RP-1000 : Réponse non JSON, tentative d'extraction des infos du texte")
+                                    # Extraction basique (peut être améliorée)
+                                    try:
+                                        # Tenter de trouver des données structurées dans la réponse texte
+                                        import re
+                                        
+                                        # Chercher un objet JSON dans la réponse
+                                        json_match = re.search(r'(\{.*\})', infos, re.DOTALL)
+                                        if json_match:
+                                            try:
+                                                extracted_json = json.loads(json_match.group(1))
+                                                data["url"] = extracted_json.get("url", "N/A")
+                                                data["Date"] = extracted_json.get("Date", "N/A")
+                                                data["entreprise"] = extracted_json.get("entreprise", "N/A")
+                                                data["description"] = extracted_json.get("poste", "N/A")
+                                                data["Lieu"] = extracted_json.get("lieu", "N/A")
+                                            except:
+                                                # Utiliser le texte brut
+                                                data["url"] = "N/A"
+                                                data["Date"] = "N/A" 
+                                                data["entreprise"] = "N/A"
+                                                data["description"] = "Pas d'infos"
+                                                data["Lieu"] = "N/A"
+                                        else:
                                             # Utiliser le texte brut
                                             data["url"] = "N/A"
                                             data["Date"] = "N/A" 
                                             data["entreprise"] = "N/A"
                                             data["description"] = "Pas d'infos"
                                             data["Lieu"] = "N/A"
-                                    else:
-                                        # Utiliser le texte brut
+                                    except Exception as extraction_error:
+                                        print(f"RP-1001 : Erreur lors de l'extraction: {str(extraction_error)}")
+                                        # Fallback en cas d'échec total
                                         data["url"] = "N/A"
-                                        data["Date"] = "N/A" 
-                                        data["entreprise"] = "N/A"
-                                        data["description"] = "Pas d'infos"
+                                        data["Date"] = "N/A"
+                                        data["entreprise"] = "N/A"  
+                                        data["description"] = "Erreur lors du traitement"
                                         data["Lieu"] = "N/A"
-                                except Exception as extraction_error:
-                                    print(f"RP-1001 : Erreur lors de l'extraction: {str(extraction_error)}")
-                                    # Fallback en cas d'échec total
-                                    data["url"] = "N/A"
-                                    data["Date"] = "N/A"
-                                    data["entreprise"] = "N/A"  
-                                    data["description"] = "Erreur lors du traitement"
-                                    data["Lieu"] = "N/A"
-                            print ("RP-999 infos = ",infos)    
-                            data["dossier"] = parent_dir    
-                            data["isJo"] = isJo
-                            data["isAction"] = isAction
-                            data["GptSum"] = isGptResum
-                            data["CV"] = isCVin
-                            data["CVpdf"] = isCVinpdf
+                                print ("RP-999 infos = ",infos)    
+                                # Préparation des données
+                                data["dossier"] = parent_dir    
+                                data["isJo"] = isJo
+                                data["isAction"] = isAction
+                                data["GptSum"] = isGptResum
+                                data["CV"] = isCVin
+                                data["CVpdf"] = isCVinpdf
                                 # block info piece         
-                            data["etat"] = "New"
-                            jData = {file_path_nodata:data}  
+                                data["etat"] = "New"
                                 
-                            dossier_list.append(jData)
-                            record_added = True
-                            #file_path_nodata = file_path_nodata.replace('\\', '/')  # Normalize path
-                            with open(file_path_nodata, 'w', encoding='utf-8') as file:
-                                    json.dump(data, file, ensure_ascii=False, indent=4)
-                          
-                            # Ajouter à la liste
-                            jData = {file_path_nodata: data}
-                            dossier_list.append(jData)
-                        
-                            # Sauvegarder le nouveau fichier de données
-                            with open(file_path_nodata, 'w', encoding='utf-8') as file:
-                                json.dump(data, file, ensure_ascii=False, indent=4)
-                            
-                except Exception as e:
-                    print(f"DEBUG: Erreur lors de la création d'un nouvel enregistrement: {str(e)}")
+                                # Créer l'objet de données pour ajouter à la liste
+                                jData = {file_path_nodata: data}  
+                                
+                                try:
+                                    # Sauvegarder le fichier d'abord
+                                    with open(file_path_nodata, 'w', encoding='utf-8') as file:
+                                        json.dump(data, file, ensure_ascii=False, indent=4)
+                                    
+                                    print(f"DEBUG: Fichier {file_path_nodata} sauvegardé avec succès")
+                                    
+                                    # Puis ajouter à la liste de dossiers
+                                    dossier_list.append(jData)
+                                    record_added = True
+                                    
+                                except Exception as e:
+                                    print(f"DEBUG: Erreur lors de la sauvegarde du fichier {file_path_nodata}: {str(e)}")
+                                    # Ne pas ajouter à la liste si la sauvegarde a échoué
+                                
+                    except Exception as e:
+                        print(f"DEBUG: Erreur lors de la création d'un nouvel enregistrement: {str(e)}")
         
         print(f"DEBUG: Nombre de dossiers traités: {len(dossier_list)}")
         return jsonify(dossier_list), 200
@@ -871,7 +875,8 @@ def generate_html_index():
         sufix = data.get('sufix')
         # Sort the dossier_list by the 'todo' field
         sorted_dossier_list = sorted(dossier_list , key=lambda x: list(x.values())[0].get('todo', ''))
-        index_path = os.path.join(GetRoot(), os.getenv("INDEX_DOSSIERS"))
+        index_file = os.path.basename(os.path.dirname(GetRoot()))
+        index_path = os.path.join(GetRoot(), index_file+ "_index_.html")
         # Check if the file exists to add table headers only once
         file_exists = os.path.exists(index_path)
         if file_exists:
