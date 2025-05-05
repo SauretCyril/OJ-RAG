@@ -79,6 +79,7 @@ const ApiClient = {
         openUrl: (url) => httpPost('/open_url', { url }),
         readNotes: (filePath) => httpPost('/read_notes', { file_path: filePath }),
         saveNotes: (filePath, content) => httpPost('/save_notes', { file_path: filePath, content }),
+        getDirectoryRoot: () => httpGet('/get_directory_root'),
         // Fonction centralisée pour upload_doc
         upload: (formData) => {
             // Cette fonction nécessite un FormData pour l'upload de fichiers

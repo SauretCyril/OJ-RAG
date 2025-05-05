@@ -156,7 +156,18 @@ function open_url(theurl) {
     return ApiClient.files.openUrl(theurl);
 }
 
-
+function open_dossier_root() 
+{
+    ApiClient.files.getDirectoryRoot()
+  .then(response => {
+    // Utilisation de response.root_directory
+    console.log("Répertoire racine:", response.root_directory);
+    open_dossier(response.root_directory) 
+  })
+  .catch(error => {
+    console.error("Erreur lors de la récupération du répertoire racine:", error);
+  });
+}
 function open_dossier(chemin) {
     const path = chemin.replace(/\\/g, '/');
     //alert("Ouverture de l'explorateur de fichiers pour le chemin : " + path);

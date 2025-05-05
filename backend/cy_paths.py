@@ -7,6 +7,15 @@ import pythoncom
 
 paths = Blueprint('cookies', __name__)
 
+@paths.route('/get_directory_root', methods=['GET'])
+def get_directory_root():
+    try:
+        root_dir = GetRoot()
+        return jsonify({'root_directory': root_dir}), 200
+    except Exception as e:
+        logger.error(f"Error retrieving root directory: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+    
 def GetRoot():
     root_dir = os.getenv("ANNONCES_FILE_DIR")
     newroot = get_cookie_value("current_dossier")
