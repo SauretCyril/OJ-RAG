@@ -40,13 +40,49 @@ FILE_TYPES = {
      'exclued': {'icon': '👁️', 'color': '#5ba478'}
 }
 
+# Définition des groupes de fichiers pour le filtrage
+FILE_GROUPS = {
+    'Documents': {
+        'icon': '📚',
+        'types': ['pdf', 'docx', 'default'],
+        'color': '#2b579a'
+    },
+    'Configuration': {
+        'icon': '⚙️',
+        'types': ['conf', 'clas', 'data.json'],
+        'color': '#5ba478'
+    },
+    'Données': {
+        'icon': '🗂️',
+        'types': ['col', 'ask', 'role', 'exclued'],
+        'color': '#9a329b'
+    }
+}
+
+# Définition des filtres par motif de nom de fichier
+NAME_FILTERS = {
+    'CV': {
+        'icon': '📋',
+        'pattern': '_CV_',
+        'color': '#ff6b6b'  # Rouge vif
+    }
+    # Vous pouvez ajouter d'autres filtres par nom ici
+}
+
 def initialize_filters():
     """
     Initialise tous les filtres à actif (True)
     """
     global active_filters
-    active_filters = {file_type: True for file_type in FILE_TYPES.keys()}
-    # Toujours afficher les dossiers
+    # Initialiser les filtres par groupe
+    for group_name in FILE_GROUPS:
+        active_filters[group_name] = True
+    
+    # Initialiser les filtres par motif de nom
+    for filter_name in NAME_FILTERS:
+        active_filters[filter_name] = True
+    
+    # Assurer que le filtre folder est toujours actif (les dossiers sont toujours affichés)
     active_filters['folder'] = True
 
 def get_file_type(path):
@@ -133,26 +169,44 @@ def populate_treeview(tree, parent, path):
 
 def get_file_extension(path):
     """
-    Retourne le type de fichier pour le filtrage
+    Retourne le type de fichier pour le filtrage.
+    Pour les groupes de filtres, identifie à quel groupe appartient le fichier.
+    Pour les filtres par nom, vérifie si le nom du fichier contient le motif spécifié.
     """
     if os.path.isdir(path):
         return 'folder'
     
     filename = os.path.basename(path)
     
-    # Traitement pour les fichiers spéciaux
-    for special_type in ['data.json', 'col', 'ask', 'role', 'clas', 'conf', 'exclued']:
-        if filename.endswith(special_type):
-            return special_type
+    # Vérifier si le nom du fichier correspond à un filtre par motif
+    for filter_name, filter_info in NAME_FILTERS.items():
+        if filter_info['pattern'] in filename:
+            return filter_name
     
-    # Traitement standard par extension
+    # Extraction de l'extension
     _, extension = os.path.splitext(path)
     extension = extension[1:].lower() if extension else ""
     
-    if extension in FILE_TYPES:
-        return extension
+    # Vérification des types de fichiers spéciaux
+    file_type = None
     
-    return 'default'
+    # Vérifier les fichiers spéciaux par leur nom complet
+    for special_type in ['data.json', 'col', 'ask', 'role', 'clas', 'conf', 'exclued']:
+        if filename.endswith(special_type):
+            file_type = special_type
+            break
+    
+    # Si pas de type spécial, utiliser l'extension
+    if file_type is None:
+        file_type = extension if extension in FILE_TYPES else 'default'
+    
+    # Déterminer à quel groupe appartient ce type de fichier
+    for group_name, group_info in FILE_GROUPS.items():
+        if file_type in group_info['types']:
+            return group_name
+    
+    # Si le fichier n'appartient à aucun groupe défini, le considérer comme 'default'
+    return 'Documents'  # Par défaut, dans le groupe Documents
 
 def on_tree_expand(event):
     """
@@ -301,7 +355,7 @@ def count_active_filters():
 
 def create_filter_buttons(parent, tree, current_path, label_result):
     """
-    Crée le cadre contenant les boutons de filtre pour les différents types de fichiers
+    Crée le cadre contenant les boutons de filtre pour les différents groupes de fichiers
     """
     # Initialiser les filtres
     initialize_filters()
@@ -314,29 +368,51 @@ def create_filter_buttons(parent, tree, current_path, label_result):
     filter_label = tk.Label(filter_frame, text="Filtres :")
     filter_label.pack(side='left', padx=(0, 10))
     
-    # Créer un bouton pour chaque type de fichier dans FILE_TYPES
+    # Créer un bouton pour chaque groupe de fichiers
     buttons = {}
-    for file_type, info in FILE_TYPES.items():
-        if file_type != 'folder':  # Ne pas créer de bouton pour les dossiers (toujours affichés)
-            button = tk.Button(
-                filter_frame, 
-                text=f"{info['icon']} {file_type}", 
-                relief=tk.RAISED, 
-                bg="#a0d2eb",
-                padx=5,
-                pady=2,
-                command=lambda ft=file_type, btn=None: toggle_filter(ft, btn, tree, current_path, label_result)
-            )
-            button.pack(side='left', padx=2)
-            
-            # Stocker la référence au bouton et mettre à jour la commande
-            buttons[file_type] = button
-            button.config(command=lambda ft=file_type, btn=button: toggle_filter(ft, btn, tree, current_path, label_result))
+    for group_name, group_info in FILE_GROUPS.items():
+        button = tk.Button(
+            filter_frame, 
+            text=f"{group_info['icon']} {group_name}", 
+            relief=tk.RAISED, 
+            bg="#a0d2eb",
+            fg=group_info['color'],
+            padx=5,
+            pady=2,
+            command=lambda grp=group_name, btn=None: toggle_filter(grp, btn, tree, current_path, label_result)
+        )
+        button.pack(side='left', padx=2)
+        
+        # Stocker la référence au bouton et mettre à jour la commande
+        buttons[group_name] = button
+        button.config(command=lambda grp=group_name, btn=button: toggle_filter(grp, btn, tree, current_path, label_result))
+    
+    # Ajouter un séparateur visuel
+    separator = tk.Frame(filter_frame, width=1, height=20, bg='#cccccc')
+    separator.pack(side='left', padx=5, pady=0)
+    
+    # Ajouter des boutons pour les filtres par motif de nom de fichier
+    for filter_name, filter_info in NAME_FILTERS.items():
+        pattern_button = tk.Button(
+            filter_frame, 
+            text=f"{filter_info['icon']} {filter_name}", 
+            relief=tk.RAISED, 
+            bg="#a0d2eb",
+            fg=filter_info['color'],
+            padx=5,
+            pady=2,
+            command=lambda f=filter_name, btn=None: toggle_filter(f, btn, tree, current_path, label_result)
+        )
+        pattern_button.pack(side='left', padx=2)
+        
+        # Stocker la référence au bouton et mettre à jour la commande
+        buttons[filter_name] = pattern_button
+        pattern_button.config(command=lambda f=filter_name, btn=pattern_button: toggle_filter(f, btn, tree, current_path, label_result))
     
     # Ajouter un bouton pour tout sélectionner/désélectionner
     select_all_button = tk.Button(
         filter_frame,
-        text="Tous",
+        text="🔍 Tous",
         relief=tk.RAISED,
         bg="#a0d2eb",
         padx=5,

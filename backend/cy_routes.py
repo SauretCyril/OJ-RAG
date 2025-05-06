@@ -101,23 +101,23 @@ def calculate_delay(data):
 @cy_routes.route('/read_annonces_json', methods=['POST'])
 async def read_annonces_json():
     try:
-        print("DEBUG: Début de la fonction read_annonces_json")
+        print("DBG-4658.0: Début de la fonction read_annonces_json")
         isDetectNew="O"
         buildAllPaths()
         data = request.get_json()
         if not data:
-            print("DEBUG: Pas de données JSON reçues")
+            print("DBG-4658.1: Pas de données JSON reçues")
             return jsonify([]), 200  # Retourne un tableau vide en cas de données manquantes
             
         #excluedFile = data.get('excluded', 'excluded_annonces.json')
         excluedFile =".exclued"
-        print(f"DEBUG: Fichier d'exclusion: {excluedFile}")
+        print(f"DBG-4658.2: Fichier d'exclusion: {excluedFile}")
         
         directory_path = GetRoot()
-        print(f"DEBUG: Chemin racine: {directory_path}")
+        print(f"DBG-4658.3: Chemin racine: {directory_path}")
        
         if not os.path.exists(GetRoot()):
-            print("DEBUG: Le chemin racine n'existe pas")
+            print("DBG-4658.4: Le chemin racine n'existe pas")
             return jsonify([]), 200
             
         dossier_list = []
@@ -125,11 +125,14 @@ async def read_annonces_json():
         # Charger les critères d'annonces de façon sécurisée
         try:
             crit_annonces = load_crit_annonces(excluedFile)
-            print(f"DEBUG: Critères d'annonces chargés: {crit_annonces is not None}")
+            print(f"DBG-4658.5: Critères d'annonces chargés: {crit_annonces is not None}")
         except Exception as e:
-            print(f"DEBUG: Erreur lors du chargement des critères d'annonces: {e}")
-            crit_annonces = None
+            print(f"ERR-4658.6: Erreur lors du chargement des critères d'annonces: {e}")
+            
+        crit_annonces = None
+        print (f"DBG-4658-isDetectNew == {isDetectNew}")    
         record_added=False
+        print (f"DBG-4658-starting loading-------------------------------------")    
         # Parcourir tous les dossiers sauf ceux exclus
         for root, _, files in os.walk(directory_path):
             parent_dir = os.path.basename(root)
@@ -224,45 +227,48 @@ async def read_annonces_json():
                                 jData = {file_path: data}
                                 dossier_list.append(jData)
                                 record_added = True
+                                print (f"{parent_dir}-NEW-4658 LOADING : Fichier {file_path} chargé avec succès")
                          
                             
                     except json.JSONDecodeError as e:
-                        print(f"DEBUG: Le fichier {file_path} contient du JSON invalide: {str(e)}")
+                        print(f"{parent_dir}-ERR-4658.a1: Le fichier {file_path} contient du JSON invalide: {str(e)}")
                     except Exception as e:
-                        print(f"DEBUG: Erreur lors du traitement de {file_path}: {str(e)}")
+                        print(f"{parent_dir}-ERR-4658.a2: Erreur lors du traitement de {file_path}: {str(e)}")
            
-                    #ici
+                     #ici
             # Si aucun enregistrement n'a été ajouté pour ce dossier
             if isDetectNew == "O":
+                
                 if not record_added :
                     try:
-                        Piece_exist=False
+                        print ("---------------------------")
+                        print (f"{parent_dir}-NEW-4658 - Nouveau dossier")
                         thefile=""
                         Piece_exist=False
                         if isJo =="O":
                             thefile= file_path_isJo
-                            print ("dbg-1245 file_path_isJo trouvé = ",file_path_isJo)
+                            print (f"{parent_dir}NEW-4658a file_path_isJo trouvé = ",file_path_isJo)
                             Piece_exist=True
                         elif isGptResum =="O":
                             thefile =file_path_gpt
                             Piece_exist=True
                         
                         if Piece_exist:
-                            print ("RP-7245 le fichier main va être traité = ",thefile)
+                            print (f"{parent_dir}NEW-4658b le fichier main va être traité = ",thefile)
                             #thefile = thefile.replace('\\', '/')
                             texte=extract_text_from_pdf(thefile)
                             infos=texte
                             the_request = await load_Instruction_classement()
-                            print("dbg 6789-------------------------------", the_request)
+                            print(f"{parent_dir}NEW-4658c- la question pour le classement", the_request)
                             if not the_request or the_request.strip() == "":
-                                print("Error: the_request is invalid or empty.")
+                                print(f"{parent_dir}ERR-4658d: the_request is invalid or empty.")
                                 #return jsonify({"status": "error", "message": "Invalid instruction request"}), 400
                                 infos=texte
                             else:
-                                print("RP-2158", the_request)  
                                 role="analyse le texte suivant et réponds à cette question, peux tu renvoyer les informations sous forme de données json, les champs son définie dans la question entre [ et ]"
+                                print(f"{parent_dir}ERR-4658d : le rôle pour le classement", role)
                                 infos = get_mistral_answer(the_request, role, texte)
-                            print("RP-999 infos = ", infos)
+                                print(f"{parent_dir}NEW-4658e answer mistral = ", infos)
                             if infos:
                                 try:
                                     # Tenter de parser comme JSON
@@ -274,7 +280,7 @@ async def read_annonces_json():
                                     data["Lieu"] = parsed_json.get("lieu", "N/A")
                                 except json.JSONDecodeError:
                                     # La réponse n'est pas du JSON valide
-                                    print("RP-1000 : Réponse non JSON, tentative d'extraction des infos du texte")
+                                    print(f"{parent_dir}-ERR-4658f : Réponse non JSON, tentative d'extraction des infos du texte")
                                     # Extraction basique (peut être améliorée)
                                     try:
                                         # Tenter de trouver des données structurées dans la réponse texte
@@ -305,14 +311,14 @@ async def read_annonces_json():
                                             data["description"] = "Pas d'infos"
                                             data["Lieu"] = "N/A"
                                     except Exception as extraction_error:
-                                        print(f"RP-1001 : Erreur lors de l'extraction: {str(extraction_error)}")
+                                        print(f"{parent_dir}-ERR-4658g : Erreur lors de l'extraction: {str(extraction_error)}")
                                         # Fallback en cas d'échec total
                                         data["url"] = "N/A"
                                         data["Date"] = "N/A"
                                         data["entreprise"] = "N/A"  
                                         data["description"] = "Erreur lors du traitement"
                                         data["Lieu"] = "N/A"
-                                print ("RP-999 infos = ",infos)    
+                               
                                 # Préparation des données
                                 data["dossier"] = parent_dir    
                                 data["isJo"] = isJo
@@ -331,24 +337,24 @@ async def read_annonces_json():
                                     with open(file_path_nodata, 'w', encoding='utf-8') as file:
                                         json.dump(data, file, ensure_ascii=False, indent=4)
                                     
-                                    print(f"DEBUG: Fichier {file_path_nodata} sauvegardé avec succès")
+                                    print(f"{parent_dir}-NEW-4658h : Fichier {file_path_nodata} sauvegardé avec succès")
                                     
                                     # Puis ajouter à la liste de dossiers
                                     dossier_list.append(jData)
                                     record_added = True
                                     
                                 except Exception as e:
-                                    print(f"DEBUG: Erreur lors de la sauvegarde du fichier {file_path_nodata}: {str(e)}")
+                                    print(f"{parent_dir}ERR-4658e Erreur lors de la sauvegarde du fichier {file_path_nodata}: {str(e)}")
                                     # Ne pas ajouter à la liste si la sauvegarde a échoué
                                 
                     except Exception as e:
-                        print(f"DEBUG: Erreur lors de la création d'un nouvel enregistrement: {str(e)}")
+                        print(f"{parent_dir}ERR-4658f : Erreur lors de la création d'un nouvel enregistrement: {str(e)}")
         
-        print(f"DEBUG: Nombre de dossiers traités: {len(dossier_list)}")
+        print(f"NEW-4658j: Nombre de dossiers traités: {len(dossier_list)}")
         return jsonify(dossier_list), 200
     
     except Exception as e:
-        print(f"Erreur dans read_annonces_json: {str(e)}")
+        print(f"ERR-4658k : Erreur dans read_annonces_json: {str(e)}")
         import traceback
         traceback.print_exc()
         # En cas d'erreur, retourner un tableau vide plutôt qu'une erreur 500
