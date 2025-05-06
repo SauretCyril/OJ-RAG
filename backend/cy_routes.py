@@ -239,12 +239,14 @@ async def read_annonces_json():
             # Si aucun enregistrement n'a été ajouté pour ce dossier
             if isDetectNew == "O":
                 
-                if not record_added :
+                if not record_added:
                     try:
                         print ("---------------------------")
-                        print (f"{parent_dir}-NEW-4658 - Nouveau dossier")
+                        print (f"{parent_dir}-NEW-4658.v - Nouveau dossier")
                         thefile=""
                         Piece_exist=False
+                        data = define_default_data()  # Initialize with default values
+                        
                         if isJo =="O":
                             thefile= file_path_isJo
                             print (f"{parent_dir}NEW-4658a file_path_isJo trouvé = ",file_path_isJo)
@@ -318,34 +320,41 @@ async def read_annonces_json():
                                         data["entreprise"] = "N/A"  
                                         data["description"] = "Erreur lors du traitement"
                                         data["Lieu"] = "N/A"
+                        else:
+                            # Si aucun fichier trouvé dans le répertoire, créer quand même le .data.json avec des valeurs par défaut
+                            print(f"{parent_dir}-NEW-4658x : Aucun fichier correspondant trouvé, création d'un .data.json par défaut")
                                
-                                # Préparation des données
-                                data["dossier"] = parent_dir    
-                                data["isJo"] = isJo
-                                data["isAction"] = isAction
-                                data["GptSum"] = isGptResum
-                                data["CV"] = isCVin
-                                data["CVpdf"] = isCVinpdf
-                                # block info piece         
-                                data["etat"] = "New"
-                                
-                                # Créer l'objet de données pour ajouter à la liste
-                                jData = {file_path_nodata: data}  
-                                
-                                try:
-                                    # Sauvegarder le fichier d'abord
-                                    with open(file_path_nodata, 'w', encoding='utf-8') as file:
-                                        json.dump(data, file, ensure_ascii=False, indent=4)
-                                    
-                                    print(f"{parent_dir}-NEW-4658h : Fichier {file_path_nodata} sauvegardé avec succès")
-                                    
-                                    # Puis ajouter à la liste de dossiers
-                                    dossier_list.append(jData)
-                                    record_added = True
-                                    
-                                except Exception as e:
-                                    print(f"{parent_dir}ERR-4658e Erreur lors de la sauvegarde du fichier {file_path_nodata}: {str(e)}")
-                                    # Ne pas ajouter à la liste si la sauvegarde a échoué
+                        # Préparation des données
+                        data["dossier"] = parent_dir    
+                        data["isJo"] = isJo
+                        data["isAction"] = isAction
+                        data["GptSum"] = isGptResum
+                        data["CV"] = isCVin
+                        data["CVpdf"] = isCVinpdf
+                        data["BA"] = isBAdocx
+                        data["BApdf"] = isBAinpdf
+                        # block info piece         
+                        data["etat"] = "New"
+                        
+                        # Créer l'objet de données pour ajouter à la liste
+                        file_path_nodata = os.path.join(root, ".data.json")
+                        file_path_nodata = file_path_nodata.replace('\\', '/')
+                        jData = {file_path_nodata: data}  
+                        
+                        try:
+                            # Sauvegarder le fichier d'abord
+                            with open(file_path_nodata, 'w', encoding='utf-8') as file:
+                                json.dump(data, file, ensure_ascii=False, indent=4)
+                            
+                            print(f"{parent_dir}-NEW-4658h : Fichier {file_path_nodata} sauvegardé avec succès")
+                            
+                            # Puis ajouter à la liste de dossiers
+                            dossier_list.append(jData)
+                            record_added = True
+                            
+                        except Exception as e:
+                            print(f"{parent_dir}ERR-4658e Erreur lors de la sauvegarde du fichier {file_path_nodata}: {str(e)}")
+                            # Ne pas ajouter à la liste si la sauvegarde a échoué
                                 
                     except Exception as e:
                         print(f"{parent_dir}ERR-4658f : Erreur lors de la création d'un nouvel enregistrement: {str(e)}")
