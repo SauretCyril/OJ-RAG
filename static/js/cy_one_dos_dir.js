@@ -1,17 +1,86 @@
 // ...existing code...
 
+// Variable pour suivre la ligne sélectionnée actuellement
+let selectedDirectoryRow = null;
+
+// Fonction pour ouvrir une boîte de dialogue de sélection de répertoire
+async function selectDirectoryDialog(pathInput) {
+    try {
+        // Essayer d'utiliser l'API moderne showDirectoryPicker si disponible
+        if ('showDirectoryPicker' in window) {
+            const directoryHandle = await window.showDirectoryPicker();
+            const path = directoryHandle.name;
+            
+            // Récupérer le chemin complet en parcourant la hiérarchie des handles
+            let pathParts = [path];
+            let currentHandle = directoryHandle;
+            
+            try {
+                while (currentHandle.parent) {
+                    currentHandle = await currentHandle.parent;
+                    if (currentHandle.name) {
+                        pathParts.unshift(currentHandle.name);
+                    }
+                }
+            } catch (error) {
+                console.warn("Impossible de récupérer le chemin complet:", error);
+            }
+            
+            // Construire le chemin avec des slashes/backslashes selon l'OS
+            const fullPath = pathParts.join('\\');
+            pathInput.value = fullPath;
+        } else {
+            // Solution de secours: Créer un input de type file masqué avec l'attribut webkitdirectory
+            const fileInput = document.createElement('input');
+            fileInput.type = 'file';
+            fileInput.style.display = 'none';
+            fileInput.setAttribute('webkitdirectory', '');
+            fileInput.setAttribute('directory', '');
+            
+            document.body.appendChild(fileInput);
+            
+            // Ouvrir la boîte de dialogue de sélection de fichier
+            fileInput.click();
+            
+            // Attendre que l'utilisateur sélectionne un dossier
+            fileInput.onchange = function() {
+                if (this.files && this.files.length > 0) {
+                    // Extraire le chemin du dossier sélectionné
+                    const filePath = this.files[0].webkitRelativePath || this.files[0].path;
+                    const folderPath = filePath.split('/')[0];
+                    
+                    pathInput.value = folderPath;
+                }
+                
+                // Nettoyer
+                document.body.removeChild(fileInput);
+            };
+        }
+    } catch (error) {
+        console.error("Erreur lors de la sélection du répertoire:", error);
+        alert("Impossible de sélectionner le répertoire: " + error.message);
+    }
+}
+
 async function selectRep() {
+    const currentDossier = await get_cookie('current_dossier') || 'Non défini';
+    
     const formHtml = `
         <dialog id="directoryForm" class="directory-form">
             <form method="dialog">
+                <div class="current-directory-header">
+                    <h3>Répertoire courant :</h3>
+                    <div class="current-directory-path">${currentDossier}</div>
+                </div>
                 <h2>Gestion des répertoires</h2>
                 <div class="directories-container">
                     <table id="directoriesTable" class="directories-table">
                         <thead>
                             <tr>
+                                <th class="action-column">Sel.</th>
                                 <th>Nom</th>
                                 <th>Chemin</th>
-                                <th>Actions</th>
+                                <th class="action-column">Actions</th>
                             </tr>
                         </thead>
                         <tbody id="directoriesTableBody">
@@ -20,9 +89,9 @@ async function selectRep() {
                     </table>
                 </div>
                 <div class="button-group">
-                    <button type="button" onclick="addNewDirectoryRow()">Ajouter un répertoire</button>
-                    <button type="button" onclick="saveAllDirectories()">Enregistrer les modifications</button>
-                    <button type="button" onclick="closeDirectoryForm()">Fermer</button>
+                    <button type="button" onclick="addNewDirectoryRow()" title="Ajouter un répertoire">➕</button>
+                    <button type="button" onclick="saveAllDirectories()" title="Enregistrer les modifications">💾</button>
+                    <button type="button" onclick="closeDirectoryForm()" title="Fermer">❌</button>
                 </div>
                 <div class="form-group" style="display: none;">
                     <label for="directoryPath">Répertoire actuel:</label>
@@ -72,6 +141,30 @@ async function selectRep() {
             display: flex;
             flex-direction: column;
         }
+        .current-directory-header {
+            background-color: #f0f8ff;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 15px;
+            border: 1px solid #b8daff;
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .current-directory-header h3 {
+            margin: 0;
+            margin-right: 10px;
+            color: #0056b3;
+        }
+        .current-directory-path {
+            font-family: monospace;
+            font-weight: bold;
+            color: #003366;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            flex: 1;
+        }
         .directory-form .form-group {
             margin-bottom: 15px;
         }
@@ -105,6 +198,7 @@ async function selectRep() {
         .directories-container {
             flex: 1;
             overflow-y: auto;
+            overflow-x: auto;
             margin-bottom: 10px;
             border: 1px solid #ddd;
             border-radius: 4px;
@@ -112,39 +206,76 @@ async function selectRep() {
         .directories-table {
             width: 100%;
             border-collapse: collapse;
+            table-layout: fixed;
         }
         .directories-table th, .directories-table td {
-            padding: 8px;
+            padding: 10px 8px;
             text-align: left;
             border-bottom: 1px solid #ddd;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
         .directories-table th {
             background-color: #f2f2f2;
             position: sticky;
             top: 0;
         }
+        .action-column {
+            width: 70px;
+            min-width: 70px;
+        }
         .directories-table input {
             width: 100%;
             padding: 5px;
             box-sizing: border-box;
         }
+        .selected-row {
+            background-color: #e8f4ff;
+        }
         .action-buttons {
             display: flex;
             gap: 5px;
+            width: 70px;
+            min-width: 70px;
+            justify-content: space-between;
         }
-        .action-buttons button {
-            padding: 5px 10px;
-            border: none;
-            border-radius: 3px;
-            cursor: pointer;
+        .browse-btn {
+            background-color: #6c757d;
+            color: white;
+            width: 30px;
+            padding: 4px;
+            margin-right: 2px;
+        }
+        .browse-btn:hover {
+            background-color: #5a6268;
         }
         .select-btn {
             background-color: #28a745;
             color: white;
+            width: 30px;
+            min-width: 30px;
+            padding: 4px;
+            height: 30px;
+            min-height: 30px;
+        }
+        .select-btn:hover {
+            background-color: #218838;
         }
         .remove-btn {
             background-color: #dc3545;
             color: white;
+            width: 30px;
+            min-width: 30px;
+            padding: 4px;
+            height: 30px;
+            min-height: 30px;
+        }
+        .remove-btn:hover {
+            background-color: #c82333;
+        }
+        tr {
+            height: 40px;
+            min-height: 40px;
         }
     `;
     document.head.appendChild(style6);
@@ -192,6 +323,16 @@ function addDirectoryToTable(label = '', path = '') {
     const tableBody = document.getElementById('directoriesTableBody');
     const row = document.createElement('tr');
     
+  // Bouton Select avec icône
+  const selectButton = document.createElement('button');
+  selectButton.innerHTML = '👆'; // Icône de dossier ouvert
+  selectButton.title = 'Sélectionner ce répertoire';
+  selectButton.className = 'select-btn';
+  selectButton.addEventListener('click', (event) => {
+      event.stopPropagation();
+      OpenSubdirectory(pathInput.value);
+  });
+  
     // Cellule pour le nom
     const labelCell = document.createElement('td');
     const labelInput = document.createElement('input');
@@ -211,33 +352,76 @@ function addDirectoryToTable(label = '', path = '') {
     // Cellule pour les actions
     const actionsCell = document.createElement('td');
     actionsCell.className = 'action-buttons';
+    actionsCell.style.visibility = 'hidden'; // Cacher par défaut
     
-    // Bouton Select
-    const selectButton = document.createElement('button');
-    selectButton.textContent = 'Select';
-    selectButton.className = 'select-btn';
-    selectButton.addEventListener('click', () => {
-        OpenSubdirectory(pathInput.value);
+    // Bouton Browse avec icône de curseur
+    const browseButton = document.createElement('button');
+    browseButton.innerHTML = '📂'; // Icône de curseur/pointer
+    browseButton.title = 'Parcourir les répertoires';
+    browseButton.className = 'browse-btn';
+    browseButton.addEventListener('click', (event) => {
+        event.stopPropagation();
+        selectDirectoryDialog(pathInput);
     });
     
-    // Bouton Remove
+  
+
+    // Bouton Remove avec icône
     const removeButton = document.createElement('button');
-    removeButton.textContent = 'Supprimer';
+    removeButton.innerHTML = '🗑️'; // Icône de corbeille
+    removeButton.title = 'Supprimer ce répertoire';
     removeButton.className = 'remove-btn';
-    removeButton.addEventListener('click', () => {
+    removeButton.addEventListener('click', (event) => {
+        event.stopPropagation();
         row.remove();
+        // Si la ligne supprimée était sélectionnée, réinitialiser la sélection
+        if (selectedDirectoryRow === row) {
+            selectedDirectoryRow = null;
+        }
     });
-    
-    actionsCell.appendChild(selectButton);
+   
+    actionsCell.appendChild(browseButton);
     actionsCell.appendChild(removeButton);
     
     // Ajouter les cellules à la ligne
+    
+    row.appendChild(selectButton);
     row.appendChild(labelCell);
     row.appendChild(pathCell);
     row.appendChild(actionsCell);
     
+    // Ajouter un événement de clic pour sélectionner la ligne
+    row.addEventListener('click', (event) => {
+        // Ne pas déclencher si on clique sur un bouton
+        if (event.target.tagName !== 'BUTTON') {
+            selectDirectoryRow(row);
+        }
+    });
+    
     // Ajouter la ligne au tableau
     tableBody.appendChild(row);
+}
+
+// Fonction pour sélectionner une ligne et afficher ses boutons d'action
+function selectDirectoryRow(row) {
+    // Désélectionner la ligne précédemment sélectionnée
+    if (selectedDirectoryRow) {
+        selectedDirectoryRow.classList.remove('selected-row');
+        const prevActionsCell = selectedDirectoryRow.querySelector('.action-buttons');
+        if (prevActionsCell) {
+            prevActionsCell.style.visibility = 'hidden';
+        }
+    }
+    
+    // Sélectionner la nouvelle ligne
+    row.classList.add('selected-row');
+    const actionsCell = row.querySelector('.action-buttons');
+    if (actionsCell) {
+        actionsCell.style.visibility = 'visible';
+    }
+    
+    // Mettre à jour la référence à la ligne sélectionnée
+    selectedDirectoryRow = row;
 }
 
 // Ajouter une nouvelle ligne de répertoire
@@ -344,6 +528,7 @@ async function closeDirectoryForm() {
         form.remove(); // Ensure the form is removed from the DOM
         window.conf = conf_loadconf();
         await loadColumnsFromServer();
+        refresh();
     }
 }
 
