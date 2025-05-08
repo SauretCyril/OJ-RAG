@@ -149,19 +149,36 @@ def populate_treeview(tree, parent, path):
             # Ajouter un élément fictif pour permettre l'expansion
             tree.insert(node, 'end', text='...', values=["dummy"])
         
+        # Vérifier si des filtres par nom sont actifs
+        active_name_filters = [name for name, is_active in active_filters.items() 
+                           if is_active and name in NAME_FILTERS]
+        
         # Ajouter les fichiers en tenant compte des filtres
         for item in files:
             item_path = os.path.join(path, item)
+            
+            # Vérifier si des filtres par nom sont actifs
+            if active_name_filters:
+                # Si des filtres par nom sont actifs, vérifier si le fichier correspond à l'un d'eux
+                file_matches = False
+                for filter_name in active_name_filters:
+                    pattern = NAME_FILTERS[filter_name]['pattern']
+                    if pattern in item:
+                        file_matches = True
+                        break
+                
+                if not file_matches:
+                    continue  # Passer au fichier suivant si aucun match
+            
+            # Si aucun filtre par nom n'est actif ou si le fichier correspond à un filtre actif
             file_type = get_file_extension(item_path)
             
-            # Vérifier si le type de fichier est dans les filtres actifs
-            if file_type in active_filters and active_filters[file_type]:
-                file_info = get_file_type(item_path)
-                icon = file_info['icon']
-                color = file_info['color']
-                
-                # Ajouter avec tag de couleur personnalisé
-                tree.insert(parent, 'end', text=f"{icon} {item}", values=[item_path], tags=(f"color_{color.replace('#', '')}",))
+            file_info = get_file_type(item_path)
+            icon = file_info['icon']
+            color = file_info['color']
+            
+            # Ajouter avec tag de couleur personnalisé
+            tree.insert(parent, 'end', text=f"{icon} {item}", values=[item_path], tags=(f"color_{color.replace('#', '')}",))
     except Exception as e:
         print(f"Erreur lors du peuplement de l'arborescence : {e}")
         import traceback
@@ -294,9 +311,11 @@ def toggle_filter(filter_name, button, tree, current_path, label_result):
     
     # Mettre à jour l'apparence du bouton
     if active_filters[filter_name]:
-        button.config(relief=tk.RAISED, bg="#a0d2eb")  # Bouton activé
-    else:
         button.config(relief=tk.SUNKEN, bg="#d3d3d3")  # Bouton désactivé
+    else:   
+        button.config(relief=tk.RAISED, bg="#a0d2eb")  # Bouton activé
+   
+        
     
     # Rafraîchir l'affichage
     refresh_treeview(tree, current_path, label_result)
@@ -370,26 +389,26 @@ def create_filter_buttons(parent, tree, current_path, label_result):
     
     # Créer un bouton pour chaque groupe de fichiers
     buttons = {}
-    for group_name, group_info in FILE_GROUPS.items():
-        button = tk.Button(
-            filter_frame, 
-            text=f"{group_info['icon']} {group_name}", 
-            relief=tk.RAISED, 
-            bg="#a0d2eb",
-            fg=group_info['color'],
-            padx=5,
-            pady=2,
-            command=lambda grp=group_name, btn=None: toggle_filter(grp, btn, tree, current_path, label_result)
-        )
-        button.pack(side='left', padx=2)
+    # for group_name, group_info in FILE_GROUPS.items():
+    #     button = tk.Button(
+    #         filter_frame, 
+    #         text=f"{group_info['icon']} {group_name}", 
+    #         relief=tk.RAISED, 
+    #         bg="#a0d2eb",
+    #         fg=group_info['color'],
+    #         padx=5,
+    #         pady=2,
+    #         command=lambda grp=group_name, btn=None: toggle_filter(grp, btn, tree, current_path, label_result)
+    #     )
+    #     button.pack(side='left', padx=2)
         
-        # Stocker la référence au bouton et mettre à jour la commande
-        buttons[group_name] = button
-        button.config(command=lambda grp=group_name, btn=button: toggle_filter(grp, btn, tree, current_path, label_result))
+    #     # Stocker la référence au bouton et mettre à jour la commande
+    #     buttons[group_name] = button
+    #     button.config(command=lambda grp=group_name, btn=button: toggle_filter(grp, btn, tree, current_path, label_result))
     
-    # Ajouter un séparateur visuel
-    separator = tk.Frame(filter_frame, width=1, height=20, bg='#cccccc')
-    separator.pack(side='left', padx=5, pady=0)
+    # # Ajouter un séparateur visuel
+    # separator = tk.Frame(filter_frame, width=1, height=20, bg='#cccccc')
+    # separator.pack(side='left', padx=5, pady=0)
     
     # Ajouter des boutons pour les filtres par motif de nom de fichier
     for filter_name, filter_info in NAME_FILTERS.items():
@@ -514,4 +533,5 @@ def open_exploreur():
     root.mainloop()
 
     return {"status": "Explorateur ouvert avec succès."}, 200
+
 
