@@ -149,30 +149,30 @@ def populate_treeview(tree, parent, path):
             # Ajouter un élément fictif pour permettre l'expansion
             tree.insert(node, 'end', text='...', values=["dummy"])
         
-        # Vérifier si des filtres par nom sont actifs
-        active_name_filters = [name for name, is_active in active_filters.items() 
-                           if is_active and name in NAME_FILTERS]
+        # Vérifier s'il y a des filtres par nom actifs
+        active_name_filters = {name: info['pattern'] for name, info in NAME_FILTERS.items() 
+                               if active_filters.get(name, False)}
         
         # Ajouter les fichiers en tenant compte des filtres
         for item in files:
             item_path = os.path.join(path, item)
             
-            # Vérifier si des filtres par nom sont actifs
+            # Si des filtres par nom sont actifs, vérifier si le fichier correspond à au moins un des motifs
             if active_name_filters:
-                # Si des filtres par nom sont actifs, vérifier si le fichier correspond à l'un d'eux
-                file_matches = False
-                for filter_name in active_name_filters:
-                    pattern = NAME_FILTERS[filter_name]['pattern']
+                # Par défaut, on exclut le fichier s'il ne correspond à aucun filtre actif
+                should_display = False
+                
+                # Vérifier si le fichier correspond à au moins un des motifs de filtres actifs
+                for filter_name, pattern in active_name_filters.items():
                     if pattern in item:
-                        file_matches = True
+                        should_display = True
                         break
                 
-                if not file_matches:
-                    continue  # Passer au fichier suivant si aucun match
+                # Si le fichier ne correspond à aucun filtre actif, passer au suivant
+                if not should_display:
+                    continue
             
-            # Si aucun filtre par nom n'est actif ou si le fichier correspond à un filtre actif
             file_type = get_file_extension(item_path)
-            
             file_info = get_file_type(item_path)
             icon = file_info['icon']
             color = file_info['color']
