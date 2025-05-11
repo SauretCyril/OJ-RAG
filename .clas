@@ -1,0 +1,10 @@
+Dans le texte suivant de l'offre d'emploi, je voudrais extraire les données au format JSON suivant:
+{
+"poste": "[nom ou description du poste]",
+"entreprise": "[nom de l'entreprise]",
+"lieu": "[lieu du poste]",
+"Date": "[date de l'annonce au format JJ-MM-AAAA]",
+"url": "[URL de l'annonce ou site web]"
+}
+
+N'invente pas d'information si l'information n'est pas présente dans le texte, utilise "N/A" à la place. Ne met pas de commentaire dans le JSON.

@@ -331,22 +331,23 @@ async def read_annonces_json():
                             data["BApdf"] = isBAinpdf
                             # block info piece         
                             data["etat"] = "New"
-                            
-                            # Créer l'objet de données pour ajouter à la liste
+                              # Créer l'objet de données pour ajouter à la liste
                             file_path_nodata = os.path.join(root, ".data.json")
                             file_path_nodata = file_path_nodata.replace('\\', '/')
-                            jData = {file_path_nodata: data}  
+                            jData = {file_path_nodata: data}
                             
                             try:
-                                # Sauvegarder le fichier d'abord
-                                with open(file_path_nodata, 'w', encoding='utf-8') as file:
-                                    json.dump(data, file, ensure_ascii=False, indent=4)
-                                
-                                print(f"{parent_dir}-NEW-4658h : Fichier {file_path_nodata} sauvegardé avec succès")
-                                
-                                # Puis ajouter à la liste de dossiers
-                                dossier_list.append(jData)
-                                record_added = True
+                                # Vérifier si le répertoire parent existe
+                                parent_dir_path = os.path.dirname(file_path_nodata)
+                                if os.path.exists(parent_dir_path):
+                                    with open(file_path_nodata, 'w', encoding='utf-8') as file:
+                                        json.dump(data, file, ensure_ascii=False, indent=4)
+                                    
+                                    print(f"{parent_dir}-NEW-4658h : Fichier {file_path_nodata} sauvegardé avec succès")
+                                    
+                                    # Puis ajouter à la liste de dossiers
+                                    dossier_list.append(jData)
+                                    record_added = True
                                 
                             except Exception as e:
                                 print(f"{parent_dir}ERR-4658e Erreur lors de la sauvegarde du fichier {file_path_nodata}: {str(e)}")
@@ -478,6 +479,13 @@ def save_annonces_json():
         for item in data:
             for file_path, content in item.items():
                 file_path = file_path.replace('\\', '/')  # Normalize path
+                
+                # Vérifier si le répertoire parent existe
+                parent_dir_path = os.path.dirname(file_path)
+                if not os.path.exists(parent_dir_path):
+                    print(f"Création du répertoire manquant: {parent_dir_path}")
+                    os.makedirs(parent_dir_path, exist_ok=True)
+                    
                 with open(file_path, 'w', encoding='utf-8') as file:
                     json.dump(content, file, ensure_ascii=False, indent=4)
         return jsonify({"status": "success"}), 200
@@ -770,12 +778,17 @@ def save_notes():
         data = request.get_json()
         file_path = data.get('file_path')
         content = data.get('content')
-        
         if not file_path or content is None:
             return jsonify({"status": "error", "message": "Missing parameters"}), 400
         
-        with open(file_path, 'w', encoding='utf-8') as file:
-            json.dump(content, file, ensure_ascii=False, indent=4)
+        # Vérifier si le répertoire parent existe
+        parent_dir_path = os.path.dirname(file_path)
+        if not os.path.exists(parent_dir_path):
+            print(f"Création du répertoire manquant: {parent_dir_path}")
+            #os.makedirs(parent_dir_path, exist_ok=True)
+        
+            with open(file_path, 'w', encoding='utf-8') as file:
+                json.dump(content, file, ensure_ascii=False, indent=4)
         
         return jsonify({"status": "success"}), 200
     except Exception as e:
@@ -856,18 +869,41 @@ async def load_Instruction_classement():
     try:
         text = ""
         file_name_txt = ".clas"
-        filepath = os.path.join(GetRoot(), file_name_txt)  # Updated to call GetRoot() correctly
+        
+        # Essayer d'abord le répertoire actuel (défini par GetRoot())
+        current_root = GetRoot()
+        filepath = os.path.join(current_root, file_name_txt)
         filepath = filepath.replace('\\', '/')
-        #print("dbg3434 :fichier requete",filepath)
-        #print("dbg789 :fichier instructions",filepath)
+        print(f"[DEBUG] Recherche du fichier .clas dans le répertoire courant: {filepath}")
+        
+        # Si le fichier n'existe pas dans le répertoire actuel, essayer le répertoire racine original
+        if not os.path.exists(filepath):
+            original_root = os.getenv("ANNONCES_FILE_DIR")
+            if original_root:
+                filepath = os.path.join(original_root, file_name_txt)
+                filepath = filepath.replace('\\', '/')
+                print(f"[DEBUG] Fichier .clas non trouvé dans le répertoire courant. Recherche dans le répertoire d'origine: {filepath}")
+            
+            # Si toujours pas trouvé, on peut chercher dans le répertoire du script
+            if not os.path.exists(filepath):
+                script_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # Remonte au répertoire parent du backend
+                filepath = os.path.join(script_dir, file_name_txt)
+                filepath = filepath.replace('\\', '/')
+                print(f"[DEBUG] Fichier .clas non trouvé dans le répertoire d'origine. Recherche dans le répertoire du script: {filepath}")
+        
+        # Lire le fichier s'il existe
         if os.path.exists(filepath):
+            print(f"[INFO] Fichier .clas trouvé à: {filepath}")
             with open(filepath, 'r', encoding='utf-8') as file:
                 text = file.read()
+        else:
+            print(f"[WARN] Fichier .clas introuvable après recherche dans plusieurs répertoires")
         
         return text
 
     except Exception as e:
         logger.error(f"Error loading text: {str(e)}")
+        print(f"[ERROR] Exception lors du chargement du fichier .clas: {str(e)}")
         return ""
 
 @cy_routes.route('/select_dir', methods=['GET'])

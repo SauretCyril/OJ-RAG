@@ -110,55 +110,60 @@ def save_answer():
         file_name = f"{job_number}_gpt_request"
         file_path = os.path.join(the_path, job_number)
         if not os.path.exists(file_path):
-            os.makedirs(file_path)
+            #os.makedirs(file_path)
         
-        file_path_docx = os.path.join(file_path, file_name + ".docx")
-        file_path_RQ = os.path.join(file_path, file_name + "_RQ.txt")
+            file_path_docx = os.path.join(file_path, file_name + ".docx")
+            file_path_RQ = os.path.join(file_path, file_name + "_RQ.txt")
 
-        doc = format_text_as_word_style(job_text_data, job_number)
-        doc.save(file_path_docx)
+            doc = format_text_as_word_style(job_text_data, job_number)
+            doc.save(file_path_docx)
 
-        pdf_file_path = file_path_docx.replace('.docx', '.pdf')
+            pdf_file_path = file_path_docx.replace('.docx', '.pdf')
        
         # Gérer la conversion de façon plus robuste
-        pythoncom.CoInitialize()  # Initialize COM library
-        try:
-            # Ajouter un timeout pour éviter que Word reste bloqué
-            import time
-            start_time = time.time()
-            
-            # Convertir le fichier
-            convert(file_path_docx, pdf_file_path)
-            
-            # Si la conversion a réussi et que le fichier PDF existe, supprimer le DOCX
-            if os.path.exists(pdf_file_path):
-                os.remove(file_path_docx)
-                
-        except Exception as convert_error:
-            logger.error(f"Er009a.Error during conversion: {str(convert_error)}")
-            # Essayer de tuer toutes les instances de Word qui pourraient être bloquées
+            pythoncom.CoInitialize()  # Initialize COM library
             try:
-                import subprocess
-                subprocess.run(['taskkill', '/f', '/im', 'WINWORD.EXE'], shell=True)
-            except:
-                pass
-            raise convert_error
-        finally:
-            # S'assurer que COM est bien désinitializé
-            pythoncom.CoUninitialize()
+                # Ajouter un timeout pour éviter que Word reste bloqué
+                import time
+                start_time = time.time()
+                
+                # Convertir le fichier
+                convert(file_path_docx, pdf_file_path)
+                
+                # Si la conversion a réussi et que le fichier PDF existe, supprimer le DOCX
+                if os.path.exists(pdf_file_path):
+                    os.remove(file_path_docx)
+                    
+            except Exception as convert_error:
+                logger.error(f"Er009a.Error during conversion: {str(convert_error)}")
+                # Essayer de tuer toutes les instances de Word qui pourraient être bloquées
+                try:
+                    import subprocess
+                    subprocess.run(['taskkill', '/f', '/im', 'WINWORD.EXE'], shell=True)
+                except:
+                    pass
+                raise convert_error
+            finally:
+                # S'assurer que COM est bien désinitializé
+                pythoncom.CoUninitialize()
 
-        # Sauvegarder la requête dans un fichier texte
-        save_rq_to_text_file(file_path_RQ, rq)
-        
-        return jsonify({'dbg009': 'Job text saved successfully', 'pdf_file_path': pdf_file_path})
+            # Sauvegarder la requête dans un fichier texte
+            save_rq_to_text_file(file_path_RQ, rq)
+            
+            return jsonify({'dbg009': 'Job text saved successfully', 'pdf_file_path': pdf_file_path})
 
     except Exception as e:
         logger.error(f"Er009.Error saving job text: {str(e)}")
         return jsonify({'Er009': str(e)}), 500
 
 def save_rq_to_text_file(file_path, rq):
-    with open(file_path, 'w') as file:
-        file.write(rq)
+    # Vérifier si le répertoire parent existe
+    parent_dir_path = os.path.dirname(file_path)
+    if not os.path.exists(parent_dir_path):
+        print(f"Création du répertoire manquant: {parent_dir_path}")
+        #os.makedirs(parent_dir_path, exist_ok=True
+        with open(file_path, 'w') as file:
+            file.write(rq)
 
 def format_text_as_word_style(job_text, job_number):
     doc = Document()
