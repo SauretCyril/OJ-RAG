@@ -9,8 +9,23 @@ from cy_file_manager import AsyncFileManager
 import os
 import asyncio
 import logging
+from functools import wraps
 
 logger = logging.getLogger(__name__)
+
+# Utility function to run async routes in Flask
+def run_async(f):
+    """Helper to run async functions in Flask routes"""
+    @wraps(f)
+    def wrapper(*args, **kwargs):
+        try:
+            loop = asyncio.get_event_loop()
+        except RuntimeError:
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+        
+        return loop.run_until_complete(f(*args, **kwargs))
+    return wrapper
 
 # Initialize data managers (should be done in app initialization)
 annonce_manager = AnnonceManager('data')
@@ -20,6 +35,7 @@ improved_routes = Blueprint('improved_routes', __name__)
 
 @improved_routes.route('/api/v2/annonces', methods=['GET'])
 @handle_api_errors
+@run_async
 async def get_annonces_v2():
     """
     Improved version of read_annonces_json with better error handling and performance
@@ -61,6 +77,7 @@ async def get_annonces_v2():
 
 @improved_routes.route('/api/v2/annonces/<dossier_id>', methods=['GET'])
 @handle_api_errors
+@run_async
 async def get_annonce_v2(dossier_id: str):
     """Get a single announcement by ID"""
     # Validate dossier_id
@@ -76,6 +93,7 @@ async def get_annonce_v2(dossier_id: str):
 @improved_routes.route('/api/v2/annonces/<dossier_id>', methods=['PUT'])
 @handle_api_errors
 @validate_json_input(['etat'])
+@run_async
 async def update_annonce_v2(dossier_id: str):
     """Update announcement status"""
     data = request.get_json()
@@ -97,6 +115,7 @@ async def update_annonce_v2(dossier_id: str):
 @improved_routes.route('/api/v2/open-url', methods=['POST'])
 @handle_api_errors
 @validate_json_input(['url'])
+@run_async
 async def open_url_v2():
     """Securely open URL in browser"""
     data = request.get_json()
@@ -113,6 +132,7 @@ async def open_url_v2():
 @improved_routes.route('/api/v2/open-directory', methods=['POST'])
 @handle_api_errors
 @validate_json_input(['directory_path'])
+@run_async
 async def open_directory_v2():
     """Securely open directory in file explorer"""
     data = request.get_json()
@@ -130,6 +150,7 @@ async def open_directory_v2():
 @improved_routes.route('/api/v2/file-exists', methods=['POST'])
 @handle_api_errors
 @validate_json_input(['file_path'])
+@run_async
 async def check_file_exists_v2():
     """Check if file exists securely"""
     data = request.get_json()
@@ -159,24 +180,3 @@ def _is_excluded(annonce: dict, exclusion_config: dict) -> bool:
     except Exception as e:
         logger.warning(f"Error checking exclusion criteria: {e}")
         return False
-
-# Utility function to run async routes in Flask
-def run_async(f):
-    """Helper to run async functions in Flask routes"""
-    from functools import wraps
-    @wraps(f)
-    def wrapper(*args, **kwargs):
-        try:
-            loop = asyncio.get_event_loop()
-        except RuntimeError:
-            loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop)
-        
-        return loop.run_until_complete(f(*args, **kwargs))
-    return wrapper
-
-# Apply async wrapper to all async routes
-for rule in improved_routes.url_map.iter_rules():
-    view_func = improved_routes.view_functions.get(rule.endpoint)
-    if view_func and asyncio.iscoroutinefunction(view_func):
-        improved_routes.view_functions[rule.endpoint] = run_async(view_func)
