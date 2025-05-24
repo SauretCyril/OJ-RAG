@@ -17,37 +17,73 @@ def get_directory_root():
         return jsonify({'error': str(e)}), 500
     
 def GetRoot():
-    root_dir = os.getenv("ANNONCES_FILE_DIR")
+    # Obtenir le répertoire de base des variables d'environnement
+    root_dir = os.getenv("ROOT_DIR")
+    if not root_dir:
+        # Fallback si ROOT_DIR n'est pas défini
+        root_dir = os.getenv("ANNONCES_FILE_DIR")
+    
+    # Vérifier si l'utilisateur a sélectionné un répertoire personnalisé
     newroot = get_cookie_value("current_dossier")
-    #print(f"dbg5698: newroot = {newroot}")
-    if os.path.exists(newroot):
+    
+    # Utiliser le répertoire personnalisé s'il existe
+    if newroot and os.path.exists(newroot):
+        print(f"[INFO] Utilisation du répertoire personnalisé: {newroot}")
         root_dir = newroot
-    root_dir = root_dir.replace('\\', '/') 
-    #print(f"dbg5698: ANNOUNCES_FILE_DIR = {root_dir}")
+    
+    # Normaliser le chemin (remplacer les backslashes par des slashes)
+    root_dir = root_dir.replace('\\', '/')
+    
+    # Vérification de sécurité
+    if not os.path.exists(root_dir):
+        print(f"[WARN] Le répertoire racine '{root_dir}' n'existe pas. Tentative de création...")
+        try:
+            os.makedirs(root_dir, exist_ok=True)
+        except Exception as e:
+            print(f"[ERROR] Impossible de créer le répertoire racine: {str(e)}")
+    
     return root_dir
 
 def GetDirFilter():
-    #print("dbg647 Get Dir Filter")
-    path_filter =os.getenv("ANNONCES_DIR_FILTER")
-    #print("dbg648 path_filter",path_filter)
+    # Récupérer le chemin relatif du filtre depuis les variables d'environnement
+    path_filter = os.getenv("ANNONCES_DIR_FILTER")
+    
+    # Récupérer le répertoire racine
     dirroot = GetRoot()
-    #print("dbg648 dirroot",dirroot)
     
-    new_path=os.path.join(dirroot,path_filter)
-    
+    # Combiner le chemin racine et le chemin relatif
     new_path = os.path.join(dirroot, path_filter)
+    
+    # Normaliser le chemin (remplacer les backslashes par des slashes)
     new_path = new_path.replace('\\', '/')
-    #print("dbg649 filter dir = ", new_path)
+    
+    # S'assurer que le répertoire existe
+    if not os.path.exists(new_path):
+        print(f"[INFO] Création du répertoire filter: {new_path}")
+        try:
+            os.makedirs(new_path, exist_ok=True)
+        except Exception as e:
+            print(f"[ERROR] Impossible de créer le répertoire filter: {str(e)}")
+    
     return new_path
 
 
 
 def GetDirState():
-    path_State =os.getenv("ANNONCES_DIR_STATE")
-    #dirroot = GetRoot()
-    #new_path=os.path.join(dirroot,path_State)
-    #print("dbg659filter dir = ",new_path)
-    new_path =  path_State.replace('\\', '/') 
+    # Récupérer le chemin depuis les variables d'environnement
+    path_State = os.getenv("ANNONCES_DIR_STATE")
+    
+    # Normaliser le chemin (remplacer les backslashes par des slashes)
+    new_path = path_State.replace('\\', '/')
+    
+    # S'assurer que le répertoire existe
+    if not os.path.exists(new_path):
+        print(f"[INFO] Création du répertoire state: {new_path}")
+        try:
+            os.makedirs(new_path, exist_ok=True)
+        except Exception as e:
+            print(f"[ERROR] Impossible de créer le répertoire state: {str(e)}")
+    
     return new_path
 
 def GetDirCRQ(dir):
