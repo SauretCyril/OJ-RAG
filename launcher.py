@@ -28,7 +28,8 @@ except pkg_resources.DistributionNotFound:
  """
 # Importer et exécuter l'application
 try:
-    from backend.app import app
+    # Utilisation de la version améliorée de l'application
+    from backend.app_improvements import app
     
     if __name__ == "__main__":
         from multiprocessing import freeze_support
@@ -40,6 +41,14 @@ except Exception as e:
     print("\nTraceback complet:")
     import traceback
     traceback.print_exc()
+    
+    # Fallback vers l'ancienne version en cas d'erreur
+    try:
+        print("\nTentative de fallback vers l'application standard...")
+        from backend.app import app
+        app.run(debug=True)
+    except Exception as e2:
+        print(f"Erreur également avec l'application standard: {str(e2)}")
     
     # Attendre avant de fermer
     input("\nAppuyez sur Entrée pour quitter...")
