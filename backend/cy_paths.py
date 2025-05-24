@@ -176,4 +176,47 @@ def check_dossier_exist():
         logger.error(f"Error checking dossier existence: {str(e)}")
         return jsonify({'error': str(e)}), 500
 
+@paths.route('/select_directory', methods=['POST'])
+def select_directory():
+    """
+    Ouvre une boîte de dialogue pour sélectionner un répertoire
+    """
+    try:
+        pythoncom.CoInitialize()  # Initialisation COM pour Windows
+        
+        # Créer une fenêtre Tkinter cachée
+        root = tk.Tk()
+        root.withdraw()  # Cacher la fenêtre principale
+        root.attributes('-topmost', True)  # Placer au premier plan
+        
+        # Ouvrir la boîte de dialogue de sélection de répertoire
+        selected_directory = filedialog.askdirectory(
+            title="Sélectionner un répertoire de travail",
+            initialdir=GetRoot()  # Commencer par le répertoire racine actuel
+        )
+        
+        # Nettoyer
+        root.destroy()
+        pythoncom.CoUninitialize()
+        
+        if selected_directory:
+            # Normaliser le chemin
+            selected_directory = selected_directory.replace('\\', '/')
+            return jsonify({
+                'success': True,
+                'selected_directory': selected_directory
+            }), 200
+        else:
+            return jsonify({
+                'success': False,
+                'message': 'Aucun répertoire sélectionné'
+            }), 200
+            
+    except Exception as e:
+        logger.error(f"Error selecting directory: {str(e)}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
 

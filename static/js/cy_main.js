@@ -145,16 +145,43 @@ async function loadFilterValues(tabActive) {
  */
 async function showCurrentDossier() {
     try {
-        const currentDossier = await getCookie('current_dossier');
+        let currentDossier = null;
+        
+        // Tenter de récupérer le cookie current_dossier
+        try {
+            currentDossier = await getCookie('current_dossier');
+        } catch (cookieError) {
+            console.log('Cookie current_dossier non trouvé ou erreur lors de la récupération:', cookieError.message);
+            // currentDossier reste null
+        }
         
         if (currentDossier) {
-            document.getElementById('current-dir').textContent = currentDossier;
+            // Vérifier si le répertoire existe
+            const directoryExists = await checkDirectoryExists(currentDossier);
+            
+            if (directoryExists) {
+                document.getElementById('current-dir').textContent = currentDossier;
+                document.getElementById('current-dir').style.color = ''; // Couleur normale
+            } else {
+                // Le répertoire n'existe plus
+                console.warn(`Le répertoire '${currentDossier}' n'existe plus.`);
+                document.getElementById('current-dir').textContent = `INVALIDE: ${currentDossier}`;
+                document.getElementById('current-dir').style.color = 'red';
+                await promptUserForValidDirectory();
+            }
         } else {
-            document.getElementById('current-dir').textContent = 'No current';
+            // Aucun cookie current_dossier n'existe
+            console.log('Aucun répertoire courant défini. Demande de sélection à l\'utilisateur.');
+            document.getElementById('current-dir').textContent = 'Aucun répertoire sélectionné';
+            document.getElementById('current-dir').style.color = 'orange';
+            await promptUserForValidDirectory();
         }
     } catch (error) {
         console.error('Erreur lors de la récupération du dossier courant:', error);
-        throw error;
+        // En cas d'erreur, demander quand même à l'utilisateur de sélectionner un répertoire
+        document.getElementById('current-dir').textContent = 'Erreur - Sélection requise';
+        document.getElementById('current-dir').style.color = 'red';
+        await promptUserForValidDirectory();
     }
 }
 
@@ -199,6 +226,96 @@ async function conf_loadconf() {
     }
 }
 
+/**
+ * Vérifie si un répertoire existe
+ * @param {string} directoryPath - Chemin du répertoire à vérifier
+ * @returns {Promise<boolean>} - true si le répertoire existe, false sinon
+ */
+async function checkDirectoryExists(directoryPath) {
+    try {
+        const response = await httpPost('/check_dossier_exists', { 
+            dossier: directoryPath 
+        });
+        return response.exists === true;
+    } catch (error) {
+        console.error('Erreur lors de la vérification du répertoire:', error);
+        return false;
+    }
+}
+
+/**
+ * Demande à l'utilisateur de sélectionner un répertoire valide
+ * @returns {Promise} - Promise contenant le résultat de l'opération
+ */
+async function promptUserForValidDirectory() {
+    try {
+        // Afficher une boîte de dialogue pour informer l'utilisateur
+        const userChoice = confirm(
+            "Aucun répertoire de travail valide n'est défini.\n" +
+            "Voulez-vous sélectionner un répertoire de travail maintenant ?\n\n" +
+            "Cliquez OK pour ouvrir le sélecteur de fichiers, ou Annuler pour continuer sans répertoire."
+        );
+        
+        if (userChoice) {
+            // Ouvrir le sélecteur de répertoire
+            await openDirectorySelector();
+        } else {
+            // L'utilisateur a annulé, afficher un message d'avertissement
+            document.getElementById('current-dir').textContent = 'ATTENTION: Aucun répertoire défini';
+            document.getElementById('current-dir').style.color = 'red';
+            
+            // Optionnel : afficher une notification persistante
+            console.warn('L\'application fonctionne sans répertoire de travail défini. Certaines fonctionnalités peuvent être limitées.');
+        }
+    } catch (error) {
+        console.error('Erreur lors de la demande de sélection de répertoire:', error);
+    }
+}
+
+/**
+ * Ouvre le sélecteur de répertoire
+ * @returns {Promise} - Promise contenant le résultat de l'opération
+ */
+async function openDirectorySelector() {
+    try {
+        // Appeler l'API pour ouvrir le sélecteur de répertoire
+        const response = await httpPost('/select_directory', {});
+        
+        if (response && response.success && response.selected_directory) {
+            // Mettre à jour le cookie avec le nouveau répertoire
+            await setCookie('current_dossier', response.selected_directory);
+            
+            // Mettre à jour l'affichage
+            document.getElementById('current-dir').textContent = response.selected_directory;
+            document.getElementById('current-dir').style.color = 'green'; // Couleur verte pour indiquer le succès
+            
+            console.log(`Nouveau répertoire sélectionné: ${response.selected_directory}`);
+            
+            // Recharger les données avec le nouveau répertoire
+            try {
+                await loadTableData(() => {
+                    console.log('Données rechargées avec le nouveau répertoire');
+                });
+            } catch (loadError) {
+                console.warn('Erreur lors du rechargement des données:', loadError);
+                // Ne pas bloquer l'application si le rechargement échoue
+            }
+            
+        } else if (response && !response.success) {
+            console.log('Sélection de répertoire annulée par l\'utilisateur');
+            document.getElementById('current-dir').textContent = 'Sélection annulée';
+            document.getElementById('current-dir').style.color = 'orange';
+        }
+    } catch (error) {
+        console.error('Erreur lors de l\'ouverture du sélecteur de répertoire:', error);
+        document.getElementById('current-dir').textContent = 'Erreur de sélection';
+        document.getElementById('current-dir').style.color = 'red';
+        
+        // Afficher une alerte à l'utilisateur
+        alert('Erreur lors de la sélection du répertoire. Veuillez vérifier que l\'application backend fonctionne correctement.');
+    }
+}
+
 // Initialiser l'application au chargement de la page
 window.addEventListener('load', initializeApp);
 
@@ -209,3 +326,6 @@ window.save_config_col = saveConfigCol;
 window.view_results = viewResults;
 window.loadFilterValues = loadFilterValues;
 window.show_current_dossier = showCurrentDossier;
+window.checkDirectoryExists = checkDirectoryExists;
+window.promptUserForValidDirectory = promptUserForValidDirectory;
+window.openDirectorySelector = openDirectorySelector;

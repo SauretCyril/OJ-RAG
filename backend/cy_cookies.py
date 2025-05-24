@@ -44,33 +44,70 @@ def save_cookie():
 @cy_cookies.route('/load_cookies', methods=['GET'])
 def load_cookies():
     global cookies_data
-    if os.path.exists(json_file_path):
-        with open(json_file_path, 'r') as file:
-            cookies_data = json.load(file)
-       #logger.info("Cookies loaded successfully from the JSON file.")
-        return jsonify({"message": "Cookies loaded successfully", "cookies_data": cookies_data})
-    else:
-        #logger.warning("JSON file does not exist.")
-        return jsonify({"error": "JSON file does not exist"}), 404
+    try:
+        if os.path.exists(json_file_path):
+            with open(json_file_path, 'r') as file:
+                content = file.read().strip()
+                if not content:
+                    # Fichier vide, initialiser avec un objet JSON vide
+                    cookies_data = {}
+                    logger.info("Fichier cookies vide, initialisation avec un objet vide.")
+                else:
+                    cookies_data = json.loads(content)
+                    logger.info("Cookies chargés avec succès depuis le fichier JSON.")
+            return jsonify({"message": "Cookies loaded successfully", "cookies_data": cookies_data})
+        else:
+            # Fichier n'existe pas, créer un fichier vide avec un objet JSON
+            cookies_data = {}
+            with open(json_file_path, 'w') as file:
+                json.dump(cookies_data, file, indent=2)
+            logger.info("Fichier cookies créé avec un objet vide.")
+            return jsonify({"message": "Cookies file created and initialized", "cookies_data": cookies_data})
+    except json.JSONDecodeError as e:
+        # Erreur de décodage JSON, réinitialiser le fichier
+        logger.error(f"Erreur de décodage JSON dans le fichier cookies: {e}")
+        cookies_data = {}
+        try:
+            with open(json_file_path, 'w') as file:
+                json.dump(cookies_data, file, indent=2)
+            logger.info("Fichier cookies réinitialisé après erreur de décodage.")
+        except Exception as write_error:
+            logger.error(f"Erreur lors de la réécriture du fichier cookies: {write_error}")
+            return jsonify({"error": "Could not reset corrupted cookies file"}), 500
+        return jsonify({"message": "Cookies file was corrupted and has been reset", "cookies_data": cookies_data})
+    except Exception as e:
+        logger.error(f"Erreur lors du chargement des cookies: {e}")
+        return jsonify({"error": "Failed to load cookies"}), 500
 
 @cy_cookies.route('/get_cookie', methods=['POST'])
 def get_cookie():
-    cookie_name = request.json.get('cookie_name')
-    if cookie_name is None:
-        return jsonify({"error": "cookie_name is required"}), 400
- 
+    try:
+        cookie_name = request.json.get('cookie_name')
+        if cookie_name is None:
+            return jsonify({"error": "cookie_name is required"}), 400
+     
         # Load existing cookies from the JSON file
-    if os.path.exists(json_file_path):
-        with open(json_file_path, 'r') as file:
-                cookies_data = json.load(file)
-    else:
-        cookies_data = {}
-    
-    # Get the cookie value
-    cookie_value = cookies_data.get(cookie_name)
-    #logger.info(f"dbg5641 cookies :{cookie_name} value = {cookie_value}")
+        if os.path.exists(json_file_path):
+            with open(json_file_path, 'r') as file:
+                content = file.read().strip()
+                if not content:
+                    cookies_data = {}
+                else:
+                    cookies_data = json.loads(content)
+        else:
+            cookies_data = {}
         
-    return jsonify({cookie_name: cookie_value})
+        # Get the cookie value
+        cookie_value = cookies_data.get(cookie_name)
+        #logger.info(f"dbg5641 cookies :{cookie_name} value = {cookie_value}")
+            
+        return jsonify({cookie_name: cookie_value})
+    except json.JSONDecodeError as e:
+        logger.error(f"Erreur de décodage JSON lors de la récupération du cookie {cookie_name}: {e}")
+        return jsonify({"error": "Corrupted cookies file"}), 500
+    except Exception as e:
+        logger.error(f"Erreur lors de la récupération du cookie {cookie_name}: {e}")
+        return jsonify({"error": "Failed to get cookie"}), 500
 
 #@cookies.route('/get_cookie_value', methods=['POST'])
 def get_cookie_value(key_name):
