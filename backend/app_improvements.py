@@ -1,7 +1,10 @@
 # Add to your backend/app.py
+from flask import Flask
 from cy_app_config import app_config
 from cy_improved_routes import improved_routes
 from cy_error_handler import ErrorHandler
+
+app = Flask(__name__)
 
 # Setup logging
 app_config.setup_logging()
