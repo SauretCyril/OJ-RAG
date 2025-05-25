@@ -1,4 +1,4 @@
-flask
+flask[async]
 werkzeug
 numpy
 torch
@@ -17,3 +17,8 @@ pandas
 reportlab
 langchain
 mistralai
+scikit-learn
+Pillow
+# Ajout pour la détection NSFW
+nudenet
+watchdog

@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Gestionnaire de Dossiers</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <link href="{{ url_for('static', filename='css/RP_styles.css') }}" rel="stylesheet" />
+    <link href="{{ url_for('static', filename='css/dialogs.css') }}" rel="stylesheet" />
+  </head>
+  <body>
+    <div id="main-section">
+      <header class="header-bar">
+        <h1>Gestionnaire de Dossiers</h1>
+        <nav>
+          <ul>
+            <li><a href="#home">Home</a></li>
+            <li><a href="#New" onclick="createAnnouncementForm()">New</a></li>
+            <li><a href="#Save" onclick="refresh()">Refresh</a></li>
+            <li><a href="#index" onclick="generate_index_html()">Index</a></li>
+            <!--<li><a href="#clear-cache" onclick="clearExplorerCache()">Effacer Cache</a></li>-->
+            <li><a href="/columns_manager" target="_blank">Colonnes</a></li>
+            <li><a href="#" onclick="open_dossier_root()">Settings</a></li>
+             <!--<li id="thelinks">
+              <ul>
+                <li>
+                  <a
+                    href="https://www.notion.so/2025_Todo-17a8e68cf98e80d4a56ae8bdb0e9855b"
+                    target="_blank"
+                    >To Do</a
+                  >
+                </li>
+                <li>
+                  <a href="{{ url_for('static', filename='LK_links.html') }}"
+                    >Links</a
+                  >
+                </li>
+              </ul>
+            </li>-->
+          </ul>
+        </nav>
+      </header>
+      <div id="settings-section">
+        <h3>Settings</h3>
+         <label for="current-dossier">Current Dossier :</label>
+        <a href="#CurrenDir" id="current-dir" onclick="selectRep()"></a>
+      </div>
+      <div class="tabs" id="tabs">
+        <!-- tab will be dynamically added here -->
+      </div>
+        <div style="float: right">
+          <select id="Excluded">
+            <option value="En cours">En cours</option>
+            <option value="Done">Done</option>
+          </select>
+        </div>
+      </div>
+      <div class="table-responsive">
+        <table>
+          <thead>
+            <tr></tr>
+            <tr></tr>
+          </thead>
+          <tbody id="table-body">
+            <!-- Rows will be dynamically added here -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div id="reseaux-links-section" style="display: none">
+      <h2>Liens de Réseaux Sociaux</h2>
+      <table class="reseaux-links-table">
+        <thead>
+          <tr>
+            <th>Nom</th>
+            <th>Date</th>
+            <th>Update</th>
+            <th>Date Update</th>
+          </tr>
+        </thead>
+        <tbody id="reseaux-links-table-body">
+          <!-- Rows will be dynamically added here -->
+        </tbody>
+      </table>
+      <button onclick="hideReseauxLinks()">Retour</button>
+    </div>
+    <div id="contextMenu" class="context-menu">
+      <ul>
+        <li id="EditRow">Edit</li>
+        <li id="SetCurrentRow">Set current</li>
+        <li id="Open">Open Dossier</li>
+        <li id="Sscrape_url">Scrape URL</li>
+        <li id="getCV">Get CV</li>
+        <li id="Resume">Do Resume</li>
+        <li>---------</li>
+        <li id="Repondue">To Répondue</li>
+        <li id="Delete">Delete</li>
+      </ul>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Modules de base (chargés en premier) -->
+    <script src="{{ url_for('static', filename='js/cy_state_manager.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/cy_http_client.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/cy_functions_utils.js') }}"></script>
+    
+    <!-- Modules principaux -->
+    <script src="{{ url_for('static', filename='js/cy_main.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/cy_table_manager.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/cy_all_cols.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/cy_dos_functions.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/cy_dos_functions_get_infos.js') }}"></script>
+    
+    <!-- Modules pour les onglets et filtres -->
+    <script src="{{ url_for('static', filename='js/cy_all_dos_tabs.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/cy_all_dos_filters.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/cy_all_dos_header.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/cy_all_dos_all_rows.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/cy_all_dos_index.js') }}"></script>
+    
+    <!-- Modules pour la gestion d'un dossier spécifique -->
+    <script src="{{ url_for('static', filename='js/cy_one_row_update.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/cy_one_dos_Dir.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/cy_one_dos_edit.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/cy_one_dos_notes.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/cy_one_dos_new.js') }}"></script>
+  </body>
+</html>

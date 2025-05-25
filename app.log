@@ -1,6 +1,54 @@
-2024-12-28 18:09:32,439 - INFO - Python logging initialized
-2024-12-28 18:09:35,292 - INFO - 127.0.0.1 - - [2024-12-28 18:09:35] "GET /main3.html HTTP/1.1" 404 881 0.003000
-2024-12-28 18:09:35,408 - INFO - 127.0.0.1 - - [2024-12-28 18:09:35] "GET /favicon.ico HTTP/1.1" 404 882 0.001003
-2024-12-28 18:10:49,975 - INFO - Python logging initialized
-2024-12-28 18:10:51,565 - INFO - 127.0.0.1 - - [2024-12-28 18:10:51] "GET /main3.html HTTP/1.1" 404 881 0.002982
-2024-12-28 18:10:51,620 - INFO - 127.0.0.1 - - [2024-12-28 18:10:51] "GET /favicon.ico HTTP/1.1" 404 882 0.001000
+2025-05-24 21:15:07,824 - werkzeug - WARNING -  * Debugger is active!
+2025-05-24 21:15:07,847 - werkzeug - INFO -  * Debugger PIN: 116-938-258
+2025-05-24 21:15:08,078 - werkzeug - WARNING -  * Debugger is active!
+2025-05-24 21:15:08,099 - werkzeug - INFO -  * Debugger PIN: 116-938-258
+2025-05-24 21:16:02,858 - werkzeug - INFO -  * Detected change in 'G:\\G_WCS\\OJ-RAG\\backend\\cy_improved_routes.py', reloading
+2025-05-24 21:16:02,858 - werkzeug - INFO -  * Detected change in 'G:\\G_WCS\\OJ-RAG\\backend\\cy_improved_routes.py', reloading
+2025-05-24 21:16:02,864 - werkzeug - INFO -  * Detected change in 'G:\\G_WCS\\OJ-RAG\\backend\\cy_improved_routes.py', reloading
+2025-05-24 21:16:02,865 - werkzeug - INFO -  * Detected change in 'G:\\G_WCS\\OJ-RAG\\backend\\cy_improved_routes.py', reloading
+2025-05-24 21:16:04,114 - werkzeug - WARNING -  * Debugger is active!
+2025-05-24 21:16:04,138 - werkzeug - INFO -  * Debugger PIN: 116-938-258
+2025-05-24 21:16:04,647 - werkzeug - WARNING -  * Debugger is active!
+2025-05-24 21:16:04,683 - werkzeug - INFO -  * Debugger PIN: 116-938-258
+2025-05-24 21:16:38,419 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:5000
+2025-05-24 21:16:38,419 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2025-05-24 21:16:38,437 - werkzeug - INFO -  * Restarting with watchdog (windowsapi)
+2025-05-24 21:16:39,631 - werkzeug - WARNING -  * Debugger is active!
+2025-05-24 21:16:39,659 - werkzeug - INFO -  * Debugger PIN: 116-938-258
+2025-05-24 21:16:49,859 - cy_error_handler - ERROR - API Error: INTERNAL_ERROR - An unexpected error occurred
+2025-05-24 21:16:49,861 - werkzeug - INFO - 127.0.0.1 - - [24/May/2025 21:16:49] "[35m[1mGET / HTTP/1.1[0m" 500 -
+2025-05-24 21:16:50,077 - cy_error_handler - ERROR - API Error: INTERNAL_ERROR - An unexpected error occurred
+2025-05-24 21:16:50,077 - werkzeug - INFO - 127.0.0.1 - - [24/May/2025 21:16:50] "[35m[1mGET /favicon.ico HTTP/1.1[0m" 500 -
+2025-05-24 21:18:14,227 - cy_file_manager - WARNING - File not found: cache\47a88552814460b6d5dd74956b3853d3.cache
+2025-05-24 21:18:14,227 - cy_file_manager - WARNING - File not found: config\configs\exclusions_excluded_annonces.json.json
+2025-05-24 21:18:14,227 - werkzeug - INFO - 127.0.0.1 - - [24/May/2025 21:18:14] "GET /api/v2/annonces HTTP/1.1" 200 -
+2025-05-24 21:18:28,331 - werkzeug - INFO -  * Detected change in 'G:\\G_WCS\\OJ-RAG\\.venv\\Lib\\site-packages\\werkzeug\\datastructures\\structures.py', reloading
+2025-05-24 21:18:28,331 - werkzeug - INFO -  * Detected change in 'G:\\G_WCS\\OJ-RAG\\.venv\\Lib\\site-packages\\werkzeug\\datastructures\\structures.py', reloading
+2025-05-24 21:18:28,331 - werkzeug - INFO -  * Detected change in 'G:\\G_WCS\\OJ-RAG\\.venv\\Lib\\site-packages\\werkzeug\\datastructures\\structures.py', reloading
+2025-05-24 21:18:28,628 - werkzeug - INFO -  * Restarting with watchdog (windowsapi)
+2025-05-24 21:18:29,833 - werkzeug - WARNING -  * Debugger is active!
+2025-05-24 21:18:29,855 - werkzeug - INFO -  * Debugger PIN: 116-938-258
+2025-05-24 21:18:29,964 - werkzeug - WARNING -  * Debugger is active!
+2025-05-24 21:18:29,981 - werkzeug - INFO -  * Debugger PIN: 116-938-258
+2025-05-24 21:18:30,194 - werkzeug - WARNING -  * Debugger is active!
+2025-05-24 21:18:30,219 - werkzeug - INFO -  * Debugger PIN: 116-938-258
+2025-05-24 21:19:15,784 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:5000
+2025-05-24 21:19:15,785 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2025-05-24 21:19:15,803 - werkzeug - INFO -  * Restarting with watchdog (windowsapi)
+2025-05-24 21:19:16,759 - werkzeug - WARNING -  * Debugger is active!
+2025-05-24 21:19:16,783 - werkzeug - INFO -  * Debugger PIN: 116-938-258
+2025-05-24 21:19:19,739 - cy_error_handler - ERROR - API Error: INTERNAL_ERROR - An unexpected error occurred
+2025-05-24 21:19:19,740 - werkzeug - INFO - 127.0.0.1 - - [24/May/2025 21:19:19] "[35m[1mGET / HTTP/1.1[0m" 500 -
+2025-05-24 21:19:19,920 - cy_error_handler - ERROR - API Error: INTERNAL_ERROR - An unexpected error occurred
+2025-05-24 21:19:19,944 - werkzeug - INFO - 127.0.0.1 - - [24/May/2025 21:19:19] "[35m[1mGET /favicon.ico HTTP/1.1[0m" 500 -
+2025-05-24 21:20:26,452 - werkzeug - INFO -  * Detected change in 'G:\\G_WCS\\OJ-RAG\\launcher.py', reloading
+2025-05-24 21:20:26,452 - werkzeug - INFO -  * Detected change in 'G:\\G_WCS\\OJ-RAG\\launcher.py', reloading
+2025-05-24 21:20:26,453 - werkzeug - INFO -  * Detected change in 'G:\\G_WCS\\OJ-RAG\\launcher.py', reloading
+2025-05-24 21:20:26,559 - werkzeug - INFO -  * Detected change in 'G:\\G_WCS\\OJ-RAG\\launcher.py', reloading
+2025-05-24 21:20:26,559 - werkzeug - INFO -  * Detected change in 'G:\\G_WCS\\OJ-RAG\\launcher.py', reloading
+2025-05-24 21:20:26,560 - werkzeug - INFO -  * Detected change in 'G:\\G_WCS\\OJ-RAG\\launcher.py', reloading
+2025-05-24 21:20:26,560 - werkzeug - INFO -  * Detected change in 'G:\\G_WCS\\OJ-RAG\\launcher.py', reloading
+2025-05-24 21:20:27,085 - werkzeug - INFO -  * Restarting with watchdog (windowsapi)
+2025-05-24 21:20:27,085 - werkzeug - INFO -  * Restarting with watchdog (windowsapi)

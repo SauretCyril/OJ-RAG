@@ -1,0 +1,171 @@
+/**
+ * Styles pour les dialogues et popups
+ * Centralise les styles qui étaient auparavant injectés via JavaScript
+ */
+
+/* Styles pour la fenêtre de notes */
+.notes-popup {
+    width: 1000px;
+    height: 700px;
+    padding: 20px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    font-family: Arial, sans-serif;
+    font-size: 16px;
+    overflow-y: auto;
+}
+
+.notes-popup .notes-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.notes-popup .notes-table td {
+    border: 1px solid #ccc;
+    padding: 8px;
+}
+
+.notes-popup .notes-table td.rich-text {
+    white-space: pre-wrap;
+}
+
+.notes-popup .remove-icon {
+    cursor: pointer;
+    color: red;
+    font-size: 20px;
+}
+
+.notes-popup .select-icon {
+    cursor: pointer;
+    color: blue;
+    font-size: 20px;
+}
+
+/* Styles communs pour les boutons dans les dialogues */
+.button-group {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 15px;
+}
+
+.button-group button {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+.button-group button:first-child {
+    background-color: #4CAF50;
+    color: white;
+}
+
+.button-group button:last-child {
+    background-color: #f44336;
+    color: white;
+}
+
+/* Styles pour le formulaire d'annonce */
+.announcement-form {
+    width: 50%;
+    min-width: 50%;
+    height: 50%;
+    min-height: 50%;
+    padding: 20px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    z-index: 1000;
+}
+
+.announcement-form .form-group {
+    margin-bottom: 15px;
+}
+
+.announcement-form .form-group label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+}
+
+.announcement-form .form-group input,
+.announcement-form .form-group textarea,
+.announcement-form .form-group select {
+    width: 100%;
+    padding: 8px;
+    box-sizing: border-box;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+
+.announcement-form .form-group textarea {
+    min-height: 100px;
+    resize: vertical;
+}
+
+/* Styles pour le modal d'édition */
+.edit-modal {
+    width: 80%;
+    max-width: 800px;
+    padding: 20px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.edit-modal h2 {
+    margin-top: 0;
+    color: #333;
+}
+
+.edit-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    border-bottom: 1px solid #ccc;
+    margin-bottom: 15px;
+}
+
+.tab-button {
+    background-color: #7eda72;
+    border: none;
+    outline: none;
+    cursor: pointer;
+    padding: 10px 15px;
+    margin-right: 5px;
+    border-radius: 5px 5px 0 0;
+}
+
+.tab-button.active {
+    background-color: #4CAF50;
+    color: white;
+}
+
+.tab-content {
+    display: none;
+    padding: 15px;
+    border: 1px solid #ccc;
+    border-top: none;
+}
+
+.tab-content.active {
+    display: block;
+}
+
+/* Classes utilitaires pour les champs de texte enrichi */
+.rich-text-field {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+textarea.rich-text-field {
+    min-height: 150px;
+    resize: vertical;
+}
