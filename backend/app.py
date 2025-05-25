@@ -8,7 +8,14 @@ import sys
 # Définir le chemin de PYTHONPATH pour inclure le dossier actuel
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
+# Import de la configuration centralisée
+from cy_app_config import app_config
+
 app = Flask(__name__, template_folder='../templates', static_folder='../static')
+
+# Configuration de l'application avec app_config
+app.config['MAX_CONTENT_LENGTH'] = app_config.max_file_size
+app.config['UPLOAD_FOLDER'] = str(app_config.uploads_dir)
 
 class NumpyEncoder(json.JSONEncoder):
     def default(self, obj):
@@ -47,11 +54,19 @@ register_directories_routes(app)  # Enregistrer les routes de gestion des réper
 for rule in app.url_map.iter_rules():
     print(f"{rule} - {rule.endpoint}") """
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+# Utilisation de app_config au lieu de BASE_DIR
+BASE_DIR = str(app_config.base_dir)
 
 @app.route('/')
 def index():
     return render_template('index.html')
 
 if __name__ == '__main__':
-    app.run(debug=True, port=5001)
+    # Initialiser le logging avec app_config
+    app_config.setup_logging()
+    
+    # Utiliser les constantes de app_config si disponibles
+    port = app_config.constants.get('port', 5001)
+    debug = app_config.constants.get('debug', True)
+    
+    app.run(debug=debug, port=port)

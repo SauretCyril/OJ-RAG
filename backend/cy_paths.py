@@ -134,25 +134,17 @@ def buildAllPaths():
     dirroot = GetRoot()
     MakeNecessariesDir(dirroot)
     ''' Repertoire des criteres d'exclusion '''
-    dirstate= GetDirState()
-    MakeNecessariesDir(dirstate)
+    # dirstate= GetDirState()
+    # MakeNecessariesDir(dirstate)
     '''repertoire des requetes pour extraire les infos de classements'''
     #DirCRQ = GetDirCRQ()
     #MakeNecessariesDir(DirCRQ)
     
     '''repertoire des realisations'''
-    DirREA = GetDirREA()
-    MakeNecessariesDir(DirREA)
+    # DirREA = GetDirREA()
+    # MakeNecessariesDir(DirREA)
     
-def GetDirRQ():
-    path_request =os.getenv("DIR_RQ_FILE")
-    #dirroot = GetRoot()
-    #print("dbg234d root = ",dirroot)
-    #new_path=os.path.join(dirroot,path_request)
-    new_path = path_request.replace('\\', '/')
-    #print("dbg234c requests dir = ",new_path)
-    return new_path
-    
+
     
 def MakeNecessariesDir(directory):
     if not os.path.exists(directory):

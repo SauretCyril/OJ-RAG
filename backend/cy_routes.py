@@ -6,6 +6,8 @@ import csv
 import subprocess
 from werkzeug.utils import secure_filename
 
+# Import de la configuration centralisée
+from cy_app_config import app_config
 
 import tkinter as tk
 from tkinter import filedialog
@@ -54,7 +56,8 @@ CONSTANTS = load_constants()
 
 @cy_routes.route('/get_constants', methods=['GET'])
 def get_constants():
-    return jsonify(CONSTANTS)
+    # Utilisation de app_config pour récupérer les constantes
+    return jsonify(app_config.constants)
 
 
 from datetime import datetime
@@ -103,7 +106,7 @@ async def read_annonces_json():
     try:
         print("DBG-4658.0: Début de la fonction read_annonces_json")
         isDetectNew="O"
-        buildAllPaths()
+        #buildAllPaths()
         data = request.get_json()
         if not data:
             print("DBG-4658.1: Pas de données JSON reçues")
@@ -121,7 +124,7 @@ async def read_annonces_json():
             return jsonify([]), 200
             
         dossier_list = []
-        
+        crit_annonces = None
         # Charger les critères d'annonces de façon sécurisée
         try:
             crit_annonces = load_crit_annonces(excluedFile)
@@ -129,7 +132,7 @@ async def read_annonces_json():
         except Exception as e:
             print(f"ERR-4658.6: Erreur lors du chargement des critères d'annonces: {e}")
             
-        crit_annonces = None
+       
         print (f"DBG-4658-isDetectNew == {isDetectNew}")    
         record_added=False
         print (f"DBG-4658-starting loading-------------------------------------")    
@@ -196,20 +199,10 @@ async def read_annonces_json():
                     try:
                         with open(file_path, 'r', encoding='utf-8') as file:
                             data = json.load(file)
-                           
-                            # Vérification des exclusions
+                             # Vérification des exclusions
                             isExclued = False
-                            if crit_annonces and "exclude" in crit_annonces:
-                                excl = crit_annonces["exclude"]
-                                for crit in excl:
-                                    for key, values in crit.items():
-                                        if data.get(key) in values:
-                                            isExclued = True
-                                            break
-                                    if isExclued:
-                                        break
-                                if isExclued:
-                                    break
+                            if data["etat"]=="DELETED" or data["etat"]=="ARCHIVE" or data["etat"]=="ClOSED" or data["etat"]=="DONE":
+                                isExclued = True
                             
                             
                             if not isExclued:
@@ -236,7 +229,7 @@ async def read_annonces_json():
            
                      #ici
             # Si aucun enregistrement n'a été ajouté pour ce dossier
-            if isDetectNew == "O":
+            if isDetectNew == "O" :
                 
                 if not record_added:
                     try:
@@ -630,15 +623,27 @@ def select_cv():
         file = request.files.get('file_path')
         dossier_number = request.form.get('num_dossier')
         target_directory = request.form.get('repertoire_annonce')
-        prefix= request.form.get('prefix')
+        prefix = request.form.get('prefix')
         #print("##2-------------------------------", dossier_number, target_directory)
         
         if not dossier_number or not target_directory or not file:
             return jsonify({"status": "error", "message": "Missing parameters"}), 400 
         
+        # Vérifier la taille du fichier avec app_config
+        if file.content_length > app_config.max_file_size:
+            return jsonify({"status": "error", "message": f"File too large. Maximum size: {app_config.max_file_size // 1024 // 1024}MB"}), 400
+        
         filename = secure_filename(f"{dossier_number}_{prefix}_CyrilSauret.docx")
-        target_path = os.path.join(target_directory, filename)
-        target_path = target_path.replace('\\', '/') 
+        
+        # Valider le nom de fichier avec SecurityValidator
+        try:
+            target_path = app_config.get_upload_path(filename)
+            # Utiliser le répertoire cible au lieu du dossier uploads par défaut
+            target_path = os.path.join(target_directory, filename)
+            target_path = target_path.replace('\\', '/') 
+        except ValueError as e:
+            return jsonify({"status": "error", "message": str(e)}), 400
+        
         #print("##3-------------------------------", target_path)
         pdf_file_path = target_path.replace('.docx', '.pdf')
         pdf_file_path = pdf_file_path.replace('\\', '/') 
