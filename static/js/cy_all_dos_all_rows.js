@@ -131,12 +131,7 @@ function loadTableData(callback) {
                             cell.style.minWidth = '100px'; // Largeur minimale pour accommoder le texte et l'icône
                         }
                         
-                 /*        // Ajouter des classes et rendre éditable si nécessaire
-                        if (col.class) cell.classList.add(col.class);
-                        if (col.editable) cell.contentEditable = "true";
-                        
-                        // Ajouter l'événement onblur pour mettre à jour les annonces
-                        cell.onblur = () => updateAnnonces(index, col.key, cell.textContent); */
+                
                     }   else if (col.key === 'description') {
                         // Create a link for the description field
                         const link = document.createElement('a');
