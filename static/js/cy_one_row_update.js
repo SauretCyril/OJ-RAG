@@ -47,7 +47,7 @@ function updateAnnonces(index, key, value) {
                 window.annonces[index][filePath][key] = oldValue;
             });
     } catch (error) {
-        console.error('Erreur dans updateAnnonces:', error);
+        console.error('ER-005 : Erreur dans updateAnnonces:', error);
     }
 }
 

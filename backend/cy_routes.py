@@ -195,30 +195,30 @@ async def read_annonces_json():
                 file_path_nodata = file_path_nodata.replace('\\', '/')
                 
                 if filename == data_json_file:
-                   
+                    record_added = True
                     try:
                         with open(file_path, 'r', encoding='utf-8') as file:
-                            data = json.load(file)
+                            datajson = json.load(file)
                              # Vérification des exclusions
                             isExclued = False
-                            if data["etat"]=="DELETED" or data["etat"]=="ARCHIVE" or data["etat"]=="ClOSED" or data["etat"]=="DONE":
+                            if datajson["etat"]=="DELETED" or datajson["etat"]=="ARCHIVE" or datajson["etat"]=="ClOSED" or datajson["etat"]=="DONE":
                                 isExclued = True
                             
                             
                             if not isExclued:
                                 # Ajout des métadonnées supplémentaires
-                                data["dossier"] = parent_dir
-                                data["isJo"] = isJo
-                                data["GptSum"] = isGptResum
-                                data["CV"] = isCVin
-                                data["CVpdf"] = isCVinpdf
-                                data["BA"] = isBAdocx
-                                data["isAction"] = isAction
-                                data["BApdf"] = isBAinpdf 
-                                    # Ajouter à la liste des dossiers
-                                jData = {file_path: data}
+                                datajson["dossier"] = parent_dir
+                                datajson["isJo"] = isJo
+                                datajson["GptSum"] = isGptResum
+                                datajson["CV"] = isCVin
+                                datajson["CVpdf"] = isCVinpdf
+                                datajson["BA"] = isBAdocx
+                                datajson["isAction"] = isAction
+                                datajson["BApdf"] = isBAinpdf
+                                # Ajouter à la liste des dossiers
+                                jData = {file_path: datajson}
                                 dossier_list.append(jData)
-                                record_added = True
+                                
                                 print (f"{parent_dir}-NEW-4658 LOADING : Fichier {file_path} chargé avec succès")
                          
                             
