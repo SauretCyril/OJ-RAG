@@ -1,4 +1,11 @@
-from flask import Blueprint, request, jsonify, send_from_directory, render_template_string
+from flask import (
+    Blueprint, 
+    request, 
+    jsonify, 
+    send_from_directory, 
+    render_template_string,
+    render_template  # ← AJOUT MANQUANT
+)
 import os
 import json
 import platform
@@ -1080,4 +1087,100 @@ def clear_explorer_cache():
         }), 200
     except Exception as e:
         print(f"Erreur lors de l'effacement du cache: {e}")
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+# ==========================================
+# NOUVELLES ROUTES POUR CY2 - ÉTAPE 1
+# ==========================================
+
+@cy_routes.route('/launcher')
+def launcher():
+    """Page de sélection de version"""
+    return render_template('launcher.html')
+
+@cy_routes.route('/cy2')
+def cy2_index():
+    """Application CY2 - Nouvelle version"""
+    return render_template('cy2_index.html')
+
+@cy_routes.route('/cy2/status', methods=['GET'])
+def cy2_status():
+    """Statut de l'application CY2"""
+    return jsonify({
+        "version": "2.0.0",
+        "status": "active",
+        "compatible_with": "1.0.0",
+        "features": [
+            "mvc_architecture",
+            "state_management", 
+            "modular_components",
+            "enhanced_performance"
+        ],
+        "shared_apis": [
+            "/read_annonces_json",
+            "/save_annonces_json", 
+            "/get_constants",
+            "/charger_cols_file"
+        ]
+    })
+
+@cy_routes.route('/switch_version', methods=['POST'])
+def switch_version():
+    """API pour basculer entre les versions avec sauvegarde"""
+    try:
+        data = request.json
+        version = data.get('version')  # 'stable' ou 'cy2'
+        
+        if version not in ['stable', 'cy2']:
+            return jsonify({"status": "error", "message": "Version invalide"}), 400
+        
+        # Sauvegarder la préférence dans un fichier local
+        preferences_file = os.path.join(GetRoot(), '.user_preferences.json')
+        preferences = {}
+        
+        if os.path.exists(preferences_file):
+            try:
+                with open(preferences_file, 'r', encoding='utf-8') as f:
+                    preferences = json.load(f)
+            except:
+                preferences = {}
+        
+        preferences['last_version'] = version
+        preferences['last_switch'] = datetime.now().isoformat()
+        preferences['switch_count'] = preferences.get('switch_count', 0) + 1
+        
+        with open(preferences_file, 'w', encoding='utf-8') as f:
+            json.dump(preferences, f, ensure_ascii=False, indent=2)
+        
+        redirect_url = "/" if version == "stable" else "/cy2"
+        
+        return jsonify({
+            "status": "success", 
+            "message": f"Basculement vers {version} réussi",
+            "redirect_url": redirect_url,
+            "version": version
+        })
+        
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+@cy_routes.route('/user_preferences', methods=['GET'])
+def get_user_preferences():
+    """Récupérer les préférences utilisateur"""
+    try:
+        preferences_file = os.path.join(GetRoot(), '.user_preferences.json')
+        
+        if os.path.exists(preferences_file):
+            with open(preferences_file, 'r', encoding='utf-8') as f:
+                preferences = json.load(f)
+        else:
+            preferences = {
+                "last_version": "stable",
+                "last_switch": None,
+                "switch_count": 0
+            }
+        
+        return jsonify(preferences)
+        
+    except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500

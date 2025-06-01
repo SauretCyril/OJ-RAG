@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CY-RAG - Sélection de version</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .launcher-container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            padding: 40px;
+            text-align: center;
+            max-width: 700px;
+            width: 90%;
+        }
+        
+        .title {
+            color: #333;
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+        
+        .subtitle {
+            color: #666;
+            font-size: 1.1rem;
+            margin-bottom: 40px;
+        }
+        
+        .version-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+        
+        .version-card {
+            border: 2px solid #e0e0e0;
+            border-radius: 15px;
+            padding: 30px 20px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .version-card:hover {
+            border-color: #667eea;
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.2);
+        }
+        
+        .version-card.stable {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+        }
+        
+        .version-card.beta {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+        }
+        
+        .version-icon {
+            font-size: 3rem;
+            margin-bottom: 15px;
+        }
+        
+        .version-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+        
+        .version-description {
+            font-size: 0.9rem;
+            opacity: 0.9;
+            margin-bottom: 20px;
+        }
+        
+        .version-features {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            font-size: 0.8rem;
+        }
+        
+        .version-features li {
+            margin: 5px 0;
+            opacity: 0.8;
+        }
+        
+        .version-features li::before {
+            content: "✓ ";
+            font-weight: bold;
+        }
+        
+        .footer-info {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #e0e0e0;
+            color: #666;
+            font-size: 0.9rem;
+        }
+        
+        .last-used {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 10px;
+            margin-bottom: 20px;
+            font-size: 0.9rem;
+            display: none;
+        }
+        
+        .quick-access {
+            margin-top: 20px;
+            padding-top: 15px;
+            border-top: 1px dashed #ddd;
+        }
+        
+        .quick-access button {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 8px 16px;
+            margin: 0 5px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        
+        .quick-access button:hover {
+            background: #e9ecef;
+        }
+    </style>
+</head>
+<body>
+    <div class="launcher-container">
+        <h1 class="title">🎯 CY-RAG</h1>
+        <p class="subtitle">Gestionnaire d'annonces avec IA - Choisissez votre version</p>
+        
+        <div id="last-used-info" class="last-used">
+            <strong>📍 Dernière version utilisée :</strong> <span id="last-version"></span>
+            <br><small>Dernier accès : <span id="last-access"></span></small>
+        </div>
+        
+        <div class="version-grid">
+            <div class="version-card stable" onclick="launchVersion('stable')">
+                <div class="version-icon">🛡️</div>
+                <div class="version-title">Version Stable</div>
+                <div class="version-description">Application actuelle éprouvée</div>
+                <ul class="version-features">
+                    <li>Interface familière</li>
+                    <li>Toutes fonctionnalités testées</li>
+                    <li>Système de filtres complet</li>
+                    <li>Explorateur intégré 📂</li>
+                    <li>Analyse IA Mistral</li>
+                    <li>Menu contextuel complet</li>
+                </ul>
+            </div>
+            
+            <div class="version-card beta" onclick="launchVersion('cy2')">
+                <div class="version-icon">🚀</div>
+                <div class="version-title">Version CY2</div>
+                <div class="version-description">Nouvelle architecture (En développement)</div>
+                <ul class="version-features">
+                    <li>Architecture modernisée</li>
+                    <li>Gestion d'état centralisée</li>
+                    <li>Code modulaire</li>
+                    <li>Performance optimisée</li>
+                    <li>Mêmes données que Stable</li>
+                    <li>Migration progressive</li>
+                </ul>
+            </div>
+        </div>
+        
+        <div class="quick-access">
+            <p><strong>🔗 Accès rapide :</strong></p>
+            <button onclick="window.location.href='/'">[Ctrl+1] Version Stable</button>
+            <button onclick="window.location.href='/cy2'">[Ctrl+2] Version CY2</button>
+        </div>
+        
+        <div class="footer-info">
+            <p><strong>💡 Conseil :</strong> Utilisez la version stable pour le travail quotidien et testez CY2 pour découvrir les améliorations.</p>
+            <p><small>Les deux versions partagent les mêmes données et configurations.</small></p>
+        </div>
+    </div>
+
+    <script>
+        function loadUserPreferences() {
+            const lastVersion = localStorage.getItem('cy_last_version');
+            const lastAccess = localStorage.getItem('cy_last_access');
+            
+            if (lastVersion && lastAccess) {
+                document.getElementById('last-used-info').style.display = 'block';
+                document.getElementById('last-version').textContent = 
+                    lastVersion === 'stable' ? 'Stable 🛡️' : 'CY2 🚀';
+                document.getElementById('last-access').textContent = lastAccess;
+            }
+        }
+        
+        function launchVersion(version) {
+            localStorage.setItem('cy_last_version', version);
+            localStorage.setItem('cy_last_access', new Date().toLocaleString());
+            
+            if (version === 'stable') {
+                window.location.href = '/';
+            } else {
+                window.location.href = '/cy2';
+            }
+        }
+        
+        function checkAutoLaunch() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const autoLaunch = urlParams.get('auto');
+            
+            if (autoLaunch) {
+                const lastVersion = localStorage.getItem('cy_last_version') || 'stable';
+                setTimeout(() => launchVersion(lastVersion), 1000);
+            }
+        }
+        
+        document.addEventListener('keydown', (e) => {
+            if (e.ctrlKey) {
+                if (e.key === '1') {
+                    e.preventDefault();
+                    launchVersion('stable');
+                } else if (e.key === '2') {
+                    e.preventDefault();
+                    launchVersion('cy2');
+                }
+            }
+        });
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            loadUserPreferences();
+            checkAutoLaunch();
+        });
+    </script>
+</body>
+</html>
