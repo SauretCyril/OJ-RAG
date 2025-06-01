@@ -45,62 +45,236 @@ window.cy2SmartFilters = {
         }
         
         const filterHTML = `
-            <div id="cy2-filter-panel" class="cy2-filter-panel">
-                <div class="cy2-filter-header">
-                    <h3>🔍 Filtres Intelligents CY2</h3>
-                    <button id="cy2-toggle-filters" class="cy2-toggle-btn">📊</button>
+            <div id="cy2-filter-panel" class="cy2-filter-panel" style="
+                margin: 10px 0 !important;
+                padding: 10px !important;
+                border: 1px solid #dee2e6;
+                border-radius: 6px;
+                background: #f8f9fa;
+                box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            ">
+                <div class="cy2-filter-header" style="
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    margin-bottom: 10px;
+                    padding: 8px 0;
+                    border-bottom: 1px solid #dee2e6;
+                ">
+                    <h3 style="margin: 0; font-size: 16px; color: #495057;">🔍 Filtres Intelligents CY2</h3>
+                    <button id="cy2-toggle-filters" class="cy2-toggle-btn" style="
+                        background: #6c757d;
+                        color: white;
+                        border: none;
+                        border-radius: 4px;
+                        width: 30px;
+                        height: 30px;
+                        cursor: pointer;
+                        font-size: 14px;
+                    ">📊</button>
                 </div>
                 
-                <div class="cy2-filter-content">
+                <div class="cy2-filter-content" style="padding: 0;">
                     <!-- Recherche globale -->
-                    <div class="cy2-search-section">
-                        <div class="cy2-section-header">
-                            <h4>🔍 Recherche Globale</h4>
-                            <button id="cy2-toggle-global-search" class="cy2-section-toggle" data-target="global-search-content">
-                                <span class="cy2-toggle-icon">➖</span>
+                    <div class="cy2-search-section" style="
+                        margin-bottom: 8px;
+                        border: 1px solid #e9ecef;
+                        border-radius: 6px;
+                        background: white;
+                    ">
+                        <div class="cy2-section-header" style="
+                            display: flex;
+                            justify-content: space-between;
+                            align-items: center;
+                            margin: 0;
+                            padding: 6px 10px;
+                            background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+                            border-radius: 6px 6px 0 0;
+                            border-bottom: 1px solid #dee2e6;
+                        ">
+                            <h4 style="margin: 0; font-size: 13px; font-weight: 600; color: #495057;">🔍 Recherche Globale</h4>
+                            <button id="cy2-toggle-global-search" class="cy2-section-toggle" data-target="global-search-content" style="
+                                background: #007bff;
+                                color: white;
+                                border: none;
+                                border-radius: 3px;
+                                width: 24px;
+                                height: 24px;
+                                display: flex;
+                                align-items: center;
+                                justify-content: center;
+                                cursor: pointer;
+                                font-size: 12px;
+                            ">
+                                <span class="cy2-toggle-icon">➕</span>
                             </button>
                         </div>
-                        <div id="global-search-content" class="cy2-section-content">
+                        <div id="global-search-content" class="cy2-section-content hidden" style="
+                            padding: 10px;
+                            max-height: 0;
+                            opacity: 0;
+                            overflow: hidden;
+                            transition: all 0.3s ease;
+                        ">
                             <input type="text" 
                                    id="cy2-global-search" 
                                    placeholder="🔍 Recherche globale... (ex: développeur, Lyon, Java)"
-                                   class="cy2-search-input">
+                                   class="cy2-search-input" style="
+                                       width: 100%;
+                                       padding: 8px 10px;
+                                       border: 1px solid #ced4da;
+                                       border-radius: 4px;
+                                       font-size: 13px;
+                                       box-sizing: border-box;
+                                   ">
                             <div id="cy2-search-suggestions" class="cy2-suggestions"></div>
                         </div>
                     </div>
                     
                     <!-- Filtres rapides -->
-                    <div class="cy2-quick-filters">
-                        <div class="cy2-section-header">
-                            <h4>🏷️ Filtres Actifs</h4>
-                            <button id="cy2-toggle-quick-filters" class="cy2-section-toggle" data-target="quick-filters-content">
-                                <span class="cy2-toggle-icon">➖</span>
+                    <div class="cy2-quick-filters" style="
+                        margin-bottom: 8px;
+                        border: 1px solid #e9ecef;
+                        border-radius: 6px;
+                        background: white;
+                    ">
+                        <div class="cy2-section-header" style="
+                            display: flex;
+                            justify-content: space-between;
+                            align-items: center;
+                            margin: 0;
+                            padding: 6px 10px;
+                            background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+                            border-radius: 6px 6px 0 0;
+                            border-bottom: 1px solid #dee2e6;
+                        ">
+                            <h4 style="margin: 0; font-size: 13px; font-weight: 600; color: #495057;">🏷️ Filtres Actifs</h4>
+                            <button id="cy2-toggle-quick-filters" class="cy2-section-toggle" data-target="quick-filters-content" style="
+                                background: #007bff;
+                                color: white;
+                                border: none;
+                                border-radius: 3px;
+                                width: 24px;
+                                height: 24px;
+                                display: flex;
+                                align-items: center;
+                                justify-content: center;
+                                cursor: pointer;
+                                font-size: 12px;
+                            ">
+                                <span class="cy2-toggle-icon">➕</span>
                             </button>
                         </div>
-                        <div id="quick-filters-content" class="cy2-section-content">
-                            <div class="cy2-filter-chips" id="cy2-active-filters"></div>
-                            <button id="cy2-clear-all" class="cy2-clear-btn">🗑️ Tout effacer</button>
+                        <div id="quick-filters-content" class="cy2-section-content hidden" style="
+                            padding: 10px;
+                            max-height: 0;
+                            opacity: 0;
+                            overflow: hidden;
+                            transition: all 0.3s ease;
+                        ">
+                            <div class="cy2-filter-chips" id="cy2-active-filters" style="margin-bottom: 8px;"></div>
+                            <button id="cy2-clear-all" class="cy2-clear-btn" style="
+                                background: #dc3545;
+                                color: white;
+                                border: none;
+                                border-radius: 4px;
+                                padding: 6px 12px;
+                                font-size: 12px;
+                                cursor: pointer;
+                            ">🗑️ Tout effacer</button>
                         </div>
                     </div>
                     
                     <!-- Filtres par colonne -->
-                    <div class="cy2-column-filters-section">
-                        <div class="cy2-section-header">
-                            <h4>🎯 Filtres par Colonne</h4>
-                            <button id="cy2-toggle-column-filters" class="cy2-section-toggle" data-target="column-filters-content">
-                                <span class="cy2-toggle-icon">➖</span>
+                    <div class="cy2-column-filters-section" style="
+                        margin-bottom: 8px;
+                        border: 1px solid #e9ecef;
+                        border-radius: 6px;
+                        background: white;
+                    ">
+                        <div class="cy2-section-header" style="
+                            display: flex;
+                            justify-content: space-between;
+                            align-items: center;
+                            margin: 0;
+                            padding: 6px 10px;
+                            background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+                            border-radius: 6px 6px 0 0;
+                            border-bottom: 1px solid #dee2e6;
+                        ">
+                            <h4 style="margin: 0; font-size: 13px; font-weight: 600; color: #495057;">🎯 Filtres par Colonne</h4>
+                            <button id="cy2-toggle-column-filters" class="cy2-section-toggle" data-target="column-filters-content" style="
+                                background: #007bff;
+                                color: white;
+                                border: none;
+                                border-radius: 3px;
+                                width: 24px;
+                                height: 24px;
+                                display: flex;
+                                align-items: center;
+                                justify-content: center;
+                                cursor: pointer;
+                                font-size: 12px;
+                            ">
+                                <span class="cy2-toggle-icon">➕</span>
                             </button>
                         </div>
-                        <div id="column-filters-content" class="cy2-section-content">
+                        <div id="column-filters-content" class="cy2-section-content hidden" style="
+                            padding: 10px;
+                            max-height: 0;
+                            opacity: 0;
+                            overflow: hidden;
+                            transition: all 0.3s ease;
+                        ">
                             <div class="cy2-column-filters" id="cy2-column-filters">
                                 <!-- Généré dynamiquement -->
                             </div>
                         </div>
                     </div>
                     
-                    <!-- Statistiques -->
-                    <div class="cy2-filter-stats" id="cy2-filter-stats">
+                    <!-- Statistiques et contrôles -->
+                    <div class="cy2-filter-stats" id="cy2-filter-stats" style="
+                        display: flex;
+                        justify-content: space-between;
+                        align-items: center;
+                        padding: 8px 12px;
+                        background: #e9ecef;
+                        border-radius: 4px;
+                        font-size: 13px;
+                        font-weight: 600;
+                        color: #495057;
+                        margin-top: 10px;
+                    ">
                         <span id="cy2-results-count">153 résultats</span>
+                        <div style="display: flex; gap: 8px;">
+                            <button id="cy2-clear-all-main" class="cy2-clear-btn" style="
+                                background: #dc3545;
+                                color: white;
+                                border: none;
+                                border-radius: 4px;
+                                padding: 4px 8px;
+                                font-size: 11px;
+                                cursor: pointer;
+                                transition: background 0.2s ease;
+                            " 
+                            onmouseover="this.style.backgroundColor='#c82333';"
+                            onmouseout="this.style.backgroundColor='#dc3545';"
+                            title="Effacer tous les filtres">🗑️ Effacer</button>
+                            
+                            <button id="cy2-refresh-data" class="cy2-refresh-btn" style="
+                                background: #28a745;
+                                color: white;
+                                border: none;
+                                border-radius: 4px;
+                                padding: 4px 8px;
+                                font-size: 11px;
+                                cursor: pointer;
+                                transition: background 0.2s ease;
+                            "
+                            onmouseover="this.style.backgroundColor='#218838';"
+                            onmouseout="this.style.backgroundColor='#28a745';"
+                            title="Actualiser les données">🔄 Actualiser</button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -181,26 +355,26 @@ window.cy2SmartFilters = {
             <div style="
                 background: white;
                 border: 1px solid #dee2e6;
-                border-radius: 8px;
-                padding: 20px;
-                margin: 10px 0;
-                box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+                border-radius: 6px;
+                padding: 10px;
+                margin: 5px 0;
+                box-shadow: 0 1px 3px rgba(0,0,0,0.1);
             ">
                 <h4 style="
-                    margin: 0 0 20px 0; 
+                    margin: 0 0 10px 0; 
                     color: #007bff;
-                    font-size: 16px;
+                    font-size: 14px;
                     display: flex;
                     align-items: center;
-                    gap: 8px;
+                    gap: 6px;
                 ">
                     🎯 Filtres par colonne (${visibleColumns.length} colonnes)
                 </h4>
                 
                 <div style="
                     display: grid; 
-                    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); 
-                    gap: 12px;
+                    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); 
+                    gap: 8px;
                     width: 100%;
                     box-sizing: border-box;
                 ">
@@ -213,9 +387,9 @@ window.cy2SmartFilters = {
             filtersHTML += `
                 <div class="cy2-column-filter" style="
                     background: #f8f9fa;
-                    padding: 12px;
+                    padding: 8px;
                     border: 1px solid #e9ecef;
-                    border-radius: 6px;
+                    border-radius: 4px;
                     box-sizing: border-box;
                     min-width: 0;
                     transition: all 0.2s ease;
@@ -225,9 +399,9 @@ window.cy2SmartFilters = {
                     <label for="cy2-filter-${columnKey}" style="
                         display: block;
                         font-weight: 600;
-                        margin-bottom: 6px;
+                        margin-bottom: 4px;
                         color: #495057;
-                        font-size: 12px;
+                        font-size: 11px;
                         line-height: 1.2;
                         overflow: hidden;
                         text-overflow: ellipsis;
@@ -240,18 +414,18 @@ window.cy2SmartFilters = {
                            data-column-index="${column.index || index}"
                            data-column-label="${columnLabel}"
                            data-column-original="${column.key}"
-                           placeholder="Filtrer..."
+                           placeholder="..."
                            style="
                                width: 100%;
-                               padding: 6px 8px;
+                               padding: 4px 6px;
                                border: 1px solid #ced4da;
-                               border-radius: 4px;
-                               font-size: 12px;
+                               border-radius: 3px;
+                               font-size: 11px;
                                box-sizing: border-box;
                                transition: border-color 0.2s ease;
                                min-width: 0;
                            "
-                           onfocus="this.style.borderColor='#007bff'; this.style.boxShadow='0 0 0 2px rgba(0,123,255,0.25)';"
+                           onfocus="this.style.borderColor='#007bff'; this.style.boxShadow='0 0 0 1px rgba(0,123,255,0.25)';"
                            onblur="this.style.borderColor='#ced4da'; this.style.boxShadow='none';">
                 </div>
             `;
@@ -281,14 +455,14 @@ window.cy2SmartFilters = {
         
         cy2Logger.success(`✅ ${inputs.length} filtres par colonne générés depuis StateManager (colonnes visibles)`);
         
-        // Styling pour rendre visible
+        // Styling pour rendre visible - VERSION COMPACTE
         container.style.cssText = `
-            border: 2px solid #28a745 !important;
+            border: 1px solid #28a745 !important;
             background: linear-gradient(135deg, #f8fff9, #e8f5e8) !important;
-            padding: 20px !important;
-            margin: 20px 0 !important;
-            border-radius: 8px !important;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1) !important;
+            padding: 8px !important;
+            margin: 5px 0 !important;
+            border-radius: 6px !important;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1) !important;
         `;
         
         cy2Logger.log('🎨 Filtres par colonne rendus avec style StateManager');
@@ -481,10 +655,29 @@ window.cy2SmartFilters = {
             });
         }
         
-        // Effacer tous les filtres
+        // Effacer tous les filtres (bouton principal)
+        const clearAllMainBtn = document.getElementById('cy2-clear-all-main');
+        if (clearAllMainBtn) {
+            clearAllMainBtn.addEventListener('click', () => {
+                cy2Logger.log('🗑️ Bouton principal "Effacer" cliqué');
+                this.clearAllFilters();
+            });
+        }
+        
+        // Bouton d'actualisation
+        const refreshBtn = document.getElementById('cy2-refresh-data');
+        if (refreshBtn) {
+            refreshBtn.addEventListener('click', () => {
+                cy2Logger.log('🔄 Bouton "Actualiser" cliqué');
+                this.refreshData();
+            });
+        }
+        
+        // Effacer tous les filtres (bouton dans les filtres actifs - garde l'ancien aussi)
         const clearAllBtn = document.getElementById('cy2-clear-all');
         if (clearAllBtn) {
             clearAllBtn.addEventListener('click', () => {
+                cy2Logger.log('🗑️ Bouton "Tout effacer" dans filtres actifs cliqué');
                 this.clearAllFilters();
             });
         }
@@ -509,6 +702,32 @@ window.cy2SmartFilters = {
                 this.updateFilterUI(filters);
             });
         }
+        
+        // NOUVEAU : Observer automatique pour le compteur
+        const observer = new MutationObserver(() => {
+            // Mettre à jour le compteur quand le DOM change
+            setTimeout(() => {
+                this.updateResultsCount();
+            }, 100);
+        });
+        
+        // Observer les changements dans le tbody
+        const tbody = document.querySelector('tbody');
+        if (tbody) {
+            observer.observe(tbody, {
+                childList: true,
+                subtree: true,
+                attributes: true,
+                attributeFilter: ['style']
+            });
+            
+            cy2Logger.log('👁️ Observateur de compteur activé');
+        }
+        
+        // NOUVEAU : Mise à jour périodique de sécurité
+        setInterval(() => {
+            this.updateResultsCount();
+        }, 5000); // Toutes les 5 secondes
         
         cy2Logger.success('🎧 Événements configurés avec succès');
     },
@@ -765,23 +984,49 @@ window.cy2SmartFilters = {
         container.innerHTML = chipsHTML;
     },
     
-    // AMÉLIORATION : Mettre à jour le compteur de résultats
+    // AMÉLIORATION : Mettre à jour le compteur de résultats - VERSION CORRIGÉE
     updateResultsCount: function(count = null) {
-        const total = this.stateManager.getState('meta.totalRows') || 0;
-        const filteredCount = count !== null ? count : total;
-        
         const counter = document.getElementById('cy2-results-count');
         
-        if (counter) {
-            counter.textContent = `${filteredCount}/${total} résultats`;
-            counter.className = filteredCount < total ? 'filtered' : 'all';
-            
-            // NOUVEAU : Log pour debug
-            cy2Logger.log(`📊 Compteur mis à jour: ${filteredCount}/${total}`);
-        } else {
-            // NOUVEAU : Warning si compteur non trouvé
+        if (!counter) {
             cy2Logger.warn('⚠️ Compteur de résultats non trouvé dans le DOM');
+            return;
         }
+        
+        let filteredCount = count;
+        let total = 0;
+        
+        // CORRECTION 1 : Calculer le total depuis les vraies données
+        if (filteredCount === null) {
+            // Compter les lignes visibles dans le DOM
+            const visibleRows = document.querySelectorAll('tbody tr:not([style*="display: none"])');
+            filteredCount = visibleRows.length;
+        }
+        
+        // CORRECTION 2 : Calculer le total depuis StateManager ou DOM
+        const allAnnonces = this.stateManager.getState('annonces') || [];
+        if (allAnnonces.length > 0) {
+            total = allAnnonces.length;
+        } else {
+            // Fallback : compter toutes les lignes dans le DOM
+            const allRows = document.querySelectorAll('tbody tr');
+            total = allRows.length;
+        }
+        
+        // CORRECTION 3 : Mettre à jour le texte et le style
+        if (filteredCount === total) {
+            counter.textContent = `${total} résultats`;
+            counter.style.color = '#28a745';  // Vert pour "tous affichés"
+        } else {
+            counter.textContent = `${filteredCount}/${total} résultats`;
+            counter.style.color = '#dc3545';  // Rouge pour "filtrés"
+        }
+        
+        // CORRECTION 4 : Mettre à jour le StateManager
+        this.stateManager.setState('meta.totalRows', total);
+        this.stateManager.setState('meta.filteredRows', filteredCount);
+        
+        cy2Logger.log(`📊 Compteur mis à jour: ${filteredCount}/${total} résultats`);
     },
     
     // Highlighting des résultats
@@ -811,8 +1056,10 @@ window.cy2SmartFilters = {
         });
     },
     
-    // Supprimer un filtre spécifique
+    // Supprimer un filtre spécifique - VERSION CORRIGÉE
     removeFilter: function(filterKey) {
+        cy2Logger.log(`🗑️ Suppression du filtre: ${filterKey}`);
+        
         const currentFilters = this.stateManager.getState('ui.filters') || {};
         delete currentFilters[filterKey];
         
@@ -820,33 +1067,133 @@ window.cy2SmartFilters = {
         
         // Nettoyer l'input correspondant
         if (filterKey === 'global') {
-            this.searchInput.value = '';
+            if (this.searchInput) {
+                this.searchInput.value = '';
+            }
+            this.stateManager.setState('ui.globalSearch', '');
         } else {
             const input = document.querySelector(`[data-column="${filterKey}"]`);
             if (input) input.value = '';
         }
         
-        // Recharger le tableau
-        window.cy2FiltersManager.filterAnnonces();
-        loadTableData();
+        // CORRECTION : Recharger avec les filtres restants
+        const remainingFilters = Object.keys(currentFilters).length;
+        
+        if (remainingFilters === 0) {
+            // Plus aucun filtre, recharger toutes les données
+            this.clearAllFilters();
+        } else {
+            // Réappliquer les filtres restants
+            const allAnnonces = this.stateManager.getState('annonces') || [];
+            let filteredAnnonces = allAnnonces;
+            
+            // Appliquer chaque filtre restant
+            Object.entries(currentFilters).forEach(([key, value]) => {
+                if (key === 'global') {
+                    filteredAnnonces = this.filterAnnoncesByGlobalSearch(filteredAnnonces, value);
+                } else {
+                    // Appliquer filtre de colonne
+                    filteredAnnonces = filteredAnnonces.filter(item => {
+                        const itemKeys = Object.keys(item);
+                        let actualData = item;
+                        
+                        if (itemKeys.length === 1 && itemKeys[0].includes('.data.json')) {
+                            actualData = item[itemKeys[0]];
+                        }
+                        
+                        const columnValue = actualData[key];
+                        if (columnValue === undefined || columnValue === null) {
+                            return false;
+                        }
+                        
+                        const searchText = String(columnValue).toLowerCase();
+                        return searchText.includes(value.toLowerCase());
+                    });
+                }
+            });
+            
+            // Recharger avec les résultats filtrés
+            this.renderFilteredResults(filteredAnnonces);
+            this.updateResultsCount(filteredAnnonces.length);
+        }
+        
+        // Mettre à jour l'UI des filtres actifs
+        this.updateActiveFiltersChips(currentFilters);
+        
+        cy2Logger.success(`✅ Filtre "${filterKey}" supprimé`);
     },
     
-    // Effacer tous les filtres
+    // Effacer tous les filtres - VERSION CORRIGÉE AVEC COMPTEUR
     clearAllFilters: function() {
-        this.stateManager.setState('ui.filters', {});
+        cy2Logger.log('🗑️ Effacement de tous les filtres...');
         
-        // Nettoyer tous les inputs
-        this.searchInput.value = '';
+        // 1. Nettoyer le StateManager
+        this.stateManager.setState('ui.filters', {});
+        this.stateManager.setState('ui.globalSearch', '');
+        this.stateManager.setState('meta.filteredRows', null);
+        
+        // 2. Nettoyer tous les inputs
+        if (this.searchInput) {
+            this.searchInput.value = '';
+        }
+        
         document.querySelectorAll('.cy2-column-input').forEach(input => {
             input.value = '';
         });
         
+        // 3. Supprimer les highlights
         this.removeHighlights();
         
-        // Recharger le tableau
-        loadTableData();
+        // 4. Nettoyer les chips des filtres actifs
+        const chipsContainer = document.getElementById('cy2-active-filters');
+        if (chipsContainer) {
+            chipsContainer.innerHTML = '';
+        }
         
-        cy2Logger.log('🔍 Tous les filtres effacés');
+        // 5. CORRECTION : Remettre toutes les lignes visibles dans le DOM
+        const rows = document.querySelectorAll('tbody tr');
+        rows.forEach(row => {
+            row.style.display = '';
+        });
+        
+        // 6. NOUVEAU : Calculer et forcer la mise à jour du compteur
+        const allAnnonces = this.stateManager.getState('annonces') || [];
+        const totalCount = allAnnonces.length > 0 ? allAnnonces.length : rows.length;
+        
+        // Forcer la mise à jour immédiate du compteur
+        const counter = document.getElementById('cy2-results-count');
+        if (counter) {
+            counter.textContent = `${totalCount} résultats`;
+            counter.style.color = '#28a745';
+        }
+        
+        // 7. Mettre à jour le StateManager avec les bonnes valeurs
+        this.stateManager.setState('meta.totalRows', totalCount);
+        this.stateManager.setState('meta.filteredRows', totalCount);
+        
+        // 8. NOUVEAU : Forcer le rechargement complet si nécessaire
+        if (window.loadTableData && typeof window.loadTableData === 'function') {
+            cy2Logger.log('🔄 Rechargement complet du tableau...');
+            setTimeout(() => {
+                window.loadTableData();
+                // Re-mettre à jour le compteur après rechargement
+                setTimeout(() => {
+                    this.updateResultsCount();
+                }, 200);
+            }, 100);
+        } else if (window.renderTableRows && typeof window.renderTableRows === 'function') {
+            cy2Logger.log('🔄 Re-rendu des lignes du tableau...');
+            const columns = this.stateManager.getState('columns') || [];
+            const constants = this.stateManager.getState('constants') || {};
+            window.renderTableRows(allAnnonces, columns, constants);
+            
+            // Re-mettre à jour le compteur après rendu
+            setTimeout(() => {
+                this.updateResultsCount();
+            }, 200);
+        }
+        
+        cy2Logger.success(`✅ Tous les filtres effacés - ${totalCount} résultats restaurés`);
     },
     
     // Toggle du panel de filtres
@@ -921,7 +1268,7 @@ window.cy2SmartFilters = {
         }
     },
     
-    // NOUVEAU : Toggle d'une section
+    // NOUVEAU : Toggle d'une section optimisé
     toggleSection: function(button) {
         const targetId = button.dataset.target;
         const content = document.getElementById(targetId);
@@ -935,21 +1282,25 @@ window.cy2SmartFilters = {
         const isHidden = content.classList.contains('hidden');
         
         if (isHidden) {
-            // Afficher
+            // Afficher - OPTIMISÉ
             content.classList.remove('hidden');
-            content.style.display = '';
-            content.style.maxHeight = '2000px';
+            content.style.maxHeight = '1000px';
             content.style.opacity = '1';
+            content.style.overflow = 'visible';
+            content.style.padding = '10px';      // RÉDUIT : 10px au lieu de 15px
+            content.style.margin = '0';          // RÉDUIT : 0 margin
             icon.textContent = '➖';
             button.classList.remove('collapsed');
             button.title = 'Cacher cette section';
             cy2Logger.log(`👁️ Section "${targetId}" affichée`);
         } else {
-            // Cacher
+            // Cacher - OPTIMISÉ
             content.classList.add('hidden');
             content.style.maxHeight = '0';
             content.style.opacity = '0';
             content.style.overflow = 'hidden';
+            content.style.padding = '0';         // AUCUN padding quand caché
+            content.style.margin = '0';          // AUCUN margin quand caché
             icon.textContent = '➕';
             button.classList.add('collapsed');
             button.title = 'Afficher cette section';
@@ -977,11 +1328,11 @@ window.cy2SmartFilters = {
         try {
             const states = JSON.parse(localStorage.getItem('cy2-section-states') || '{}');
             
-            // États par défaut (toutes visibles)
+            // MODIFICATION : États par défaut CACHÉS
             const defaultStates = {
-                'global-search-content': true,
-                'quick-filters-content': true,
-                'column-filters-content': true
+                'global-search-content': false,      // CACHÉ par défaut
+                'quick-filters-content': false,      // CACHÉ par défaut
+                'column-filters-content': false      // CACHÉ par défaut
             };
             
             // Appliquer les états
@@ -999,6 +1350,8 @@ window.cy2SmartFilters = {
                             content.style.maxHeight = '0';
                             content.style.opacity = '0';
                             content.style.overflow = 'hidden';
+                            content.style.padding = '0';        // NOUVEAU : Supprimer le padding
+                            content.style.margin = '0';         // NOUVEAU : Supprimer le margin
                             icon.textContent = '➕';
                             button.classList.add('collapsed');
                             button.title = 'Afficher cette section';
@@ -1007,6 +1360,8 @@ window.cy2SmartFilters = {
                             content.style.display = '';
                             content.style.maxHeight = '2000px';
                             content.style.opacity = '1';
+                            content.style.padding = '';         // NOUVEAU : Restaurer le padding
+                            content.style.margin = '';          // NOUVEAU : Restaurer le margin
                             icon.textContent = '➖';
                             button.classList.remove('collapsed');
                             button.title = 'Cacher cette section';
@@ -1015,7 +1370,7 @@ window.cy2SmartFilters = {
                 }
             });
             
-            cy2Logger.log('📂 États des sections chargés');
+            cy2Logger.log('📂 États des sections chargés (cachés par défaut)');
         } catch (error) {
             cy2Logger.warn('⚠️ Erreur chargement états:', error);
         }
@@ -1026,6 +1381,33 @@ window.cy2SmartFilters = {
         localStorage.removeItem('cy2-section-states');
         this.loadSectionStates();
         cy2Logger.log('🔄 États des sections réinitialisés');
+    },
+    
+    // NOUVEAU : Actualiser les données
+    refreshData: function() {
+        cy2Logger.log('🔄 Actualisation des données...');
+        
+        // Effacer d'abord tous les filtres
+        this.clearAllFilters();
+        
+        // Forcer le rechargement complet
+        if (window.location.reload) {
+            const confirmReload = confirm('Actualiser la page complète ?');
+            if (confirmReload) {
+                window.location.reload();
+                return;
+            }
+        }
+        
+        // Sinon, recharger juste les données
+        if (window.loadTableData) {
+            setTimeout(() => {
+                window.loadTableData();
+                cy2Logger.success('✅ Données actualisées');
+            }, 100);
+        } else {
+            cy2Logger.warn('⚠️ Fonction loadTableData non disponible');
+        }
     },
 };
 
