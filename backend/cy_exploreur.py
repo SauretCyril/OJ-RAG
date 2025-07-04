@@ -503,13 +503,13 @@ class FileExplorer:
         control_frame.pack(fill='x', padx=10, pady=5)
         
         # Ajouter un slider pour ajuster la taille de la police
-        font_size_label = tk.Label(control_frame, text="Taille de la police :")
-        font_size_label.pack(side='left', padx=(0, 10))
+        #font_size_label = tk.Label(control_frame, text="Taille de la police :")
+        #font_size_label.pack(side='left', padx=(0, 10))
         
-        font_size_slider = Scale(control_frame, from_=8, to=20, orient='horizontal', 
-                                length=200, resolution=1)
-        font_size_slider.set(10)  # Valeur par défaut
-        font_size_slider.pack(side='left')
+        #font_size_slider = Scale(control_frame, from_=8, to=20, orient='horizontal', 
+        #                        length=200, resolution=1)
+        #font_size_slider.set(10)  # Valeur par défaut
+        #font_size_slider.pack(side='left')
         
         # Ajouter un Treeview pour afficher les fichiers et répertoires
         self.tree = ttk.Treeview(self.root, columns=("fullpath",), displaycolumns=())
