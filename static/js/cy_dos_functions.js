@@ -156,22 +156,22 @@ function open_url(theurl) {
     return ApiClient.files.openUrl(theurl);
 }
 
-function open_dossier_root() 
+function open_files_Setting() 
 {
     ApiClient.files.getDirectoryRoot()
   .then(response => {
-    // Utilisation de response.root_directory
+    // Utilisation de response.root_direc  tory
     console.log("Répertoire racine:", response.root_directory);
-    open_dossier(response.root_directory) 
+    open_dossier(response.root_directory,"config"); 
   })
   .catch(error => {
     console.error("Erreur lors de la récupération du répertoire racine:", error);
   });
 }
-function open_dossier(chemin) {
+function open_dossier(chemin, TypeExploreur="Standard") {
     const path = chemin.replace(/\\/g, '/');
     //alert("Ouverture de l'explorateur de fichiers pour le chemin : " + path);
-    ApiClient.files.openexploreur(path)
+    ApiClient.files.openexploreur(path, TypeExploreur)
         .then(response => {
             if (response.status === "success") {
                 console.log("Directory explorer opened successfully.");
