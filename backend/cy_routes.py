@@ -410,11 +410,16 @@ async def read_annonces_json():
                                     f"{parent_dir}ERR-4658e Erreur lors de la sauvegarde du fichier {file_path_nodata}: {str(e)}"
                                 )
                                 # Ne pas ajouter à la liste si la sauvegarde a échoué
-
+                        else:
+                            print(
+                                f"{parent_dir}-NEW-3242 : Dossier vide"
+                            )
                     except Exception as e:
                         print(
                             f"{parent_dir}ERR-4658f : Erreur lors de la création d'un nouvel enregistrement: {str(e)}"
                         )
+
+                        
 
         print(f"NEW-4658j: Nombre de dossiers traités: {len(dossier_list)}")
         return jsonify(dossier_list), 200
