@@ -143,7 +143,7 @@ async def read_annonces_json():
             parent_dir = os.path.basename(root)
             if parent_dir in EXCLUDED_DIRECTORIES:
                 continue
-
+            is_root_level = os.path.dirname(root) == directory_path
             # Continuer le traitement normal...
             # ...existing code...
             file_doc = parent_dir + CONSTANTS["FILE_NAMES"]["ANNONCE_SUFFIX"] + ".pdf"
@@ -233,9 +233,9 @@ async def read_annonces_json():
                                 jData = {file_path: datajson}
                                 dossier_list.append(jData)
 
-                                print(
-                                    f"{parent_dir}-NEW-4658 LOADING : Fichier {file_path} chargé avec succès"
-                                )
+                                #print(
+                                #    f"{parent_dir}-NEW-4658 LOADING : Fichier {file_path} chargé avec succès"
+                                #)
 
                     except json.JSONDecodeError as e:
                         print(
@@ -252,8 +252,8 @@ async def read_annonces_json():
 
                 if not record_added:
                     try:
-                        print("---------------------------")
-                        print(f"{parent_dir}-NEW-4658.v - Nouveau dossier")
+                        #print("---------------------------")
+                        #print(f"{parent_dir}-NEW-4658.v - Nouveau dossier")
                         thefile = ""
                         Piece_exist = False
                         data = define_default_data()  # Initialize with default values
@@ -261,7 +261,7 @@ async def read_annonces_json():
                         if isJo == "O":
                             thefile = file_path_isJo
                             print(
-                                f"{parent_dir}NEW-4658a file_path_isJo trouvé = ",
+                                #f"{parent_dir}NEW-4658a file_path_isJo trouvé = ",
                                 file_path_isJo,
                             )
                             Piece_exist = True
@@ -271,7 +271,7 @@ async def read_annonces_json():
 
                         if Piece_exist:
                             print(
-                                f"{parent_dir}NEW-4658b le fichier main va être traité = ",
+                                #f"{parent_dir}NEW-4658b le fichier main va être traité = ",
                                 thefile,
                             )
                             # thefile = thefile.replace('\\', '/')
@@ -279,7 +279,7 @@ async def read_annonces_json():
                             infos = texte
                             the_request = await load_Instruction_classement()
                             print(
-                                f"{parent_dir}NEW-4658c- la question pour le classement",
+                                #f"{parent_dir}NEW-4658c- la question pour le classement",
                                 the_request,
                             )
                             if not the_request or the_request.strip() == "":
@@ -295,7 +295,7 @@ async def read_annonces_json():
                                     role,
                                 )
                                 infos = get_mistral_answer(the_request, role, texte)
-                                print(f"{parent_dir}NEW-4658e answer mistral = ", infos)
+                                #print(f"{parent_dir}NEW-4658e answer mistral = ", infos)
                             if infos:
                                 try:
                                     # Tenter de parser comme JSON
@@ -398,7 +398,7 @@ async def read_annonces_json():
                                         )
 
                                     print(
-                                        f"{parent_dir}-NEW-4658h : Fichier {file_path_nodata} sauvegardé avec succès"
+                                        #f"{parent_dir}-NEW-4658h : Fichier {file_path_nodata} sauvegardé avec succès"
                                     )
 
                                     # Puis ajouter à la liste de dossiers
@@ -411,9 +411,41 @@ async def read_annonces_json():
                                 )
                                 # Ne pas ajouter à la liste si la sauvegarde a échoué
                         else:
-                            print(
-                                f"{parent_dir}-NEW-3242 : Dossier vide"
-                            )
+                            if is_root_level :
+                                data = define_default_data_dossier_vide() 
+                                data["dossier"] = parent_dir
+                                file_path_nodata = os.path.join(root, ".data.json")
+                                file_path_nodata = file_path_nodata.replace("\\", "/")
+                                jData = {file_path_nodata: data}
+                                dossier_list.append(jData)
+                                record_added = True
+                                try:
+                                    # Vérifier si le répertoire parent existe
+                                    parent_dir_path = os.path.dirname(file_path_nodata)
+                                    if os.path.exists(parent_dir_path):
+                                        with open(
+                                            file_path_nodata, "w", encoding="utf-8"
+                                        ) as file:
+                                            json.dump(
+                                                data, file, ensure_ascii=False, indent=4
+                                            )
+
+                                        print(
+                                            #f"{parent_dir}-NEW-4658h : Fichier {file_path_nodata} sauvegardé avec succès"
+                                        )
+
+                                        # Puis ajouter à la liste de dossiers
+                                        dossier_list.append(jData)
+                                        record_added = True
+
+                                except Exception as e:
+                                        print(
+                                            f"{parent_dir}ERR-4658e Erreur lors de la sauvegarde du fichier {file_path_nodata}: {str(e)}"
+                                     )
+                                # Ne pas ajouter à la liste si la sauvegarde a échoué
+                                print(
+                                    f"{parent_dir}-NEW-3244 : Dossier vide"
+                                )
                     except Exception as e:
                         print(
                             f"{parent_dir}ERR-4658f : Erreur lors de la création d'un nouvel enregistrement: {str(e)}"
@@ -421,7 +453,7 @@ async def read_annonces_json():
 
                         
 
-        print(f"NEW-4658j: Nombre de dossiers traités: {len(dossier_list)}")
+        #print(f"NEW-4658j: Nombre de dossiers traités: {len(dossier_list)}")
         return jsonify(dossier_list), 200
 
     except Exception as e:
@@ -828,7 +860,25 @@ def define_default_data():
         "type_question": "pdf",
         "title": "",
     }
-
+def define_default_data_dossier_vide():
+    return {
+        "id": "",
+        "description": "Dossier Vide",
+        "etat": "New",
+        "entreprise": "?",
+        "categorie": "A définir",
+        "Date": "",
+        "todo": "?",
+        "todoList": "",
+        "action": "",
+        "tel": "",
+        "contact": "",
+        "url": "",
+        "Commentaire": "",
+        "type": "AN",
+        "type_question": "pdf",
+        "title": "",
+    }
 
 @cy_routes.route("/save_announcement", methods=["POST"])
 def save_announcement():
