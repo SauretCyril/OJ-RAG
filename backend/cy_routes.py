@@ -1,4 +1,4 @@
-from flask import Blueprint, request, jsonify, render_template  # ← AJOUT MANQUANT
+from flask import Blueprint, request, jsonify, render_template, send_file  # ← AJOUT MANQUANT
 import os
 import json
 import platform
@@ -1349,3 +1349,54 @@ def get_user_preferences():
 
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@cy_routes.route('/preview_pdf/<folder_name>/<filename>')
+def preview_pdf_with_filename(folder_name, filename):
+    """Servir un fichier PDF spécifique"""
+    try:
+        # Construire le chemin vers le fichier PDF
+        root_dir = GetRoot()
+        pdf_path = os.path.join(root_dir, folder_name, filename)
+        
+        # Vérifier si le fichier existe
+        if not os.path.exists(pdf_path):
+            return jsonify({"error": f"Fichier {filename} non trouvé dans {folder_name}"}), 404
+        
+        # Servir le fichier PDF
+        return send_file(pdf_path, mimetype='application/pdf')
+        
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@cy_routes.route('/serve_local_file')
+def serve_local_file():
+    """Servir un fichier local via son chemin complet"""
+    try:
+        file_path = request.args.get('path')
+        
+        if not file_path:
+            return jsonify({"error": "Chemin du fichier manquant"}), 400
+        
+        # Décoder le chemin URL
+        import urllib.parse
+        file_path = urllib.parse.unquote(file_path)
+        
+        # Vérifier que le fichier existe
+        if not os.path.exists(file_path):
+            return jsonify({"error": f"Fichier non trouvé : {file_path}"}), 404
+        
+        # Vérifier l'extension
+        allowed_extensions = ['.pdf', '.jpg', '.jpeg', '.png', '.gif', '.txt', '.json']
+        if not any(file_path.lower().endswith(ext) for ext in allowed_extensions):
+            return jsonify({"error": "Type de fichier non autorisé"}), 400
+        
+        # Déterminer le type MIME
+        mimetype = 'application/pdf' if file_path.lower().endswith('.pdf') else 'application/octet-stream'
+        
+        # Servir le fichier
+        return send_file(file_path, mimetype=mimetype)
+        
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500

@@ -10,6 +10,7 @@
     />
     <link href="{{ url_for('static', filename='css/styles.css') }}" rel="stylesheet" />
     <link href="{{ url_for('static', filename='css/dialogs.css') }}" rel="stylesheet" />
+    <link href="{{ url_for('static', filename='css/panels.css') }}" rel="stylesheet" />
   </head>
   <body>
     <div id="main-section">
@@ -58,18 +59,59 @@
           </select>
         </div>
       </div>
-      <div class="table-responsive">
-        <table>
-          <thead>
-            <tr></tr>
-            <tr></tr>
-          </thead>
-          <tbody id="table-body">
-            <!-- Rows will be dynamically added here -->
-          </tbody>
-        </table>
+      
+      <!-- Nouveau conteneur à deux panneaux -->
+      <div class="split-container">
+        <!-- Panneau gauche - Tableau -->
+        <div class="left-panel">
+          <div class="table-responsive">
+            <table>
+              <thead>
+                <tr></tr>
+                <tr></tr>
+              </thead>
+              <tbody id="table-body">
+                <!-- Rows will be dynamically added here -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+        
+        <!-- Panneau droit - Onglets -->
+        <div class="right-panel">
+          <div class="tabs-container">
+            <div class="tabs-header">
+              <button class="tab-button active" onclick="switchTab('apercu-pdf')">
+                <i class="fas fa-file-pdf"></i> Aperçu PDF
+              </button>
+            </div>
+            
+            <div class="tabs-content">
+              <!-- Onglet Aperçu PDF -->
+              <div id="apercu-pdf" class="tab-content active">
+                <div class="pdf-header">
+                  <h3>Aperçu PDF</h3>
+                  <div class="pdf-controls">
+                    <button class="btn btn-sm btn-outline-primary" onclick="openPdfFullScreen()">
+                      <i class="fas fa-expand"></i> Plein écran
+                    </button>
+                  </div>
+                </div>
+                
+                <div class="pdf-content">
+                  <div id="pdf-placeholder" class="pdf-placeholder">
+                    <i class="fas fa-file-pdf"></i>
+                    <p>Sélectionnez une ligne pour voir l'aperçu du PDF</p>
+                  </div>
+                  <iframe id="pdf-viewer" src="" style="display: none;"></iframe>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
+    
     <div id="reseaux-links-section" style="display: none">
       <h2>Liens de Réseaux Sociaux</h2>
       <table class="reseaux-links-table">
@@ -127,5 +169,8 @@
     <script src="{{ url_for('static', filename='js/cy_one_dos_edit.js') }}"></script>
     <script src="{{ url_for('static', filename='js/cy_one_dos_notes.js') }}"></script>
     <script src="{{ url_for('static', filename='js/cy_one_dos_new.js') }}"></script>
+    
+    <!-- Nouveau module pour la gestion des fiches -->
+    <script src="{{ url_for('static', filename='js/cy_fiche_annonce.js') }}"></script>
   </body>
 </html>

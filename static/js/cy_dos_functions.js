@@ -156,6 +156,18 @@ function open_url(theurl) {
     return ApiClient.files.openUrl(theurl);
 }
 
+async function Get_dir_Root() {
+    
+    try {
+        const response = await ApiClient.files.getDirectoryRoot();
+        console.log("log3a  Répertoire racine récupéré:", response.root_directory);
+        return response.root_directory;
+    } catch (error) {
+        console.error("Erreur lors de la récupération du répertoire racine:", error);
+        throw error;
+    }
+}
+
 function open_files_Setting() 
 {
     ApiClient.files.getDirectoryRoot()
