@@ -63,13 +63,9 @@ function switchTab(tabId) {
     document.querySelector(`[onclick="switchTab('${tabId}')"]`).classList.add('active');
     document.getElementById(tabId).classList.add('active');
     
-    // Charger le contenu selon l'onglet
-    if (currentSelectedRow) {
-        if (tabId === 'apercu-pdf') {
-            loadPdfPreview(currentSelectedRow.id);
-        } else if (tabId === 'texte-extrait') {
-            loadTextExtract(currentSelectedRow.id);
-        }
+    // Charger le contenu selon l'onglet (seulement texte-extrait)
+    if (currentSelectedRow && tabId === 'texte-extrait') {
+        loadTextExtract(currentSelectedRow.id);
     }
 }
 
@@ -209,21 +205,10 @@ function selectRow(row) {
         row.classList.add('selected');
         currentSelectedRow = row;
         
-        // Charger le contenu de l'onglet actif
+        // Charger seulement le contenu texte extrait
         const activeTab = document.querySelector('.tab-content.active');
-        if (activeTab) {
-            if (activeTab.id === 'apercu-pdf') {
-                const rowId = row.id;
-                const annonceData = getAnnonce_byfile(rowId);
-                
-                if (annonceData) {
-                    const numDossier = annonceData.dossier;
-                    const pdffile = numDossier + "/" + numDossier + "_annonce_.pdf";
-                    loadPdfPreview(pdffile);
-                }
-            } else if (activeTab.id === 'texte-extrait') {
-                loadTextExtract(row.id);
-            }
+        if (activeTab && activeTab.id === 'texte-extrait') {
+            loadTextExtract(row.id);
         }
         
     } catch (error) {
@@ -231,83 +216,8 @@ function selectRow(row) {
     }
 }
 
-// Fonction pour charger l'aperçu PDF (version corrigée)
-function loadPdfPreview(pdfFilePath) {
-    try {
-        const pdfViewer = document.getElementById('pdf-viewer');
-        const placeholder = document.getElementById('pdf-placeholder');
-        
-        // Utiliser directement le chemin complet passé (sans ajouter _annonce_.pdf)
-        const pdfUrl = `/preview_pdf/${pdfFilePath}`;
-        console.log('Chargement du PDF:', pdfUrl);
-        
-        // Masquer le placeholder et afficher l'iframe
-        placeholder.style.display = 'none';
-        pdfViewer.style.display = 'block'; 
-        pdfViewer.src = pdfUrl;
-        
-        // Gérer les erreurs de chargement
-        pdfViewer.onload = function() {
-            console.log('PDF chargé avec succès');
-        };
-        
-        pdfViewer.onerror = function() {
-            console.error('Erreur lors du chargement du PDF');
-            showPdfError();
-        };
-        
-    } catch (error) {
-        console.error('Erreur lors du chargement du PDF:', error);
-        showPdfError();
-    }
-}
-
-// Fonction pour afficher une erreur PDF
-function showPdfError() {
-    const pdfViewer = document.getElementById('pdf-viewer');
-    const placeholder = document.getElementById('pdf-placeholder');
-    
-    pdfViewer.style.display = 'none';
-    placeholder.style.display = 'flex';
-    placeholder.innerHTML = `
-        <i class="fas fa-exclamation-triangle"></i>
-        <p>Erreur lors du chargement du PDF</p>
-        <small>Vérifiez que le fichier _annonce_.pdf existe</small>
-    `;
-}
-
-// Fonction pour ouvrir le PDF en plein écran (version corrigée)
-function openPdfFullScreen() {
-    if (currentSelectedRow) {
-        const rowId = currentSelectedRow.id;
-        const annonceData = getAnnonce_byfile(rowId);
-        
-        if (annonceData) {
-            const numDossier = annonceData.dossier || annonceData.Dossier || rowId;
-            const pdfFilePath = numDossier + "/" + numDossier + "_annonce_.pdf";
-            const pdfUrl = `/preview_pdf/${pdfFilePath}`;
-            window.open(pdfUrl, '_blank');
-        } else {
-            alert('Impossible de trouver les données du dossier');
-        }
-    } else {
-        alert('Veuillez d\'abord sélectionner une ligne');
-    }
-}
-
-// Fonction pour réinitialiser l'aperçu PDF
-function resetPdfPreview() {
-    const pdfViewer = document.getElementById('pdf-viewer');
-    const placeholder = document.getElementById('pdf-placeholder');
-    
-    pdfViewer.style.display = 'none';
-    pdfViewer.src = '';
-    placeholder.style.display = 'flex';
-    placeholder.innerHTML = `
-        <i class="fas fa-file-pdf"></i>
-        <p>Sélectionnez une ligne pour voir l'aperçu du PDF</p>
-    `;
-    
+// Fonction pour réinitialiser l'aperçu (version simplifiée)
+function resetPreview() {
     resetTextPreview();
     currentSelectedRow = null;
 }
@@ -363,13 +273,13 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    // S'assurer que l'onglet PDF est actif par défaut
-    const pdfTab = document.getElementById('apercu-pdf');
-    if (pdfTab) {
-        pdfTab.classList.add('active');
+    // S'assurer que l'onglet texte-extrait est actif par défaut
+    const textTab = document.getElementById('texte-extrait');
+    if (textTab) {
+        textTab.classList.add('active');
     }
     
-    console.log('Module cy_fiche_annonce initialisé - Mode PDF uniquement');
+    console.log('Module cy_fiche_annonce initialisé - Mode texte uniquement');
 });
 
 // Fonction pour gérer l'affichage du bouton
@@ -450,7 +360,7 @@ function saveTextContent(rowId) {
         const textContentArea = document.getElementById('text-content-area');
         
         if (textContentArea) {
-            const text = textContentArea.value; // Utiliser .value pour les textarea
+            const text = textContentArea.value;
             const annonceData = getAnnonce_byfile(rowId);
             
             console.log('saveTextContent called for rowId:', rowId);
@@ -468,17 +378,15 @@ function saveTextContent(rowId) {
                     body: JSON.stringify({
                         folder: numDossier,
                         text: text,
-                        action: 'update'
+                        action: 'update',
+                        annonceData: annonceData
                     })
                 })
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
                         alert('PDF sauvegardé avec succès');
-                        // Recharger l'onglet PDF pour voir le nouveau fichier
-                        if (document.getElementById('apercu-pdf').classList.contains('active')) {
-                            loadPdfPreview(numDossier + "/" + numDossier + "_annonce_.pdf");
-                        }
+                        // Plus besoin de recharger l'onglet PDF
                     } else {
                         alert('Erreur lors de la sauvegarde: ' + data.error);
                     }
@@ -543,11 +451,7 @@ function saveNewTextContent(rowId) {
                     // Recharger l'affichage avec le texte éditable
                     showTextContent(text);
                     showSaveButton('save', rowId);
-                    
-                    // Recharger l'onglet PDF pour voir le nouveau fichier
-                    if (document.getElementById('apercu-pdf').classList.contains('active')) {
-                        loadPdfPreview(numDossier + "/" + numDossier + "_annonce_.pdf");
-                    }
+                    // Plus besoin de recharger l'onglet PDF
                 } else {
                     alert('Erreur lors de la création: ' + data.error);
                 }

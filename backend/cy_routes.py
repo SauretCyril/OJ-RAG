@@ -1499,7 +1499,7 @@ def save_text_content():
         folder = data.get("folder")
         text = data.get("text")
         action = data.get("action")  # 'create' ou 'update'
-        
+        annonceData= data.get("annonceData", {})
         if not folder or not text:
             return jsonify({"success": False, "error": "Dossier et texte requis"}), 400
             
