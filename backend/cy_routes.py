@@ -1564,12 +1564,63 @@ def save_text_content():
             
             # Contenu du PDF
             story = []
-            
-            # Ajouter un titre
-            title = Paragraph(f"Annonce - Dossier {folder}", title_style)
-            story.append(title)
+
+            # Créer une cartouche d'en-tête avec les informations du dossier
+            from reportlab.lib import colors
+            from reportlab.platypus import Table, TableStyle
+
+            # Récupérer les informations du dossier
+            numero_dossier = annonceData.get('dossier', folder)
+            descriptif = annonceData.get('description', 'N/A')
+            sujet = annonceData.get('entreprise', 'N/A')
+            theme = annonceData.get('id', 'N/A')
+
+            # Créer la cartouche sous forme de tableau
+            cartouche_data = [
+                ['N° Dossier:', numero_dossier, 'Sujet:', sujet],
+                ['Descriptif:', descriptif, 'Thème:', theme]
+            ]
+
+            cartouche_table = Table(cartouche_data, colWidths=[2*inch, 2*inch, 1.5*inch, 2*inch])
+            cartouche_table.setStyle(TableStyle([
+                # Style général
+                ('BACKGROUND', (0, 0), (-1, -1), colors.lightgrey),
+                ('TEXTCOLOR', (0, 0), (-1, -1), colors.black),
+                ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+                ('FONTNAME', (0, 0), (-1, -1), font_name),
+                ('FONTSIZE', (0, 0), (-1, -1), 10),
+                ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
+                ('TOPPADDING', (0, 0), (-1, -1), 6),
+                ('LEFTPADDING', (0, 0), (-1, -1), 6),
+                ('RIGHTPADDING', (0, 0), (-1, -1), 6),
+                
+                # Style pour les labels (colonnes 0 et 2)
+                ('BACKGROUND', (0, 0), (0, -1), colors.darkgrey),
+                ('BACKGROUND', (2, 0), (2, -1), colors.darkgrey),
+                ('TEXTCOLOR', (0, 0), (0, -1), colors.white),
+                ('TEXTCOLOR', (2, 0), (2, -1), colors.white),
+                ('FONTNAME', (0, 0), (0, -1), font_name),
+                ('FONTNAME', (2, 0), (2, -1), font_name),
+                ('FONTSIZE', (0, 0), (0, -1), 9),
+                ('FONTSIZE', (2, 0), (2, -1), 9),
+                
+                # Bordures
+                ('GRID', (0, 0), (-1, -1), 1, colors.black),
+                ('LINEBELOW', (0, 0), (-1, -1), 1, colors.black),
+                ('LINEABOVE', (0, 0), (-1, -1), 1, colors.black),
+                ('LINEBEFORE', (0, 0), (-1, -1), 1, colors.black),
+                ('LINEAFTER', (0, 0), (-1, -1), 1, colors.black),
+            ]))
+
+            # Ajouter la cartouche au document
+            story.append(cartouche_table)
+            story.append(Spacer(1, 20))
+
+            # Ajouter un titre pour le contenu
+            content_title = Paragraph("Contenu de l'annonce", title_style)
+            story.append(content_title)
             story.append(Spacer(1, 12))
-            
+
             # Diviser le texte en paragraphes
             paragraphs = text.split('\n\n')
             

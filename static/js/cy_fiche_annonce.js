@@ -385,7 +385,7 @@ function saveTextContent(rowId) {
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
-                        alert('PDF sauvegardé avec succès');
+                        //alert('PDF sauvegardé avec succès');
                         // Plus besoin de recharger l'onglet PDF
                     } else {
                         alert('Erreur lors de la sauvegarde: ' + data.error);
@@ -447,7 +447,7 @@ function saveNewTextContent(rowId) {
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    alert('Nouveau PDF créé avec succès');
+                    //alert('Nouveau PDF créé avec succès');
                     // Recharger l'affichage avec le texte éditable
                     showTextContent(text);
                     showSaveButton('save', rowId);

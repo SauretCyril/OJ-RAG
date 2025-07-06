@@ -14,7 +14,7 @@ class FileExplorer:
     # Définition des icônes et de leurs couleurs associées (par défaut)
     FILE_TYPES = {
         'default': {'icon': '📄', 'color': '#e0e0e0'},    # Gris clair
-        'folder': {'icon': '📁', 'color': '#f7df1e'},     # Bleu dossier
+        'folder': {'icon': '📁', 'color': '#4800FF'},     # Bleu dossier
         'docx': {'icon': '📝', 'color': '#2b579a'},       # Bleu Word
         'pdf': {'icon': '📕', 'color': '#c43e1c'},        # Rouge PDF
         'col': {'icon': '🔨', 'color': '#5ba478'},        # Orange-marron
@@ -23,7 +23,18 @@ class FileExplorer:
         'data.json': {'icon': '📊', 'color': '#5ba478'},  # Vert JSON
         'clas': {'icon': '⚙️', 'color': '#5ba478'},
         'conf': {'icon': '🛠️', 'color': '#5ba478'},
-        'exclued': {'icon': '👁️', 'color': '#5ba478'}
+        'exclued': {'icon': '👁️', 'color': '#5ba478'},
+        # Images
+        'png': {'icon': '🖼️', 'color': '#ff6b35'},        # Orange pour PNG
+        'jpg': {'icon': '🖼️', 'color': '#ff6b35'},        # Orange pour JPG
+        'jpeg': {'icon': '🖼️', 'color': '#ff6b35'},       # Orange pour JPEG
+        'gif': {'icon': '🎞️', 'color': '#ff6b35'},        # Orange pour GIF (animé)
+        'bmp': {'icon': '🖼️', 'color': '#ff6b35'},        # Orange pour BMP
+        'ico': {'icon': '🖼️', 'color': '#ff6b35'},        # Orange pour ICO
+        'svg': {'icon': '🎨', 'color': '#ff6b35'},         # Orange pour SVG
+        'webp': {'icon': '🖼️', 'color': '#ff6b35'},       # Orange pour WebP
+        'tiff': {'icon': '🖼️', 'color': '#ff6b35'},       # Orange pour TIFF
+        'tif': {'icon': '🖼️', 'color': '#ff6b35'}         # Orange pour TIF
     }
     
     # Définition des groupes de fichiers pour le filtrage
@@ -32,6 +43,11 @@ class FileExplorer:
             'icon': '📚',
             'types': ['pdf', 'docx', 'default'],
             'color': '#2b579a'
+        },
+        'Images': {
+            'icon': '🖼️',
+            'types': ['png', 'jpg', 'jpeg', 'gif', 'bmp', 'ico', 'svg', 'webp', 'tiff', 'tif'],
+            'color': '#ff6b35'
         },
         'Configuration': {
             'icon': '⚙️',
