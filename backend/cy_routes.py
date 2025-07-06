@@ -5,7 +5,7 @@ import platform
 import csv
 import subprocess
 from werkzeug.utils import secure_filename
-
+from datetime import datetime
 # Import de la configuration centralisée
 from cy_app_config import app_config
 
@@ -1455,3 +1455,236 @@ def serve_local_file():
         
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+
+@cy_routes.route("/extract_text_from_pdf", methods=["POST"])
+def extract_text_from_pdf_api():
+    try:
+        data = request.get_json()
+        file = data.get("file")
+        
+        if not file:
+            return jsonify({"success": False, "error": "Paramètre 'file' manquant"}), 400
+            
+        # Construire le chemin complet
+        full_path = os.path.join(GetRoot(), file)
+        full_path = full_path.replace("\\", "/")
+        
+        print(f"dbg-1249: Chemin complet du PDF: {full_path}")
+        
+        if not os.path.exists(full_path):
+            return jsonify({"success": False, "error": "Fichier PDF non trouvé"}), 404
+          
+        # Extraire le texte
+        text = extract_text_from_pdf(full_path)
+        
+        return jsonify({
+            "success": True,
+            "text": text,
+            "file": file
+        })
+        
+    except Exception as e:
+        print(f"Erreur lors de l'extraction de texte PDF: {str(e)}")
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        }), 500
+
+
+@cy_routes.route("/save_text_content", methods=["POST"])
+def save_text_content():
+    try:
+        data = request.get_json()
+        folder = data.get("folder")
+        text = data.get("text")
+        action = data.get("action")  # 'create' ou 'update'
+        
+        if not folder or not text:
+            return jsonify({"success": False, "error": "Dossier et texte requis"}), 400
+            
+        # Construire le chemin du fichier PDF
+        pdf_filename = f"{folder}_annonce_.pdf"
+        full_path = os.path.join(GetRoot(), folder, pdf_filename)
+        
+        # Créer le répertoire si nécessaire
+        os.makedirs(os.path.dirname(full_path), exist_ok=True)
+        
+        # Créer le PDF avec reportlab
+        from reportlab.lib.pagesizes import letter, A4
+        from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
+        from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+        from reportlab.lib.units import inch
+        from reportlab.pdfbase import pdfmetrics
+        from reportlab.pdfbase.ttfonts import TTFont
+        
+        try:
+            # Essayer d'utiliser une police qui supporte l'UTF-8
+            try:
+                # Registrer une police Unicode si disponible
+                pdfmetrics.registerFont(TTFont('DejaVuSans', 'DejaVuSans.ttf'))
+                font_name = 'DejaVuSans'
+            except:
+                # Fallback vers police par défaut
+                font_name = 'Helvetica'
+            
+            # Créer le document PDF
+            doc = SimpleDocTemplate(
+                full_path,
+                pagesize=A4,
+                rightMargin=72,
+                leftMargin=72,
+                topMargin=72,
+                bottomMargin=18
+            )
+            
+            # Styles
+            styles = getSampleStyleSheet()
+            
+            # Style personnalisé pour le texte principal
+            custom_style = ParagraphStyle(
+                'CustomStyle',
+                parent=styles['Normal'],
+                fontName=font_name,
+                fontSize=11,
+                spaceAfter=12,
+                leading=14,
+                alignment=0  # Alignement à gauche
+            )
+            
+            # Style pour le titre
+            title_style = ParagraphStyle(
+                'TitleStyle',
+                parent=styles['Title'],
+                fontName=font_name,
+                fontSize=16,
+                spaceAfter=20,
+                alignment=1  # Centré
+            )
+            
+            # Contenu du PDF
+            story = []
+            
+            # Ajouter un titre
+            title = Paragraph(f"Annonce - Dossier {folder}", title_style)
+            story.append(title)
+            story.append(Spacer(1, 12))
+            
+            # Diviser le texte en paragraphes
+            paragraphs = text.split('\n\n')
+            
+            for para_text in paragraphs:
+                if para_text.strip():
+                    # Échapper les caractères spéciaux pour XML
+                    para_text = para_text.replace('&', '&amp;')
+                    para_text = para_text.replace('<', '&lt;')
+                    para_text = para_text.replace('>', '&gt;')
+                    para_text = para_text.replace('\n', '<br/>')
+                    
+                    para = Paragraph(para_text, custom_style)
+                    story.append(para)
+                    story.append(Spacer(1, 6))
+            
+            # Ajouter une note de bas de page
+            footer_style = ParagraphStyle(
+                'FooterStyle',
+                parent=styles['Normal'],
+                fontName=font_name,
+                fontSize=8,
+                textColor='gray',
+                alignment=1  # Centré
+            )
+            
+            #story.append(Spacer(1, 20))
+            #footer = Paragraph(f"Document généré le {datetime.now().strftime('%d/%m/%Y à %H:%M')}", footer_style)
+            #story.append(footer)
+            
+            # Construire le PDF
+            doc.build(story)
+            
+            return jsonify({
+                "success": True,
+                "message": f"PDF {'créé' if action == 'create' else 'sauvegardé'} avec succès",
+                "file_path": pdf_filename
+            })
+            
+        except ImportError:
+            # Si reportlab n'est pas disponible, utiliser une alternative avec fpdf
+            try:
+                from fpdf import FPDF
+                
+                class PDF(FPDF):
+                    def header(self):
+                        self.set_font('Arial', 'B', 15)
+                        self.cell(0, 10, f'Annonce - Dossier {folder}', 0, 1, 'C')
+                        self.ln(10)
+                    
+                    def footer(self):
+                        self.set_y(-15)
+                        self.set_font('Arial', 'I', 8)
+                        self.cell(0, 10, f'Page {self.page_no()} - Généré le {datetime.now().strftime("%d/%m/%Y à %H:%M")}', 0, 0, 'C')
+                
+                pdf = PDF()
+                pdf.add_page()
+                pdf.set_font('Arial', '', 11)
+                
+                # Diviser le texte en lignes
+                lines = text.split('\n')
+                for line in lines:
+                    if line.strip():
+                        # Gérer les caractères spéciaux
+                        try:
+                            line = line.encode('latin-1', 'ignore').decode('latin-1')
+                        except:
+                            line = line.encode('ascii', 'ignore').decode('ascii')
+                        
+                        # Diviser les lignes trop longues
+                        if len(line) > 80:
+                            words = line.split(' ')
+                            current_line = ''
+                            for word in words:
+                                if len(current_line + ' ' + word) <= 80:
+                                    current_line += ' ' + word if current_line else word
+                                else:
+                                    if current_line:
+                                        pdf.cell(0, 6, current_line, 0, 1)
+                                    current_line = word
+                            if current_line:
+                                pdf.cell(0, 6, current_line, 0, 1)
+                        else:
+                            pdf.cell(0, 6, line, 0, 1)
+                    else:
+                        pdf.ln(3)
+                
+                pdf.output(full_path)
+                
+                return jsonify({
+                    "success": True,
+                    "message": f"PDF {'créé' if action == 'create' else 'sauvegardé'} avec succès (fpdf)",
+                    "file_path": pdf_filename
+                })
+                
+            except ImportError:
+                # Si aucune bibliothèque PDF n'est disponible, créer un fichier texte en fallback
+                txt_filename = f"{folder}_annonce_text.txt"
+                txt_full_path = os.path.join(GetRoot(), folder, txt_filename)
+                
+                with open(txt_full_path, 'w', encoding='utf-8') as f:
+                    f.write(f"Annonce - Dossier {folder}\n")
+                    f.write("=" * 50 + "\n\n")
+                    f.write(text)
+                    f.write(f"\n\nDocument généré le {datetime.now().strftime('%d/%m/%Y à %H:%M')}")
+                
+                return jsonify({
+                    "success": True,
+                    "message": f"Fichier texte {'créé' if action == 'create' else 'sauvegardé'} avec succès (fallback)",
+                    "file_path": txt_filename,
+                    "warning": "Bibliothèques PDF non disponibles, fichier texte créé en remplacement"
+                })
+        
+    except Exception as e:
+        print(f"Erreur lors de la sauvegarde du PDF: {str(e)}")
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        }), 500

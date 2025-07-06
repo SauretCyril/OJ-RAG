@@ -130,7 +130,7 @@ class FileExplorer:
             # Activer uniquement le filtre IA
             for group in self.active_filters:
                 self.active_filters[group] = (group == "IA")
-        print (f"DBG-1234 = group ={self.active_filters}")   
+        #print (f"DBG-1234 = group ={self.active_filters}")   
 
     def initialize_filters(self):
         """Initialise tous les filtres à actif (True)"""
@@ -301,38 +301,268 @@ class FileExplorer:
     def on_file_click(self, event):
         """
         Gère le clic sur un fichier dans le Treeview.
-        Si le fichier est un .docx, il est ouvert avec Microsoft Word.
+        Ouvre le fichier avec l'application appropriée selon son type.
         """
         node = self.tree.focus()
         path = self.tree.item(node, 'values')[0]
 
         try:
-            os.startfile(path)  # Ouvre le fichier avec l'application par défaut
+            # Vérifier si c'est un fichier image
+            if path.lower().endswith(('.png', '.jpg', '.jpeg', '.gif', '.bmp')):
+                self.show_image_viewer(path)
+            else:
+                # Pour les autres types de fichiers, utiliser l'application par défaut
+                os.startfile(path)
         except Exception as e:
             print(f"Erreur lors de l'ouverture du fichier : {e}")
+            # Méthodes alternatives pour différents types de fichiers
             if os.path.isfile(path):
-                if path.endswith('.docx'):
+                if path.lower().endswith(('.png', '.jpg', '.jpeg', '.gif', '.bmp')):
+                    self.show_image_viewer(path)
+                elif path.endswith('.docx'):
                     try:
-                        os.startfile(path)  # Ouvre le fichier avec Microsoft Word
+                        os.startfile(path)
                     except Exception as e:
                         print(f"Erreur lors de l'ouverture du fichier Word : {e}")
                 elif path.endswith('.pdf'):
                     try:
-                        os.system(f'start {path}')  # Ouvre le fichier PDF avec l'application par défaut
+                        os.system(f'start {path}')
                     except Exception as e:
                         print(f"Erreur lors de l'ouverture du fichier PDF : {e}")
                 elif path.endswith('.xlsx'):
                     try:
-                        os.system(f'start excel "{path}"')  # Ouvre le fichier Excel avec Microsoft Excel
+                        os.system(f'start excel "{path}"')
                     except Exception as e:
                         print(f"Erreur lors de l'ouverture du fichier Excel : {e}")
     
-    def on_font_size_change(self, event, style):
-        """Gère le changement de taille de police."""
-        font_size = event.widget.get()
-        style.configure("Treeview", font=('Arial', font_size))
-        # Mettre à jour l'info-bulle du slider
-        event.widget.config(label=f"Taille de la police : {font_size}")
+    def show_image_viewer(self, image_path):
+        """
+        Affiche une image dans une fenêtre dédiée avec possibilité de zoom et de redimensionnement.
+        """
+        try:
+            from PIL import Image, ImageTk
+            import tkinter as tk
+            from tkinter import ttk
+            
+            # Stocker les références PIL au niveau de l'instance pour les autres méthodes
+            self.PIL_Image = Image
+            self.PIL_ImageTk = ImageTk
+            
+            # Créer une nouvelle fenêtre pour l'affichage de l'image
+            image_window = tk.Toplevel(self.root)
+            image_window.title(f"Visualiseur d'image - {os.path.basename(image_path)}")
+            image_window.geometry("800x600")
+            
+            # Variables pour le zoom et la position
+            self.zoom_factor = 1.0
+            self.image_x = 0
+            self.image_y = 0
+            self.original_image = None
+            self.display_image = None
+            self.photo_image = None
+            
+            # Charger l'image originale
+            self.original_image = self.PIL_Image.open(image_path)
+            
+            # Créer un frame pour les contrôles
+            control_frame = tk.Frame(image_window)
+            control_frame.pack(fill='x', padx=5, pady=5)
+            
+            # Boutons de contrôle
+            zoom_in_btn = tk.Button(control_frame, text="Zoom +", command=lambda: self.zoom_image(1.2, canvas))
+            zoom_in_btn.pack(side='left', padx=2)
+            
+            zoom_out_btn = tk.Button(control_frame, text="Zoom -", command=lambda: self.zoom_image(0.8, canvas))
+            zoom_out_btn.pack(side='left', padx=2)
+            
+            reset_btn = tk.Button(control_frame, text="Réinitialiser", command=lambda: self.reset_image(canvas))
+            reset_btn.pack(side='left', padx=2)
+            
+            fit_btn = tk.Button(control_frame, text="Ajuster à la fenêtre", command=lambda: self.fit_to_window(canvas))
+            fit_btn.pack(side='left', padx=2)
+            
+            # Informations sur l'image
+            image_info = f"Taille: {self.original_image.size[0]}x{self.original_image.size[1]} pixels"
+            info_label = tk.Label(control_frame, text=image_info)
+            info_label.pack(side='right', padx=10)
+            
+            # Créer un canvas avec barres de défilement
+            canvas_frame = tk.Frame(image_window)
+            canvas_frame.pack(fill='both', expand=True, padx=5, pady=5)
+            
+            canvas = tk.Canvas(canvas_frame, bg='white')
+            v_scrollbar = ttk.Scrollbar(canvas_frame, orient="vertical", command=canvas.yview)
+            h_scrollbar = ttk.Scrollbar(canvas_frame, orient="horizontal", command=canvas.xview)
+            
+            canvas.configure(yscrollcommand=v_scrollbar.set, xscrollcommand=h_scrollbar.set)
+            
+            # Placer le canvas et les barres de défilement
+            canvas.grid(row=0, column=0, sticky="nsew")
+            v_scrollbar.grid(row=0, column=1, sticky="ns")
+            h_scrollbar.grid(row=1, column=0, sticky="ew")
+            
+            canvas_frame.grid_rowconfigure(0, weight=1)
+            canvas_frame.grid_columnconfigure(0, weight=1)
+            
+            # Afficher l'image initialement
+            self.display_image_on_canvas(canvas)
+            
+            # Lier les événements de la souris pour le zoom avec la molette
+            canvas.bind("<MouseWheel>", lambda e: self.on_mouse_wheel(e, canvas))
+            canvas.bind("<Button-4>", lambda e: self.on_mouse_wheel(e, canvas))  # Linux
+            canvas.bind("<Button-5>", lambda e: self.on_mouse_wheel(e, canvas))  # Linux
+            
+            # Lier les événements pour le déplacement avec la souris
+            canvas.bind("<ButtonPress-1>", lambda e: self.start_drag(e, canvas))
+            canvas.bind("<B1-Motion>", lambda e: self.on_drag(e, canvas))
+            
+            # Ajuster l'image à la fenêtre au démarrage
+            image_window.after(100, lambda: self.fit_to_window(canvas))
+            
+        except ImportError:
+            # Si PIL n'est pas disponible, utiliser l'application par défaut
+            print("PIL (Pillow) n'est pas installé. Utilisation de l'application par défaut.")
+            try:
+                os.startfile(image_path)
+            except Exception as e:
+                print(f"Erreur lors de l'ouverture de l'image : {e}")
+        except Exception as e:
+            print(f"Erreur lors de l'affichage de l'image : {e}")
+            # Fallback vers l'application par défaut
+            try:
+                os.startfile(image_path)
+            except Exception as e:
+                print(f"Erreur lors de l'ouverture de l'image : {e}")
+
+    def display_image_on_canvas(self, canvas):
+        """Affiche l'image sur le canvas avec le zoom actuel."""
+        try:
+            # Vérifier que PIL est disponible
+            if not hasattr(self, 'PIL_Image') or not hasattr(self, 'PIL_ImageTk'):
+                print("PIL n'est pas disponible pour l'affichage de l'image")
+                return
+                
+            # Calculer la nouvelle taille
+            new_width = int(self.original_image.size[0] * self.zoom_factor)
+            new_height = int(self.original_image.size[1] * self.zoom_factor)
+            
+            # Redimensionner l'image
+            self.display_image = self.original_image.resize((new_width, new_height), self.PIL_Image.Resampling.LANCZOS)
+            
+            # Convertir pour Tkinter
+            self.photo_image = self.PIL_ImageTk.PhotoImage(self.display_image)
+            
+            # Effacer le canvas
+            canvas.delete("all")
+            
+            # Afficher l'image
+            canvas.create_image(self.image_x, self.image_y, anchor="nw", image=self.photo_image)
+            
+            # Configurer la région de défilement
+            canvas.configure(scrollregion=canvas.bbox("all"))
+            
+        except Exception as e:
+            print(f"Erreur lors de l'affichage de l'image : {e}")
+
+    def zoom_image(self, factor, canvas):
+        """Applique un zoom à l'image."""
+        try:
+            self.zoom_factor *= factor
+            self.zoom_factor = max(0.1, min(10.0, self.zoom_factor))  # Limiter le zoom
+            self.display_image_on_canvas(canvas)
+        except Exception as e:
+            print(f"Erreur lors du zoom : {e}")
+
+    def reset_image(self, canvas):
+        """Remet l'image à sa taille originale."""
+        try:
+            self.zoom_factor = 1.0
+            self.image_x = 0
+            self.image_y = 0
+            self.display_image_on_canvas(canvas)
+        except Exception as e:
+            print(f"Erreur lors de la réinitialisation : {e}")
+
+    def fit_to_window(self, canvas):
+        """Ajuste l'image pour qu'elle s'adapte à la fenêtre."""
+        try:
+            if not hasattr(self, 'original_image') or self.original_image is None:
+                return
+                
+            # Obtenir les dimensions du canvas
+            canvas.update_idletasks()
+            canvas_width = canvas.winfo_width()
+            canvas_height = canvas.winfo_height()
+            
+            # Calculer le facteur de zoom pour ajuster à la fenêtre
+            zoom_x = canvas_width / self.original_image.size[0]
+            zoom_y = canvas_height / self.original_image.size[1]
+            
+            # Utiliser le plus petit facteur pour que l'image tienne entièrement
+            self.zoom_factor = min(zoom_x, zoom_y, 1.0)  # Ne pas agrandir au-delà de la taille originale
+            
+            # Centrer l'image
+            self.image_x = max(0, (canvas_width - self.original_image.size[0] * self.zoom_factor) // 2)
+            self.image_y = max(0, (canvas_height - self.original_image.size[1] * self.zoom_factor) // 2)
+            
+            self.display_image_on_canvas(canvas)
+            
+        except Exception as e:
+            print(f"Erreur lors de l'ajustement à la fenêtre : {e}")
+
+    def on_mouse_wheel(self, event, canvas):
+        """Gère le zoom avec la molette de la souris."""
+        try:
+            # Déterminer la direction du zoom
+            if event.delta > 0 or event.num == 4:  # Zoom in
+                factor = 1.1
+            else:  # Zoom out
+                factor = 0.9
+            
+            # Obtenir la position de la souris
+            mouse_x = canvas.canvasx(event.x)
+            mouse_y = canvas.canvasy(event.y)
+            
+            # Calculer le nouveau zoom
+            old_zoom = self.zoom_factor
+            self.zoom_factor *= factor
+            self.zoom_factor = max(0.1, min(10.0, self.zoom_factor))
+            
+            # Ajuster la position pour zoomer sur la position de la souris
+            zoom_ratio = self.zoom_factor / old_zoom
+            self.image_x = mouse_x - (mouse_x - self.image_x) * zoom_ratio
+            self.image_y = mouse_y - (mouse_y - self.image_y) * zoom_ratio
+            
+            self.display_image_on_canvas(canvas)
+            
+        except Exception as e:
+            print(f"Erreur lors du zoom à la souris : {e}")
+
+    def start_drag(self, event, canvas):
+        """Démarre le glissement de l'image."""
+        try:
+            self.drag_start_x = event.x
+            self.drag_start_y = event.y
+        except Exception as e:
+            print(f"Erreur lors du démarrage du glissement : {e}")
+
+    def on_drag(self, event, canvas):
+        """Gère le déplacement de l'image par glissement."""
+        try:
+            if hasattr(self, 'drag_start_x') and hasattr(self, 'drag_start_y'):
+                dx = event.x - self.drag_start_x
+                dy = event.y - self.drag_start_y
+                
+                self.image_x += dx
+                self.image_y += dy
+                
+                self.drag_start_x = event.x
+                self.drag_start_y = event.y
+                
+                self.display_image_on_canvas(canvas)
+        
+        except Exception as e:
+            print(f"Erreur lors du déplacement : {e}")
     
     def open_directory_explorer(self):
         """Ouvre un explorateur de répertoires pour afficher un dossier initial et son contenu."""
