@@ -84,3 +84,7 @@ function changeTab(tabName) {
     setNewTab();
     refresh();
 }
+
+function ChangeToActiveTab() {
+     changeTab(window.tabActive);
+}

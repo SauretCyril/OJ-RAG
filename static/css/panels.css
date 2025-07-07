@@ -1,0 +1,454 @@
+/* Conteneur principal à deux panneaux */
+.split-container {
+    display: flex;
+    gap: 0;
+    height: calc(100vh - 200px);
+    min-height: 500px;
+    position: relative;
+}
+
+/* Panneau gauche - Tableau (redimensionnable) */
+.left-panel {
+    flex: 1;
+    min-width: 300px;
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 8px 0 0 8px;
+    overflow: hidden;
+    transition: flex 0.3s ease;
+}
+
+.left-panel .table-responsive {
+    height: 100%;
+    overflow-y: auto;
+}
+
+/* Séparateur redimensionnable */
+.resizer {
+    width: 5px;
+    background: #ddd;
+    cursor: col-resize;
+    position: relative;
+    transition: background-color 0.2s ease;
+}
+
+.resizer:hover {
+    background: #007bff;
+}
+
+.resizer::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 3px;
+    height: 40px;
+    background: #999;
+    border-radius: 2px;
+}
+
+/* Panneau droit - Onglets (redimensionnable) */
+.right-panel {
+    flex: 0 0 450px;
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 0 8px 8px 0;
+    overflow: hidden;
+    transition: flex 0.3s ease;
+    min-width: 300px;
+}
+
+/* États spéciaux pour le panneau PDF */
+.right-panel.minimized {
+    flex: 0 0 50px;
+    min-width: 50px;
+}
+
+.right-panel.maximized {
+    flex: 2;
+}
+
+.right-panel.full-width {
+    flex: 3;
+}
+
+/* Conteneur des onglets */
+.tabs-container {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Contrôles de taille dans l'en-tête */
+.tabs-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #f8f9fa;
+    border-bottom: 1px solid #ddd;
+    padding: 0;
+}
+
+.tab-button {
+    flex: 1;
+    border: none;
+    background: #007bff;
+    color: white;
+    padding: 12px 16px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    border-radius: 0;
+}
+
+.tab-button:hover {
+    background: #0056b3;
+}
+
+.tab-button.active {
+    background: #007bff;
+    color: white;
+}
+
+.tab-button i {
+    margin-right: 6px;
+}
+
+.pdf-size-controls {
+    display: flex;
+    gap: 2px;
+    padding: 4px;
+}
+
+.pdf-size-controls .btn {
+    padding: 4px 8px;
+    font-size: 12px;
+}
+
+/* Contenu des onglets */
+.tabs-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0;
+}
+
+.tab-content {
+    display: none;
+    height: 100%;
+    padding: 20px;
+}
+
+.tab-content.active {
+    display: block;
+}
+
+/* Styles pour l'aperçu PDF */
+.pdf-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #eee;
+}
+
+.pdf-header h3 {
+    margin: 0;
+    color: #333;
+}
+
+/* Contrôles PDF avec zoom */
+.pdf-controls {
+    display: flex;
+    gap: 5px;
+    align-items: center;
+}
+
+.pdf-controls .btn {
+    padding: 6px 10px;
+    font-size: 12px;
+}
+
+.pdf-content {
+    height: calc(100% - 80px);
+    position: relative;
+}
+
+.pdf-placeholder {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    color: #666;
+    background: #f8f9fa;
+    border: 2px dashed #ddd;
+    border-radius: 6px;
+}
+
+.pdf-placeholder i {
+    font-size: 48px;
+    margin-bottom: 15px;
+    color: #007bff;
+}
+
+.pdf-placeholder p {
+    margin: 0 0 5px 0;
+    font-size: 16px;
+}
+
+.pdf-placeholder small {
+    color: #999;
+    font-size: 12px;
+}
+
+/* Zoom sur l'iframe PDF */
+#pdf-viewer {
+    width: 100%;
+    height: 100%;
+    border: none;
+    border-radius: 4px;
+    transform-origin: top left;
+    transition: transform 0.3s ease;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+#pdf-viewer.zoomed-in {
+    transform: scale(1.2);
+}
+
+#pdf-viewer.zoomed-out {
+    transform: scale(0.8);
+}
+
+/* Amélioration de la sélection des lignes */
+#table-body tr {
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+#table-body tr:hover {
+    background-color: #f8f9fa;
+}
+
+#table-body tr.selected {
+    background-color: #e3f2fd;
+}
+
+/* Responsive design amélioré */
+@media (max-width: 1200px) {
+    .right-panel {
+        flex: 0 0 400px;
+    }
+}
+
+@media (max-width: 768px) {
+    .split-container {
+        flex-direction: column;
+        height: auto;
+    }
+    
+    .left-panel {
+        height: 400px;
+        border-radius: 8px 8px 0 0;
+    }
+    
+    .right-panel {
+        flex: none;
+        height: 500px;
+        border-radius: 0 0 8px 8px;
+    }
+    
+    .resizer {
+        width: 100%;
+        height: 5px;
+        cursor: row-resize;
+    }
+}
+
+/* Animation pour les transitions */
+.split-container.animating .left-panel,
+.split-container.animating .right-panel {
+    transition: flex 0.3s ease;
+}
+
+/* CSS pour les zones de texte éditables */
+.text-content-wrapper {
+    height: 100%;
+    width: 100%;
+    padding: 0;
+}
+
+.text-content-editable {
+    width: 100%;
+    height: 100%;
+    min-height: 400px;
+    padding: 15px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-family: Arial, sans-serif;
+    font-size: 14px;
+    line-height: 1.5;
+    resize: vertical;
+    box-sizing: border-box;
+    background-color: #fff;
+}
+
+.text-content-editable:focus {
+    outline: none;
+    border-color: #007bff;
+    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+}
+
+.text-editor {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    padding: 20px;
+}
+
+.text-editor h4 {
+    margin: 0 0 15px 0;
+    color: #333;
+}
+
+.text-textarea {
+    flex: 1;
+    width: 100%;
+    min-height: 300px;
+    padding: 15px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-family: Arial, sans-serif;
+    font-size: 14px;
+    line-height: 1.5;
+    resize: vertical;
+    box-sizing: border-box;
+}
+
+.text-textarea:focus {
+    outline: none;
+    border-color: #007bff;
+    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+}
+
+.editor-actions {
+    margin-top: 15px;
+    display: flex;
+    gap: 10px;
+}
+
+.btn {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background-color 0.2s;
+}
+
+.btn-primary {
+    background-color: #007bff;
+    color: white;
+}
+
+.btn-primary:hover {
+    background-color: #0056b3;
+}
+
+.btn-success {
+    background-color: #28a745;
+    color: white;
+}
+
+.btn-success:hover {
+    background-color: #1e7e34;
+}
+
+.btn-secondary {
+    background-color: #6c757d;
+    color: white;
+}
+
+.btn-secondary:hover {
+    background-color: #545b62;
+}
+
+.btn i {
+    margin-right: 5px;
+}
+
+.text-loading {
+    text-align: center;
+    color: #6c757d;
+    font-style: italic;
+    padding: 20px;
+}
+
+.text-loading i {
+    font-size: 2em;
+    margin-bottom: 10px;
+}
+
+.text-container {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.text-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px;
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.text-header h3 {
+    margin: 0;
+    font-size: 1.1em;
+    color: #495057;
+}
+
+.text-viewer {
+    flex: 1;
+    padding: 20px;
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 0 0 4px 4px;
+    overflow-y: auto;
+    font-family: 'Arial', sans-serif;
+    line-height: 1.6;
+}
+
+.text-placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    color: #6c757d;
+}
+
+.text-placeholder i {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+}
+
+.text-content {
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    color: #333;
+    font-size: 14px;
+}
+
+.text-loading {
+    text-align: center;
+    color: #6c757d;
+    font-style: italic;
+}
