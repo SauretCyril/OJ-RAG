@@ -322,71 +322,153 @@ function sendChatQuestion(rowId) {
         // Récupérer les données de l'annonce
         const annonceData = getAnnonce_byfile(rowId);
         const numDossier = annonceData.dossier;
-        //const pdfFilePath = numDossier + "/" + numDossier + "_annonce_.pdf";
         
         // Extraire le chemin complet du fichier PDF à partir de l'objet annonceData
-        let pdfFilePath =  rowId.substring(0, rowId.lastIndexOf('/'));
+        let pdfFilePath = rowId.substring(0, rowId.lastIndexOf('/'));
         if (annonceData && annonceData.dossier) {
             pdfFilePath = pdfFilePath + "/" + annonceData.dossier + "_annonce_.pdf";
         } else {
             console.error("Impossible de déterminer le chemin du fichier PDF pour rowId:", rowId);
+            removeChatMessage(chatMessages, loadingId);
             addChatMessage(chatMessages, "Erreur: chemin du fichier PDF introuvable.", "bot error");
             // Réactiver le bouton et sortir
             sendBtn.disabled = false;
             sendBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Envoyer';
             return;
         }
-        // Appeler l'API get_AI_answer
-        alert("DEBUG: Envoi de la question à l'API pour le PDF: " + pdfFilePath + " - Question: " + question + " - Numéro de dossier: " + numDossier)
-        jobTextResponse =  ApiClient.jobs.getAnswer(pdfFilePath, question,numDossier)
-       /*  fetch('/get_AI_answer', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                path: pdfFilePath,
-                RQ: question,
-                NumDos: numDossier
-            })
-        }) */
-        .then(response => {
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-            return response.json();
-        })
-        .then(data => {
-            // Supprimer le message de chargement
-            removeChatMessage(chatMessages, loadingId);
-            
-            if (data.formatted_text) {
-                // Ajouter la réponse du bot
-                addChatMessage(chatMessages, data.formatted_text, 'bot');
-            } else if (data.Er005 || data.Er006 || data.Er007) {
-                // Gérer les erreurs spécifiques de l'API
-                const errorMsg = data.Er005 || data.Er006 || data.Er007 || 'Erreur inconnue';
-                addChatMessage(chatMessages, `Erreur: ${errorMsg}`, 'bot error');
-            } else {
-                addChatMessage(chatMessages, 'Réponse invalide reçue du serveur', 'bot error');
-            }
-        })
-        .catch(error => {
-            console.error('Erreur lors de l\'envoi de la question:', error);
-            // Supprimer le message de chargement
-            removeChatMessage(chatMessages, loadingId);
-            // Ajouter un message d'erreur
-            addChatMessage(chatMessages, 'Erreur de connexion. Veuillez réessayer.', 'bot error');
-        })
-        .finally(() => {
-            // Réactiver le bouton
+        
+        console.log("DEBUG: Envoi de la question à l'API pour le PDF:", pdfFilePath, "- Question:", question, "- Numéro de dossier:", numDossier);
+        
+        // Fonction pour réactiver le bouton
+        function reactivateButton() {
             sendBtn.disabled = false;
             sendBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Envoyer';
-        });
+        }
+        
+        // Utiliser soit ApiClient soit fetch selon ce qui est disponible
+        if (typeof ApiClient !== 'undefined' && ApiClient.jobs && typeof ApiClient.jobs.getAnswer === 'function' && question != "") {
+            // Utiliser ApiClient avec gestion de Promise
+            try {
+                console.log("DEBUG: Utilisation d'ApiClient avec Promise");
+
+                ApiClient.jobs.getAnswer(pdfFilePath, question, numDossier, true)
+                    .then(jobTextResponse => {
+                        console.log("DEBUG: Réponse ApiClient Promise résolue:", jobTextResponse);
+                        console.log("DEBUG: Type de la réponse:", typeof jobTextResponse);
+                        console.log("DEBUG: Propriétés de la réponse:", Object.keys(jobTextResponse || {}));
+                        
+                        // Supprimer le message de chargement
+                        removeChatMessage(chatMessages, loadingId);
+                        
+                        // Traiter la réponse selon sa structure
+                        if (jobTextResponse) {
+                            if (jobTextResponse.formatted_text) {
+                                addChatMessage(chatMessages, jobTextResponse.formatted_text, 'bot');
+                            } else if (jobTextResponse.raw_text) {
+                                addChatMessage(chatMessages, jobTextResponse.raw_text, 'bot');
+                            } else if (typeof jobTextResponse === 'string') {
+                                addChatMessage(chatMessages, jobTextResponse, 'bot');
+                            } else if (jobTextResponse.Er005 || jobTextResponse.Er006 || jobTextResponse.Er007) {
+                                const errorMsg = jobTextResponse.Er005 || jobTextResponse.Er006 || jobTextResponse.Er007 || 'Erreur inconnue';
+                                addChatMessage(chatMessages, `Erreur: ${errorMsg}`, 'bot error');
+                            } else {
+                                console.warn("Structure de réponse inattendue:", jobTextResponse);
+                                addChatMessage(chatMessages, 'Réponse reçue mais format inattendu. Vérifiez la console pour plus de détails.', 'bot error');
+                            }
+                        } else {
+                            addChatMessage(chatMessages, 'Aucune réponse reçue du serveur', 'bot error');
+                        }
+                        
+                        // Réactiver le bouton
+                        reactivateButton();
+                    })
+                    .catch(apiError => {
+                        console.error('Erreur avec ApiClient Promise:', apiError);
+                        removeChatMessage(chatMessages, loadingId);
+                        addChatMessage(chatMessages, 'Erreur lors de l\'appel API: ' + apiError.message, 'bot error');
+                        reactivateButton();
+                    });
+                
+            } catch (apiError) {
+                console.error('Erreur avec ApiClient:', apiError);
+                removeChatMessage(chatMessages, loadingId);
+                addChatMessage(chatMessages, 'Erreur lors de l\'appel API: ' + apiError.message, 'bot error');
+                reactivateButton();
+            }
+            
+        } else {
+            // Fallback vers fetch si ApiClient n'est pas disponible
+            console.log("DEBUG: ApiClient non disponible, utilisation de fetch");
+            
+            fetch('/get_AI_answer', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    path: pdfFilePath,
+                    RQ: question,
+                    NumDos: numDossier,
+                    libre: true
+                })
+            })
+            .then(response => {
+                console.log("DEBUG: Réponse fetch reçue, status:", response.status);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log("DEBUG: Données fetch reçues:", data);
+                console.log("DEBUG: Type des données:", typeof data);
+                console.log("DEBUG: Propriétés des données:", Object.keys(data || {}));
+                
+                // Supprimer le message de chargement
+                removeChatMessage(chatMessages, loadingId);
+                
+                if (data.formatted_text) {
+                    addChatMessage(chatMessages, data.formatted_text, 'bot');
+                } else if (data.raw_text) {
+                    addChatMessage(chatMessages, data.raw_text, 'bot');
+                } else if (data.Er005 || data.Er006 || data.Er007) {
+                    const errorMsg = data.Er005 || data.Er006 || data.Er007 || 'Erreur inconnue';
+                    addChatMessage(chatMessages, `Erreur: ${errorMsg}`, 'bot error');
+                } else {
+                    console.warn("Structure de données inattendue:", data);
+                    addChatMessage(chatMessages, 'Réponse invalide reçue du serveur. Vérifiez la console pour plus de détails.', 'bot error');
+                }
+                
+                // Réactiver le bouton
+                reactivateButton();
+            })
+            .catch(error => {
+                console.error('Erreur lors de l\'envoi de la question avec fetch:', error);
+                removeChatMessage(chatMessages, loadingId);
+                addChatMessage(chatMessages, 'Erreur de connexion: ' + error.message, 'bot error');
+                reactivateButton();
+            });
+        }
         
     } catch (error) {
         console.error('Erreur lors de l\'envoi de la question:', error);
-        alert('Erreur lors de l\'envoi de la question: ' + error.message);
+        
+        // Nettoyer l'interface en cas d'erreur
+        const chatMessages = document.getElementById(`chat-messages-${rowId}`);
+        const sendBtn = document.getElementById(`chat-send-btn-${rowId}`);
+        
+        if (chatMessages) {
+            const loadingElement = chatMessages.querySelector('.chat-message:last-child');
+            if (loadingElement && loadingElement.textContent.includes('Analyse du document')) {
+                loadingElement.remove();
+            }
+            addChatMessage(chatMessages, 'Erreur technique: ' + error.message, 'bot error');
+        }
+        
+        if (sendBtn) {
+            sendBtn.disabled = false;
+            sendBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Envoyer';
+        }
     }
 }
 

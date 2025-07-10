@@ -55,14 +55,17 @@ async def get_job_answer():
         file = request.json.get('path')
         RQ = request.json.get('RQ')
         NumDos = request.json.get('NumDos')
+        libre = request.json.get('libre')
         ##
         ## load the request from the file if it exists
         ##  
         print (f"dbg 21547 : RQ : {NumDos}")
-        the_request = await load_AI_Instructions(".ask", NumDos)
+        if not libre:
+    
+            the_request = await load_AI_Instructions(".ask", NumDos)    
+            if the_request != "":
+                RQ = the_request
         
-        if the_request != "":
-            RQ = the_request
         if not file or not RQ:
             logger.error("Er005.Missing job file path or question")
             return jsonify({'Er005': 'Missing job file path or question'}), 400
@@ -80,6 +83,7 @@ async def get_job_answer():
         if the_role != "":
             role = the_role
         answer = get_mistral_answer(RQ,role,text1)
+        print (f"dbg 31547 : answer : {answer}")
         return jsonify({
             'raw_text': text1,
             'formatted_text': answer

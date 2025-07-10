@@ -60,7 +60,7 @@ async function get_job_answer(thepath, num_job, typ, isUrl) {
         
         if (!isUrl) {
             console.log("dbg A023a : Traitement du fichier pdf en cours... : " + thepath);
-            jobTextResponse = await ApiClient.jobs.getAnswer(thepath, q2_job,num_job);
+            jobTextResponse = await ApiClient.jobs.getAnswer(thepath, q2_job,num_job,false);
         } else {
             jobTextResponse = await ApiClient.jobs.getAnswerFromUrl(thepath, q2_job,num_job);
         }
