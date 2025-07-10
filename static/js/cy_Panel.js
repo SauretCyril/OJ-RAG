@@ -221,70 +221,159 @@ function switchTab(tabId) {
 function initializeChatbot(rowId) {
     try {
         const chatContainer = document.getElementById('chatbot-container');
+        if (!chatContainer) return;
+
+        // Extraire le numéro de dossier
         const annonceData = getAnnonce_byfile(rowId);
-        
-        console.log('initializeChatbot called for rowId:', rowId);
-        
-        if (annonceData) {
-            const numDossier = annonceData.dossier;
-            
-            chatContainer.innerHTML = `
-                <div class="chatbot-header">
-                    <h4><i class="fas fa-robot"></i> Assistant IA - Dossier: ${numDossier}</h4>
-                </div>
-                <div class="chat-messages" id="chat-messages-${rowId}">
-                    <div class="welcome-message">
-                        <i class="fas fa-robot"></i>
-                        <p>Bonjour ! Je peux analyser ce dossier d'annonce et répondre à vos questions. Que souhaitez-vous savoir ?</p>
-                    </div>
-                </div>
-                <div class="chat-input-container">
-                    <div class="input-group">
-                        <textarea 
-                            id="chat-question-${rowId}" 
-                            class="chat-input" 
-                            placeholder="Posez votre question sur ce dossier..."
-                            rows="2"
-                        ></textarea>
-                        <button 
-                            id="chat-send-btn-${rowId}" 
-                            class="btn btn-primary chat-send-btn"
-                            onclick="sendChatQuestion('${rowId}')"
-                        >
-                            <i class="fas fa-paper-plane"></i> Envoyer
+        const numDossier = annonceData ? annonceData.dossier : '';
+
+        chatContainer.innerHTML = `
+            <div class="chatbot-interface">
+                <!-- Zone de rôle IA -->
+                <div class="ai-role-section">
+                    <div class="ai-role-header">
+                        <h4><i class="fas fa-user-cog"></i> Rôle de l'Assistant IA</h4>
+                        <button id="save-role-btn-${rowId}" class="btn btn-sm btn-success" onclick="saveAIRole('${rowId}')" style="display: none;">
+                            <i class="fas fa-save"></i> Sauvegarder
                         </button>
                     </div>
+                    <textarea id="ai-role-text-${rowId}" class="ai-role-textarea" 
+                              placeholder="Définissez le rôle de l'assistant IA..."
+                              oninput="onRoleTextChange('${rowId}')"></textarea>
                 </div>
-            `;
-            
-            // Ajouter l'événement Enter pour envoyer la question
-            const questionInput = document.getElementById(`chat-question-${rowId}`);
-            questionInput.addEventListener('keydown', function(e) {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    sendChatQuestion(rowId);
-                }
-            });
-            
-        } else {
-            chatContainer.innerHTML = `
-                <div class="chatbot-error">
-                    <i class="fas fa-exclamation-triangle"></i>
-                    <p>Aucune donnée trouvée pour ce dossier</p>
+                
+                <!-- Zone de chat -->
+                <div class="chat-section">
+                    <div class="chat-messages" id="chat-messages-${rowId}">
+                        <div class="chat-welcome">
+                            <i class="fas fa-robot"></i>
+                            <p>Assistant IA prêt à analyser le dossier</p>
+                        </div>
+                    </div>
+                    
+                    <div class="chat-input-section">
+                        <div class="chat-input-container">
+                            <input type="text" id="chat-input-${rowId}" 
+                                   placeholder="Posez votre question sur ce dossier..." 
+                                   onkeypress="if(event.key==='Enter') sendChatQuestion('${rowId}')">
+                            <button id="chat-send-btn-${rowId}" onclick="sendChatQuestion('${rowId}')">
+                                <i class="fas fa-paper-plane"></i> Envoyer
+                            </button>
+                        </div>
+                    </div>
                 </div>
-            `;
-        }
-        
-    } catch (error) {
-        console.error('Erreur lors de l\'initialisation du chatbot:', error);
-        const chatContainer = document.getElementById('chatbot-container');
-        chatContainer.innerHTML = `
-            <div class="chatbot-error">
-                <i class="fas fa-exclamation-triangle"></i>
-                <p>Erreur lors de l'initialisation du chatbot</p>
             </div>
         `;
+
+        // Charger le rôle IA existant
+        loadAIRole(rowId, numDossier);
+
+    } catch (error) {
+        console.error('Erreur lors de l\'initialisation du chatbot:', error);
     }
+}
+
+// Nouvelle fonction pour charger le rôle IA
+function loadAIRole(rowId, numDossier) {
+    if (!numDossier) return;
+
+    fetch('/get_AI_role', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            NumDos: numDossier
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        const roleTextarea = document.getElementById(`ai-role-text-${rowId}`);
+        if (roleTextarea && data.role_text) {
+            roleTextarea.value = data.role_text;
+        }
+    })
+    .catch(error => {
+        console.error('Erreur lors du chargement du rôle IA:', error);
+    });
+}
+
+// Nouvelle fonction pour détecter les changements dans le texte du rôle
+function onRoleTextChange(rowId) {
+    const saveBtn = document.getElementById(`save-role-btn-${rowId}`);
+    if (saveBtn) {
+        saveBtn.style.display = 'inline-block';
+    }
+}
+
+// Nouvelle fonction pour sauvegarder le rôle IA
+function saveAIRole(rowId) {
+    const roleTextarea = document.getElementById(`ai-role-text-${rowId}`);
+    const saveBtn = document.getElementById(`save-role-btn-${rowId}`);
+    
+    if (!roleTextarea) return;
+
+    const annonceData = getAnnonce_byfile(rowId);
+    const numDossier = annonceData ? annonceData.dossier : '';
+    
+    if (!numDossier) {
+        alert('Erreur: Numéro de dossier non trouvé');
+        return;
+    }
+
+    // Désactiver le bouton pendant la sauvegarde
+    if (saveBtn) {
+        saveBtn.disabled = true;
+        saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sauvegarde...';
+    }
+
+    fetch('/save_AI_role', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            NumDos: numDossier,
+            role_text: roleTextarea.value
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Masquer le bouton de sauvegarde
+            if (saveBtn) {
+                saveBtn.style.display = 'none';
+                saveBtn.disabled = false;
+                saveBtn.innerHTML = '<i class="fas fa-save"></i> Sauvegarder';
+            }
+            
+            // Afficher un message de succès temporaire
+            const successMsg = document.createElement('div');
+            successMsg.className = 'alert alert-success';
+            successMsg.style.position = 'absolute';
+            successMsg.style.top = '10px';
+            successMsg.style.right = '10px';
+            successMsg.style.zIndex = '1000';
+            successMsg.innerHTML = '<i class="fas fa-check"></i> Rôle sauvegardé';
+            document.body.appendChild(successMsg);
+            
+            setTimeout(() => {
+                document.body.removeChild(successMsg);
+            }, 3000);
+        } else {
+            throw new Error(data.message || 'Erreur de sauvegarde');
+        }
+    })
+    .catch(error => {
+        console.error('Erreur lors de la sauvegarde du rôle IA:', error);
+        alert('Erreur lors de la sauvegarde: ' + error.message);
+        
+        // Réactiver le bouton en cas d'erreur
+        if (saveBtn) {
+            saveBtn.disabled = false;
+            saveBtn.innerHTML = '<i class="fas fa-save"></i> Sauvegarder';
+        }
+    });
 }
 
 // Fonction pour envoyer une question au chatbot

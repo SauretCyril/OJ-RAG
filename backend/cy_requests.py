@@ -376,3 +376,69 @@ async def load_AI_Instructions(file_name, NumDos):
     except Exception as e:
         logger.error(f"Error loading text: {str(e)}")
         return ""
+
+@cy_requests.route('/get_AI_role', methods=['POST'])
+async def get_AI_role():
+    try:
+        NumDos = request.json.get('NumDos')
+        
+        if not NumDos:
+            logger.error("Er020.Missing NumDos")
+            return jsonify({'Er020': 'Missing NumDos'}), 400
+        
+        role_text = await load_AI_Instructions(".role", NumDos)
+        
+        return jsonify({
+            'role_text': role_text,
+            'success': True
+        })
+
+    except Exception as e:
+        logger.error(f"Er021.Error loading AI role: {str(e)}")
+        return jsonify({'Er021': str(e)}), 500
+
+@cy_requests.route('/save_AI_role', methods=['POST'])
+async def save_AI_role():
+    try:
+        NumDos = request.json.get('NumDos')
+        role_text = request.json.get('role_text')
+        
+        if not NumDos or role_text is None:
+            logger.error("Er022.Missing NumDos or role_text")
+            return jsonify({'Er022': 'Missing NumDos or role_text'}), 400
+        
+        success = await save_AI_Instructions(".role", NumDos, role_text)
+        
+        if success:
+            return jsonify({
+                'success': True,
+                'message': 'Rôle IA sauvegardé avec succès'
+            })
+        else:
+            return jsonify({'Er023': 'Erreur lors de la sauvegarde'}), 500
+
+    except Exception as e:
+        logger.error(f"Er024.Error saving AI role: {str(e)}")
+        return jsonify({'Er024': str(e)}), 500
+
+async def save_AI_Instructions(file_name, NumDos, content):
+    try:
+        dossier = os.path.join(GetRoot(), NumDos)
+        
+        # Créer le dossier s'il n'existe pas
+        if not os.path.exists(dossier):
+            os.makedirs(dossier, exist_ok=True)
+        
+        # Chemin du fichier spécifique au dossier
+        specif_filepath = os.path.join(dossier, file_name)
+        
+        # Sauvegarder le contenu
+        with open(specif_filepath, 'w', encoding='utf-8') as file:
+            file.write(content)
+        
+        print(f"dbg4579 : Fichier sauvegardé : {specif_filepath}")
+        return True
+
+    except Exception as e:
+        logger.error(f"Error saving AI instructions: {str(e)}")
+        return False
