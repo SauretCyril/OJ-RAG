@@ -576,7 +576,7 @@ function debugWindowAnnonces() {
 // Initialisation au chargement de la page (mise à jour)
 document.addEventListener('DOMContentLoaded', function() {
     // Debug pour vérifier window.annonces
-    setTimeout(debugWindowAnnonces, 1000);
+    //setTimeout(debugWindowAnnonces, 1000);
     
     // Ajouter l'événement de clic sur les lignes du tableau
     const tableBody = document.getElementById('table-body');
@@ -588,7 +588,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 selectRow(row);
             }
         });
-    }
+    } 
     
     // S'assurer que l'onglet texte-extrait est actif par défaut
     const textTab = document.getElementById('texte-extrait');

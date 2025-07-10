@@ -111,16 +111,37 @@ function loadTableData(callback) {
                         folderIcon.textContent = '📂'; // Icône de dossier
                         folderIcon.style.cursor = 'pointer';
                         folderIcon.style.position = 'absolute';
-                        folderIcon.style.right = '-10px';
+                        folderIcon.style.right = '5px'; // Changé de -10px à 5px pour être visible dans la cellule
                         folderIcon.style.top = '50%';
                         folderIcon.style.transform = 'translateY(-50%)';
+                        folderIcon.style.zIndex = '1000'; // Valeur plus élevée pour être au-dessus
+                        folderIcon.style.fontSize = '16px';
+                        folderIcon.style.userSelect = 'none';
+                        folderIcon.style.pointerEvents = 'auto'; // S'assurer que les événements de pointeur fonctionnent
+                        folderIcon.style.display = 'inline-block';
+                        folderIcon.style.padding = '2px'; // Un peu de padding pour une zone de clic plus large
+                        
+                        // Ajouter un attribut pour identifier l'icône
+                        folderIcon.setAttribute('data-folder-icon', 'true');
                         
                         // Utilisez la fonction correcte pour ouvrir le dossier
                         folderIcon.addEventListener('click', (e) => {
+                            console.log('Folder icon clicked!'); // Debug
+                            e.preventDefault();
                             e.stopPropagation(); // Empêcher le déclenchement de l'événement sur la ligne
-                            open_dossier(dir_path );
+                            open_dossier(dir_path);
                         });
                         
+                        // Ajout d'un effet hover pour feedback visuel
+                        folderIcon.addEventListener('mouseenter', () => {
+                            folderIcon.style.backgroundColor = 'rgba(0,0,0,0.1)';
+                            folderIcon.style.borderRadius = '3px';
+                            console.log('Mouse enter on folder icon'); // Debug
+                        });
+                        
+                        folderIcon.addEventListener('mouseleave', () => {
+                            folderIcon.style.backgroundColor = 'transparent';
+                        });
                         cell.appendChild(folderIcon);
                         
                         // Assurer que la cellule est assez large pour accommoder le texte et l'icône
@@ -128,9 +149,12 @@ function loadTableData(callback) {
                             cell.style.width = col.width;
                             cell.style.minWidth = col.width;
                         } else {
-                            cell.style.minWidth = '100px'; // Largeur minimale pour accommoder le texte et l'icône
+                            cell.style.minWidth = '120px'; // Largeur minimale augmentée
                         }
                         
+                        // Ajouter du padding à droite pour faire de la place à l'icône
+                        cell.style.paddingRight = '30px';
+                        cell.style.overflow = 'visible';
                 
                     }   else if (col.key === 'description') {
                         // Create a link for the description field
@@ -331,7 +355,6 @@ function loadTableData(callback) {
 function getStatus(filepath){
     return "Toto";
 }
-
 
 // Function to save the global array to the JSON file
 function saveTableData() {

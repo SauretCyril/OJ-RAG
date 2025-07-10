@@ -35,7 +35,7 @@ async function initializeApp() {
         setNewTab();
         
         // Ajouter des événements
-        attachEventListeners();
+        //attachEventListeners();
         
     } catch (error) {
         console.error('Erreur lors de l\'initialisation de l\'application:', error);
@@ -45,14 +45,14 @@ async function initializeApp() {
 /**
  * Attache les écouteurs d'événements aux éléments
  */
-function attachEventListeners() {
+/* function attachEventListeners() {
     const excludedElement = document.getElementById('Excluded');
     if (excludedElement) {
         excludedElement.addEventListener('change', loadTableData);
     } else {
         console.error('Element with id "Excluded" not found.');
     }
-}
+} */
 
 /**
  * Vérifie si une colonne est visible
