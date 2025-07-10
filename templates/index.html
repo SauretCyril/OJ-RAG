@@ -151,32 +151,32 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     
     <!-- Modules de base (chargés en premier) -->
-    <script src="{{ url_for('static', filename='js/cy_state_manager.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/cy_State.js') }}"></script>
     <script src="{{ url_for('static', filename='js/cy_http_client.js') }}"></script>
     <script src="{{ url_for('static', filename='js/cy_functions_utils.js') }}"></script>
     
     <!-- Modules principaux -->
     <script src="{{ url_for('static', filename='js/cy_main.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/cy_table_manager.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/cy_all_cols.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/cy_dos_functions.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/cy_dos_functions_get_infos.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/cy_Tableau.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/cy_Colonnes.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/cy_Dossier.js') }}"></script>
+   
     
     <!-- Modules pour les onglets et filtres -->
-    <script src="{{ url_for('static', filename='js/cy_all_dos_tabs.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/cy_all_dos_filters.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/cy_all_dos_header.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/cy_all_dos_all_rows.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/cy_Tabs.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/cy_Filters.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/cy_Header.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/cy_Dossiers.js') }}"></script>
     <script src="{{ url_for('static', filename='js/cy_all_dos_index.js') }}"></script>
     
     <!-- Modules pour la gestion d'un dossier spécifique -->
-    <script src="{{ url_for('static', filename='js/cy_one_row_update.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/cy_one_dos_Dir.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/cy_one_dos_edit.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/cy_one_dos_notes.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/cy_one_dos_new.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/cy_Dossier_Update.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/cy_Directories.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/cy_Dossier_Edit.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/cy_Dossier_Notes.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/cy_Dossier_New.js') }}"></script>
     
     <!-- Nouveau module pour la gestion des fiches -->
-    <script src="{{ url_for('static', filename='js/cy_fiche_annonce.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/cy_Panel.js') }}"></script>
   </body>
 </html>
