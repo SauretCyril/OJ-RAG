@@ -472,4 +472,35 @@ textarea {
     resize: none; /* Disable resizing */
 }
 
-/* ...existing code... */
+.tabs-control-bar {
+    padding: 8px 12px;
+    border-bottom: 1px solid #dee2e6;
+    background-color: #f8f9fa;
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+}
+
+#toggle-panel-size {
+    padding: 4px 8px;
+    border: 1px solid #6c757d;
+    background-color: transparent;
+    color: #6c757d;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+#toggle-panel-size:hover {
+    background-color: #6c757d;
+    color: white;
+}
+
+.split-container.panel-maximized .left-panel {
+    display: none;
+}
+
+.split-container.panel-maximized .right-panel {
+    width: 100%;
+    flex: none;
+}

@@ -793,3 +793,22 @@ function cancelTextEdit(rowId) {
     console.log('cancelTextEdit called for rowId:', rowId);
     loadTextExtract(rowId);
 }
+
+// Fonction pour basculer la taille du panneau
+function togglePanelSize() {
+    const splitContainer = document.querySelector('.split-container');
+    const toggleButton = document.getElementById('toggle-panel-size');
+    const icon = toggleButton.querySelector('i');
+    
+    if (splitContainer.classList.contains('panel-maximized')) {
+        // Restaurer la taille normale
+        splitContainer.classList.remove('panel-maximized');
+        icon.className = 'fas fa-expand';
+        toggleButton.title = 'Agrandir le panneau';
+    } else {
+        // Maximiser le panneau
+        splitContainer.classList.add('panel-maximized');
+        icon.className = 'fas fa-compress';
+        toggleButton.title = 'Restaurer la taille';
+    }
+}
