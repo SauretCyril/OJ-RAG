@@ -1003,7 +1003,7 @@ def load_conf_cols():
             with open(filepath, "r", encoding="utf-8") as file:
                 content = json.load(file)
             print("dbg12391 :fichier conf", filepath)
-            # print("dbg12391 :content ",content)
+            
             return jsonify(content)
         else:
             return jsonify({})

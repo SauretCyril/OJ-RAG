@@ -206,7 +206,7 @@ async function loadColumnsFromServer() {
         
         return response;
     } catch (error) {
-        console.error('Erreur lors du chargement des colonnes:', error);
+        console.error('err006-Erreur lors du chargement des colonnes:', error);
         throw error;
     }
 }

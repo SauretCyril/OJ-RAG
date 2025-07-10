@@ -67,7 +67,7 @@ def load_conf_cols():
             print(f"DEBUG: Fichier .cols non trouvé, renvoi d'un tableau vide")
             return jsonify([])
     except Exception as e:
-        error_msg = f"Erreur lors du chargement des colonnes: {str(e)}"
+        error_msg = f"err002-Erreur lors du chargement des colonnes: {str(e)}"
         logger.error(error_msg)
         print(f"DEBUG ERROR: {error_msg}")
         return jsonify({"error": error_msg}), 500

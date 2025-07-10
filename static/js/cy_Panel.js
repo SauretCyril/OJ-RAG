@@ -49,7 +49,7 @@ function getAnnonce_value_byfile(file, key) {
     }
 }
 
-// Fonction pour changer d'onglet (simplifiée pour un seul onglet)
+// Fonction pour changer d'onglet (mise à jour pour inclure chatbot)
 function switchTab(tabId) {
     // Désactiver tous les onglets
     document.querySelectorAll('.tab-button').forEach(btn => {
@@ -63,9 +63,13 @@ function switchTab(tabId) {
     document.querySelector(`[onclick="switchTab('${tabId}')"]`).classList.add('active');
     document.getElementById(tabId).classList.add('active');
     
-    // Charger le contenu selon l'onglet (seulement texte-extrait)
-    if (currentSelectedRow && tabId === 'texte-extrait') {
-        loadTextExtract(currentSelectedRow.id);
+    // Charger le contenu selon l'onglet
+    if (currentSelectedRow) {
+        if (tabId === 'texte-extrait') {
+            loadTextExtract(currentSelectedRow.id);
+        } else if (tabId === 'chatbot') {
+            initializeChatbot(currentSelectedRow.id);
+        }
     }
 }
 
@@ -193,7 +197,235 @@ function showTextError(errorMessage) {
     `;
 }
 
-// Fonction pour gérer la sélection d'une ligne
+// Fonction pour changer d'onglet (simplifiée pour un seul onglet)
+function switchTab(tabId) {
+    // Désactiver tous les onglets
+    document.querySelectorAll('.tab-button').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    document.querySelectorAll('.tab-content').forEach(content => {
+        content.classList.remove('active');
+    });
+    
+    // Activer l'onglet sélectionné
+    document.querySelector(`[onclick="switchTab('${tabId}')"]`).classList.add('active');
+    document.getElementById(tabId).classList.add('active');
+    
+    // Charger le contenu selon l'onglet (seulement texte-extrait)
+    if (currentSelectedRow && tabId === 'texte-extrait') {
+        loadTextExtract(currentSelectedRow.id);
+    }
+}
+
+// Nouvelle fonction pour initialiser le chatbot
+function initializeChatbot(rowId) {
+    try {
+        const chatContainer = document.getElementById('chatbot-container');
+        const annonceData = getAnnonce_byfile(rowId);
+        
+        console.log('initializeChatbot called for rowId:', rowId);
+        
+        if (annonceData) {
+            const numDossier = annonceData.dossier;
+            
+            chatContainer.innerHTML = `
+                <div class="chatbot-header">
+                    <h4><i class="fas fa-robot"></i> Assistant IA - Dossier: ${numDossier}</h4>
+                </div>
+                <div class="chat-messages" id="chat-messages-${rowId}">
+                    <div class="welcome-message">
+                        <i class="fas fa-robot"></i>
+                        <p>Bonjour ! Je peux analyser ce dossier d'annonce et répondre à vos questions. Que souhaitez-vous savoir ?</p>
+                    </div>
+                </div>
+                <div class="chat-input-container">
+                    <div class="input-group">
+                        <textarea 
+                            id="chat-question-${rowId}" 
+                            class="chat-input" 
+                            placeholder="Posez votre question sur ce dossier..."
+                            rows="2"
+                        ></textarea>
+                        <button 
+                            id="chat-send-btn-${rowId}" 
+                            class="btn btn-primary chat-send-btn"
+                            onclick="sendChatQuestion('${rowId}')"
+                        >
+                            <i class="fas fa-paper-plane"></i> Envoyer
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            // Ajouter l'événement Enter pour envoyer la question
+            const questionInput = document.getElementById(`chat-question-${rowId}`);
+            questionInput.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    sendChatQuestion(rowId);
+                }
+            });
+            
+        } else {
+            chatContainer.innerHTML = `
+                <div class="chatbot-error">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <p>Aucune donnée trouvée pour ce dossier</p>
+                </div>
+            `;
+        }
+        
+    } catch (error) {
+        console.error('Erreur lors de l\'initialisation du chatbot:', error);
+        const chatContainer = document.getElementById('chatbot-container');
+        chatContainer.innerHTML = `
+            <div class="chatbot-error">
+                <i class="fas fa-exclamation-triangle"></i>
+                <p>Erreur lors de l'initialisation du chatbot</p>
+            </div>
+        `;
+    }
+}
+
+// Fonction pour envoyer une question au chatbot
+function sendChatQuestion(rowId) {
+    try {
+        const questionInput = document.getElementById(`chat-question-${rowId}`);
+        const chatMessages = document.getElementById(`chat-messages-${rowId}`);
+        const sendBtn = document.getElementById(`chat-send-btn-${rowId}`);
+        
+        if (!questionInput || !chatMessages) {
+            console.error('Éléments du chat non trouvés');
+            return;
+        }
+        
+        const question = questionInput.value.trim();
+        
+        if (!question) {
+            alert('Veuillez saisir une question');
+            return;
+        }
+        
+        // Ajouter la question de l'utilisateur
+        addChatMessage(chatMessages, question, 'user');
+        
+        // Vider le champ de saisie
+        questionInput.value = '';
+        
+        // Désactiver le bouton et afficher un indicateur de chargement
+        sendBtn.disabled = true;
+        sendBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Analyse...';
+        
+        // Ajouter un message de chargement
+        const loadingId = addChatMessage(chatMessages, 'Analyse du document en cours...', 'bot', true);
+        
+        // Récupérer les données de l'annonce
+        const annonceData = getAnnonce_byfile(rowId);
+        const numDossier = annonceData.dossier;
+        //const pdfFilePath = numDossier + "/" + numDossier + "_annonce_.pdf";
+        
+        // Extraire le chemin complet du fichier PDF à partir de l'objet annonceData
+        let pdfFilePath =  rowId.substring(0, rowId.lastIndexOf('/'));
+        if (annonceData && annonceData.dossier) {
+            pdfFilePath = pdfFilePath + "/" + annonceData.dossier + "_annonce_.pdf";
+        } else {
+            console.error("Impossible de déterminer le chemin du fichier PDF pour rowId:", rowId);
+            addChatMessage(chatMessages, "Erreur: chemin du fichier PDF introuvable.", "bot error");
+            // Réactiver le bouton et sortir
+            sendBtn.disabled = false;
+            sendBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Envoyer';
+            return;
+        }
+        // Appeler l'API get_AI_answer
+        alert("DEBUG: Envoi de la question à l'API pour le PDF: " + pdfFilePath + " - Question: " + question + " - Numéro de dossier: " + numDossier)
+        jobTextResponse =  ApiClient.jobs.getAnswer(pdfFilePath, question,numDossier)
+       /*  fetch('/get_AI_answer', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                path: pdfFilePath,
+                RQ: question,
+                NumDos: numDossier
+            })
+        }) */
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            // Supprimer le message de chargement
+            removeChatMessage(chatMessages, loadingId);
+            
+            if (data.formatted_text) {
+                // Ajouter la réponse du bot
+                addChatMessage(chatMessages, data.formatted_text, 'bot');
+            } else if (data.Er005 || data.Er006 || data.Er007) {
+                // Gérer les erreurs spécifiques de l'API
+                const errorMsg = data.Er005 || data.Er006 || data.Er007 || 'Erreur inconnue';
+                addChatMessage(chatMessages, `Erreur: ${errorMsg}`, 'bot error');
+            } else {
+                addChatMessage(chatMessages, 'Réponse invalide reçue du serveur', 'bot error');
+            }
+        })
+        .catch(error => {
+            console.error('Erreur lors de l\'envoi de la question:', error);
+            // Supprimer le message de chargement
+            removeChatMessage(chatMessages, loadingId);
+            // Ajouter un message d'erreur
+            addChatMessage(chatMessages, 'Erreur de connexion. Veuillez réessayer.', 'bot error');
+        })
+        .finally(() => {
+            // Réactiver le bouton
+            sendBtn.disabled = false;
+            sendBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Envoyer';
+        });
+        
+    } catch (error) {
+        console.error('Erreur lors de l\'envoi de la question:', error);
+        alert('Erreur lors de l\'envoi de la question: ' + error.message);
+    }
+}
+
+// Fonction pour ajouter un message dans le chat
+function addChatMessage(chatContainer, message, type, isLoading = false) {
+    const messageId = 'msg-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+    const messageClass = type === 'user' ? 'user-message' : type === 'bot error' ? 'bot-message error' : 'bot-message';
+    const icon = type === 'user' ? 'fas fa-user' : type === 'bot error' ? 'fas fa-exclamation-triangle' : 'fas fa-robot';
+    
+    const messageDiv = document.createElement('div');
+    messageDiv.id = messageId;
+    messageDiv.className = `chat-message ${messageClass}`;
+    messageDiv.innerHTML = `
+        <div class="message-icon">
+            <i class="${icon}"></i>
+        </div>
+        <div class="message-content">
+            <p>${message}</p>
+            <small class="message-time">${new Date().toLocaleTimeString()}</small>
+        </div>
+    `;
+    
+    chatContainer.appendChild(messageDiv);
+    
+    // Faire défiler vers le bas
+    chatContainer.scrollTop = chatContainer.scrollHeight;
+    
+    return messageId;
+}
+
+// Fonction pour supprimer un message du chat
+function removeChatMessage(chatContainer, messageId) {
+    const messageElement = document.getElementById(messageId);
+    if (messageElement) {
+        messageElement.remove();
+    }
+}
+
+// Fonction pour gérer la sélection d'une ligne (mise à jour)
 function selectRow(row) {
     try {
         // Désélectionner toutes les lignes
@@ -205,10 +437,14 @@ function selectRow(row) {
         row.classList.add('selected');
         currentSelectedRow = row;
         
-        // Charger seulement le contenu texte extrait
+        // Charger le contenu selon l'onglet actif
         const activeTab = document.querySelector('.tab-content.active');
-        if (activeTab && activeTab.id === 'texte-extrait') {
-            loadTextExtract(row.id);
+        if (activeTab) {
+            if (activeTab.id === 'texte-extrait') {
+                loadTextExtract(row.id);
+            } else if (activeTab.id === 'chatbot') {
+                initializeChatbot(row.id);
+            }
         }
         
     } catch (error) {
@@ -216,25 +452,24 @@ function selectRow(row) {
     }
 }
 
-// Fonction pour réinitialiser l'aperçu (version simplifiée)
+// Fonction pour réinitialiser l'aperçu (mise à jour)
 function resetPreview() {
     resetTextPreview();
+    resetChatbot();
     currentSelectedRow = null;
 }
 
-// Fonction pour réinitialiser l'aperçu texte
-function resetTextPreview() {
-    const textViewer = document.getElementById('text-viewer');
-    const saveBtn = document.getElementById('save-text-btn');
-    
-    textViewer.innerHTML = `
-        <div class="text-placeholder">
-            <i class="fas fa-file-alt"></i>
-            <p>Sélectionnez une ligne pour voir le texte extrait</p>
-        </div>
-    `;
-    
-    saveBtn.style.display = 'none';
+// Fonction pour réinitialiser le chatbot
+function resetChatbot() {
+    const chatContainer = document.getElementById('chatbot-container');
+    if (chatContainer) {
+        chatContainer.innerHTML = `
+            <div class="chatbot-placeholder">
+                <i class="fas fa-robot"></i>
+                <p>Sélectionnez une ligne pour analyser le dossier avec l'IA</p>
+            </div>
+        `;
+    }
 }
 
 // Fonction de debug pour vérifier window.annonces
@@ -256,7 +491,7 @@ function debugWindowAnnonces() {
     console.log('=== FIN DEBUG ===');
 }
 
-// Initialisation au chargement de la page
+// Initialisation au chargement de la page (mise à jour)
 document.addEventListener('DOMContentLoaded', function() {
     // Debug pour vérifier window.annonces
     setTimeout(debugWindowAnnonces, 1000);
@@ -279,7 +514,10 @@ document.addEventListener('DOMContentLoaded', function() {
         textTab.classList.add('active');
     }
     
-    console.log('Module cy_fiche_annonce initialisé - Mode texte uniquement');
+    // Initialiser le chatbot vide
+    resetChatbot();
+    
+    console.log('Module cy_fiche_annonce initialisé - Mode texte et chatbot');
 });
 
 // Fonction pour gérer l'affichage du bouton

@@ -12,7 +12,7 @@ async function loadColumnsFromServer() {
         });
 
         if (!response.ok) {
-            console.log(`Erreur lors du chargement des colonnes : ${response.statusText}`);
+            console.log(`err001-Erreur lors du chargement des colonnes : ${response.statusText}`);
             // En cas d'échec, on s'assure que les colonnes par défaut sont utilisées
             setState('columns', [...window.columns]);
             return;
@@ -38,7 +38,7 @@ async function loadColumnsFromServer() {
             setState('columns', [...window.columns]);
         }
     } catch (error) {
-        console.error('Erreur lors du chargement des colonnes :', error);
+        console.error('err004-Erreur lors du chargement des colonnes :', error);
         //alert('Erreur lors du chargement des colonnes.');
         // En cas d'exception, on s'assure que les colonnes par défaut sont utilisées
         setState('columns', [...window.columns]);
