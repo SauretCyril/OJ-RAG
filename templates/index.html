@@ -33,16 +33,17 @@
         <h3>Settings</h3>
          <label for="current-dossier">Current Dossier :</label>
         <a href="#CurrenDir" id="current-dir" onclick="selectRep()"></a>
-      </div>
-      <div class="tabs" id="tabs">
-        <!-- tab will be dynamically added here -->
-      </div>
         <div style="float: right">
           <select id="Excluded">
             <option value="En cours">En cours</option>
             <option value="Done">Done</option>
           </select>
         </div>
+      </div>
+      <div class="tabs" id="tabs">
+        <!-- tab will be dynamically added here -->
+      </div>
+        
       </div>
       
       <!-- Nouveau conteneur à deux panneaux -->
@@ -75,26 +76,7 @@
             </div>
             
             <div class="tabs-content">
-              <!-- Onglet Aperçu PDF -->
-               <!-- <div id="apercu-pdf" class="tab-content active">
-                <div class="pdf-header">
-                  <h3>Aperçu PDF</h3>
-                  <div class="pdf-controls">
-                    <button class="btn btn-sm btn-outline-primary" onclick="openPdfFullScreen()">
-                      <i class="fas fa-expand"></i> Plein écran
-                    </button>
-                  </div>
-                </div>
-                
-                <div class="pdf-content">
-                  <div id="pdf-placeholder" class="pdf-placeholder">
-                    <i class="fas fa-file-pdf"></i>
-                    <p>Sélectionnez une ligne pour voir l'aperçu du PDF</p>
-                  </div>
-                  <iframe id="pdf-viewer" src="" style="display: none;"></iframe>
-                </div>
-              </div> -->
-
+             
               <!-- Onglet Texte extrait -->
               <div class="tab-content" id="texte-extrait">
                 <div class="text-container">

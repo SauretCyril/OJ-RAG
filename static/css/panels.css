@@ -56,7 +56,7 @@
     border-radius: 0 8px 8px 0;
     overflow: hidden;
     transition: flex 0.3s ease;
-    min-width: 300px;
+    min-width: 400px;
 }
 
 /* États spéciaux pour le panneau PDF */
