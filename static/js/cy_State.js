@@ -5,7 +5,7 @@
 
 // Définition par défaut des colonnes (comme dans l'original)
 window.columns = [
-    { key: 'dossier', editable: false, width: '80px', visible: true, type: 'tb',title:'Dos',
+    { key: 'dossier', editable: false, width: '100px', visible: true, type: 'tb',title:'Dos',
     class: 'description-cell',  
       style: { cursor: 'pointer', color: 'red', textDecoration: 'underline' }, 
       event: 'click',  fixed:true // Store function name as string
