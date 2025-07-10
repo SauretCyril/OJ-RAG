@@ -1,5 +1,5 @@
 /**
- * cy_columns_manager.js
+ * cy_columns_Edit.js
  * Script pour gérer l'édition des colonnes du système
  */
 
