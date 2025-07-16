@@ -379,7 +379,7 @@ function saveAIRole(rowId) {
 // Fonction pour envoyer une question au chatbot
 function sendChatQuestion(rowId) {
     try {
-        const questionInput = document.getElementById(`chat-question-${rowId}`);
+        const questionInput = document.getElementById(`chat-input-${rowId}`);
         const chatMessages = document.getElementById(`chat-messages-${rowId}`);
         const sendBtn = document.getElementById(`chat-send-btn-${rowId}`);
         

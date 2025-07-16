@@ -117,7 +117,8 @@ const ApiClient = {
     jobs: {
         getAnswer: (path, RQ, NumDos,islibre) => httpPost('/get_AI_answer', { path, RQ, NumDos, libre: islibre }),
         getAnswerFromUrl: (url, RQ,NumDos) => httpPost('/get_AI_answer_from_url', { url, RQ,NumDos }),
-        saveAnswer: (textData, number, thePath, RQ) => httpPost('/save-answer', { text_data: textData, number, the_path: thePath, RQ })
+        saveAnswer: (textData, number, thePath, RQ) => httpPost('/save-answer', { text_data: textData, number, the_path: thePath, RQ }),
+        gettexectFromPdf: (pdfPath) => httpPost('/extract_pdf_text', { pdf_path: pdfPath })
     }
 };
 

@@ -21,6 +21,10 @@ logger = logging.getLogger(__name__)
 
 cy_requests = Blueprint('requests', __name__)
 
+
+
+@cy_requests.route('/extract_pdf_text', methods=['POST'])
+
 def extract_text_from_pdf(pdf_path):
     try:
         if os.path.exists(pdf_path):
