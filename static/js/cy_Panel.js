@@ -260,6 +260,9 @@ function initializeChatbot(rowId) {
                                 <i class="fas fa-paper-plane"></i> Envoyer
                             </button>
                         </div>
+                        <button id="chat-save-pdf-btn-${rowId}" class="btn btn-secondary" style="margin-top:10px;" onclick="saveChatToPDF('${rowId}')">
+                            <i class="fas fa-file-pdf"></i> Sauvegarder en PDF
+                        </button>
                     </div>
                 </div>
             </div>
@@ -900,4 +903,44 @@ function togglePanelSize() {
         icon.className = 'fas fa-compress';
         toggleButton.title = 'Restaurer la taille';
     }
+}
+
+// Fonction pour sauvegarder le chat en PDF
+function saveChatToPDF(rowId) {
+    const chatMessages = document.getElementById(`chat-messages-${rowId}`);
+    if (!chatMessages) {
+        alert("Aucun message à sauvegarder.");
+        return;
+    }
+
+    // Récupérer le texte du chat
+    let chatText = "";
+    chatMessages.querySelectorAll('.chat-message').forEach(msg => {
+        const type = msg.classList.contains('user-message') ? "Question" : "Réponse";
+        const content = msg.querySelector('.message-content p')?.textContent || "";
+        chatText += `${type}: ${content}\n\n`;
+    });
+
+    // Appeler l'API pour générer le PDF côté serveur
+    const annonceData = getAnnonce_byfile(rowId);
+    const numDossier = annonceData ? annonceData.dossier : '';
+    fetch('/save_chat_pdf', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            NumDos: numDossier,
+            chat: chatText
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert("Chat sauvegardé avec succès !");
+        } else {
+            alert("Erreur lors de la sauvegarde du PDF : " + (data.error || "Erreur inconnue"));
+        }
+    })
+    .catch(error => {
+        alert("Erreur lors de la sauvegarde du PDF : " + error.message);
+    });
 }

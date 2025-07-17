@@ -8,6 +8,10 @@ import openai
 from bs4 import BeautifulSoup
 from PyPDF2 import PdfReader
 import requests
+from fpdf import FPDF
+from flask import send_file
+import io
+import traceback
 
 '''My script'''
 from cy_mistral import get_mistral_answer, mistral  # Import the function and Blueprint
@@ -446,3 +450,32 @@ async def save_AI_Instructions(file_name, NumDos, content):
     except Exception as e:
         logger.error(f"Error saving AI instructions: {str(e)}")
         return False
+
+@cy_requests.route('/save_chat_pdf', methods=['POST'])
+def save_chat_pdf():
+    try:
+        data = request.json
+        num_dos = data.get('NumDos')
+        dossier = os.path.join(GetRoot(), num_dos)
+        chat = data.get('chat', '')
+        file_name = f"{num_dos}_chat.pdf"
+        file_path = os.path.join(dossier, file_name)
+
+        if not os.path.exists(dossier):
+            os.makedirs(dossier, exist_ok=True)
+
+        pdf = FPDF()
+        pdf.add_page()
+        # Ajoute une police Unicode (exemple avec DejaVu)
+        font_path = os.path.join(os.path.dirname(__file__), "DejaVuSans.ttf")
+        pdf.add_font("DejaVu", "", font_path, uni=True)
+        pdf.set_font("DejaVu", size=12)
+        for line in chat.split('\n'):
+            pdf.cell(0, 10, line, ln=True)
+
+        pdf.output(file_path)
+        return jsonify({'success': True, 'file_path': file_path})
+    except Exception as e:
+        print("Erreur lors de la sauvegarde du PDF :", e)
+        traceback.print_exc()
+        return jsonify({'error': str(e)}), 500

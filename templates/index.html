@@ -32,9 +32,9 @@
       <div id="settings-section">
         <h3>Settings</h3>
          <label for="current-dossier">Current Dossier :</label>
-        <a href="#CurrenDir" id="current-dir" onclick="selectRep()"></a>
+        <a href="#CurrenDir" id="current-dir" onclick="selectRep()" title="Sélectionner le dossier courant">Sélectionner le dossier courant</a>
         <div style="float: right">
-          <select id="Excluded">
+          <select id="Excluded" title="Filtrer les dossiers">
             <option value="En cours">En cours</option>
             <option value="Done">Done</option>
           </select>
@@ -68,7 +68,7 @@
           <div class="tabs-container">
             <!-- Nouvelle barre de contrôle -->
             <div class="tabs-control-bar">
-              <button id="toggle-panel-size" class="btn btn-sm btn-outline-secondary" onclick="togglePanelSize()">
+              <button id="toggle-panel-size" class="btn btn-sm btn-outline-secondary" onclick="togglePanelSize()" title="Agrandir/Réduire le panneau">
                 <i class="fas fa-expand"></i>
               </button>
             </div>
