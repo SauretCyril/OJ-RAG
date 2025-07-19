@@ -30,6 +30,11 @@ from cy_cookies import *
 from cy_requests import extract_text_from_pdf
 from cy_mistral import get_mistral_answer
 
+import os
+import shutil
+import threading
+
+save_annonces_lock = threading.Lock()
 
 load_dotenv()
 cy_routes = Blueprint("cy_routes", __name__)
@@ -1194,9 +1199,6 @@ def generate_html_index():
 
 
 # ...existing code...
-
-import os
-import shutil
 
 
 @cy_routes.route("/move_and_rename_directory", methods=["POST"])

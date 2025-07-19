@@ -316,6 +316,30 @@ async function openDirectorySelector() {
     }
 }
 
+/**
+ * Active le bouton de changement de répertoire
+ */
+function enableDirectoryChangeButton() {
+    const dirBtn = document.getElementById('current-dir');
+    if (dirBtn) {
+        dirBtn.style.pointerEvents = 'auto';
+        dirBtn.style.opacity = '1';
+        dirBtn.title = "Sélectionner le dossier courant";
+    }
+}
+
+/**
+ * Désactive le bouton de changement de répertoire
+ */
+function disableDirectoryChangeButton() {
+    const dirBtn = document.getElementById('current-dir');
+    if (dirBtn) {
+        dirBtn.style.pointerEvents = 'none';
+        dirBtn.style.opacity = '0.5';
+        dirBtn.title = "Veuillez attendre la fin de la sauvegarde";
+    }
+}
+
 // Initialiser l'application au chargement de la page
 window.addEventListener('load', initializeApp);
 
@@ -329,3 +353,5 @@ window.show_current_dossier = showCurrentDossier;
 window.checkDirectoryExists = checkDirectoryExists;
 window.promptUserForValidDirectory = promptUserForValidDirectory;
 window.openDirectorySelector = openDirectorySelector;
+window.enableDirectoryChangeButton = enableDirectoryChangeButton;
+window.disableDirectoryChangeButton = disableDirectoryChangeButton;
