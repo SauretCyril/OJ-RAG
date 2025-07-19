@@ -6,7 +6,6 @@ python-docx
 docx2pdf
 fpdf
 transformers
-openai
 beautifulsoup4
 python-dotenv
 aiofiles
@@ -22,3 +21,4 @@ Pillow
 # Ajout pour la détection NSFW
 nudenet
 watchdog
+tqdm

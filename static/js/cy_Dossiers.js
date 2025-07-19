@@ -358,6 +358,7 @@ function getStatus(filepath){
 
 // Function to save the global array to the JSON file
 function saveTableData() {
+    disableDirectoryChangeButton();
     return new Promise((resolve, reject) => {
         fetch('/save_annonces_json', {
             method: 'POST',
@@ -370,6 +371,7 @@ function saveTableData() {
         .then(data => {
             if (data.status === "success") {
                 console.log('dbg445 Data successfully saved.');
+                enableDirectoryChangeButton()
                 resolve();
             } else {
                 console.error('Error saving data:', data.message);
@@ -382,6 +384,8 @@ function saveTableData() {
         });
     });
 }
+
+
 
 function refresh()
 {

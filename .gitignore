@@ -14,3 +14,4 @@ __pycache__/
 config/
 data/AixPlo.json
 data/cookies.json
+static/LK_links.html
