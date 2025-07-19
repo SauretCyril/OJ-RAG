@@ -832,18 +832,15 @@ def select_cv():
 
 
 def convert_to_pdf(target_path, pdf_file_path):
-
-    if os.path.exists(pdf_file_path):  # Delete the existing file
+    if os.path.exists(pdf_file_path):
         os.remove(pdf_file_path)
-        # print("-->04 pdf removed", pdf_file_path)
-    pythoncom.CoInitialize()
-
+    if pythoncom:
+        pythoncom.CoInitialize()
     try:
         convert(target_path, pdf_file_path)
-        # print("-->05 docx converted to pdf", pdf_file_path)
     finally:
-        # Uninitialize COM library
-        pythoncom.CoUninitialize()
+        if pythoncom:
+            pythoncom.CoUninitialize()
 
 
 def define_default_data():
@@ -909,8 +906,8 @@ def save_announcement():
         """ if os.path.exists(pdf_file_path):
             return jsonify({"status": "error", "message": f"Fichier {pdf_file_path} existe déjà"}), 400 """
 
-        pythoncom.CoInitialize()
-        # Create DOCX file
+        if pythoncom:
+            pythoncom.CoInitialize()
         try:
             doc = Document()
             # Ensure URL is properly formatted
@@ -920,13 +917,11 @@ def save_announcement():
             doc.add_paragraph(content)
 
             doc.save(docx_file_path)
-
-            # Convert DOCX to PDF
             print(f"dbg-5434 : Converting {docx_file_path} to {pdf_file_path}")
             convert(docx_file_path, pdf_file_path)
         finally:
-            # Uninitialize COM library
-            pythoncom.CoUninitialize()
+            if pythoncom:
+                pythoncom.CoUninitialize()
 
         return (
             jsonify(

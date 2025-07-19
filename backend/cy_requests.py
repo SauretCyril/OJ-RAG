@@ -1,7 +1,11 @@
 from flask import Blueprint, request, jsonify
 import logging
-import pythoncom
 import os
+import platform
+if platform.system() == "Windows":
+    import pythoncom
+else:
+    pythoncom = None
 from docx2pdf import convert
 from docx import Document
 import openai

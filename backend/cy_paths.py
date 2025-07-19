@@ -2,7 +2,12 @@ from backend.cy_cookies import *
 import os
 import tkinter as tk
 from tkinter import filedialog
-import pythoncom
+
+import platform
+if platform.system() == "Windows":
+    import pythoncom
+else:
+    pythoncom = None
 
 
 paths = Blueprint('cookies', __name__)
@@ -174,23 +179,25 @@ def select_directory():
     Ouvre une boîte de dialogue pour sélectionner un répertoire
     """
     try:
-        pythoncom.CoInitialize()  # Initialisation COM pour Windows
-        
+        if pythoncom:
+            pythoncom.CoInitialize()  # Initialisation COM pour Windows
+
         # Créer une fenêtre Tkinter cachée
         root = tk.Tk()
         root.withdraw()  # Cacher la fenêtre principale
         root.attributes('-topmost', True)  # Placer au premier plan
-        
+
         # Ouvrir la boîte de dialogue de sélection de répertoire
         selected_directory = filedialog.askdirectory(
             title="Sélectionner un répertoire de travail",
             initialdir=GetRoot()  # Commencer par le répertoire racine actuel
         )
-        
+
         # Nettoyer
         root.destroy()
-        pythoncom.CoUninitialize()
-        
+        if pythoncom:
+            pythoncom.CoUninitialize()
+
         if selected_directory:
             # Normaliser le chemin
             selected_directory = selected_directory.replace('\\', '/')
@@ -203,7 +210,7 @@ def select_directory():
                 'success': False,
                 'message': 'Aucun répertoire sélectionné'
             }), 200
-            
+
     except Exception as e:
         logger.error(f"Error selecting directory: {str(e)}")
         return jsonify({
