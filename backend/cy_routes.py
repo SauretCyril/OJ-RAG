@@ -1003,7 +1003,7 @@ def load_conf_cols():
             with open(filepath, "r", encoding="utf-8") as file:
                 content = json.load(file)
             print("dbg12391 :fichier conf", filepath)
-            # print("dbg12391 :content ",content)
+            
             return jsonify(content)
         else:
             return jsonify({})
@@ -1139,10 +1139,14 @@ def generate_html_index():
         with open(index_path, "a", encoding="utf-8") as index_file:
             index_file.write("<html><body><table border='1'>")
             index_file.write("<tr>")
+            index_file.write("<th>Catégorie</th>")
+            index_file.write("<th>id</th>")
             index_file.write("<th>N°</th>")
+            index_file.write("<th>Etat</th>")
             index_file.write("<th>Entreprise</th>")
             index_file.write("<th>Description du Poste</th>")
-            index_file.write("<th>Date de Réponse</th>")
+            index_file.write("<th>Date</th>")
+            index_file.write("<th>Date Réponse</th>")
             index_file.write("<th>Todo</th>")
             index_file.write("<th>Commentaire</th>")
             index_file.write("</tr>")
@@ -1150,23 +1154,30 @@ def generate_html_index():
             for item in sorted_dossier_list:
                 for file_path, data in item.items():
                     index_file.write("<tr>")
+                    
                     dossier = data.get("dossier")
+                    etat = data.get("etat")
+
                     categorie = data.get("categorie")
                     desc = (
-                        f"{data.get('categorie', '')} - {data.get('description', '')}"
+                        f"poste={data.get('description', '')}"
                     )
                     url = data.get("url")
+                    index_file.write(f"<td>{categorie}</td>")
+                    index_file.write(f"<td>{data.get('id', '')}</td>")
                     index_file.write(
                         f"<td><a href='{dossier}/{dossier}{sufix}.pdf'>{dossier}</a></td>"
                     )
+                    index_file.write(f"<td>{etat}</td>")
                     index_file.write(f"<td>{data.get('entreprise', '')}</td>")
                     index_file.write(f"<td><a href='{url}'>{desc}</a></td>")
                     if categorie == "Profile":
                         index_file.write(f"<td>{data.get('Date', '')}</td>")
+                        index_file.write(f"<td></td>")
                     elif categorie == "Annonce":
-                        index_file.write(f"<td>{data.get('date_rep', '')}</td>")
-                    else:
-                        index_file.write(f"<td>{data.get('Date_from', '')}</td>")
+                        index_file.write(f"<td>{data.get('Date', '')}</td>")
+                        index_file.write(f"<td>{data.get('Date_rep', '')}</td>")
+                    
                     index_file.write(f"<td>{data.get('todo', '')}</td>")
                     index_file.write(f"<td>{data.get('Commentaire', '')}</td>")
                     index_file.write("</tr>")

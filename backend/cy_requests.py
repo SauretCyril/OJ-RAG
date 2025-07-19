@@ -8,6 +8,10 @@ import openai
 from bs4 import BeautifulSoup
 from PyPDF2 import PdfReader
 import requests
+from fpdf import FPDF
+from flask import send_file
+import io
+import traceback
 
 '''My script'''
 from cy_mistral import get_mistral_answer, mistral  # Import the function and Blueprint
@@ -20,6 +24,10 @@ logging.basicConfig(level=logging.ERROR, format='%(asctime)s - %(levelname)s - %
 logger = logging.getLogger(__name__)
 
 cy_requests = Blueprint('requests', __name__)
+
+
+
+@cy_requests.route('/extract_pdf_text', methods=['POST'])
 
 def extract_text_from_pdf(pdf_path):
     try:
@@ -55,14 +63,17 @@ async def get_job_answer():
         file = request.json.get('path')
         RQ = request.json.get('RQ')
         NumDos = request.json.get('NumDos')
+        libre = request.json.get('libre')
         ##
         ## load the request from the file if it exists
         ##  
         print (f"dbg 21547 : RQ : {NumDos}")
-        the_request = await load_AI_Instructions(".ask", NumDos)
+        if not libre:
+    
+            the_request = await load_AI_Instructions(".ask", NumDos)    
+            if the_request != "":
+                RQ = the_request
         
-        if the_request != "":
-            RQ = the_request
         if not file or not RQ:
             logger.error("Er005.Missing job file path or question")
             return jsonify({'Er005': 'Missing job file path or question'}), 400
@@ -80,6 +91,7 @@ async def get_job_answer():
         if the_role != "":
             role = the_role
         answer = get_mistral_answer(RQ,role,text1)
+        print (f"dbg 31547 : answer : {answer}")
         return jsonify({
             'raw_text': text1,
             'formatted_text': answer
@@ -372,3 +384,98 @@ async def load_AI_Instructions(file_name, NumDos):
     except Exception as e:
         logger.error(f"Error loading text: {str(e)}")
         return ""
+
+@cy_requests.route('/get_AI_role', methods=['POST'])
+async def get_AI_role():
+    try:
+        NumDos = request.json.get('NumDos')
+        
+        if not NumDos:
+            logger.error("Er020.Missing NumDos")
+            return jsonify({'Er020': 'Missing NumDos'}), 400
+        
+        role_text = await load_AI_Instructions(".role", NumDos)
+        
+        return jsonify({
+            'role_text': role_text,
+            'success': True
+        })
+
+    except Exception as e:
+        logger.error(f"Er021.Error loading AI role: {str(e)}")
+        return jsonify({'Er021': str(e)}), 500
+
+@cy_requests.route('/save_AI_role', methods=['POST'])
+async def save_AI_role():
+    try:
+        NumDos = request.json.get('NumDos')
+        role_text = request.json.get('role_text')
+        
+        if not NumDos or role_text is None:
+            logger.error("Er022.Missing NumDos or role_text")
+            return jsonify({'Er022': 'Missing NumDos or role_text'}), 400
+        
+        success = await save_AI_Instructions(".role", NumDos, role_text)
+        
+        if success:
+            return jsonify({
+                'success': True,
+                'message': 'Rôle IA sauvegardé avec succès'
+            })
+        else:
+            return jsonify({'Er023': 'Erreur lors de la sauvegarde'}), 500
+
+    except Exception as e:
+        logger.error(f"Er024.Error saving AI role: {str(e)}")
+        return jsonify({'Er024': str(e)}), 500
+
+async def save_AI_Instructions(file_name, NumDos, content):
+    try:
+        dossier = os.path.join(GetRoot(), NumDos)
+        
+        # Créer le dossier s'il n'existe pas
+        if not os.path.exists(dossier):
+            os.makedirs(dossier, exist_ok=True)
+        
+        # Chemin du fichier spécifique au dossier
+        specif_filepath = os.path.join(dossier, file_name)
+        
+        # Sauvegarder le contenu
+        with open(specif_filepath, 'w', encoding='utf-8') as file:
+            file.write(content)
+        
+        print(f"dbg4579 : Fichier sauvegardé : {specif_filepath}")
+        return True
+
+    except Exception as e:
+        logger.error(f"Error saving AI instructions: {str(e)}")
+        return False
+
+@cy_requests.route('/save_chat_pdf', methods=['POST'])
+def save_chat_pdf():
+    try:
+        data = request.json
+        num_dos = data.get('NumDos')
+        dossier = os.path.join(GetRoot(), num_dos)
+        chat = data.get('chat', '')
+        file_name = f"{num_dos}_chat.pdf"
+        file_path = os.path.join(dossier, file_name)
+
+        if not os.path.exists(dossier):
+            os.makedirs(dossier, exist_ok=True)
+
+        pdf = FPDF()
+        pdf.add_page()
+        # Ajoute une police Unicode (exemple avec DejaVu)
+        font_path = os.path.join(os.path.dirname(__file__), "DejaVuSans.ttf")
+        pdf.add_font("DejaVu", "", font_path, uni=True)
+        pdf.set_font("DejaVu", size=12)
+        for line in chat.split('\n'):
+            pdf.cell(0, 10, line, ln=True)
+
+        pdf.output(file_path)
+        return jsonify({'success': True, 'file_path': file_path})
+    except Exception as e:
+        print("Erreur lors de la sauvegarde du PDF :", e)
+        traceback.print_exc()
+        return jsonify({'error': str(e)}), 500
