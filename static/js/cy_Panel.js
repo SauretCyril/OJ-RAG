@@ -599,6 +599,9 @@ function removeChatMessage(chatContainer, messageId) {
     }
 }
 
+
+
+//<div id="action-bar"
 // Fonction pour gérer la sélection d'une ligne (mise à jour)
 function selectRow(row) {
     try {
@@ -943,4 +946,16 @@ function saveChatToPDF(rowId) {
     .catch(error => {
         alert("Erreur lors de la sauvegarde du PDF : " + error.message);
     });
+}
+
+// Fonction pour afficher la barre d'action
+function showActionBar() {
+    const bar = document.getElementById('action-bar');
+    if (bar) bar.style.display = 'flex';
+}
+
+// Fonction pour cacher la barre d'action
+function hideActionBar() {
+    const bar = document.getElementById('action-bar');
+    if (bar) bar.style.display = 'none';
 }
