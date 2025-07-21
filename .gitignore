@@ -1,13 +1,11 @@
 *.pdf
 templates/LK_links.html
 build/
+exe/
 dist/
 node_modules/
 *.pdf
 
-build/
-dist/
-node_modules/
 __pycache__/
 *.pyc
 .env
