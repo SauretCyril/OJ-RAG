@@ -613,7 +613,7 @@ function selectRow(row) {
         // Sélectionner la ligne actuelle
         row.classList.add('selected');
         currentSelectedRow = row;
-        
+        showActionBar();
         // Charger le contenu selon l'onglet actif
         const activeTab = document.querySelector('.tab-content.active');
         if (activeTab) {
