@@ -527,9 +527,10 @@ async function closeDirectoryForm() {
         form.close();
         form.remove(); // Ensure the form is removed from the DOM
         window.conf = conf_loadconf();
-        
+        await loadColumnsFromServer();
+        refresh();
         // Vérifier si la fonction loadColumnsFromServer existe et si l'élément DOM nécessaire est présent
-        if (typeof loadColumnsFromServer === 'function') {
+       /*  if (typeof loadColumnsFromServer === 'function') {
             try {
                 // Vérifier si l'élément DOM requis pour les colonnes existe
                 const columnsContainer = document.getElementById('columnsTableBody') || 
@@ -548,16 +549,16 @@ async function closeDirectoryForm() {
             }
         } else {
             console.warn('loadColumnsFromServer function not found, skipping column loading');
-        }
+        } */
         
         // S'assurer que refresh existe avant de l'appeler
-        if (typeof refresh === 'function') {
+       /*  if (typeof refresh === 'function') {
             refresh();
         } else {
             console.warn('refresh function not found');
             // Solution alternative : recharger la page
             window.location.reload();
-        }
+        } */
     }
 }
 

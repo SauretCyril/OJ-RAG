@@ -23,6 +23,10 @@ function createAnnouncementForm() {
                          <option value="scan_url_annonce">Url</option>
                     </select>
                 </div>
+                <div class="form-group">
+                    <button type="button" id="pickFilesBtn">Sélectionner des fichiers (serveur)</button>
+                    <ul id="pickedFilesList"></ul>
+                </div>
                 <div class="button-group">
                     <button type="button" onclick="executeCreationMode()">Exécuter</button>
                     <button type="button" onclick="closeAnnouncementForm()">Fermer</button>
@@ -44,12 +48,30 @@ function createAnnouncementForm() {
     // Add form to document
     document.body.insertAdjacentHTML('beforeend', formHtml);
 
+    document.getElementById('pickFilesBtn').onclick = async function() {
+        // Appel à la route Python (POST)
+        const response = await fetch('/pick_files', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({}) // ou {initial_dir: "chemin"} si besoin
+        });
+        const data = await response.json();
+        const files = data.files || [];
+        // Affichage dans la liste
+        const ul = document.getElementById('pickedFilesList');
+        ul.innerHTML = '';
+        files.forEach(f => {
+            const li = document.createElement('li');
+            li.textContent = f;
+            ul.appendChild(li);
+        });
+    };
+
     // Show form
     const form = document.getElementById('announcementForm');
     form.showModal();
     fillNextDossierName(); // Call the function to fill the next dossier name
 }
-// ...existing code...
 
 function executeCreationMode() {
     const creationMode = document.getElementById('creationMode').value;

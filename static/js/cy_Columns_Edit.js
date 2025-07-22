@@ -219,8 +219,8 @@ function renderColumnsTable() {
         // Vérifier l'existence de l'élément DOM
         const tableBody = document.getElementById('columnsTableBody');
         console.log('dbg-rct001: tableBody element:', tableBody);
-        
-        if (!tableBody) {
+        renderColumnsInElement(tableBody);
+        /*  if (!tableBody) {
             console.error('err-rct001: Élément columnsTableBody non trouvé dans le DOM');
             
             // Chercher des éléments alternatifs
@@ -238,7 +238,7 @@ function renderColumnsTable() {
                 showStatusMessage('Erreur: Interface des colonnes non disponible', 'error');
                 return;
             }
-        }
+        } */
         
         // Vérifier les données des colonnes
         console.log('dbg-rct002: columnsData:', columnsData);

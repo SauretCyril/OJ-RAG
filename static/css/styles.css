@@ -709,6 +709,8 @@ textarea {
 .settings-col {
   flex: 1 1 0;
   min-width: 200px;
+  font-size: 1.4em;
+  font-weight: bold;
 }
 
 .action-bar {

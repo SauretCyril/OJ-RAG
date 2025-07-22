@@ -52,6 +52,9 @@ app.register_blueprint(cy_columns)  # Register the new columns blueprint
 from cy_directories import register_directories_routes
 register_directories_routes(app)  # Enregistrer les routes de gestion des répertoires
 
+from cy_file_picker import file_picker
+app.register_blueprint(file_picker)  # Register the file picker blueprint
+
 # Ajoutez ce code dans votre app.py après avoir enregistré le Blueprint
 """ print("Routes disponibles:")
 for rule in app.url_map.iter_rules():
