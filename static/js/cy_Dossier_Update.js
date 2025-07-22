@@ -22,6 +22,31 @@ function updateAnnonces_byfile(file, key, value) {
     }
 }
 
+
+
+function updateCurrentAnnonce(colName, value) 
+{
+    const currentAnnonce = get_currentAnnonce();
+    if (!currentAnnonce) {
+        console.error("Aucune annonce actuelle trouvée.");
+        return;
+    }
+    const filePath = Object.keys(currentAnnonce)[0];
+    index =window.annonces.findIndex(a => Object.keys(a)[0] === filePath);
+    if (index === -1) {
+        alert("Annonce non trouvée pour le fichier:", filePath);
+        return;
+    }
+    updateAnnonces(index, colName, value);
+    const etatCell = currentAnnonce.querySelector('td:nth-child(' + (window.columns.filter(col => col.visible).findIndex(col => col.key === colName) + 1) + ')');
+    if (etatCell) {
+        etatCell.textContent = value;
+    }
+}
+
+ 
+
+
 function updateAnnonces(index, key, value) {
     try {
         const filePath = Object.keys(window.annonces[index])[0];

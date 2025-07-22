@@ -226,7 +226,7 @@ function loadTableData(callback) {
                 };
                
 
-                 document.getElementById('Scrape_url').onclick = () => {
+                /*  document.getElementById('Scrape_url').onclick = () => {
                     window.CurrentRow=contextMenu.dataset.targetRow;
                     set_current_row();
                     
@@ -234,8 +234,8 @@ function loadTableData(callback) {
                     scrape_url(item.url,item.dossier);
                   
                     contextMenu.style.display = 'none';
-                };
-                let resumexist="";
+                }; */
+              /*   let resumexist="";
                 document.getElementById('Resume').onclick = () => 
                 {
                     let thefile="";
@@ -258,12 +258,12 @@ function loadTableData(callback) {
                             }
                     } else
                     {alert("document à résumer non trouvée")}
-                }
+                } */
 
                 document.getElementById('Delete').onclick = () => {
              
                     if (confirm("Voulez-vous vraiment supprimer ce dossier ?")) {
-                           updateAnnonces(index, 'etat', 'DELETED');
+                       updateAnnonces(index, 'etat', 'DELETED');
                         // Update the 'etat' column in the HTML row
                         const etatCell = row.querySelector('td:nth-child(' + (window.columns.filter(col => col.visible).findIndex(col => col.key === 'etat') + 1) + ')');
                         if (etatCell) {

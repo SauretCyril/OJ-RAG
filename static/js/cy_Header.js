@@ -66,6 +66,11 @@ function generateTableHeaders() {
     document.getElementById('fix_btn-open').onclick = () => {
                 fix_open_dir();
             };
+    document.getElementById('fix_btn-delete').onclick = () => {
+
+            updateCurrentAnnonce('etat', 'DELETED');
+            };
+
     // Add status header and filter cell
     const statusHeader = document.createElement('th');
     statusHeader.classList.add('header');

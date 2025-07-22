@@ -1,199 +1,204 @@
 <!DOCTYPE html>
 <html lang="fr">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Gestionnaire de Dossiers</title>
-    <link
-      href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css"
-      rel="stylesheet"
-    />
-    <link href="{{ url_for('static', filename='css/styles.css') }}" rel="stylesheet" />
-    <link href="{{ url_for('static', filename='css/dialogs.css') }}" rel="stylesheet" />
-    <link href="{{ url_for('static', filename='css/panels.css') }}" rel="stylesheet" />
-  </head>
-  <body>
-    <div id="main-section">
-      <header class="header-bar">
-        <h1>Gestionnaire de Dossiers</h1>
-        <nav>
-          <ul>
-            <li><a href="#home">Home</a></li>
-            <li><a href="#New" onclick="createAnnouncementForm()">New</a></li>
-            <li><a href="#Save" onclick="refresh()">Refresh</a></li>
-            <li><a href="#index" onclick="generate_index_html()">Index</a></li>
-            <!--<li><a href="#clear-cache" onclick="clearExplorerCache()">Effacer Cache</a></li>-->
-            <li><a href="/columns_manager" target="_blank">Colonnes</a></li>
-            <li><a href="#" onclick="open_files_Setting()">Settings</a></li>
 
-          </ul>
-        </nav>
-      </header>
-      <div id="settings-bar-container">
-  <div id="settings-section" class="settings-col">
-    <h3>Settings</h3>
-         <label for="current-dossier">Current Dossier :</label>
-        <a href="#CurrenDir" id="current-dir" onclick="selectRep()" title="Sélectionner le dossier courant">Sélectionner le dossier courant</a>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title id="page-title">OJ</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link href="{{ url_for('static', filename='css/styles.css') }}" rel="stylesheet" />
+  <link href="{{ url_for('static', filename='css/dialogs.css') }}" rel="stylesheet" />
+  <link href="{{ url_for('static', filename='css/panels.css') }}" rel="stylesheet" />
+</head>
+
+<body>
+  <div id="main-section">
+    <header class="header-bar">
+
+      <nav>
+        <ul>
+          <li><a href="#home">Home</a></li>
+          <li><a href="#New" onclick="createAnnouncementForm()">New</a></li>
+          <li><a href="#Save" onclick="refresh()">Refresh</a></li>
+          <li><a href="#index" onclick="generate_index_html()">Index</a></li>
+          <!--<li><a href="#clear-cache" onclick="clearExplorerCache()">Effacer Cache</a></li>-->
+          <li><a href="/columns_manager" target="_blank">Colonnes</a></li>
+          <li><a href="#" onclick="open_files_Setting()">Settings</a></li>
+
+        </ul>
+      </nav>
+    </header>
+    <div id="settings-bar-container">
+      <div id="settings-section" class="settings-col">
+        <label for="current-dossier">Current Dossier :</label>
+        <a href="#CurrenDir" id="current-dir" onclick="selectRep()" title="Sélectionner le dossier courant">Sélectionner
+          le dossier courant</a>
+        <div style="display: flex; flex-direction: row;">
+          <div id="selected-annonce-info" class="selected-annonce-info">
+            <!-- Le contenu sera mis à jour dynamiquement -->
+          </div>
+          <div id="action-bar" class="action-bar">
+            <div style="display: flex; flex-direction: row; width: 100%; align-items: center;">
+              <button id="fix_btn-edit" class="action-btn">Edit</button>
+              <button id="fix_btn-open" class="action-btn">Open Dossier</button>
+              <div style="margin-left: auto; display: flex; gap: 8px;">
+                <button id="fix_btn-repondue" class="action-btn">To Répondue</button>
+                <button id="fix_btn-delete" class="action-btn">Delete</button>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+       
         <div style="float: right">
           <select id="Excluded" title="Filtrer les dossiers">
             <option value="En cours">En cours</option>
             <option value="Done">Done</option>
           </select>
         </div>
-  </div>
-  <div style="display: flex; flex-direction: column;">
-    <div id="action-bar" class="action-bar">
-      <button id="fix_btn-edit" class="action-btn">Edit</button>
-      <button id="fix_btn-open" class="action-btn">Open Dossier</button>
-      <hr>
-      <button id="fix_btn-repondue" class="action-btn">To Répondue</button>
-      <button id="fix_btn-delete" class="action-btn">Delete</button>
-    </div>
-    <div id="selected-annonce-info" class="selected-annonce-info">
-      <!-- Le contenu sera mis à jour dynamiquement -->
-    </div>
-  </div>
-</div>
-      <div class="tabs" id="tabs">
-        <!-- tab will be dynamically added here -->
       </div>
-        
+     
+    </div>
+    <div class="tabs" id="tabs">
+      <!-- tab will be dynamically added here -->
+    </div>
+
+  </div>
+
+  <!-- Nouveau conteneur à deux panneaux -->
+  <div class="split-container">
+    <!-- Panneau gauche - Tableau -->
+    <div class="left-panel">
+      <div class="table-responsive">
+        <table>
+          <thead>
+            <tr></tr>
+            <tr></tr>
+          </thead>
+          <tbody id="table-body">
+            <!-- Rows will be dynamically added here -->
+          </tbody>
+        </table>
       </div>
-      
-      <!-- Nouveau conteneur à deux panneaux -->
-      <div class="split-container">
-        <!-- Panneau gauche - Tableau -->
-        <div class="left-panel">
-          <div class="table-responsive">
-            <table>
-              <thead>
-                <tr></tr>
-                <tr></tr>
-              </thead>
-              <tbody id="table-body">
-                <!-- Rows will be dynamically added here -->
-              </tbody>
-            </table>
-          </div>
+    </div>
+
+    <!-- Panneau droit - Onglets -->
+    <div class="right-panel">
+      <div class="tabs-container">
+        <!-- Nouvelle barre de contrôle -->
+        <div class="tabs-control-bar">
+          <button id="toggle-panel-size" class="btn btn-sm btn-outline-secondary" onclick="togglePanelSize()"
+            title="Agrandir/Réduire le panneau">
+            <i class="fas fa-expand"></i>
+          </button>
         </div>
-        
-        <!-- Panneau droit - Onglets -->
-        <div class="right-panel">
-          <div class="tabs-container">
-            <!-- Nouvelle barre de contrôle -->
-            <div class="tabs-control-bar">
-              <button id="toggle-panel-size" class="btn btn-sm btn-outline-secondary" onclick="togglePanelSize()" title="Agrandir/Réduire le panneau">
-                <i class="fas fa-expand"></i>
-              </button>
-            </div>
-            
-            <div class="tabs-header">
-               <!-- <button class="tab-button active" onclick="switchTab('apercu-pdf')">
+
+        <div class="tabs-header">
+          <!-- <button class="tab-button active" onclick="switchTab('apercu-pdf')">
                 <i class="fas fa-file-pdf"></i> Aperçu PDF
               </button>-->
-              <button class="tab-button" onclick="switchTab('texte-extrait')">
-                <i class="fas fa-file-alt"></i> Texte extrait
-              </button>
-              <!-- Ajoutez ce bouton d'onglet -->
-              <button class="tab-button" onclick="switchTab('chatbot')">
-                <i class="fas fa-robot"></i> Assistant IA
-              </button>
-            </div>
-            
-            <div class="tabs-content">
-              <!-- Onglet Texte extrait -->
-              <div class="tab-content" id="texte-extrait">
-                <div class="text-container">
-                    <div class="text-header">
-                        <h3>Texte extrait du PDF</h3>
-                        <button id="save-text-btn" class="btn btn-primary" style="display: none;">
-                            <i class="fas fa-save"></i> Enregistrer
-                        </button>
-                    </div>
-                    <div id="text-viewer" class="text-viewer">
-                        <div id="text-placeholder" class="text-placeholder">
-                            <i class="fas fa-file-alt"></i>
-                            <p>Sélectionnez une ligne pour voir le texte extrait</p>
-                        </div>
-                    </div>
+          <button class="tab-button" onclick="switchTab('texte-extrait')">
+            <i class="fas fa-file-alt"></i> Texte extrait
+          </button>
+          <!-- Ajoutez ce bouton d'onglet -->
+          <button class="tab-button" onclick="switchTab('chatbot')">
+            <i class="fas fa-robot"></i> Assistant IA
+          </button>
+        </div>
+
+        <div class="tabs-content">
+          <!-- Onglet Texte extrait -->
+          <div class="tab-content" id="texte-extrait">
+            <div class="text-container">
+              <div class="text-header">
+                <h3>Texte extrait du PDF</h3>
+                <button id="save-text-btn" class="btn btn-primary" style="display: none;">
+                  <i class="fas fa-save"></i> Enregistrer
+                </button>
+              </div>
+              <div id="text-viewer" class="text-viewer">
+                <div id="text-placeholder" class="text-placeholder">
+                  <i class="fas fa-file-alt"></i>
+                  <p>Sélectionnez une ligne pour voir le texte extrait</p>
                 </div>
               </div>
-              <!-- Ajoutez ce contenu d'onglet -->
-              <div id="chatbot" class="tab-content">
-                <div id="chatbot-container" class="chatbot-container">
-                    <div class="chatbot-placeholder">
-                        <i class="fas fa-robot"></i>
-                        <p>Sélectionnez une ligne pour analyser le dossier avec l'IA</p>
-                    </div>
-                </div>
+            </div>
+          </div>
+          <!-- Ajoutez ce contenu d'onglet -->
+          <div id="chatbot" class="tab-content">
+            <div id="chatbot-container" class="chatbot-container">
+              <div class="chatbot-placeholder">
+                <i class="fas fa-robot"></i>
+                <p>Sélectionnez une ligne pour analyser le dossier avec l'IA</p>
               </div>
             </div>
           </div>
         </div>
       </div>
     </div>
-    
-    <div id="reseaux-links-section" style="display: none">
-      <h2>Liens de Réseaux Sociaux</h2>
-      <table class="reseaux-links-table">
-        <thead>
-          <tr>
-            <th>Nom</th>
-            <th>Date</th>
-            <th>Update</th>
-            <th>Date Update</th>
-          </tr>
-        </thead>
-        <tbody id="reseaux-links-table-body">
-          <!-- Rows will be dynamically added here -->
-        </tbody>
-      </table>
-      <button onclick="hideReseauxLinks()">Retour</button>
-    </div>
-    <div id="contextMenu" class="context-menu">
-      <ul>
-        <li id="EditRow">Edit</li>
-        <li id="SetCurrentRow">Set current</li>
-        <li id="Open">Open Dossier</li>
-        <li id="Sscrape_url">Scrape URL</li>
-        <li id="getCV">Get CV</li>
-        <li id="Resume">Do Resume</li>
-        <li>---------</li>
-        <li id="Repondue">To Répondue</li>
-        <li id="Delete">Delete</li>
-      </ul>
-    </div>
-   
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
-    
-    <!-- Modules de base (chargés en premier) -->
-    <script src="{{ url_for('static', filename='js/cy_State.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/cy_http_client.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/cy_functions_utils.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/cy_Dossier_functions.js') }}"></script>
-   
-    <!-- Modules principaux -->
-    <script src="{{ url_for('static', filename='js/cy_main.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/cy_Tableau.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/cy_Columns.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/cy_Columns_Edit.js') }}"></script>
-   
-    
-    <!-- Modules pour les onglets et filtres -->
-    <script src="{{ url_for('static', filename='js/cy_Tabs.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/cy_Filters.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/cy_Header.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/cy_Dossiers.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/cy_all_dos_index.js') }}"></script>
-    
-    <!-- Modules pour la gestion d'un dossier spécifique -->
-    <script src="{{ url_for('static', filename='js/cy_Dossier_Update.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/cy_Directories.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/cy_Dossier_Edit.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/cy_Dossier_Notes.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/cy_Dossier_New.js') }}"></script>
-    
-    <!-- Nouveau module pour la gestion des fiches -->
-    <script src="{{ url_for('static', filename='js/cy_Panel.js') }}"></script>
-  </body>
+  </div>
+  </div>
+
+  <div id="reseaux-links-section" style="display: none">
+    <h2>Liens de Réseaux Sociaux</h2>
+    <table class="reseaux-links-table">
+      <thead>
+        <tr>
+          <th>Nom</th>
+          <th>Date</th>
+          <th>Update</th>
+          <th>Date Update</th>
+        </tr>
+      </thead>
+      <tbody id="reseaux-links-table-body">
+        <!-- Rows will be dynamically added here -->
+      </tbody>
+    </table>
+    <button onclick="hideReseauxLinks()">Retour</button>
+  </div>
+  <div id="contextMenu" class="context-menu">
+    <ul>
+      <li id="EditRow">Edit</li>
+      <li id="Open">Open Dossier</li>
+       <!--<li id="Resume">Do Resume</li>-->
+      <li>---------</li>
+      <li id="Repondue">To Répondue</li>
+      <li id="Delete">Delete</li>
+    </ul>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+
+  <!-- Modules de base (chargés en premier) -->
+  <script src="{{ url_for('static', filename='js/cy_State.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/cy_http_client.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/cy_functions_utils.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/cy_Dossier_functions.js') }}"></script>
+
+  <!-- Modules principaux -->
+  <script src="{{ url_for('static', filename='js/cy_main.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/cy_Tableau.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/cy_Columns.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/cy_Columns_Edit.js') }}"></script>
+
+
+  <!-- Modules pour les onglets et filtres -->
+  <script src="{{ url_for('static', filename='js/cy_Tabs.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/cy_Filters.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/cy_Header.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/cy_Dossiers.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/cy_all_dos_index.js') }}"></script>
+
+  <!-- Modules pour la gestion d'un dossier spécifique -->
+  <script src="{{ url_for('static', filename='js/cy_Dossier_Update.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/cy_Directories.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/cy_Dossier_Edit.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/cy_Dossier_Notes.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/cy_Dossier_New.js') }}"></script>
+
+  <!-- Nouveau module pour la gestion des fiches -->
+  <script src="{{ url_for('static', filename='js/cy_Panel.js') }}"></script>
+</body>
+
 </html>

@@ -345,6 +345,8 @@ function disableDirectoryChangeButton() {
  */
 function updateSelectedAnnonceInfo() {
     const infoDiv = document.getElementById('selected-annonce-info');
+    
+    
     const row = getState('currentSelectedRow');
     if (row && row.id) {
         const annonce = getAnnonce_byfile(row.id);

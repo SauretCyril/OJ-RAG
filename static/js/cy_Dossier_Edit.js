@@ -7,6 +7,18 @@ function fix_openEditModal() {
 
 }
 
+function get_currentAnnonce_index() {
+     const curRow = getState('currentSelectedRow', null);    
+     const index = window.annonces.findIndex(a => Object.keys(a)[0] === curRow.id);
+     return index;
+}
+function get_currentAnnonce() {
+    const curRow = getState('currentSelectedRow', null);    
+    const index = window.annonces.findIndex(a => Object.keys(a)[0] === curRow.id);
+    if (index === -1) return null;
+    return window.annonces[index][curRow.id];
+}
+
 function get_annonce_by_id(id) {
     const index = window.annonces.findIndex(a => Object.keys(a)[0] === id);
     if (index === -1) return null;

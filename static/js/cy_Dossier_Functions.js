@@ -229,17 +229,19 @@ async function open_notes(file_notes) {
  */
 async function fillNextDossierName() {
     // Get the last used dossier name
-    let selectDos = getState('currentSelectedRow')
-    const index = window.annonces.findIndex(a => Object.keys(a)[0] === selectDos.id);
-    
-    if (index === -1) return;
-    const annonce = window.annonces[index][rowId];
+    let lastDossier = getState('currentSelectedRow')
 
-    let lastDossier = getState('annonces').reduce((last, current) => {
+    if (!lastDossier) {
+        lastDossier = getState('annonces').reduce((last, current) => {
         const currentDossier = Object.values(current)[0].dossier;
         return currentDossier > last ? currentDossier : last;
     }, "A000");
-   
+    }
+    else {
+        lastDossier = get_currentAnnonce().dossier;
+        alert("Dernier dossier utilisé : " + lastDossier);
+    }
+
     let letter = lastDossier.charAt(0);
     let number = parseInt(lastDossier.slice(1)) + 1;
     let nextDossier = letter + number.toString().padStart(3, '0');
