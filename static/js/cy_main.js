@@ -340,6 +340,26 @@ function disableDirectoryChangeButton() {
     }
 }
 
+/**
+ * Met à jour les informations de l'annonce sélectionnée
+ */
+function updateSelectedAnnonceInfo() {
+    const infoDiv = document.getElementById('selected-annonce-info');
+    const row = getState('currentSelectedRow');
+    if (row && row.id) {
+        const annonce = getAnnonce_byfile(row.id);
+        infoDiv.textContent = `Dossier : ${ annonce['dossier']} - ${ annonce['description']}`;
+    } else {
+        infoDiv.textContent = '';
+    }
+}
+
+// Mets à jour à chaque changement de sélection
+subscribeToState('currentSelectedRow', updateSelectedAnnonceInfo);
+
+// Mets à jour à l'initialisation (optionnel)
+document.addEventListener('DOMContentLoaded', updateSelectedAnnonceInfo);
+
 // Initialiser l'application au chargement de la page
 window.addEventListener('load', initializeApp);
 

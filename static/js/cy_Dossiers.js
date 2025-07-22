@@ -205,25 +205,28 @@ function loadTableData(callback) {
 
                 document.getElementById('EditRow').onclick = () => {
                     window.CurrentRow=contextMenu.dataset.targetRow;
-                    set_current_row();
-                    openEditModal(row.id);
+                    //set_current_row();
+                    curRow=getState('currentSelectedRow', row);
+                    openEditModal(curRow.id);
                     contextMenu.style.display = 'none';
                 };
-             
-                document.getElementById('SetCurrentRow').onclick = () => {
-                    window.CurrentRow=contextMenu.dataset.targetRow;
-                    contextMenu.style.display = 'none';
-                    set_current_row();
-                };
+                
+                // document.getElementById('SetCurrentRow').onclick = () => {
+                //     window.CurrentRow=contextMenu.dataset.targetRow;
+                //     contextMenu.style.display = 'none';
+                //     set_current_row();
+                // };
                 document.getElementById('Open').onclick = () => {
                     window.CurrentRow=contextMenu.dataset.targetRow;
-                    set_current_row();
+                    alert("Open: " + window.CurrentRow);
+                    set_current_row();  
                     open_dir(filePath);
                   
                     contextMenu.style.display = 'none';
                 };
+               
 
-                 document.getElementById('Sscrape_url').onclick = () => {
+                 document.getElementById('Scrape_url').onclick = () => {
                     window.CurrentRow=contextMenu.dataset.targetRow;
                     set_current_row();
                     

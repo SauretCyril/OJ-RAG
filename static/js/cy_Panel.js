@@ -6,7 +6,7 @@ window.addEventListener('error', function(e) {
     }
 });
 
-let currentSelectedRow = null;
+//let currentSelectedRow = null;
 
 // Fonction pour récupérer un enregistrement par nom de fichier
 function getAnnonce_byfile(file) {
@@ -62,13 +62,13 @@ function switchTab(tabId) {
     // Activer l'onglet sélectionné
     document.querySelector(`[onclick="switchTab('${tabId}')"]`).classList.add('active');
     document.getElementById(tabId).classList.add('active');
-    
+    currentrow = getState('currentSelectedRow');
     // Charger le contenu selon l'onglet
-    if (currentSelectedRow) {
+    if (currentrow) {
         if (tabId === 'texte-extrait') {
-            loadTextExtract(currentSelectedRow.id);
+            loadTextExtract(currentrow.id);
         } else if (tabId === 'chatbot') {
-            initializeChatbot(currentSelectedRow.id);
+            initializeChatbot(currentrow.id);
         }
     }
 }
@@ -210,10 +210,10 @@ function switchTab(tabId) {
     // Activer l'onglet sélectionné
     document.querySelector(`[onclick="switchTab('${tabId}')"]`).classList.add('active');
     document.getElementById(tabId).classList.add('active');
-    
+    currentrow = getState('currentSelectedRow');
     // Charger le contenu selon l'onglet (seulement texte-extrait)
-    if (currentSelectedRow && tabId === 'texte-extrait') {
-        loadTextExtract(currentSelectedRow.id);
+    if (currentrow && tabId === 'texte-extrait') {
+        loadTextExtract(currentrow.id);
     }
 }
 
@@ -612,7 +612,8 @@ function selectRow(row) {
         
         // Sélectionner la ligne actuelle
         row.classList.add('selected');
-        currentSelectedRow = row;
+        //currentSelectedRow = row;
+        setState('currentSelectedRow', row);
         showActionBar();
         // Charger le contenu selon l'onglet actif
         const activeTab = document.querySelector('.tab-content.active');
@@ -633,7 +634,7 @@ function selectRow(row) {
 function resetPreview() {
     resetTextPreview();
     resetChatbot();
-    currentSelectedRow = null;
+    //currentSelectedRow = null;
 }
 
 // Fonction pour réinitialiser le chatbot

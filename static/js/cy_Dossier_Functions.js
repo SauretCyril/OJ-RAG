@@ -9,6 +9,13 @@
  * @param {string} filepath - Chemin du fichier
  * @returns {Promise} - Promise contenant le résultat de l'opération
  */
+async function fix_open_dir(filepath)
+{
+    currow=getState('currentSelectedRow', null);
+    if (currow) {
+        open_dir(currow.id);
+    }
+}
 async function open_dir(filepath) {
     try {
         const data = await ApiClient.files.openDirectory(filepath);
@@ -221,6 +228,13 @@ async function open_notes(file_notes) {
  * Remplit le prochain nom de dossier disponible
  */
 async function fillNextDossierName() {
+    // Get the last used dossier name
+    let selectDos = getState('currentSelectedRow')
+    const index = window.annonces.findIndex(a => Object.keys(a)[0] === selectDos.id);
+    
+    if (index === -1) return;
+    const annonce = window.annonces[index][rowId];
+
     let lastDossier = getState('annonces').reduce((last, current) => {
         const currentDossier = Object.values(current)[0].dossier;
         return currentDossier > last ? currentDossier : last;

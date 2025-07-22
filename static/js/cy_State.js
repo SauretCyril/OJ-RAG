@@ -91,15 +91,17 @@ const AppState = {
     // Configuration
     conf: {},
     CONSTANTS: window.CONSTANTS, // Initialiser avec la valeur par défaut
-    
+
     // Navigation
     currentRow: "",
+    currentSelectedRow: null, // <-- Ajout ici
+
     tabActive: "Campagne",
-    
+
     // Données
     annonces: [],
     portalLinks: [],
-    
+
     // Configuration des colonnes (initialisé avec les colonnes par défaut)
     columns: [...window.columns]
 };

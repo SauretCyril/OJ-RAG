@@ -60,7 +60,12 @@ function generateTableHeaders() {
             filterRow.appendChild(filterCell);
         }
     });
-
+    document.getElementById('fix_btn-edit').onclick = () => {
+                   fix_openEditModal();
+            };
+    document.getElementById('fix_btn-open').onclick = () => {
+                fix_open_dir();
+            };
     // Add status header and filter cell
     const statusHeader = document.createElement('th');
     statusHeader.classList.add('header');

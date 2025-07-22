@@ -712,3 +712,12 @@ textarea {
 .action-bar {
   flex: 0 0 auto;
 }
+.selected-annonce-info {
+  margin-top: 10px;
+  padding: 6px 8px;
+  background: #e9ecef;
+  border-radius: 4px;
+  color: #a31313;
+  font-size: 1.3em;
+  min-height: 24px;
+}

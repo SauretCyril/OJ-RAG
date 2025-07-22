@@ -41,16 +41,17 @@
           </select>
         </div>
   </div>
-  <div id="action-bar" class="action-bar">
-    <button id="btn-edit" class="action-btn">Edit</button>
-    <button id="btn-set-current" class="action-btn">Set current</button>
-    <button id="btn-open" class="action-btn">Open Dossier</button>
-    <button id="btn-scrape-url" class="action-btn">Scrape URL</button>
-    <button id="btn-get-cv" class="action-btn">Get CV</button>
-    <button id="btn-resume" class="action-btn">Do Resume</button>
-    <hr>
-    <button id="btn-repondue" class="action-btn">To Répondue</button>
-    <button id="btn-delete" class="action-btn">Delete</button>
+  <div style="display: flex; flex-direction: column;">
+    <div id="action-bar" class="action-bar">
+      <button id="fix_btn-edit" class="action-btn">Edit</button>
+      <button id="fix_btn-open" class="action-btn">Open Dossier</button>
+      <hr>
+      <button id="fix_btn-repondue" class="action-btn">To Répondue</button>
+      <button id="fix_btn-delete" class="action-btn">Delete</button>
+    </div>
+    <div id="selected-annonce-info" class="selected-annonce-info">
+      <!-- Le contenu sera mis à jour dynamiquement -->
+    </div>
   </div>
 </div>
       <div class="tabs" id="tabs">

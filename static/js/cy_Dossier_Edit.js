@@ -1,10 +1,24 @@
 //onfiche
+function fix_openEditModal() {
+    curRow=getState('currentSelectedRow', null);
+    if (curRow) {
+        openEditModal(curRow.id) ;
+    }
+
+}
+
+function get_annonce_by_id(id) {
+    const index = window.annonces.findIndex(a => Object.keys(a)[0] === id);
+    if (index === -1) return null;
+    return window.annonces[index][id];
+}
+
 function openEditModal(rowId) {
     // Find the annonce data
-    const index = window.annonces.findIndex(a => Object.keys(a)[0] === rowId);
-    if (index === -1) return;
-    const annonce = window.annonces[index][rowId];
-
+    //const index = window.annonces.findIndex(a => Object.keys(a)[0] === rowId);
+    //if (index === -1) return;
+    //const annonce = window.annonces[index][rowId];
+    const annonce = get_annonce_by_id(rowId);
     // Définir les groupes d'onglets
     const tabGroups = {
         'Informations principales': ['dossier', 'description', 'id', 'entreprise', 'categorie'],
