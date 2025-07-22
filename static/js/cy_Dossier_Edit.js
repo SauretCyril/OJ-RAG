@@ -36,7 +36,7 @@ function openEditModal(rowId) {
         'Informations principales': ['dossier', 'description', 'id', 'entreprise', 'categorie'],
         'Statut': ['etat', 'lien_Etape','annonce_pdf','CV','CVfile'],
         'suivi': [ 'Date','Date_rep','todo','commetaires','Origine'],
-        'Contact': [ 'contact','tel', 'mail','url'],
+        'Coordonnées': [ 'contact','tel', 'mail','url'],
         'Détails': ['Commentaire', 'type', 'Lieux'], 
         'GPT': ['GptSum', 'instructions','request'],
         'Publication': ['lnk_Youtub_value','path_dirpartage_value']
@@ -56,16 +56,19 @@ function openEditModal(rowId) {
 
                 ${Object.entries(tabGroups).map(([tabName, fields], index) => `
                     <div id="${tabName}" class="tab-content ${index === 0 ? 'active' : ''}">
-                        ${fields.map(field => `
-                            <div class="form-group">
-                                <label>${field}:</label>
-                                ${field === 'instructions' ? 
-                                    `<textarea id="edit-${field}" class="rich-text-field">${annonce[field] || ''}</textarea>` :
-                                    `<input type="text" id="edit-${field}" class="rich-text-field" value="${annonce[field] || ''}" 
-                                       ${field === 'dossier' ? 'readonly' : ''}>`
-                                }
-                            </div>
-                        `).join('')}
+                        ${fields.map(field => {
+                            let value = (annonce && Object.prototype.hasOwnProperty.call(annonce, field)) ? annonce[field] : '';
+                            return `
+                                <div class="form-group">
+                                    <label>${field}:</label>
+                                    ${field === 'instructions' ? 
+                                        `<textarea id="edit-${field}" class="rich-text-field">${value}</textarea>` :
+                                        `<input type="text" id="edit-${field}" class="rich-text-field" value="${value}" 
+                                           ${field === 'dossier' ? 'readonly' : ''}>`
+                                    }
+                                </div>
+                            `;
+                        }).join('')}
                     </div>
                 `).join('')}
 
@@ -89,6 +92,9 @@ function openEditModal(rowId) {
     // Show modal
     const modal = document.getElementById('editModal');
     modal.showModal();
+
+    console.log('Onglets générés:', Object.keys(tabGroups));
+    console.log('HTML généré pour Contact:', modalHtml.match(/<div id="Contact"[\s\S]*?<\/div>/));
 }
 
 function switchEditTab(event, tabName) {

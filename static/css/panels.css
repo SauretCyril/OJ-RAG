@@ -90,31 +90,6 @@
     padding: 0;
 }
 
-.tab-button {
-    flex: 1;
-    border: none;
-    background: #007bff;
-    color: white;
-    padding: 12px 16px;
-    cursor: pointer;
-    font-size: 14px;
-    font-weight: 500;
-    transition: all 0.3s ease;
-    border-radius: 0;
-}
-
-.tab-button:hover {
-    background: #0056b3;
-}
-
-.tab-button.active {
-    background: #007bff;
-    color: white;
-}
-
-.tab-button i {
-    margin-right: 6px;
-}
 
 .pdf-size-controls {
     display: flex;

@@ -377,3 +377,24 @@ window.promptUserForValidDirectory = promptUserForValidDirectory;
 window.openDirectorySelector = openDirectorySelector;
 window.enableDirectoryChangeButton = enableDirectoryChangeButton;
 window.disableDirectoryChangeButton = disableDirectoryChangeButton;
+
+/**
+ * Met à jour la visibilité de la barre d'actions
+ */
+function updateActionBarVisibility() {
+    const actionBar = document.getElementById('action-bar');
+    const selected = getState('currentSelectedRow');
+    if (actionBar) {
+        actionBar.style.display = selected ? '' : 'none';
+    }
+}
+
+// À appeler après chaque changement de sélection
+document.addEventListener('state-changed', (event) => {
+    if (event.detail.key === 'currentSelectedRow') {
+        updateActionBarVisibility();
+    }
+});
+
+// Appel initial au chargement
+updateActionBarVisibility();
