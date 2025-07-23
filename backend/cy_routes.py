@@ -890,6 +890,10 @@ def save_announcement():
         content = data.get("content")
         url = data.get("url")
         sufix = data.get("sufix")
+        flddescription = data.get("flddescription")
+        fldcategorie = data.get("fldcategorie")
+        currentTab = data.get("currentTab")
+        pickedFilesList = data.get("pickedFilesList", [])
         #or not content or not url
         if not num_dossier :
             print("dbg4456 -------------------------------", num_dossier, content, url)
@@ -899,39 +903,40 @@ def save_announcement():
         if not os.path.exists(directory_path):
             # print("dbg-4456 creating directory", directory_path)
             os.makedirs(directory_path)
+        if currentTab=='Default':
+            docx_file_path = os.path.join(directory_path, f"{num_dossier}{sufix}.docx")
+            pdf_file_path = os.path.join(directory_path, f"{num_dossier}{sufix}.pdf")
 
-        docx_file_path = os.path.join(directory_path, f"{num_dossier}{sufix}.docx")
-        pdf_file_path = os.path.join(directory_path, f"{num_dossier}{sufix}.pdf")
+            """ if os.path.exists(pdf_file_path):
+                return jsonify({"status": "error", "message": f"Fichier {pdf_file_path} existe déjà"}), 400 """
 
-        """ if os.path.exists(pdf_file_path):
-            return jsonify({"status": "error", "message": f"Fichier {pdf_file_path} existe déjà"}), 400 """
-
-        if pythoncom:
-            pythoncom.CoInitialize()
-        try:
-            doc = Document()
-            # Ensure URL is properly formatted
-            doc.add_paragraph("<-")
-            doc.add_paragraph(url)
-            doc.add_paragraph("->")
-            doc.add_paragraph(content)
-
-            doc.save(docx_file_path)
-            print(f"dbg-5434 : Converting {docx_file_path} to {pdf_file_path}")
-            convert(docx_file_path, pdf_file_path)
-        finally:
             if pythoncom:
-                pythoncom.CoUninitialize()
+                pythoncom.CoInitialize()
+            try:
+                doc = Document()
+                # Ensure URL is properly formatted
+                doc.add_paragraph("<-")
+                doc.add_paragraph(url)
+                doc.add_paragraph("->")
+                doc.add_paragraph(content)
+                doc.add_paragraph(f"#Description# : {flddescription}")
+                doc.add_paragraph(f"#Categorie#   : {fldcategorie}")
+                doc.save(docx_file_path)
+                print(f"dbg-5434 : Converting {docx_file_path} to {pdf_file_path}")
+                convert(docx_file_path, pdf_file_path)
+            finally:
+                if pythoncom:
+                    pythoncom.CoUninitialize()
 
-        return (
-            jsonify(
-                {
-                    "status": "success",
-                    "message": f"Announcement saved as {pdf_file_path}",
-                }
-            ),
-            200,
-        )
+            return (
+                jsonify(
+                    {
+                        "status": "success",
+                        "message": f"Announcement saved as {pdf_file_path}",
+                    }
+                ),
+                200,
+            )
     except Exception as e:
         print(f"Cyr_error_492 An error occurred while saving the announcement: {e}")
         return jsonify({"status": "error", "message": "492>" + str(e)}), 500

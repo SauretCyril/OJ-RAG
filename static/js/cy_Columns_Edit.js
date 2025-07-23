@@ -384,7 +384,7 @@ function renderColumnsInElement(element) {
         
     } catch (error) {
         console.error('err-rice001: Erreur dans renderColumnsInElement:', error);
-        element.innerHTML = '<p class="error-message">Erreur lors de l\'affichage des colonnes</p>';
+        //element.innerHTML = '<p class="error-message">Erreur lors de l\'affichage des colonnes</p>';
     }
 }
 

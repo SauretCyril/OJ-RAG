@@ -1,27 +1,48 @@
-function createAnnouncementForm() {
-    const formHtml = `
-        <dialog id="announcementForm" class="announcement-form">
-            <form method="dialog">
-                <h2>Créer un dossier</h2>
-                <div class="form-group">
-                    <label for="announcementDossier">Dossier:</label>
-                    <input type="text" id="announcementDossier" class="rich-text-field">
-                </div>
-                <div class="form-group">
-                    <label for="announcementURL">URL:</label>
-                    <input type="url" id="announcementURL" class="rich-text-field">
-                </div>
-                <div class="form-group">
-                    <label for="announcementContent">Contenu de l'annonce:</label>
-                    <textarea id="announcementContent" class="rich-text-field"></textarea>
-                </div>
-                <div class="form-group">
+{/* <div class="form-group">
                     <label for="creationMode">Mode de création:</label>
                     <select id="creationMode" class="rich-text-field">
                          <option value="creer_annonce">Contenu</option>
                          <option value="Action">Action</option>
                          <option value="scan_url_annonce">Url</option>
                     </select>
+                </div> */}
+
+let currentTab = "Default"; // Ajout de l'indicateur d'onglet
+
+function createAnnouncementForm() {
+    const formHtml = `
+        <dialog id="announcementForm" class="announcement-form">
+            <form method="dialog">
+                <h2>Créer un dossier</h2>
+                <nav class="tab-nav">
+                    <button type="button" class="tab-btn active" id="tabDefaultBtn">Default</button>
+                    <button type="button" class="tab-btn" id="tabFilesBtn">Fichiers</button>
+                </nav>
+                <div class="form-group">
+                    <label for="announcementDossier">Dossier:</label>
+                    <input type="text" id="announcementDossier" class="rich-text-field">
+                </div>
+                <div id="tabDefault" class="tab-content active">
+                    <div class="form-group">
+                        <label for="announcementURL">URL:</label>
+                        <input type="url" id="announcementURL" class="rich-text-field">
+                    </div>
+                    <div class="form-group">
+                        <label for="announcementContent">Contenu de l'annonce:</label>
+                        <textarea id="announcementContent" class="rich-text-field"></textarea>
+                    </div>
+                </div>
+                <div id="tabFiles" class="tab-content" style="display:none;">
+                    <div class="form-group">
+                        <label for="directInput">Direct Input:</label>
+                        <input type="text" id="directInput" class="rich-text-field">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="fldcategorie">Categorie:</label>
+                    <input type="text" id="fldcategorie" class="rich-text-field">
+                    <label for="flddescription">Description:</label>
+                    <input type="text" id="flddescription" class="rich-text-field">
                 </div>
                 <div class="form-group">
                     <button type="button" id="pickFilesBtn">Sélectionner des fichiers (serveur)</button>
@@ -34,11 +55,6 @@ function createAnnouncementForm() {
             </form>
         </dialog>
     `;
-   /*  <option value="creer_annonce">Ajouter Annonce à partir de contenu</option>
-    <option value="creer_reponse">Ajouter Réponse à partir de contenu</option>
-   
-    <option value="scrapeAndFill">Scrape URL</option>
-    <option value="NewAteller">New Atelier</option> */
     // Remove existing form if any
     const existingForm = document.getElementById('announcementForm');
     if (existingForm) {
@@ -48,16 +64,31 @@ function createAnnouncementForm() {
     // Add form to document
     document.body.insertAdjacentHTML('beforeend', formHtml);
 
+    // Onglet switching logic
+    document.getElementById('tabDefaultBtn').onclick = function() {
+        document.getElementById('tabDefault').style.display = '';
+        document.getElementById('tabFiles').style.display = 'none';
+        this.classList.add('active');
+        document.getElementById('tabFilesBtn').classList.remove('active');
+        currentTab = "Default"; // MAJ indicateur
+    };
+    document.getElementById('tabFilesBtn').onclick = function() {
+        document.getElementById('tabDefault').style.display = 'none';
+        document.getElementById('tabFiles').style.display = '';
+        this.classList.add('active');
+        document.getElementById('tabDefaultBtn').classList.remove('active');
+        currentTab = "Direct"; // MAJ indicateur
+    };
+
     document.getElementById('pickFilesBtn').onclick = async function() {
         // Appel à la route Python (POST)
         const response = await fetch('/pick_files', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({}) // ou {initial_dir: "chemin"} si besoin
+            body: JSON.stringify({})
         });
         const data = await response.json();
         const files = data.files || [];
-        // Affichage dans la liste
         const ul = document.getElementById('pickedFilesList');
         ul.innerHTML = '';
         files.forEach(f => {
@@ -70,19 +101,27 @@ function createAnnouncementForm() {
     // Show form
     const form = document.getElementById('announcementForm');
     form.showModal();
-    fillNextDossierName(); // Call the function to fill the next dossier name
+    fillNextDossierName();
 }
 
 function executeCreationMode() {
-    const creationMode = document.getElementById('creationMode').value;
-    if (creationMode === 'scan_url_annonce') {
-        scan_url_annonce(); 
-    } else if (creationMode === 'creer_annonce') {
-        submitAnnouncement(window.CONSTANTS["ANNONCE_SUFFIX"]);
-    }
-    else if (creationMode === 'Action') {
-        submitAnnouncement(window.CONSTANTS["ACTION_SUFFIX"]);
-
+    // Utilise currentTab pour savoir où tu es
+    if (currentTab === "Default") {
+        const creationMode = document.getElementById('creationMode').value;
+        if (creationMode === 'scan_url_annonce') {
+            scan_url_annonce(); 
+        } else if (creationMode === 'creer_annonce') {
+            submitAnnouncement(window.CONSTANTS["ANNONCE_SUFFIX"]);
+        }
+        else if (creationMode === 'Action') {
+            submitAnnouncement(window.CONSTANTS["ACTION_SUFFIX"]);
+        }
+    } else if (currentTab === "Direct") {
+        // Ajoute ici le traitement spécifique à l'onglet Direct
+        alert("Traitement Direct à implémenter");
+        // Récupérer la valeur de l'input spécifique à l'onglet Direct
+        const directValue = document.getElementById('directInput').value;
+        console.log('Valeur directe:', directValue);
     }
 }
 
@@ -90,11 +129,6 @@ function executeCreationMode() {
 
     
 function submitAnnouncement(type) {
-    // let content = document.getElementById('announcementContent').value;
-    // if (content.trim() === '') {
-    //     alert('Le contenu de l\'action ne peut pas être vide !!!');
-    //     return;
-    // }
     const contentNum = document.getElementById('announcementDossier').value;
     if (contentNum.trim() === '') {
         alert('Le numéro du dossier ne peut pas être vide !!!');
@@ -102,14 +136,14 @@ function submitAnnouncement(type) {
     }
 
     const contentUrl = document.getElementById('announcementURL').value;
-  
+    const flddescription = document.getElementById('flddescription').value;
+    const fldcategorie = document.getElementById('fldcategorie').value;
     contentUrlembed = "<- " + contentUrl + " ->";
 
-    // Remove all spaces inside content
-    
-    //content = content.replace(/\s+/g, '');
+    // Récupérer la liste des fichiers
+    const pickedFilesList = Array.from(document.querySelectorAll('#pickedFilesList li')).map(li => li.textContent);
 
-    globalContent =  content;
+    globalContent = content;
     showLoadingOverlay();
     alert(CONSTANTS['FILE_NAMES']['ANNONCE_SUFFIX'])
     fetch('/save_announcement', {
@@ -120,9 +154,13 @@ function submitAnnouncement(type) {
         body: JSON.stringify({
             contentNum: contentNum,
             content: content,
-            url:contentUrl,
+            url: contentUrl,
             type: type,
-            sufix:CONSTANTS['FILE_NAMES']['ANNONCE_SUFFIX']
+            flddescription: flddescription,
+            fldcategorie: fldcategorie,
+            currentTab: currentTab,
+            sufix: CONSTANTS['FILE_NAMES']['ANNONCE_SUFFIX'],
+            pickedFilesList: pickedFilesList // Ajout de la liste des fichiers
         })
     })
     .then(response => response.json())
