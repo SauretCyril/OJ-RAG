@@ -157,19 +157,51 @@ function loadTableData(callback) {
                         cell.style.overflow = 'visible';
                 
                     }   else if (col.key === 'description') {
-                        // Create a link for the description field
-                        const link = document.createElement('a');
-                        link.textContent = item[col.key];
-                        if (item['url']!=="") {
-                           
-                            link.style.textDecoration = 'underline';
-                            link.style.color = 'blue';
-                            link.target = '_blank'; // Open in a new tab
-                            link.style.cursor = 'pointer';
-                            cell.addEventListener('click', () => open_url(item['url']));
-                            
+                        cell.style.display = 'flex';
+                        cell.style.alignItems = 'center';
+                        cell.style.justifyContent = 'space-between';
+
+                        const leftPart = document.createElement('span');
+                        leftPart.style.display = 'flex';
+                        leftPart.style.alignItems = 'center';
+
+                        // Icône lien URL (si url existe)
+                        if (item['url'] && item['url'] !== "" && item['url'] !== "N/A") {
+                            const urlIcon = document.createElement('span');
+                            urlIcon.textContent = '🔗';
+                            urlIcon.style.cursor = 'pointer';
+                            urlIcon.style.marginRight = '6px';
+                            urlIcon.title = 'Ouvrir le lien';
+                            urlIcon.addEventListener('click', (e) => {
+                                e.stopPropagation();
+                                window.open(item['url'], '_blank');
+                            });
+                            leftPart.appendChild(urlIcon);
                         }
-                        cell.appendChild(link);
+
+                        // Texte description
+                        const descSpan = document.createElement('span');
+                        descSpan.textContent = item[col.key];
+                        leftPart.appendChild(descSpan);
+
+                        // Icône édition à droite
+                        const editIcon = document.createElement('span');
+                        editIcon.textContent = '✏️';
+                        editIcon.style.cursor = 'pointer';
+                        editIcon.style.marginLeft = '8px';
+                        editIcon.title = 'Éditer la description';
+                        editIcon.style.alignSelf = 'flex-end';
+                        editIcon.addEventListener('click', (e) => {
+                            e.stopPropagation();
+                            const newDesc = prompt('Modifier la description :', item[col.key]);
+                            if (newDesc !== null && newDesc !== item[col.key]) {
+                                descSpan.textContent = newDesc;
+                                updateAnnonces(index, col.key, newDesc);
+                            }
+                        });
+
+                        cell.appendChild(leftPart);
+                        cell.appendChild(editIcon);
                     }
 
                     else {

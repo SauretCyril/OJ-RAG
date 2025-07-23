@@ -13,7 +13,7 @@ window.columns = [
     { 
         key: 'description', 
         class: 'description-cell', 
-        editable: false, 
+        editable: true, 
         style: { cursor: 'pointer', color: 'blue', textDecoration: 'underline' }, 
         event: 'click', 
         eventHandler: 'openUrlHandler', // Store function name as string

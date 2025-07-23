@@ -725,3 +725,9 @@ textarea {
   font-size: 1.5em;
   min-height: 24px;
 }
+
+#current-dir {
+    font-size: 1.3em;
+    font-weight: bold;
+    color: #2b579a;
+}

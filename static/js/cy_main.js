@@ -350,7 +350,19 @@ function updateSelectedAnnonceInfo() {
     const row = getState('currentSelectedRow');
     if (row && row.id) {
         const annonce = getAnnonce_byfile(row.id);
-        infoDiv.textContent = `Dossier : ${ annonce['dossier']} - ${ annonce['description']}`;
+        let infoHtml = `Dossier : ${annonce['dossier']} - ${annonce['description']}`;
+        if (annonce['url'] && /^https?:\/\/.+/.test(annonce['url'])) {
+            infoHtml += ` <a href="${annonce['url']}" target="_blank" title="Ouvrir le lien">
+            <span style="vertical-align:middle; margin-left:5px;">
+                <svg width="32" height="32" viewBox="0 0 16 16" fill="none" style="display:inline;">
+                <path d="M10.5 2H14v3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                <path d="M6 10L14 2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                <rect x="2" y="6" width="8" height="8" rx="2" stroke="currentColor" stroke-width="1.5"/>
+                </svg>
+            </span>
+            </a>`;
+        }
+        infoDiv.innerHTML = infoHtml;
     } else {
         infoDiv.textContent = '';
     }

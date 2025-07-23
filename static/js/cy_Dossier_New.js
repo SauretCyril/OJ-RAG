@@ -90,11 +90,11 @@ function executeCreationMode() {
 
     
 function submitAnnouncement(type) {
-    let content = document.getElementById('announcementContent').value;
-    if (content.trim() === '') {
-        alert('Le contenu de l\'action ne peut pas être vide !!!');
-        return;
-    }
+    // let content = document.getElementById('announcementContent').value;
+    // if (content.trim() === '') {
+    //     alert('Le contenu de l\'action ne peut pas être vide !!!');
+    //     return;
+    // }
     const contentNum = document.getElementById('announcementDossier').value;
     if (contentNum.trim() === '') {
         alert('Le numéro du dossier ne peut pas être vide !!!');

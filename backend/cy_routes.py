@@ -890,8 +890,8 @@ def save_announcement():
         content = data.get("content")
         url = data.get("url")
         sufix = data.get("sufix")
-
-        if not num_dossier or not content or not url:
+        #or not content or not url
+        if not num_dossier :
             print("dbg4456 -------------------------------", num_dossier, content, url)
             return jsonify({"status": "error", "message": "Missing parameters"}), 400
 
