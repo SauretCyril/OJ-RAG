@@ -239,11 +239,11 @@ class FileExplorer:
                 icon = file_info['icon']
                 color = file_info['color']
 
-                print (f"<FILE > fichier inserting {item}: => {file_type}")
-                print (f"<FILEa> >self.FILE_GROUPS = {self.FILE_GROUPS}")
+                #print (f"<FILE > fichier inserting {item}: => {file_type}")
+                #print (f"<FILEa> >self.FILE_GROUPS = {self.FILE_GROUPS}")
 
                 is_in_active_group = False
-                print (f"<FILEa> >self.FILE_GROUPS = {self.FILE_GROUPS}")
+                #print (f"<FILEa> >self.FILE_GROUPS = {self.FILE_GROUPS}")
                 if self.active_filters.get(file_type) or self.explorer_type == "standard":
                     self.tree.insert(parent, 'end', text=f"{icon} {item}", values=[item_path], 
                     tags=(f"color_{color.replace('#', '')}",))

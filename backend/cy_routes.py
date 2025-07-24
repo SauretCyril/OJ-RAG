@@ -33,7 +33,7 @@ from cy_mistral import get_mistral_answer
 import os
 import shutil
 import threading
-
+import re
 save_annonces_lock = threading.Lock()
 
 load_dotenv()
@@ -192,7 +192,7 @@ async def read_annonces_json():
                 if filename == file_cv or filename == file_cv_New:
                     isCVin = "O"
                 if filename == file_cv_pdf or filename == file_cv_pdf_New:
-                    isCVinpdf = "O"
+                    isCVinpdf = "O" 
                 if filename == file_BA_pdf:
                     isBAinpdf = "O"
                 if filename == file_doc:
@@ -266,7 +266,7 @@ async def read_annonces_json():
                         if isJo == "O":
                             thefile = file_path_isJo
                             print(
-                                #f"{parent_dir}NEW-4658a file_path_isJo trouvé = ",
+                                f"{parent_dir}NEW-4658a file_path_isJo trouvé = ",
                                 file_path_isJo,
                             )
                             Piece_exist = True
@@ -275,17 +275,22 @@ async def read_annonces_json():
                             Piece_exist = True
 
                         if Piece_exist:
-                            print(
-                                #f"{parent_dir}NEW-4658b le fichier main va être traité = ",
-                                thefile,
-                            )
                             # thefile = thefile.replace('\\', '/')
                             texte = extract_text_from_pdf(thefile)
+                            # Extraire la description si présente dans le texte
+                            
+                            match = re.search(r"#Description#\s*:\s*(.*)", texte, re.IGNORECASE)
+                            if match:
+                                thedescription = match.group(1).strip()
+                            match = re.search(r"#Categorie#\s*:\s*(.*)", texte, re.IGNORECASE)
+                            if match:
+                                thecategorie = match.group(1).strip()
+                            # data["Categorie"] = parsed_json.get("#categorie#", "N/A")
                             infos = texte
                             the_request = await load_Instruction_classement()
                             print(
-                                #f"{parent_dir}NEW-4658c- la question pour le classement",
-                                the_request,
+                                 f"{parent_dir}NEW-4658c- la question pour le classement",
+                                 the_request,
                             )
                             if not the_request or the_request.strip() == "":
                                 print(
@@ -303,6 +308,7 @@ async def read_annonces_json():
                                 #print(f"{parent_dir}NEW-4658e answer mistral = ", infos)
                             if infos:
                                 try:
+                                    print(f"{parent_dir}NEW-4658d")    
                                     # Tenter de parser comme JSON
                                     parsed_json = json.loads(infos)
                                     data["url"] = parsed_json.get("url", "N/A")
@@ -314,6 +320,8 @@ async def read_annonces_json():
                                         "poste", "N/A"
                                     )
                                     data["Lieu"] = parsed_json.get("lieu", "N/A")
+
+                                 
                                 except json.JSONDecodeError:
                                     # La réponse n'est pas du JSON valide
                                     print(
@@ -322,8 +330,7 @@ async def read_annonces_json():
                                     # Extraction basique (peut être améliorée)
                                     try:
                                         # Tenter de trouver des données structurées dans la réponse texte
-                                        import re
-
+                                       
                                         # Chercher un objet JSON dans la réponse
                                         json_match = re.search(
                                             r"(\{.*\})", infos, re.DOTALL
@@ -339,12 +346,10 @@ async def read_annonces_json():
                                                 data["Date"] = extracted_json.get(
                                                     "Date", "N/A"
                                                 )
-                                                data["entreprise"] = extracted_json.get(
-                                                    "entreprise", "N/A"
-                                                )
-                                                data["description"] = (
-                                                    extracted_json.get("poste", "N/A")
-                                                )
+                                                if data["description"] == "":
+                                                    data["description"] = (
+                                                        extracted_json.get("poste", "N/A")
+                                                    )
                                                 data["Lieu"] = extracted_json.get(
                                                     "lieu", "N/A"
                                                 )
@@ -352,15 +357,18 @@ async def read_annonces_json():
                                                 # Utiliser le texte brut
                                                 data["url"] = "N/A"
                                                 data["Date"] = "N/A"
-                                                data["entreprise"] = "N/A"
+                                                 
+                                                if data["description"] == "":
+                                                    data["entreprise"] = "N/A"
                                                 data["description"] = "Pas d'infos"
                                                 data["Lieu"] = "N/A"
                                         else:
                                             # Utiliser le texte brut
                                             data["url"] = "N/A"
                                             data["Date"] = "N/A"
-                                            data["entreprise"] = "N/A"
-                                            data["description"] = "Pas d'infos"
+                                            if data["description"] == "":
+                                                data["entreprise"] = "Pas d'infos"
+                                            
                                             data["Lieu"] = "N/A"
                                     except Exception as extraction_error:
                                         print(
@@ -369,7 +377,6 @@ async def read_annonces_json():
                                         # Fallback en cas d'échec total
                                         data["url"] = "N/A"
                                         data["Date"] = "N/A"
-                                        data["entreprise"] = "N/A"
                                         data["description"] = (
                                             "Erreur lors du traitement"
                                         )
@@ -386,11 +393,17 @@ async def read_annonces_json():
                             data["BApdf"] = isBAinpdf
                             # block info piece
                             data["etat"] = "New"
+                            
+                            if  data["description"] != "":
+                                data["description"] = thedescription
+                            if data["Categorie"] != "":
+                                data["Categorie"] = thecategorie
+
                             # Créer l'objet de données pour ajouter à la liste
                             file_path_nodata = os.path.join(root, ".data.json")
                             file_path_nodata = file_path_nodata.replace("\\", "/")
                             jData = {file_path_nodata: data}
-
+                            print(f"{parent_dir}NEW-4658e")    
                             try:
                                 # Vérifier si le répertoire parent existe
                                 parent_dir_path = os.path.dirname(file_path_nodata)
@@ -435,10 +448,7 @@ async def read_annonces_json():
                                                 data, file, ensure_ascii=False, indent=4
                                             )
 
-                                        print(
-                                            #f"{parent_dir}-NEW-4658h : Fichier {file_path_nodata} sauvegardé avec succès"
-                                        )
-
+                                       
                                         # Puis ajouter à la liste de dossiers
                                         dossier_list.append(jData)
                                         record_added = True
@@ -866,7 +876,7 @@ def define_default_data_dossier_vide():
     return {
         "id": "",
         "description": "Dossier Vide",
-        "etat": "New",
+        "etat": "Vide",
         "entreprise": "?",
         "categorie": "A définir",
         "Date": "",
@@ -885,6 +895,7 @@ def define_default_data_dossier_vide():
 @cy_routes.route("/save_announcement", methods=["POST"])
 def save_announcement():
     try:
+        print(f"dbg-5434-a")
         data = request.get_json()
         num_dossier = data.get("contentNum")
         content = data.get("content")
@@ -894,49 +905,43 @@ def save_announcement():
         fldcategorie = data.get("fldcategorie")
         currentTab = data.get("currentTab")
         pickedFilesList = data.get("pickedFilesList", [])
-        #or not content or not url
-        if not num_dossier :
+        if not num_dossier:
             print("dbg4456 -------------------------------", num_dossier, content, url)
             return jsonify({"status": "error", "message": "Missing parameters"}), 400
 
         directory_path = os.path.join(GetRoot(), num_dossier)
         if not os.path.exists(directory_path):
-            # print("dbg-4456 creating directory", directory_path)
             os.makedirs(directory_path)
-        if currentTab=='Default':
-            docx_file_path = os.path.join(directory_path, f"{num_dossier}{sufix}.docx")
-            pdf_file_path = os.path.join(directory_path, f"{num_dossier}{sufix}.pdf")
+        print(f"dbg-5434-b")
+       
+        docx_file_path = os.path.join(directory_path, f"{num_dossier}{sufix}.docx")
+        pdf_file_path = os.path.join(directory_path, f"{num_dossier}{sufix}.pdf")
 
-            """ if os.path.exists(pdf_file_path):
-                return jsonify({"status": "error", "message": f"Fichier {pdf_file_path} existe déjà"}), 400 """
-
+        if pythoncom:
+            pythoncom.CoInitialize()
+        try:
+            if url == "":
+                url = "Pas d'URL"
+            if content == "":
+                content = "Pas de contenu"
+            doc = Document()
+            doc.add_paragraph("<-")
+            doc.add_paragraph(url)
+            doc.add_paragraph("->")
+            doc.add_paragraph(content)
+            doc.add_paragraph(f"#Description# : {flddescription}")
+            doc.add_paragraph(f"#Categorie#   : {fldcategorie}")
+            doc.save(docx_file_path)
+            print(f"dbg-5434 : Converting {docx_file_path} to {pdf_file_path}")
+            convert(docx_file_path, pdf_file_path)
+        finally:
             if pythoncom:
-                pythoncom.CoInitialize()
-            try:
-                doc = Document()
-                # Ensure URL is properly formatted
-                doc.add_paragraph("<-")
-                doc.add_paragraph(url)
-                doc.add_paragraph("->")
-                doc.add_paragraph(content)
-                doc.add_paragraph(f"#Description# : {flddescription}")
-                doc.add_paragraph(f"#Categorie#   : {fldcategorie}")
-                doc.save(docx_file_path)
-                print(f"dbg-5434 : Converting {docx_file_path} to {pdf_file_path}")
-                convert(docx_file_path, pdf_file_path)
-            finally:
-                if pythoncom:
-                    pythoncom.CoUninitialize()
-
-            return (
-                jsonify(
-                    {
-                        "status": "success",
-                        "message": f"Announcement saved as {pdf_file_path}",
-                    }
-                ),
-                200,
-            )
+                pythoncom.CoUninitialize()
+                print("dbg-5434-c : Conversion terminée")
+            return jsonify({
+            "status": "success",
+            "message": f"Announcement saved as {pdf_file_path}",
+            }), 200
     except Exception as e:
         print(f"Cyr_error_492 An error occurred while saving the announcement: {e}")
         return jsonify({"status": "error", "message": "492>" + str(e)}), 500
@@ -1752,3 +1757,47 @@ def save_text_content():
             "success": False,
             "error": str(e)
         }), 500
+
+
+@cy_routes.route("/move_files_to_dossier", methods=["POST"])
+def move_files_to_dossier():
+    try:
+        data = request.get_json()
+        files = data.get("files", [])
+        dossier_num = data.get("dossier_num")
+        
+        if not dossier_num or not files:
+            return jsonify({"status": "error", "message": "Dossier ou fichiers manquants."}), 400
+
+        root_dir = GetRoot()
+        target_dir = os.path.join(root_dir, str(dossier_num))
+
+        print(f"dbg-2222: Déplacement des fichiers vers le dossier: {target_dir}")
+
+        os.makedirs(target_dir, exist_ok=True)
+
+        errors = []
+        for filename in files:
+            #src = os.path.join(root_dir, filename)
+            # il faut recupérer juste le name de filename
+            
+            print(f"dbg-3215 : Fichier à déplacer: {filename}")
+            name = os.path.basename(filename)
+            dst = os.path.join(target_dir, name)
+            print(f"dbg-3215 : Destination du fichier: {dst}")
+
+            
+            try:
+                if os.path.exists(filename) :
+                    print(f"dbg-2222-from: Déplacement du fichier {filename}")
+                    print(f"dbg-2222-to: -----vers {dst}")
+                    shutil.move(filename, dst)
+                else:
+                    errors.append(f"err-45645 - error Fichier ou Destination.")
+            except Exception as e:
+                errors.append(str(e))
+        if errors:
+            return jsonify({'status': 'error', 'message': '; '.join(errors)}) 
+        return jsonify({'status': 'success'})
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': str(e)}), 500

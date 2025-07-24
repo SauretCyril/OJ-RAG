@@ -33,7 +33,7 @@ def GetRoot():
     
     # Utiliser le répertoire personnalisé s'il existe
     if newroot and os.path.exists(newroot):
-        print(f"[INFO] Utilisation du répertoire personnalisé: {newroot}")
+        #print(f"[INFO] Utilisation du répertoire personnalisé: {newroot}")
         root_dir = newroot
     
     # Normaliser le chemin (remplacer les backslashes par des slashes)

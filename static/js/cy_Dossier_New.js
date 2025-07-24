@@ -106,8 +106,8 @@ function createAnnouncementForm() {
 
 function executeCreationMode() {
     // Utilise currentTab pour savoir où tu es
-    if (currentTab === "Default") {
-        const creationMode = document.getElementById('creationMode').value;
+    //if (currentTab === "Default") {
+    /*     const creationMode = document.getElementById('creationMode').value;
         if (creationMode === 'scan_url_annonce') {
             scan_url_annonce(); 
         } else if (creationMode === 'creer_annonce') {
@@ -115,14 +115,10 @@ function executeCreationMode() {
         }
         else if (creationMode === 'Action') {
             submitAnnouncement(window.CONSTANTS["ACTION_SUFFIX"]);
-        }
-    } else if (currentTab === "Direct") {
-        // Ajoute ici le traitement spécifique à l'onglet Direct
-        alert("Traitement Direct à implémenter");
-        // Récupérer la valeur de l'input spécifique à l'onglet Direct
-        const directValue = document.getElementById('directInput').value;
-        console.log('Valeur directe:', directValue);
-    }
+        } */
+
+        submitAnnouncement(window.CONSTANTS["ANNONCE_SUFFIX"]);
+    //} 
 }
 
 
@@ -143,7 +139,10 @@ function submitAnnouncement(type) {
     // Récupérer la liste des fichiers
     const pickedFilesList = Array.from(document.querySelectorAll('#pickedFilesList li')).map(li => li.textContent);
 
-    globalContent = content;
+    const content = document.getElementById('announcementContent').value;
+
+    alert("dbg-1114-a : contentNum :" +  contentNum);
+
     showLoadingOverlay();
     alert(CONSTANTS['FILE_NAMES']['ANNONCE_SUFFIX'])
     fetch('/save_announcement', {
@@ -167,6 +166,32 @@ function submitAnnouncement(type) {
     .then(data => {
         if (data.status === "success") {
             alert('Annonce créée avec succès.');
+            if (pickedFilesList.length > 0) {
+                //alert('Fichiers sélectionnés: ' + pickedFilesList.join(', '));
+                // Ici, tu peux ajouter d'autres actions à effectuer avec les fichiers sélectionnés
+                // Envoie la liste des fichiers et le numéro du dossier à la route Python pour déplacer les fichiers
+                alert("dbg-5434-b : dossier :" + contentNum);
+                fetch('/move_files_to_dossier', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        files: pickedFilesList,
+                        dossier_num: contentNum
+                    })
+                })
+                .then(res => res.json())
+                .then(res => {
+                    if (res.status === "success") {
+                        alert('Fichiers déplacés dans le dossier avec succès.');
+                    } else {
+                        alert('Erreur lors du déplacement des fichiers: ' + res.message);
+                    }
+                })
+                .catch(err => {
+                    console.error('Erreur déplacement fichiers:', err);
+                    alert('Erreur lors du déplacement des fichiers.');
+                });
+            }
             refresh();
         } else {
             alert('Erreur lors de la création de l\'annonce: ' + data.message);

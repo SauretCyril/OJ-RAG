@@ -230,7 +230,7 @@ async function selectRep() {
             box-sizing: border-box;
         }
         .selected-row {
-            background-color: #e8f4ff;
+            background-color: #042c52ff;
         }
         .action-buttons {
             display: flex;
