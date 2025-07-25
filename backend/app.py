@@ -67,6 +67,10 @@ BASE_DIR = str(app_config.base_dir)
 def index():
     return render_template('index.html')
 
+@app.route("/columns_manager")
+def columns_manager():
+    return render_template("columns_manager.html")
+
 if __name__ == '__main__':
     # Initialiser le logging avec app_config
     app_config.setup_logging()

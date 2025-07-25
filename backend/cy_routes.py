@@ -110,7 +110,7 @@ async def read_annonces_json():
         print("DBG-4658.0: Début de la fonction read_annonces_json")
         isDetectNew = "O"
         # buildAllPaths()
-        data = request.get_json()
+        data = request.get_json(force=True)
         if not data:
             print("DBG-4658.1: Pas de données JSON reçues")
             return (
@@ -1009,6 +1009,7 @@ def load_conf_cols():
         dir = GetRoot()
         filepath = os.path.join(dir, ".cols")
         filepath = filepath.replace("\\", "/")
+        print("dbg10012 :fichier conf", filepath)
         if os.path.exists(filepath):
             with open(filepath, "r", encoding="utf-8") as file:
                 content = json.load(file)

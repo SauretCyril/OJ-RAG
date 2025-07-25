@@ -42,7 +42,7 @@ function loadTableData(callback) {
             } 
            
  
-            window.columns.forEach((col, colIndex) => {
+            (getState('columns') || []).forEach((col, colIndex) => {
                 if (colisvisible(col.type) && col.visible === true) {
                     
                     const cell = document.createElement('td');
@@ -395,18 +395,18 @@ function getStatus(filepath){
 function saveTableData() {
     disableDirectoryChangeButton();
     return new Promise((resolve, reject) => {
+        const data = window.annonces; // ← Correction ici
+        console.log('Data envoyé:', data);
         fetch('/save_annonces_json', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(window.annonces)
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
         })
         .then(response => response.json())
         .then(data => {
             if (data.status === "success") {
                 console.log('dbg445 Data successfully saved.');
-                enableDirectoryChangeButton()
+                enableDirectoryChangeButton();
                 resolve();
             } else {
                 console.error('Error saving data:', data.message);
@@ -434,3 +434,5 @@ function refresh()
             console.error('Error during refresh:', error);
         });
 }
+
+

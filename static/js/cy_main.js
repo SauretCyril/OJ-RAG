@@ -82,7 +82,7 @@ async function loadCookies() {
  * Enregistre la configuration des colonnes
  * @returns {Promise} - Promise contenant le résultat de l'opération
  */
-async function saveConfigCol() {
+/* async function saveConfigCol() {
     try {
         const columns = getState('columns');
         const tabActive = getState('tabActive');
@@ -101,7 +101,7 @@ async function saveConfigCol() {
         console.error('Erreur lors de l\'enregistrement de la configuration:', error);
         throw error;
     }
-}
+} */
 
 /**
  * Affiche les résultats
@@ -187,23 +187,28 @@ async function showCurrentDossier() {
 
 /**
  * Charge les colonnes depuis le serveur
- * @returns {Promise} - Promise contenant le résultat de l'opération
+ * @returns {Promise} - Promise contenant le résultat de l'opérationDEBUG:
  */
 async function loadColumnsFromServer() {
     try {
+        console.log('DBG-2255: Appel à loadColumnsFromServer');
         const response = await ApiClient.config.loadColumns();
-        
-        if (response && response.columns) {
-            // Désérialiser les colonnes
+        console.log('DBG-2255=Colonnes chargées depuis le serveur:', response);
+        if (Array.isArray(response)) {
+            const deserializedColumns = deserializeColumns(response);
+            setState('columns', deserializedColumns);
+            console.log("dbg-0021", getState('columns'));
+            // tabActive n'est pas présent ici
+        } else if (response && response.columns) {
             const deserializedColumns = deserializeColumns(response.columns);
             setState('columns', deserializedColumns);
-            
-            // Mettre à jour l'onglet actif si présent
+            console.log("dbg-0022-A", getState('columns'));
             if (response.tabActive) {
                 setState('tabActive', response.tabActive);
             }
+        } else {
+            console.warn('Réponse sans colonnes:', response);
         }
-        
         return response;
     } catch (error) {
         console.error('err006-Erreur lors du chargement des colonnes:', error);
@@ -380,7 +385,7 @@ window.addEventListener('load', initializeApp);
 // Exposer les fonctions globalement
 // Note: nous gardons les mêmes noms pour maintenir la compatibilité avec le code existant
 window.colisvisible = colIsVisible;
-window.save_config_col = saveConfigCol;
+//window.save_config_col = saveConfigCol;
 window.view_results = viewResults;
 window.loadFilterValues = loadFilterValues;
 window.show_current_dossier = showCurrentDossier;

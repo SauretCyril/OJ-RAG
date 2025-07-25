@@ -122,7 +122,7 @@ function getState(key) {
  */
 function setState(key, value) {
     AppState[key] = value;
-    
+    console.log(`dbg-A022 : State updated: ${key} =`, value);
     // Mise à jour de window.CONSTANTS pour compatibilité si la clé est 'CONSTANTS'
     // uniquement en utilisant l'affectation directe à la propriété interne
     if (key === 'CONSTANTS') {

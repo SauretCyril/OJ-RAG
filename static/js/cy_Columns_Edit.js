@@ -119,6 +119,8 @@ async function saveColumns() {
         
         if (data.status === "success") {
             showStatusMessage('Colonnes sauvegardées avec succès!', 'success');
+            await loadColumnsFromServer(); // ← Correction ici
+            console.log ("dbg11: ",getState('columns'));
             isColumnsChanged = false;
         } else {
             showStatusMessage(`Erreur: ${data.message || 'Échec de la sauvegarde'}`, 'error');
@@ -183,7 +185,7 @@ function updateColumnProperty(key, property, value) {
             column[property] = value;
         }
         
-        if (['key', 'label', 'title', 'type', 'visible', 'order'].includes(property)) {
+        if (['key', 'title', 'type', 'visible', 'order'].includes(property)) {
             renderColumnsTable();
             selectColumn(key);
         }
@@ -220,25 +222,7 @@ function renderColumnsTable() {
         const tableBody = document.getElementById('columnsTableBody');
         console.log('dbg-rct001: tableBody element:', tableBody);
         renderColumnsInElement(tableBody);
-        /*  if (!tableBody) {
-            console.error('err-rct001: Élément columnsTableBody non trouvé dans le DOM');
-            
-            // Chercher des éléments alternatifs
-            const alternativeElement = document.getElementById('columns-container') || 
-                                     document.querySelector('.columns-table tbody') ||
-                                     document.querySelector('#columnsTable tbody');
-            
-            if (alternativeElement) {
-                console.warn('warn-rct001: Utilisation d\'un élément alternatif:', alternativeElement.id || alternativeElement.className);
-                alternativeElement.innerHTML = '';
-                renderColumnsInElement(alternativeElement);
-                return;
-            } else {
-                console.error('err-rct002: Aucun élément conteneur trouvé pour les colonnes');
-                showStatusMessage('Erreur: Interface des colonnes non disponible', 'error');
-                return;
-            }
-        } */
+       
         
         // Vérifier les données des colonnes
         console.log('dbg-rct002: columnsData:', columnsData);
@@ -290,7 +274,7 @@ function renderColumnsTable() {
                 // Construire le contenu HTML de la ligne
                 const cellContent = `
                     <td>${escapeHtml(column.key || '')}</td>
-                    <td>${escapeHtml(column.label || column.title || '')}</td>
+                    <td>${escapeHtml( column.title || '')}</td>
                     <td>${escapeHtml(column.type || 'text')}</td>
                     <td>${column.visible ? 'Oui' : 'Non'}</td>
                     <td>${column.order || 0}</td>
@@ -370,7 +354,7 @@ function renderColumnsInElement(element) {
             const isSelected = column.key === selectedColumnKey ? 'class="selected"' : '';
             html += `<tr ${isSelected} data-key="${escapeHtml(column.key)}" onclick="selectColumn('${escapeHtml(column.key)}')">
                         <td>${escapeHtml(column.key || '')}</td>
-                        <td>${escapeHtml(column.label || column.title || '')}</td>
+                        <td>${escapeHtml( column.title || '')}</td>
                         <td>${escapeHtml(column.type || 'text')}</td>
                         <td>${column.visible ? 'Oui' : 'Non'}</td>
                         <td>${column.order || 0}</td>
@@ -402,20 +386,19 @@ function showColumnDetails(key) {
     noSelectionMessage.style.display = 'none';
     
     detailCard.innerHTML = `
-        <h3>${column.label || column.title || 'Sans titre'}
+        <h3>${ column.title || 'Sans titre'}
             <button class="delete-button" onclick="deleteColumn('${column.key}', event)">Supprimer</button>
         </h3>
         
         <div class="form-group">
             <label for="key_${column.key}">Clé</label>
-            <input type="text" id="key_${column.key}" value="${column.key}" 
-                   onchange="updateColumnProperty('${column.key}', 'key', this.value)">
+            <input type="text" id="key_${column.key}" value="${column.key}" >
         </div>
         
         <div class="form-group">
             <label for="label_${column.key}">Libellé</label>
-            <input type="text" id="label_${column.key}" value="${column.label || column.title || ''}" 
-                   onchange="updateColumnProperty('${column.key}', 'label', this.value)">
+            <input type="text" id="title_${column.key}" value="${ column.title || ''}" 
+                   onchange="updateColumnProperty('${column.key}', 'title', this.value)">
         </div>
         
         <div class="form-group">
