@@ -70,6 +70,18 @@ class FBXExplorer:
             self.tree.delete(*self.tree.get_children())
             self.populate_treeview('', self.initial_dir)
 
+@cy_fbx.route('/launch_fbxreview', methods=['POST'])
+def api_launch_fbxreview():
+    data = request.get_json()
+    fbx_path = data.get('fbx_path')
+    if not fbx_path or not os.path.exists(fbx_path):
+        return jsonify({'error': 'Chemin FBX invalide'}), 400
+    try:
+        launch_fbxreview(fbx_path)
+        return jsonify({'status': 'ok'})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 if __name__ == "__main__":
     explorer = FBXExplorer(initial_dir="H:/Entreprendre/Actions-11-Projects")  # Mets ton dossier par défaut ici
     explorer.run()
