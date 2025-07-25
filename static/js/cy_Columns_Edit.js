@@ -508,3 +508,11 @@ function showStatusMessage(message, type = 'info') {
         }, 5000);
     }
 }
+
+/**
+ * Sélectionne une colonne et affiche ses détails
+ */
+function selectColumn(key) {
+    selectedColumnKey = key;
+    showColumnDetails(key);
+}
