@@ -396,8 +396,8 @@ async def read_annonces_json():
                             
                             if  data["description"] != "":
                                 data["description"] = thedescription
-                            if data["Categorie"] != "":
-                                data["Categorie"] = thecategorie
+                            if data["categorie"] != "":
+                                data["categorie"] = thecategorie
 
                             # Créer l'objet de données pour ajouter à la liste
                             file_path_nodata = os.path.join(root, ".data.json")
@@ -463,7 +463,7 @@ async def read_annonces_json():
                                 )
                     except Exception as e:
                         print(
-                            f"{parent_dir}ERR-4658f : Erreur lors de la création d'un nouvel enregistrement: {str(e)}"
+                            f"{parent_dir} ERR-4658f : Erreur lors de la création d'un nouvel enregistrement: {str(e)}"
                         )
 
                         
