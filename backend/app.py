@@ -45,9 +45,9 @@ app.register_blueprint(cy_requests)  # Register the blueprint
 from cy_columns import cy_columns
 app.register_blueprint(cy_columns)  # Register the new columns blueprint
 
-from cy_fbx import cy_fbx_exploreur
-app.register_blueprint(cy_fbx)  # Register the new FBX explorer blueprint
-
+from cy_fbx_exploreur import cy_fbx
+app.register_blueprint(cy_fbx)  
+# Register the new FBX explorer blueprint
 # Ajout du module de gestion des répertoires
 from cy_directories import register_directories_routes
 register_directories_routes(app)  # Enregistrer les routes de gestion des répertoires

@@ -1,7 +1,10 @@
 import os
+import requests
 import tkinter as tk
 from tkinter import ttk, filedialog, Scale
 from flask import Blueprint, request
+from cy_fbx_exploreur import launch_fbxreview
+import threading
 
 exploreur = Blueprint('exploreur', __name__)
 
@@ -323,11 +326,19 @@ class FileExplorer:
         path = self.tree.item(node, 'values')[0]
 
         try:
-            # Vérifier si c'est un fichier image
-            if path.lower().endswith(('.png', '.jpg', '.jpeg', '.gif', '.bmp')):
+            # Si c'est un fichier FBX, appeler la route Flask dans un thread séparé
+            if path.lower().endswith('.fbx'):
+                normalized_path = os.path.normpath(path)
+                print(f"[DEBUG-14] Envoi du chemin FBX normalisé : {normalized_path}")
+                def call_fbxreview():
+                    try:
+                        launch_fbxreview(normalized_path)
+                    except Exception as e:
+                        print(f"Erreur lors de l'appel à /launch_fbxreview : {e}")
+                threading.Thread(target=call_fbxreview, daemon=True).start()
+            elif path.lower().endswith(('.png', '.jpg', '.jpeg', '.gif', '.bmp')):
                 self.show_image_viewer(path)
             else:
-                # Pour les autres types de fichiers, utiliser l'application par défaut
                 os.startfile(path)
         except Exception as e:
             print(f"Erreur lors de l'ouverture du fichier : {e}")
@@ -347,7 +358,7 @@ class FileExplorer:
                         print(f"Erreur lors de l'ouverture du fichier PDF : {e}")
                 elif path.endswith('.xlsx'):
                     try:
-                        os.system(f'start excel "{path}"')
+                        os.system(f'start excel \"{path}\"')
                     except Exception as e:
                         print(f"Erreur lors de l'ouverture du fichier Excel : {e}")
     
