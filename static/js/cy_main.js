@@ -35,7 +35,8 @@ async function initializeApp() {
         
         // Mettre à jour les onglets
         setNewTab();
-        
+        // Appel initial au chargement
+        updateActionBarVisibility();
         // Ajouter des événements
         //attachEventListeners();
         
@@ -148,7 +149,7 @@ async function loadFilterValues(tabActive) {
 async function showCurrentDossier() {
     try {
         //let currentDossier = null;
-        
+        ;
         // Tenter de récupérer le cookie current_dossier
         try {
             AppState.currentDossier = await getCookie('current_dossier');
@@ -415,5 +416,23 @@ document.addEventListener('state-changed', (event) => {
     }
 });
 
-// Appel initial au chargement
-updateActionBarVisibility();
+
+// Fonction pour récupérer les répertoires et mettre à jour AppState.directories
+async function fetchAndSetDirectories() {
+    try {
+        const response = await fetch('/get_directories');
+        if (!response.ok) {
+            throw new Error('Erreur lors du chargement des répertoires');
+        }
+        const directories = await response.json();
+        if (window.AppState && typeof window.AppState === 'object') {
+            window.AppState.directories = directories;
+        } else {
+            window.AppState = { directories };
+        }
+    } catch (error) {
+        console.error('Erreur lors de la récupération des répertoires:', error);
+    }
+}
+
+

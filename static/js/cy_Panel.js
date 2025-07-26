@@ -624,7 +624,8 @@ function selectRow(row) {
                 initializeChatbot(row.id);
             }
         }
-        
+        populateDirectorySelect();
+
     } catch (error) {
         console.error('Erreur lors de la sélection de la ligne:', error);
     }
@@ -959,4 +960,20 @@ function showActionBar() {
 function hideActionBar() {
     const bar = document.getElementById('action-bar');
     if (bar) bar.style.display = 'none';
+}
+ 
+function populateDirectorySelect() {
+    const select = document.getElementById('directory-select');
+    if (!window.AppState || !AppState.directories) return;
+    select.innerHTML = '';
+    AppState.directories.forEach(dir => {
+        const option = document.createElement('option');
+        option.value = dir.path;
+        option.textContent = dir.label;
+        // Correction ici : on compare avec currentDossier
+        if (dir.path === AppState.currentDossier) {
+            option.selected = true;
+        }
+        select.appendChild(option);
+    });
 }

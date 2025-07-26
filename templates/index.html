@@ -44,15 +44,9 @@
               <div style="margin-left: auto; display: flex; gap: 8px;">
                 <!--<button id="fix_btn-repondue" class="action-btn">To Répondue</button>-->
                 <button id="fix_btn-delete" class="action-btn">Delete</button>
-                <select id="directory-select" class="form-select" style="width: auto;" onchange="onDirectoryChange(this.value)">
+                <select id="directory-select" class="form-select" title="Sélectionner un répertoire" onchange="onDirectoryChange(this.value)">
                   <!-- Les options seront ajoutées dynamiquement via JavaScript -->
-                </select>
-                <script>
-                  // Supposons que AppState.directories est un tableau d'objets { path: "...", label: "..." }
-                  // et AppState.currentDirectory contient le chemin courant
-
-               
-                </script>
+                </select>       
               </div>
             </div>
           </div>
@@ -201,13 +195,14 @@
 
   <!-- Modules pour la gestion d'un dossier spécifique -->
   <script src="{{ url_for('static', filename='js/cy_Dossier_Update.js') }}"></script>
-  <script src="{{ url_for('static', filename='js/cy_Directories.js') }}"></script>
+ 
   <script src="{{ url_for('static', filename='js/cy_Dossier_Edit.js') }}"></script>
   <script src="{{ url_for('static', filename='js/cy_Dossier_Notes.js') }}"></script>
   <script src="{{ url_for('static', filename='js/cy_Dossier_New.js') }}"></script>
 
   <!-- Nouveau module pour la gestion des fiches -->
   <script src="{{ url_for('static', filename='js/cy_Panel.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/cy_Directories.js') }}"></script>
 </body>
 
 </html>

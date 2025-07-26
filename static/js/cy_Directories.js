@@ -280,23 +280,6 @@ async function selectRep() {
     `;
     document.head.appendChild(style6);
 }
-// Fonction pour récupérer les répertoires et mettre à jour AppState.directories
-async function fetchAndSetDirectories() {
-    try {
-        const response = await fetch('/get_directories');
-        if (!response.ok) {
-            throw new Error('Erreur lors du chargement des répertoires');
-        }
-        const directories = await response.json();
-        if (window.AppState && typeof window.AppState === 'object') {
-            window.AppState.directories = directories;
-        } else {
-            window.AppState = { directories };
-        }
-    } catch (error) {
-        console.error('Erreur lors de la récupération des répertoires:', error);
-    }
-}
 
 
 // Charger les répertoires depuis le serveur
@@ -550,24 +533,19 @@ async function closeDirectoryForm() {
        
     }
 }
+window.selectRep = selectRep;
 
 
-/* 
-function populateDirectorySelect() {
+
+/* function onDirectoryChangeClick() {
     const select = document.getElementById('directory-select');
-    if (!window.AppState || !AppState.directories) return;
-    select.innerHTML = '';
-    AppState.directories.forEach(dir => {
-    const option = document.createElement('option');
-    option.value = dir.path;
-    option.textContent = dir.label;
-    if (dir.path === AppState.currentDirectory) {
-            option.selected = true;
+    if (select) {
+        const value = select.value;
+        alert("Dossier sélectionné : " + value);
     }
-    select.appendChild(option);
-               });
-    }
-
+}
+ */
+/*
 function onDirectoryChange(newPath) {
                     // Met à jour le currentDossier dans AppState et effectue les actions nécessaires
                     if (window.AppState) {
@@ -579,4 +557,4 @@ function onDirectoryChange(newPath) {
 
                   // Appeler la fonction au chargement de la page ou après chargement d'AppState
                   document.addEventListener('DOMContentLoaded', populateDirectorySelect);
-// ...existing code... */
+// ...existing code...*/
