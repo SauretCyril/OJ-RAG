@@ -22,6 +22,8 @@ async function initializeApp() {
         
         // Charger les colonnes
         await loadColumnsFromServer();
+
+        await fetchAndSetDirectories();
         
         // Afficher le dossier courant
         await showCurrentDossier();

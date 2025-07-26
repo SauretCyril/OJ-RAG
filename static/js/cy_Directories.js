@@ -280,6 +280,24 @@ async function selectRep() {
     `;
     document.head.appendChild(style6);
 }
+// Fonction pour récupérer les répertoires et mettre à jour AppState.directories
+async function fetchAndSetDirectories() {
+    try {
+        const response = await fetch('/get_directories');
+        if (!response.ok) {
+            throw new Error('Erreur lors du chargement des répertoires');
+        }
+        const directories = await response.json();
+        if (window.AppState && typeof window.AppState === 'object') {
+            window.AppState.directories = directories;
+        } else {
+            window.AppState = { directories };
+        }
+    } catch (error) {
+        console.error('Erreur lors de la récupération des répertoires:', error);
+    }
+}
+
 
 // Charger les répertoires depuis le serveur
 async function loadDirectories() {
