@@ -551,4 +551,32 @@ async function closeDirectoryForm() {
     }
 }
 
-// ...existing code...
+
+/* 
+function populateDirectorySelect() {
+    const select = document.getElementById('directory-select');
+    if (!window.AppState || !AppState.directories) return;
+    select.innerHTML = '';
+    AppState.directories.forEach(dir => {
+    const option = document.createElement('option');
+    option.value = dir.path;
+    option.textContent = dir.label;
+    if (dir.path === AppState.currentDirectory) {
+            option.selected = true;
+    }
+    select.appendChild(option);
+               });
+    }
+
+function onDirectoryChange(newPath) {
+                    // Met à jour le currentDossier dans AppState et effectue les actions nécessaires
+                    if (window.AppState) {
+                      AppState.currentDossier = newPath;
+                      // Ajoutez ici le code pour rafraîchir l'affichage ou charger le nouveau dossier
+                      if (typeof refresh === 'function') refresh();
+                    }
+                  }
+
+                  // Appeler la fonction au chargement de la page ou après chargement d'AppState
+                  document.addEventListener('DOMContentLoaded', populateDirectorySelect);
+// ...existing code... */

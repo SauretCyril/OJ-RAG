@@ -44,7 +44,15 @@
               <div style="margin-left: auto; display: flex; gap: 8px;">
                 <!--<button id="fix_btn-repondue" class="action-btn">To Répondue</button>-->
                 <button id="fix_btn-delete" class="action-btn">Delete</button>
+                <select id="directory-select" class="form-select" style="width: auto;" onchange="onDirectoryChange(this.value)">
+                  <!-- Les options seront ajoutées dynamiquement via JavaScript -->
+                </select>
+                <script>
+                  // Supposons que AppState.directories est un tableau d'objets { path: "...", label: "..." }
+                  // et AppState.currentDirectory contient le chemin courant
 
+               
+                </script>
               </div>
             </div>
           </div>

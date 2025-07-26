@@ -95,8 +95,9 @@ const AppState = {
     // Navigation
     currentRow: "",
     currentSelectedRow: null, // <-- Ajout ici
-
+    
     tabActive: "Campagne",
+    currentDossier : null,
 
     // Données
     annonces: [],

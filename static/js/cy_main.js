@@ -24,7 +24,7 @@ async function initializeApp() {
         await loadColumnsFromServer();
 
         await fetchAndSetDirectories();
-        
+
         // Afficher le dossier courant
         await showCurrentDossier();
         
@@ -147,27 +147,27 @@ async function loadFilterValues(tabActive) {
  */
 async function showCurrentDossier() {
     try {
-        let currentDossier = null;
+        //let currentDossier = null;
         
         // Tenter de récupérer le cookie current_dossier
         try {
-            currentDossier = await getCookie('current_dossier');
+            AppState.currentDossier = await getCookie('current_dossier');
         } catch (cookieError) {
             console.log('Cookie current_dossier non trouvé ou erreur lors de la récupération:', cookieError.message);
             // currentDossier reste null
         }
         
-        if (currentDossier) {
+        if (AppState.currentDossier) {
             // Vérifier si le répertoire existe
-            const directoryExists = await checkDirectoryExists(currentDossier);
+            const directoryExists = await checkDirectoryExists(AppState.currentDossier);
             
             if (directoryExists) {
-                document.getElementById('current-dir').textContent = currentDossier;
+                document.getElementById('current-dir').textContent = AppState.currentDossier;
                 document.getElementById('current-dir').style.color = ''; // Couleur normale
             } else {
                 // Le répertoire n'existe plus
-                console.warn(`Le répertoire '${currentDossier}' n'existe plus.`);
-                document.getElementById('current-dir').textContent = `INVALIDE: ${currentDossier}`;
+                console.warn(`Le répertoire '${AppState.currentDossier}' n'existe plus.`);
+                document.getElementById('current-dir').textContent = `INVALIDE: ${AppState. currentDossier}`;
                 document.getElementById('current-dir').style.color = 'red';
                 await promptUserForValidDirectory();
             }
@@ -178,7 +178,7 @@ async function showCurrentDossier() {
             document.getElementById('current-dir').style.color = 'orange';
             await promptUserForValidDirectory();
         }
-    } catch (error) {
+    } catch (error) {   
         console.error('Erreur lors de la récupération du dossier courant:', error);
         // En cas d'erreur, demander quand même à l'utilisateur de sélectionner un répertoire
         document.getElementById('current-dir').textContent = 'Erreur - Sélection requise';
