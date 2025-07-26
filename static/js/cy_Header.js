@@ -1,18 +1,4 @@
-function generateTableHeaders_new() {
-    const theadRow = document.querySelector('thead tr');
-    if (!theadRow) return;
-    theadRow.innerHTML = '';
 
-    (getState('columns') || []).forEach(col => {
-        if (colisvisible(col.type) && col.visible === true) {
-            const th = document.createElement('th');
-            th.style.width = col.width || '';
-            th.classList.add('filter-cell-col');
-            th.textContent = col.title || '';
-            theadRow.appendChild(th); // ← Correction ici
-        }
-    });
-}
 function generateTableHeaders() {
     const thead = document.querySelector('thead');
     if (!thead) return;
@@ -75,9 +61,9 @@ function generateTableHeaders() {
 
     // Ajout des boutons fixes si besoin
     // (à adapter selon ton besoin, ici exemple)
-    // document.getElementById('fix_btn-edit').onclick = () => { fix_openEditModal(); };
-    // document.getElementById('fix_btn-open').onclick = () => { fix_open_dir(); };
-    // document.getElementById('fix_btn-delete').onclick = () => { updateCurrentAnnonce('etat', 'DELETED'); };
+     document.getElementById('fix_btn-edit').onclick = () => { fix_openEditModal(); };
+     document.getElementById('fix_btn-open').onclick = () => { fix_open_dir(); };
+     document.getElementById('fix_btn-delete').onclick = () => { updateCurrentAnnonce('etat', 'DELETED'); };
 
     // Ajout des lignes au thead
     thead.appendChild(theadRow);

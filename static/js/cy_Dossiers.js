@@ -258,39 +258,7 @@ function loadTableData(callback) {
                 };
                
 
-                /*  document.getElementById('Scrape_url').onclick = () => {
-                    window.CurrentRow=contextMenu.dataset.targetRow;
-                    set_current_row();
-                    
-
-                    scrape_url(item.url,item.dossier);
-                  
-                    contextMenu.style.display = 'none';
-                }; */
-              /*   let resumexist="";
-                document.getElementById('Resume').onclick = () => 
-                {
-                    let thefile="";
-                    resuReady=false;
-                    if (item.isJo=="O") {
-                        thefile= fichier_annonce;
-                        resuReady=true;
-                    }
-                   
-                    if (resuReady) 
-                    {
-                        const rowId = contextMenu.dataset.targetRow;
-                        if (confirm("Voulez vous résumer le document ? "+resumexist +"->" +thefile+ " dans le dossier " + item.dossier )) {
-                            window.CurrentRow=contextMenu.dataset.targetRow;
-                            set_current_row();       
-                            // call the function get answers
-                          
-                            get_job_answer(thefile,item.dossier, item.type,false,item.request);
-                            
-                            }
-                    } else
-                    {alert("document à résumer non trouvée")}
-                } */
+          
 
                 document.getElementById('Delete').onclick = () => {
              
