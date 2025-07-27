@@ -64,8 +64,8 @@ function generateTableHeaders() {
      document.getElementById('fix_btn-edit').onclick = () => { fix_openEditModal(); };
      document.getElementById('fix_btn-open').onclick = () => { fix_open_dir(); };
      document.getElementById('fix_btn-delete').onclick = () => { updateCurrentAnnonce('etat', 'DELETED'); };
-
-    // Ajout des lignes au thead
+     document.getElementById('fix_btn-change').onclick = () => { fix_change_dir(); };
+    // Ajout des lignes au thead fix_btn-change
     thead.appendChild(theadRow);
     thead.appendChild(filterRow);
 

@@ -100,8 +100,8 @@ const AppState = {
     currentDossier : null,
 
     // Données
-    annonces: [],
-    portalLinks: [],
+    
+   
 
     // Configuration des colonnes (initialisé avec les colonnes par défaut)
     columns: [...window.columns]

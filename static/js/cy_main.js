@@ -23,7 +23,7 @@ async function initializeApp() {
         // Charger les colonnes
         await loadColumnsFromServer();
 
-        await fetchAndSetDirectories();
+        await fetchAndSetDirectoriesListe();
 
         // Afficher le dossier courant
         await showCurrentDossier();
@@ -418,7 +418,7 @@ document.addEventListener('state-changed', (event) => {
 
 
 // Fonction pour récupérer les répertoires et mettre à jour AppState.directories
-async function fetchAndSetDirectories() {
+async function fetchAndSetDirectoriesListe() {
     try {
         const response = await fetch('/get_directories');
         if (!response.ok) {
