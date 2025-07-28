@@ -36,10 +36,11 @@ cy_requests = Blueprint('requests', __name__)
 def extract_pdf_text():
     data = request.get_json()
     pdf_path = data.get('file')
-    if not pdf_path or not os.path.exists(pdf_path):
+    pdf_path_full = os.path.join(GetRoot(), pdf_path)  # Ensure the path is absolute
+    if not pdf_path_full or not os.path.exists(pdf_path_full):
         return jsonify({'success': False, 'error': 'PDF file not found'}), 404
 
-    text = extract_text_from_pdf(pdf_path)
+    text = extract_text_from_pdf(pdf_path_full)
     if not text:
         return jsonify({'success': False, 'error': 'Failed to extract text from PDF'}), 500
 

@@ -221,9 +221,18 @@ async def read_annonces_json():
                                 or datajson["etat"] == "ARCHIVE"
                                 or datajson["etat"] == "ClOSED"
                                 or datajson["etat"] == "DONE"
+                                or datajson["etat"] == "MOVED"
                             ):
                                 isExclued = True
-
+   
+                                """  if datajson["etat"] == "MOVED":
+                                            # Supprimer le dossier contenant le fichier .data.json
+                                            try:
+                                                shutil.rmtree(root)
+                                                print(f"Dossier supprimé (MOVED): {root}")
+                                            except Exception as e:
+                                                print(f"Erreur lors de la suppression du dossier {root}: {e}")
+                                            break  # Sortir de la boucle des fichiers pour passer au dossier suivant """
                             if not isExclued:
                                 # Ajout des métadonnées supplémentaires
                                 datajson["dossier"] = parent_dir

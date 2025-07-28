@@ -80,15 +80,14 @@ function loadTextExtract(rowId) {
         const saveBtn = document.getElementById('save-text-btn');
         const annonceData = getAnnonce_byfile(rowId);
         
-        console.log('DEBUG loadTextExtract - rowId:', rowId);
-        console.log('DEBUG loadTextExtract - annonceData:', annonceData);
+        console.log('Dbg02-a loadTextExtract - rowId:', rowId);
+        console.log('Dbg02-b loadTextExtract - annonceData:', annonceData);
         
         if (annonceData) {
             const numDossier = annonceData.dossier;
             const pdfFilePath = numDossier + "/" + numDossier + "_annonce_.pdf";
-            
-            console.log('DEBUG loadTextExtract - pdfFilePath:', pdfFilePath);
-            
+            console.log('Dbg02-c loadTextExtract - pdfFilePath:', pdfFilePath);
+
             // Afficher un indicateur de chargement
             textViewer.innerHTML = `
                 <div class="text-loading">
