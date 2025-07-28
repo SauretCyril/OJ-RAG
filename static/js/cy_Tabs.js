@@ -38,7 +38,7 @@ function conf_createTabs(tabs) {
    
     // Vérifier si le tableau est vide ou non défini
     if (!tabs || tabs.length === 0) {
-        console.error('Le tableau des onglets est vide ou non défini.');
+        //console.error('Le tableau des onglets est vide ou non défini.');
         document.getElementById('tabs').innerHTML = '<p>Aucun onglet disponible.</p>';
         
         //return;

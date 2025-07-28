@@ -103,9 +103,9 @@ function loadTextExtract(rowId) {
             }
             
             // Appeler l'API pour extraire le texte
-            console.log('DEBUG: Envoi de la requête à /extract_text_from_pdf');
-            
-            fetch('/extract_text_from_pdf', {
+            console.log('DEBUG: Envoi de la requête à /extract_pdf_text');
+
+            fetch('/extract_pdf_text', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -115,34 +115,28 @@ function loadTextExtract(rowId) {
                 })
             })
             .then(response => {
-                console.log('DEBUG: Réponse reçue, status:', response.status);
-                console.log('DEBUG: Réponse headers:', response.headers);
-                
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
+                if (response.status === 404) {
+                    // Afficher un message utilisateur, pas d'exception
+                    showTextError("Aucun fichier PDF trouvé à extraire.");
+                    return null;
                 }
+                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
                 return response.json();
             })
             .then(data => {
+                if (!data) return;
                 console.log('DEBUG: Données reçues:', data);
-                
                 if (data.success) {
-                    console.log("DEBUG: loadTextExtract SUCCESS - text length:", data.text ? data.text.length : 0);
                     showTextContent(data.text);
-                    // Afficher le bouton "Enregistrer" car le PDF existe
                     showSaveButton('save', rowId);
                 } else {
-                    console.log("DEBUG: loadTextExtract FAILED:", data.error);
                     showTextError(data.error || 'Erreur lors de l\'extraction du texte');
-                    // Afficher le bouton "Nouveau" car le PDF n'existe pas
                     showSaveButton('new', rowId);
                 }
             })
             .catch(error => {
                 console.error('Erreur détaillée lors de l\'extraction du texte:', error);
-                console.error('Error stack:', error.stack);
                 showTextError('Erreur de connexion: ' + error.message);
-                // Afficher le bouton "Nouveau" en cas d'erreur
                 showSaveButton('new', rowId);
             });
             

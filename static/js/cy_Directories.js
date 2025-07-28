@@ -567,21 +567,23 @@ async function fix_change_dir() {
     const sourceRoot = AppState.currentDossier;
     const annonce = get_currentAnnonce();
     const numeroDossier = annonce.dossier;
-
+    const id = annonce.id;
     if (!numeroDossier) {
-        alert("Numéro de dossier introuvable.");
+        //alert("Numéro de dossier introuvable.");
         return;
     }
     const source = sourceRoot.replace(/\/$/, '') + '/' + numeroDossier;
     const target = targetRoot.replace(/\/$/, '') + '/' + numeroDossier;
     if (source === target) {
-        alert("Aucun changement à effectuer.");
+        //alert("Aucun changement à effectuer.");
         return;
     }
 
     const ok = confirm(`Voulez-vous vraiment déplacer le dossier\n\n${source}\nvers\n${target} ?`);
-    if (!ok) return;
+   
 
+    if (!ok) return;
+    updateStateCurrentAnnonce('etat', 'MOVING');
     const res = await fetch('/move_current_dossier', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -589,19 +591,16 @@ async function fix_change_dir() {
     });
     const data = await res.json();
     if (data.success) {
-        if (window.annonces && Array.isArray(window.annonces)) {
-            window.annonces = window.annonces.filter(a => a.dossier !== numeroDossier);
-        }
-        // Supprimer la ligne HTML du tableau correspondant à l'annonce déplacée
-        const row = document.getElementById(`row-${annonce.id}`);
-        if (row) {
-            row.remove();
-        }
-        alert("Dossier déplacé avec succès !");
-        AppState.setstate("currentDossier", null);
-        //if (typeof refresh === 'function') refresh();
+         updateStateCurrentAnnonce('etat', 'MOVED');
     } else {
-        alert("Erreur : " + (data.error || "Opération annulée"));
+        if (res.status === 409) {
+            alert("Erreur : Le dossier cible existe déjà.");
+            updateStateCurrentAnnonce('etat', 'ERROR');
+            return;
+        }
     }
 }
+
+
+
 window.fix_change_dir = fix_change_dir;

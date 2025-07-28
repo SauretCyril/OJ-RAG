@@ -63,7 +63,7 @@ function generateTableHeaders() {
     // (à adapter selon ton besoin, ici exemple)
      document.getElementById('fix_btn-edit').onclick = () => { fix_openEditModal(); };
      document.getElementById('fix_btn-open').onclick = () => { fix_open_dir(); };
-     document.getElementById('fix_btn-delete').onclick = () => { updateCurrentAnnonce('etat', 'DELETED'); };
+     document.getElementById('fix_btn-delete').onclick = () => { updateStateCurrentAnnonce('etat', 'DELETED'); };
      document.getElementById('fix_btn-change').onclick = () => { fix_change_dir(); };
     // Ajout des lignes au thead fix_btn-change
     thead.appendChild(theadRow);

@@ -32,6 +32,19 @@ cy_requests = Blueprint('requests', __name__)
 
 
 @cy_requests.route('/extract_pdf_text', methods=['POST'])
+# root of the function to extract text from a PDF file
+def extract_pdf_text():
+    data = request.get_json()
+    pdf_path = data.get('file')
+    if not pdf_path or not os.path.exists(pdf_path):
+        return jsonify({'success': False, 'error': 'PDF file not found'}), 404
+
+    text = extract_text_from_pdf(pdf_path)
+    if not text:
+        return jsonify({'success': False, 'error': 'Failed to extract text from PDF'}), 500
+
+    return jsonify({'success': True, 'text': text}), 200
+    
 
 def extract_text_from_pdf(pdf_path):
     try:

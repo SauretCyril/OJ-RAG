@@ -24,26 +24,19 @@ function updateAnnonces_byfile(file, key, value) {
 
 
 
-function updateCurrentAnnonce(colName, value) 
+function updateStateCurrentAnnonce(colName, value) 
 {
-    const currentAnnonce = get_currentAnnonce();
-    if (!currentAnnonce) {
-        console.error("Aucune annonce actuelle trouvée.");
-        return;
-    }
-    const filePath = Object.keys(currentAnnonce)[0];
-    index =window.annonces.findIndex(a => Object.keys(a)[0] === filePath);
+    const index = get_currentAnnonce_index();
     if (index === -1) {
-        alert("Annonce non trouvée pour le fichier:", filePath);
-        return;
+        console.error("dbg01-120 : Aucune annonce sélectionnée pour la mise à jour.");
+        return; 
     }
+    const rowId = Object.keys(window.annonces[index])[0];
+   
     updateAnnonces(index, colName, value);
-    const etatCell = currentAnnonce.querySelector('td:nth-child(' + (window.columns.filter(col => col.visible).findIndex(col => col.key === colName) + 1) + ')');
-    if (etatCell) {
-        etatCell.textContent = value;
-    }
+    UpdateState(rowId, colName, value);
+        
 }
-
  
 
 
@@ -90,13 +83,18 @@ function updateAnnonces_externe(index, key, value) {
 
 
 
-function UpdateState(rowId,col,value) {
+function UpdateState(rowId, col, value) {
     const selectedRow = document.getElementById(rowId);
-    const Cell = selectedRow.querySelector('td:nth-child(' + (window.columns.findIndex(col => col.key === col) + 1) + ')');
-                            if (Cell) {
-                                Cell.textContent = value;
-                                //updateAnnonces(index, col, value);
-                            }
+    if (!selectedRow) return;
+
+    // Utiliser l'attribut data-key pour trouver la cellule
+    const cell = selectedRow.querySelector(`td[data-key="${col}"]`);
+    if (cell) {
+        cell.textContent = value;
+        return true;
+        //updateAnnonces(index, col, value);
+    }
+    return false;
 }
 
 
