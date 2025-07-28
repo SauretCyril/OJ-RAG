@@ -4,7 +4,7 @@ import json
 import os
 from cy_mistral import get_mistral_answer  # en haut du fichier
 
-TYPES = ["personnage", "habits", "lumières", "lieux", 'lumière', "Qualité", 'Atmosphere','Age']
+TYPES = ["Prompt""personnage", "habits", "lumières", "lieux", 'lumière', "Qualité", 'Atmosphere','Age']
 
 
 class PromptTableApp(tk.Tk):
@@ -61,9 +61,13 @@ class PromptTableApp(tk.Tk):
         ttk.Button(btn_frame, text="Supprimer", command=self.delete_prompt).pack(side="left", padx=5)
         ttk.Button(btn_frame, text="Sauvegarder", command=self.save_json).pack(side="right", padx=5)
         ttk.Button(btn_frame, text="Charger", command=self.load_json).pack(side="right", padx=5)
+        ttk.Button(btn_frame, text="Reconstruire le prompt", command=self.rebuild_prompt).pack(side="right", padx=5)
 
         self.tree.bind("<Double-1>", self.on_double_click)
         self.tree.bind("<Button-1>", self.on_click_checkbox)
+
+        # ...après self.tree.pack(...)
+        self.tree.tag_configure("prompt_row", background="#e0e0e0")  # gris clair, ajuste la couleur si besoin
 
         self.load_json()
 
@@ -86,12 +90,16 @@ class PromptTableApp(tk.Tk):
         self.tree.delete(*self.tree.get_children())
         for idx, prompt in enumerate(self.filtered_prompts):
             checked = "☑" if prompt.get("checked", False) else "☐"
+            tags = ()
+            if prompt["type"].lower() == "prompt":
+                tags = ("prompt_row",)
             self.tree.insert(
                 "", "end", iid=idx,
                 values=(
                     checked, prompt["nom"], prompt["fr"], prompt["type"], prompt["en"],
                     "✏️", "❌"
-                )
+                ),
+                tags=tags
             )
 
     def add_prompt(self):
@@ -300,6 +308,68 @@ class PromptTableApp(tk.Tk):
         role = "Tu es un traducteur professionnel. Réponds uniquement par la traduction, sans explication."
         content = text
         return get_mistral_answer(question, role, content)
+
+    def rebuild_prompt(self):
+        # Demande sur quelle "fiche" (nom) travailler
+        noms = sorted(set(p["nom"] for p in self.prompts))
+        if not noms:
+            messagebox.showinfo("Info", "Aucune fiche à reconstruire.")
+            return
+        # Si plusieurs noms, demande à l'utilisateur
+        if len(noms) > 1:
+            win = tk.Toplevel(self)
+            win.title("Choisir le nom du prompt à reconstruire")
+            tk.Label(win, text="Nom du prompt :").pack(padx=10, pady=10)
+            var_nom = tk.StringVar(value=noms[0])
+            cb = ttk.Combobox(win, values=noms, textvariable=var_nom, state="readonly")
+            cb.pack(padx=10, pady=10)
+            def valider():
+                win.destroy()
+                self._do_rebuild_prompt(var_nom.get())
+            ttk.Button(win, text="Valider", command=valider).pack(pady=10)
+            win.transient(self)
+            win.grab_set()
+            win.wait_window()
+        else:
+            self._do_rebuild_prompt(noms[0])
+
+    def _do_rebuild_prompt(self, nom_base):
+        # 1. Récupère toutes les lignes du nom sauf type "Prompt"
+        lignes = [p for p in self.prompts if p["nom"] == nom_base and p["type"].lower() != "prompt"]
+        if not lignes:
+            messagebox.showinfo("Info", "Aucune ligne à concaténer pour ce prompt.")
+            return
+        # 2. Concatène les textes français
+        texte_concat = "\n".join(p["fr"] for p in lignes if p["fr"].strip())
+        if not texte_concat:
+            messagebox.showinfo("Info", "Aucun texte à concaténer pour ce prompt.")
+            return
+        # 3. Demande à Mistral de reformuler
+        question = (
+            "À partir des éléments suivants, écris un prompt cohérent, fluide et naturel pour décrire une image. "
+            "Utilise toutes les informations, mais sans répéter les thèmes. "
+            "Texte à fusionner :\n"
+            f"{texte_concat}"
+        )
+        prompt_fr = self.mistral_translate(question, src_lang="fr", tgt_lang="fr")
+        # 4. Met à jour la ligne de type "Prompt"
+        ligne_prompt = next((p for p in self.prompts if p["nom"] == nom_base and p["type"].lower() == "prompt"), None)
+        if ligne_prompt is None:
+            # Crée la ligne si elle n'existe pas
+            ligne_prompt = {
+                "nom": nom_base,
+                "fr": "",
+                "en": "",
+                "type": "Prompt",
+                "checked": False
+            }
+            self.prompts.append(ligne_prompt)
+        ligne_prompt["fr"] = prompt_fr
+        # 5. Traduit en anglais
+        prompt_en = self.mistral_translate(prompt_fr, src_lang="fr", tgt_lang="en")
+        ligne_prompt["en"] = prompt_en
+        self.apply_filter()
+        messagebox.showinfo("Reconstruit", "Le prompt a été reconstruit et mis à jour.")
 
 if __name__ == "__main__":
     app = PromptTableApp()
