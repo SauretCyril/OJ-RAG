@@ -565,19 +565,15 @@ async function fix_change_dir() {
     if (!select) return;
     const targetRoot = select.value;
     const sourceRoot = AppState.currentDossier;
-    // Récupère le numéro de dossier courant (par exemple depuis la sélection)
-    
     const annonce = get_currentAnnonce();
-    numeroDossier = annonce.dossier;
-    // Supprimer l'annonce du tableau global window.annonces si présent
-  
+    const numeroDossier = annonce.dossier;
+
     if (!numeroDossier) {
         alert("Numéro de dossier introuvable.");
         return;
     }
     const source = sourceRoot.replace(/\/$/, '') + '/' + numeroDossier;
     const target = targetRoot.replace(/\/$/, '') + '/' + numeroDossier;
-    alert(`Déplacement du dossier ${source} vers ${target}`);
     if (source === target) {
         alert("Aucun changement à effectuer.");
         return;
@@ -596,10 +592,14 @@ async function fix_change_dir() {
         if (window.annonces && Array.isArray(window.annonces)) {
             window.annonces = window.annonces.filter(a => a.dossier !== numeroDossier);
         }
+        // Supprimer la ligne HTML du tableau correspondant à l'annonce déplacée
+        const row = document.getElementById(`row-${annonce.id}`);
+        if (row) {
+            row.remove();
+        }
         alert("Dossier déplacé avec succès !");
-        AppState.setstate("currentDossier",null);
-
-        if (typeof refresh === 'function') refresh();
+        AppState.setstate("currentDossier", null);
+        //if (typeof refresh === 'function') refresh();
     } else {
         alert("Erreur : " + (data.error || "Opération annulée"));
     }
