@@ -55,6 +55,9 @@ register_directories_routes(app)  # Enregistrer les routes de gestion des réper
 from cy_file_picker import file_picker
 app.register_blueprint(file_picker)  # Register the file picker blueprint
 
+from cy_analyse_prompt import cy_analyse_prompt
+app.register_blueprint(cy_analyse_prompt)  # Register the blueprint
+
 # Ajoutez ce code dans votre app.py après avoir enregistré le Blueprint
 """ print("Routes disponibles:")
 for rule in app.url_map.iter_rules():

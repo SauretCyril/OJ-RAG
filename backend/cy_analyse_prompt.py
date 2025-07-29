@@ -2,19 +2,30 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 import json
 import os
+from flask import request, Blueprint
 from cy_mistral import get_mistral_answer  # en haut du fichier
 
-TYPES = ["Prompt""personnage", "habits", "lumières", "lieux", 'lumière', "Qualité", 'Atmosphere','Age']
-
+TYPES = ["Prompt", "personnage", "habits", "lumières", "lieux", 'lumière', "Qualité", 'Atmosphere', 'Age']
+cy_analyse_prompt = Blueprint('cy_analyse_prompt', __name__)
 
 class PromptTableApp(tk.Tk):
-    def __init__(self):
+    def __init__(self, file_path="prompts.json", isDependOn=False, num_dossier="", chemin="", nom_fichier=""):
         super().__init__()
+        self.isDependOn = isDependOn
+        self.num_dossier = num_dossier
+        self.chemin = chemin
+        self.nom_fichier = nom_fichier
+
+        if self.isDependOn:
+            root_dir = os.getenv("ROOT_DIR", "")
+            self.file_path = f"{root_dir}/{self.num_dossier}/{self.num_dossier}_{self.nom_fichier}.json"
+        else:
+            self.file_path = file_path
+
         self.title("Tableau de Prompts")
         self.geometry("1100x500")
         self.prompts = []
         self.filtered_prompts = []
-        self.file_path = "prompts.json"
 
         # Zone de filtre
         filter_frame = ttk.Frame(self)
@@ -30,17 +41,13 @@ class PromptTableApp(tk.Tk):
         ttk.Button(filter_frame, text="Réinitialiser", command=self.reset_filter).pack(side="left", padx=5)
 
         # Tableau
-        columns = ("checked", "nom", "fr", "type", "en", "edit", "delete")
+        columns = ("fr", "type", "en", "edit", "delete")
         self.tree = ttk.Treeview(self, columns=columns, show="headings", selectmode="browse")
-        self.tree.heading("checked", text="✔")
-        self.tree.heading("nom", text="Nom")
         self.tree.heading("fr", text="Texte français")
         self.tree.heading("type", text="Type")
         self.tree.heading("en", text="")  # Colonne cachée
         self.tree.heading("edit", text="")
         self.tree.heading("delete", text="")
-        self.tree.column("checked", width=40, anchor="center")
-        self.tree.column("nom", width=150)
         self.tree.column("fr", width=300)
         self.tree.column("type", width=120)
         self.tree.column("en", minwidth=0, width=0, stretch=False)
@@ -96,7 +103,7 @@ class PromptTableApp(tk.Tk):
             self.tree.insert(
                 "", "end", iid=idx,
                 values=(
-                    checked, prompt["nom"], prompt["fr"], prompt["type"], prompt["en"],
+                    prompt["fr"], prompt["type"], prompt["en"],
                     "✏️", "❌"
                 ),
                 tags=tags
@@ -129,11 +136,6 @@ class PromptTableApp(tk.Tk):
         win.geometry("900x500")
         win.grid_columnconfigure(1, weight=1)
         fields = {}
-
-        # Nom
-        ttk.Label(win, text="Nom").grid(row=0, column=0, sticky="w", padx=10, pady=5)
-        fields["nom"] = tk.Entry(win, width=60)
-        fields["nom"].grid(row=0, column=1, columnspan=2, sticky="ew", padx=10, pady=5)
 
         # Texte français
         ttk.Label(win, text="Texte français").grid(row=1, column=0, sticky="nw", padx=10, pady=5)
@@ -177,7 +179,6 @@ class PromptTableApp(tk.Tk):
 
         def save():
             data = {
-                "nom": fields["nom"].get(),
                 "fr": fields["fr"].get("1.0", tk.END).strip(),
                 "en": fields["en"].get("1.0", tk.END).strip(),
                 "type": fields["type"].get(),
@@ -295,10 +296,12 @@ class PromptTableApp(tk.Tk):
         messagebox.showinfo("Sauvegarde", "Fichier JSON sauvegardé.")
 
     def load_json(self):
+        
         if os.path.exists(self.file_path):
             with open(self.file_path, "r", encoding="utf-8") as f:
                 self.prompts = json.load(f)
         else:
+            
             self.prompts = []
         self.filtered_prompts = self.prompts.copy()
         self.refresh_table()
@@ -371,6 +374,18 @@ class PromptTableApp(tk.Tk):
         self.apply_filter()
         messagebox.showinfo("Reconstruit", "Le prompt a été reconstruit et mis à jour.")
 
-if __name__ == "__main__":
-    app = PromptTableApp()
+@cy_analyse_prompt.route('/open_prompt_table', methods=['POST'])
+def prompt_table_open():
+    file_path = request.json.get('file_path')
+    file_name = request.json.get('file_name')
+    isdependon = request.json.get('isDependOn', False)
+    num_dossier = request.json.get('num_dossier', "")
+    if not file_path:
+        file_path = "prompts.json"  # Chemin par défaut si non fourni
+    app = PromptTableApp(file_path)
     app.mainloop()
+
+
+""" if __name__ == "__main__":
+    app = PromptTableApp()
+    app.mainloop() """
