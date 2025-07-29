@@ -1,63 +1,63 @@
 [
   {
     "nom": "La femme en jaune",
-    "fr": "Dos à la caméra, debout devant un vieux mur de pierre, envahi de fleurs pourpres et bleu ciel, photo en pied d'une jeune déesse sirène fantomatique et lumineuse, aux longs cheveux blonds ébouriffés et rayonnants qui couvrent sa poitrine bien galbée, les yeux cachés par ses cheveux, volumétrique, clair-obscur, contre-jour, photographie en film couleur analogique, objectif 50mm F1.2L, profondeur de champ réduite, émotions, pose sensuelle, haute plage dynamique, HDR, faible éclairage, diffusion sous-surface, ombres mélancoliques et éclairage complexe. Yeux verts rayonnants, photographie RAW. Elle ne porte qu'un imperméable jaune qu'elle a écarté, révélant ses fesses nues, de dos face à la caméra, éclairage dynamique volumétrique, rayons de lumière, meilleure qualité, chef-d'œuvre, haute résolution, ultra-détaillée, fille aux hanches larges, cheveux noirs ébouriffés. La lumière vient du dessus. Elle se trouve dans une clairière ouverte dans la forêt avec des milliers de fleurs pourpres et roses colorées, pétales de fleurs flottant dans l'air brumeux.",
-    "en": "t: : Her back to the camera, standing in front an old stone wall, (overgrown:1.1) with (purple:1.1) and (skyblue:1.1) flowers, (full:1.2) body photo of a young (ghostly:1.1) (glow:1.1) (godess:1.2) (siren:1.2) with flowing long (messy:1.1) radiant (blonde:1.2) hair that (cover:1.3) her well shaped breasts, eyes covered by hair, (volumetric:1.1) (chiaroscuro:1.2)(backlit:1.1), analog color film photograph, 50mm F1.2L lens (shallow:1.2) depth of field, emotions, sensual pose, high dynamic range, HDR, low key, (subsurface scattering:1.2), (moody:0.9) shadows and (complex:1.1) lighting. (Green:0.5) radiant eyes, RAW photography. she is only wearing a yellow rain coat that that she pushed to the side. revealing her naked ass, (back:1.2) facing the camera,dynamic (volumetric:0.9) lighting, (godrays:0.8), best quality, masterpiece, highres, ultra-detailed, girl (wide:1.2) hips. black (messy:1.2) hair .The light is coming from above her. she is in an open clearing in the forest with thousands of purple and pink (colorful:1.2) flowers, flower petals (floating:1.1) in the (hazy:1.2) air.",
+    "fr": "Une jeune déesse fantomatique, mi-sirène, se tient devant un vieux mur de pierre envahi par des fleurs violettes et bleu ciel. Dans une clairière ouverte de la forêt, des milliers de fleurs violettes et roses jonchent le sol, tandis que des pétales flottent dans l'air brumeux. Elle ne porte qu'un manteau de pluie jaune, poussé sur le côté, révélant une fesse nue. Ses seins en forme de poire sont voilés par ses cheveux. Âgée d'environ 20 ans, son allure est à la fois sensuelle et mélancolique. La lumière, provenant du dessus, crée un éclairage volumétrique complexe, avec des rayons divins et un rétroéclairage diffus sous la surface. Cette scène est capturée en photographie analogique couleur sur film, avec un objectif 50mm F1.2L, offrant une profondeur de champ réduite et une haute plage dynamique. Ses cheveux blonds longs et désordonnés rayonnent, tout comme ses yeux verts. Sa pose est sensuelle, mettant en valeur ses hanches larges. L'image est d'une haute qualité, ultra-détaillée et d'une haute résolution, véritable chef-d'œuvre.",
+    "en": "A ghostly young goddess, part mermaid, stands before an old stone wall overrun with violet and sky-blue flowers. In an open forest clearing, thousands of violet and pink flowers carpet the ground, while petals float in the misty air. She wears only a yellow raincoat, pushed to the side, revealing a bare buttock. Her pear-shaped breasts are veiled by her hair. Around 20 years old, her demeanor is both sensual and melancholic. The light, coming from above, creates complex volumetric lighting, with divine rays and diffuse backlighting beneath the surface. This scene is captured in color analog photography on film, with a 50mm F1.2L lens, offering a shallow depth of field and a high dynamic range. Her long, messy blonde hair radiates, as do her green eyes. Her pose is sensual, highlighting her wide hips. The image is of high quality, ultra-detailed, and high resolution, a true masterpiece.",
     "type": "Prompt",
     "checked": false
   },
   {
     "nom": "La femme en jaune",
-    "fr": "jeune déesse sirène fantomatique et lumineuse, aux longs cheveux blonds ébouriffés et rayonnants, yeux verts rayonnants",
-    "en": "Young phantom-like and luminous mermaid goddess, with long, tousled, and radiant blonde hair, and radiant green eyes.",
+    "fr": "jeune déesse fantomatique, sirène",
+    "en": "",
     "type": "Personnage",
     "checked": false
   },
   {
     "nom": "La femme en jaune",
-    "fr": "Elle ne porte qu'un imperméable jaune qu'elle a écarté, révélant ses fesses nues",
+    "fr": "elle ne porte qu'un manteau de pluie jaune qu'elle a poussé sur le côté, \nrévélant une fesse nue.",
     "en": "",
     "type": "Habits",
     "checked": false
   },
   {
     "nom": "La femme en jaune",
-    "fr": "poitrine bien galbée, couverte par ses longs cheveux blonds ébouriffés",
+    "fr": "ses seins bien galbés en forme de poire,ils sont couverts par ses cheveux",
     "en": "",
     "type": "Poitrine",
     "checked": false
   },
   {
     "nom": "La femme en jaune",
-    "fr": "jeune",
+    "fr": "jeune, environ 20 ans",
     "en": "",
     "type": "Âge",
     "checked": false
   },
   {
     "nom": "La femme en jaune",
-    "fr": "devant un vieux mur de pierre, envahi de fleurs pourpres et bleu ciel, dans une clairière ouverte dans la forêt avec des milliers de fleurs pourpres et roses colorées, pétales de fleurs flottant dans l'air brumeux",
+    "fr": "devant un vieux mur de pierre envahi par des fleurs violettes et bleu ciel, dans une clairière ouverte dans la forêt avec des milliers de fleurs violettes et roses, des pétales de fleurs flottant dans l'air brumeux",
     "en": "",
     "type": "Lieux",
     "checked": false
   },
   {
     "nom": "La femme en jaune",
-    "fr": "contre-jour, lumière vient du dessus, éclairage dynamique volumétrique, rayons de lumière, faible éclairage",
+    "fr": "la lumière vient du dessus, éclairage volumétrique complexe, rayons de dieu, rétroéclairé, faible éclairage, diffusion sous la surface",
     "en": "",
     "type": "Lumière",
     "checked": false
   },
   {
     "nom": "La femme en jaune",
-    "fr": "émotion, pose sensuelle, ombres mélancoliques, clair-obscur",
+    "fr": "sensuelle, émotionnelle, mélancolique",
     "en": "",
     "type": "Atmosphère",
     "checked": false
   },
   {
     "nom": "La femme en jaune",
-    "fr": "photo en pied, dos à la caméra, cheveux noirs ébouriffés, fille aux hanches larges, photographie en film couleur analogique, objectif 50mm F1.2L, profondeur de champ réduite, haute plage dynamique, HDR, diffusion sous-surface, photographie RAW, meilleure qualité, chef-d'œuvre, haute résolution, ultra-détaillée",
+    "fr": "photographie analogique en couleur sur film, objectif 50mm F1.2L, profondeur de champ réduite, haute plage dynamique, HDR, photographie RAW, cheveux blonds rayonnants et longs en désordre, yeux verts rayonnants, pose sensuelle, cheveux noirs en désordre, large hips, haute qualité, chef-d'œuvre, haute résolution, ultra-détaillée",
     "en": "",
     "type": "Autres",
     "checked": false
