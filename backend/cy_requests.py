@@ -469,14 +469,15 @@ async def save_AI_Instructions(file_name, NumDos, content):
         logger.error(f"Error saving AI instructions: {str(e)}")
         return False
 
-@cy_requests.route('/save_chat_pdf', methods=['POST'])
-def save_chat_pdf():
+@cy_requests.route('/save_text_pdf', methods=['POST'])
+def save_text_pdf():
     try:
         data = request.json
         num_dos = data.get('NumDos')
         dossier = os.path.join(GetRoot(), num_dos)
-        chat = data.get('chat', '')
-        file_name = f"{num_dos}_chat.pdf"
+        docname= data.get('docname')
+        chat = data.get('texte', '')
+        file_name = f"{num_dos}{docname}"
         file_path = os.path.join(dossier, file_name)
 
         if not os.path.exists(dossier):

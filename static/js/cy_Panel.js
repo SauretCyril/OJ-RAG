@@ -780,16 +780,16 @@ function saveTextContent(rowId) {
                 const numDossier = annonceData.dossier;
                 
                 // Appeler l'API pour sauvegarder le texte
-                fetch('/save_text_content', {
+                fetch('/save_text_pdf', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                     },
                     body: JSON.stringify({
-                        folder: numDossier,
+                        NumDos: numDossier,
                         text: text,
-                        action: 'update',
-                        annonceData: annonceData
+                        Docname:"_annonce_.pdf",    
+
                     })
                 })
                 .then(response => response.json())
@@ -922,12 +922,13 @@ function saveChatToPDF(rowId) {
     // Appeler l'API pour générer le PDF côté serveur
     const annonceData = getAnnonce_byfile(rowId);
     const numDossier = annonceData ? annonceData.dossier : '';
-    fetch('/save_chat_pdf', {
+    fetch('/save_text_pdf', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
             NumDos: numDossier,
-            chat: chatText
+            text: chatText,
+            Docname:"_chat.pdf"
         })
     })
     .then(response => response.json())
