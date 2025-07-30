@@ -76,17 +76,18 @@ function switchTab(tabId) {
 // Nouvelle fonction pour charger le texte extrait
 function loadTextExtract(rowId) {
     try {
+       
         const textViewer = document.getElementById('text-viewer');
         const saveBtn = document.getElementById('save-text-btn');
         const annonceData = getAnnonce_byfile(rowId);
         
-        console.log('Dbg02-a loadTextExtract - rowId:', rowId);
-        console.log('Dbg02-b loadTextExtract - annonceData:', annonceData);
+        console.log('Dbg02-a Text Extract - rowId:', rowId);
+        console.log('Dbg02-b Text Extract - annonceData:', annonceData);
         
         if (annonceData) {
             const numDossier = annonceData.dossier;
             const pdfFilePath = numDossier + "/" + numDossier + "_annonce_.pdf";
-            console.log('Dbg02-c loadTextExtract - pdfFilePath:', pdfFilePath);
+            console.log('Dbg02-c Text Extract - pdfFilePath:', pdfFilePath);
 
             // Afficher un indicateur de chargement
             textViewer.innerHTML = `
@@ -209,6 +210,37 @@ function switchTab(tabId) {
         loadTextExtract(currentrow.id);
     }
 }
+
+//<div id="action-bar"
+// Fonction pour gérer la sélection d'une ligne (mise à jour)
+function selectRow(row) {
+    try {
+        document.querySelectorAll('#table-body tr').forEach(tr => {
+            tr.classList.remove('selected');
+        });
+        row.classList.add('selected');
+        setState('currentSelectedRow', row, () => {
+        showActionBar();
+        updatePromptButtonVisibility();
+        alert('dbg1');
+            const activeTab = document.querySelector('.tab-content.active');
+            if (activeTab) {
+                 if (activeTab.id === 'texte-extrait') {
+                     loadTextExtract(row.id);
+                 } else if (activeTab.id === 'chatbot') {
+                     initializeChatbot(row.id);
+                }
+            }
+            populateDirectorySelect();
+        
+        });
+    } catch (error) {
+        console.error('Erreur lors de la sélection de la ligne:', error);
+    }
+}
+
+
+
 
 // Nouvelle fonction pour initialiser le chatbot
 function initializeChatbot(rowId) {
@@ -594,31 +626,6 @@ function removeChatMessage(chatContainer, messageId) {
 
 
 
-//<div id="action-bar"
-// Fonction pour gérer la sélection d'une ligne (mise à jour)
-function selectRow(row) {
-    try {
-        document.querySelectorAll('#table-body tr').forEach(tr => {
-            tr.classList.remove('selected');
-        });
-        row.classList.add('selected');
-        setState('currentSelectedRow', row, () => {
-            showActionBar();
-            updatePromptButtonVisibility();
-            const activeTab = document.querySelector('.tab-content.active');
-            if (activeTab) {
-                if (activeTab.id === 'texte-extrait') {
-                    loadTextExtract(row.id);
-                } else if (activeTab.id === 'chatbot') {
-                    initializeChatbot(row.id);
-                }
-            }
-            populateDirectorySelect();
-        });
-    } catch (error) {
-        console.error('Erreur lors de la sélection de la ligne:', error);
-    }
-}
 
 // Fonction pour réinitialiser l'aperçu (mise à jour)
 function resetPreview() {

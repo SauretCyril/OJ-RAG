@@ -102,14 +102,12 @@
         </div>
 
         <div class="tabs-header">
-          <!-- <button class="tab-button active" onclick="switchTab('apercu-pdf')">
-                <i class="fas fa-file-pdf"></i> Aperçu PDF
-              </button>-->
-          <button class="tab-button" onclick="switchTab('texte-extrait')">
+        
+          <button class="tab-button.active" onclick="switchTab('texte-extrait')">
             <i class="fas fa-file-alt"></i> Texte extrait
           </button>
           <!-- Ajoutez ce bouton d'onglet -->
-          <button class="tab-button" onclick="switchTab('chatbot')">
+          <button class="tab-button" onclick="switchTab('chatbot') ">
             <i class="fas fa-robot"></i> Assistant IA
           </button>
         </div>
@@ -118,12 +116,14 @@
           <!-- Onglet Texte extrait -->
           <div class="tab-content" id="texte-extrait">
             <div class="text-container">
+              
               <div class="text-header">
                 <h3>Texte extrait du PDF</h3>
                 <button id="save-text-btn" class="btn btn-primary" style="display: none;">
                   <i class="fas fa-save"></i> Enregistrer
                 </button>
               </div>
+              
               <div id="text-viewer" class="text-viewer">
                 <div id="text-placeholder" class="text-placeholder">
                   <i class="fas fa-file-alt"></i>
