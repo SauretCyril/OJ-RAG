@@ -3,36 +3,41 @@ from tkinter import ttk, messagebox
 import json
 import os
 from flask import request, Blueprint
+from cy_paths import GetRoot  # Assurez-vous que cette fonction est définie dans cy_paths.py
+
 from cy_mistral import get_mistral_answer  # en haut du fichier
 
 TYPES = ["Prompt", "personnage", "habits", "lumières", "lieux", 'lumière', "Qualité", 'Atmosphere', 'Age',"Negative", "Autre"]
 cy_analyse_prompt = Blueprint('cy_analyse_prompt', __name__)
 
 class PromptTableApp(tk.Tk):
-    def __init__(self, file_path="prompts.json", isDependOn=False, num_dossier="", chemin="", nom_fichier=""):
+    def __init__(self, file_path="prompts.json", isDependOn=False, num_dossier="", chemin="", nom_fichier="", descriptif=""):
         super().__init__()
         self.isDependOn = isDependOn
         self.num_dossier = num_dossier
         self.chemin = chemin
         self.nom_fichier = nom_fichier
+        self.descriptif = descriptif
 
         if self.isDependOn:
-            root_dir = os.getenv("ROOT_DIR", "")
-            self.file_path = f"{root_dir}/{self.num_dossier}/{self.num_dossier}_{self.nom_fichier}.json"
+            root_dir = GetRoot()
+            self.file_path = f"{root_dir}/{self.num_dossier}/{self.num_dossier}{self.nom_fichier}.json"
+            print(f"dbg-B001-File path: {self.file_path}")
         else:
             self.file_path = file_path
 
-        self.title("Tableau de Prompts")
+        self.title("Prompt")
         self.geometry("1100x500")
         self.prompts = []
         self.filtered_prompts = []
 
+        # Titre en haut
+        title_label = ttk.Label(self, text=f"Dossier : {self.num_dossier} - {self.descriptif}", font=("Arial", 14, "bold"))
+        title_label.pack(side="top", fill="x", padx=5, pady=5)
+
         # Zone de filtre
         filter_frame = ttk.Frame(self)
-        filter_frame.pack(fill="x", padx=5, pady=5)
-        ttk.Label(filter_frame, text="Filtrer par nom:").pack(side="left")
-        self.filter_name = tk.Entry(filter_frame)
-        self.filter_name.pack(side="left", padx=5)
+        filter_frame.pack(side="top", fill="x", padx=5, pady=5)
         ttk.Label(filter_frame, text="Type:").pack(side="left")
         self.filter_type = ttk.Combobox(filter_frame, values=[""] + TYPES, state="readonly")
         self.filter_type.pack(side="left", padx=5)
@@ -41,28 +46,35 @@ class PromptTableApp(tk.Tk):
         ttk.Button(filter_frame, text="Réinitialiser", command=self.reset_filter).pack(side="left", padx=5)
 
         # Tableau
+        table_frame = ttk.Frame(self)
+        table_frame.pack(side="top", fill="both", expand=True, padx=5, pady=5)
         columns = ("fr", "type", "en", "edit", "delete")
-        self.tree = ttk.Treeview(self, columns=columns, show="headings", selectmode="browse")
+        self.tree = ttk.Treeview(table_frame, columns=columns, show="headings", selectmode="browse")
         self.tree.heading("fr", text="Texte français")
         self.tree.heading("type", text="Type")
-        self.tree.heading("en", text="")  # Colonne cachée
+        self.tree.heading("en", text="")
         self.tree.heading("edit", text="")
         self.tree.heading("delete", text="")
-        self.tree.column("fr", width=300)
         self.tree.column("type", width=120)
+        self.tree.column("fr", width=300)
+       
         self.tree.column("en", minwidth=0, width=0, stretch=False)
         self.tree.column("edit", width=40, anchor="center")
         self.tree.column("delete", width=40, anchor="center")
-        self.tree.pack(fill="both", expand=True, padx=5, pady=5)
+        self.tree.pack(side="left", fill="both", expand=True)
 
-        # Ajout d'une scrollbar
-        scrollbar = ttk.Scrollbar(self, orient="vertical", command=self.tree.yview)
+        # Style pour agrandir la police de la colonne Type
+        style = ttk.Style(self)
+        style.configure("Treeview.TypeColumn", font=("Arial", 14, "bold"))
+
+        # Scrollbar
+        scrollbar = ttk.Scrollbar(table_frame, orient="vertical", command=self.tree.yview)
         self.tree.configure(yscroll=scrollbar.set)
         scrollbar.pack(side="right", fill="y")
 
         # Boutons d'action
         btn_frame = ttk.Frame(self)
-        btn_frame.pack(fill="x", padx=5, pady=5)
+        btn_frame.pack(side="top", fill="x", padx=5, pady=5)
         ttk.Button(btn_frame, text="Ajouter", command=self.add_prompt).pack(side="left", padx=5)
         ttk.Button(btn_frame, text="Modifier", command=self.edit_prompt).pack(side="left", padx=5)
         ttk.Button(btn_frame, text="Supprimer", command=self.delete_prompt).pack(side="left", padx=5)
@@ -72,9 +84,8 @@ class PromptTableApp(tk.Tk):
 
         self.tree.bind("<Double-1>", self.on_double_click)
         self.tree.bind("<Button-1>", self.on_click_checkbox)
-
-        # ...après self.tree.pack(...)
-        self.tree.tag_configure("prompt_row", background="#e0e0e0")  # gris clair, ajuste la couleur si besoin
+        self.tree.tag_configure("prompt_row", background="#e0e0e0")
+        self.tree.tag_configure("type_font", font=("Arial", 12, "bold"))
 
         self.load_json()
 
@@ -87,7 +98,8 @@ class PromptTableApp(tk.Tk):
         self.refresh_table()
 
     def reset_filter(self):
-        self.filter_name.delete(0, tk.END)
+        # Supprime cette ligne :
+        # self.filter_name.delete(0, tk.END)
         self.filter_type.set("")
         self.filtered_prompts = self.prompts.copy()
         self.refresh_table()
@@ -107,7 +119,7 @@ class PromptTableApp(tk.Tk):
                     prompt["fr"], prompt["type"], prompt["en"],
                     "✏️", delete_icon
                 ),
-                tags=tags
+                tags=tags + ("type_font",) if self.tree.heading("type") else tags
             )
 
     def add_prompt(self):
@@ -286,8 +298,10 @@ class PromptTableApp(tk.Tk):
                 self.apply_filter()
 
     def save_json(self):
+        
         with open(self.file_path, "w", encoding="utf-8") as f:
             json.dump(self.prompts, f, ensure_ascii=False, indent=2)
+        
         messagebox.showinfo("Sauvegarde", "Fichier JSON sauvegardé.")
 
     def load_json(self):
@@ -350,10 +364,19 @@ def prompt_table_open():
     file_name = request.json.get('file_name')
     isdependon = request.json.get('isDependOn', False)
     num_dossier = request.json.get('num_dossier', "")
+    descriptif = request.json.get('descriptif', "")
+    print(f"File path: {file_path}, File name: {file_name}, isDependOn: {isdependon}, num_dossier: {num_dossier}, descriptif: {descriptif}")
     if not file_path:
-        file_path = "prompts.json"  # Chemin par défaut si non fourni
-    app = PromptTableApp(file_path)
+        file_path = "prompts.json"
+    app = PromptTableApp(
+        file_path=file_path,
+        isDependOn=isdependon,
+        num_dossier=num_dossier,
+        nom_fichier=file_name,
+        descriptif=descriptif
+    )
     app.mainloop()
+    return "OK"
 
 
 """ if __name__ == "__main__":

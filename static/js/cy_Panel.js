@@ -598,27 +598,23 @@ function removeChatMessage(chatContainer, messageId) {
 // Fonction pour gérer la sélection d'une ligne (mise à jour)
 function selectRow(row) {
     try {
-        // Désélectionner toutes les lignes
         document.querySelectorAll('#table-body tr').forEach(tr => {
             tr.classList.remove('selected');
         });
-        
-        // Sélectionner la ligne actuelle
         row.classList.add('selected');
-        //currentSelectedRow = row;
-        setState('currentSelectedRow', row);
-        showActionBar();
-        // Charger le contenu selon l'onglet actif
-        const activeTab = document.querySelector('.tab-content.active');
-        if (activeTab) {
-            if (activeTab.id === 'texte-extrait') {
-                loadTextExtract(row.id);
-            } else if (activeTab.id === 'chatbot') {
-                initializeChatbot(row.id);
+        setState('currentSelectedRow', row, () => {
+            showActionBar();
+            updatePromptButtonVisibility();
+            const activeTab = document.querySelector('.tab-content.active');
+            if (activeTab) {
+                if (activeTab.id === 'texte-extrait') {
+                    loadTextExtract(row.id);
+                } else if (activeTab.id === 'chatbot') {
+                    initializeChatbot(row.id);
+                }
             }
-        }
-        populateDirectorySelect();
-
+            populateDirectorySelect();
+        });
     } catch (error) {
         console.error('Erreur lors de la sélection de la ligne:', error);
     }
@@ -970,4 +966,26 @@ function populateDirectorySelect() {
         }
         select.appendChild(option);
     });
+}
+
+// Affiche ou cache le bouton selon le type de la ligne sélectionnée
+function updatePromptButtonVisibility() {
+    const annonce = get_currentAnnonce();
+if (!annonce) {
+        console.warn('Aucune annonce sélectionnée pour mettre à jour le bouton Prompt.');
+        return false;
+    }
+    const type = annonce.type;
+    const btn = document.getElementById('fix_open_prompt_analyse');
+    if (!btn) {
+        console.error('Bouton fix_open_prompt_analyse non trouvé dans le DOM');
+        return false;
+    }
+    if (type === "Prompt") {
+        btn.style.display = "inline-block";
+        return true;
+    } else {
+        btn.style.display = "none";
+        return false;
+    }
 }

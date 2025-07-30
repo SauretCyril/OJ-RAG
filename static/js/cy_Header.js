@@ -65,7 +65,8 @@ function generateTableHeaders() {
      document.getElementById('fix_btn-open').onclick = () => { fix_open_dir(); };
      document.getElementById('fix_btn-delete').onclick = () => { updateStateCurrentAnnonce('etat', 'DELETED'); };
      document.getElementById('fix_btn-change').onclick = () => { fix_change_dir(); };
-    // Ajout des lignes au thead fix_btn-change
+     document.getElementById('fix_open_prompt_analyse').onclick = () => { fix_open_prompt_analyse(); };
+     // Ajout des lignes au thead fix_btn-change
     thead.appendChild(theadRow);
     thead.appendChild(filterRow);
 

@@ -50,7 +50,7 @@
                   <!-- Les options seront ajoutées dynamiquement via JavaScript -->
                 </select>
                 <button id="fix_btn-change" class="action-btn">Change</button>
-                
+                <button id="fix_open_prompt_analyse" class="action-btn">Prompt</button>
               </div>
             </div>
           </div>
@@ -199,7 +199,8 @@
 
   <!-- Modules pour la gestion d'un dossier spécifique -->
   <script src="{{ url_for('static', filename='js/cy_Dossier_Update.js') }}"></script>
- 
+  <script src="{{ url_for('static', filename='js/cy_specific_functions.js') }}"></script>
+
   <script src="{{ url_for('static', filename='js/cy_Dossier_Edit.js') }}"></script>
   <script src="{{ url_for('static', filename='js/cy_Dossier_Notes.js') }}"></script>
   <script src="{{ url_for('static', filename='js/cy_Dossier_New.js') }}"></script>

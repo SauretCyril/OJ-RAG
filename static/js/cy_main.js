@@ -201,10 +201,12 @@ async function prompt_table_open() {
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                file_path,
-                file_name,
-                isDependOn,
-                num_dossier
+                file_path:file_path,
+                file_name:file_name,
+                isDependOn:isDependOn,
+                num_dossier:num_dossier,
+                descriptif:"Default"
+
             })
         });
         const data = await response.json();
@@ -461,5 +463,7 @@ async function fetchAndSetDirectoriesListe() {
         console.error('Erreur lors de la récupération des répertoires:', error);
     }
 }
+
+
 
 
