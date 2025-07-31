@@ -52,23 +52,30 @@ function getAnnonce_value_byfile(file, key) {
 // Fonction pour changer d'onglet (mise à jour pour inclure chatbot)
 function switchTab(tabId) {
     // Désactiver tous les onglets
+    
     document.querySelectorAll('.tab-button').forEach(btn => {
         btn.classList.remove('active');
     });
     document.querySelectorAll('.tab-content').forEach(content => {
         content.classList.remove('active');
     });
-    
+   
     // Activer l'onglet sélectionné
-    document.querySelector(`[onclick="switchTab('${tabId}')"]`).classList.add('active');
-    document.getElementById(tabId).classList.add('active');
-    currentrow = getState('currentSelectedRow');
-    // Charger le contenu selon l'onglet
-    if (currentrow) {
-        if (tabId === 'texte-extrait') {
-            loadTextExtract(currentrow.id);
-        } else if (tabId === 'chatbot') {
-            initializeChatbot(currentrow.id);
+   
+    
+    //document.querySelector(`[onclick="switchTab('${tabId}')"]`).classList.add('active');
+    btnswitchTab = document.getElementById(`tab-button-${tabId}`);
+    if (btnswitchTab) {
+        document.getElementById(tabId).classList.add('active');
+        document.getElementById(`tab-button-${tabId}`).classList.add('active');
+        currentrow = getState('currentSelectedRow');
+        // Charger le contenu selon l'onglet
+        if (currentrow) {
+            if (tabId === 'texte-extrait') {
+                loadTextExtract(currentrow.id);
+            } else if (tabId === 'chatbot') {
+                initializeChatbot(currentrow.id);
+            }
         }
     }
 }
@@ -191,49 +198,35 @@ function showTextError(errorMessage) {
     `;
 }
 
-// Fonction pour changer d'onglet (simplifiée pour un seul onglet)
-function switchTab(tabId) {
-    // Désactiver tous les onglets
-    document.querySelectorAll('.tab-button').forEach(btn => {
-        btn.classList.remove('active');
-    });
-    document.querySelectorAll('.tab-content').forEach(content => {
-        content.classList.remove('active');
-    });
-    
-    // Activer l'onglet sélectionné
-    document.querySelector(`[onclick="switchTab('${tabId}')"]`).classList.add('active');
-    document.getElementById(tabId).classList.add('active');
-    currentrow = getState('currentSelectedRow');
-    // Charger le contenu selon l'onglet (seulement texte-extrait)
-    if (currentrow && tabId === 'texte-extrait') {
-        loadTextExtract(currentrow.id);
-    }
-}
+
 
 //<div id="action-bar"
 // Fonction pour gérer la sélection d'une ligne (mise à jour)
 function selectRow(row) {
     try {
+         
         document.querySelectorAll('#table-body tr').forEach(tr => {
             tr.classList.remove('selected');
         });
+         
         row.classList.add('selected');
-        setState('currentSelectedRow', row, () => {
-        showActionBar();
-        updatePromptButtonVisibility();
-        alert('dbg1');
-            const activeTab = document.querySelector('.tab-content.active');
-            if (activeTab) {
-                 if (activeTab.id === 'texte-extrait') {
-                     loadTextExtract(row.id);
-                 } else if (activeTab.id === 'chatbot') {
-                     initializeChatbot(row.id);
-                }
-            }
-            populateDirectorySelect();
+       
+        setState('currentSelectedRow', row);
         
-        });
+        showActionBar();
+      
+        updatePromptButtonVisibility();
+        
+        const activeTab = document.querySelector('.tab-content.active');
+        if (activeTab) {
+            if (activeTab.id === 'texte-extrait') {
+                loadTextExtract(row.id);
+            } else if (activeTab.id === 'chatbot') {
+                initializeChatbot(row.id);
+            }
+        }
+        populateDirectorySelect();
+        
     } catch (error) {
         console.error('Erreur lors de la sélection de la ligne:', error);
     }
@@ -978,7 +971,8 @@ function populateDirectorySelect() {
 // Affiche ou cache le bouton selon le type de la ligne sélectionnée
 function updatePromptButtonVisibility() {
     const annonce = get_currentAnnonce();
-if (!annonce) {
+    console.log('dbg-555a : Annonce sélectionnée:', annonce);
+    if (!annonce) {
         console.warn('Aucune annonce sélectionnée pour mettre à jour le bouton Prompt.');
         return false;
     }

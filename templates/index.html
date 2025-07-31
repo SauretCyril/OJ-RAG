@@ -28,6 +28,12 @@
 
         </ul>
       </nav>
+      <div style="float: right">
+          <select id="Excluded" title="Filtrer les dossiers">
+            <option value="En cours">En cours</option>
+            <option value="Done">Done</option>
+          </select>
+      </div>
     </header>
     <div id="settings-bar-container">
       <div id="settings-section" class="settings-col">
@@ -58,12 +64,7 @@
         </div>
 
        
-        <div style="float: right">
-          <select id="Excluded" title="Filtrer les dossiers">
-            <option value="En cours">En cours</option>
-            <option value="Done">Done</option>
-          </select>
-        </div>
+       
       </div>
      
     </div>
@@ -103,11 +104,11 @@
 
         <div class="tabs-header">
         
-          <button class="tab-button.active" onclick="switchTab('texte-extrait')">
+          <button id="tab-button-texte-extrait" class="tab-button" onclick="switchTab('texte-extrait')">
             <i class="fas fa-file-alt"></i> Texte extrait
           </button>
           <!-- Ajoutez ce bouton d'onglet -->
-          <button class="tab-button" onclick="switchTab('chatbot') ">
+          <button id="tab-button-chatbot" class="tab-button" onclick="switchTab('chatbot')">
             <i class="fas fa-robot"></i> Assistant IA
           </button>
         </div>
