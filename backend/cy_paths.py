@@ -1,4 +1,4 @@
-from backend.cy_cookies import *
+from cy_cookies import *
 import os
 import tkinter as tk
 from tkinter import filedialog

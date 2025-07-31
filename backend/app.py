@@ -4,6 +4,8 @@ import json
 import numpy as np
 from werkzeug.serving import run_simple
 import sys
+import psutil
+import subprocess
 
 # Définir le chemin de PYTHONPATH pour inclure le dossier actuel
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -73,6 +75,28 @@ def index():
 @app.route("/columns_manager")
 def columns_manager():
     return render_template("columns_manager.html")
+
+""" @app.route('/launcher_status')
+def launcher_status():
+    # Vérifie si universal_launcher.py est lancé
+    running = False
+    for proc in psutil.process_iter(['name', 'cmdline']):
+        try:
+            if 'python' in proc.info['name'].lower() and 'universal_launcher.py' in ' '.join(proc.info['cmdline']):
+                running = True
+                break
+        except Exception:
+            continue
+    return {'running': running} """
+
+# @app.route('/start_launcher', methods=['POST'])
+# def start_launcher():
+#     try:
+#         # Lancer le script en arrière-plan
+#         subprocess.Popen(['python', 'backend/universal_launcher.py'])
+#         return jsonify({'status': 'started'})
+#     except Exception as e:
+#         return jsonify({'status': 'error', 'message': str(e)}), 500
 
 if __name__ == '__main__':
     # Initialiser le logging avec app_config

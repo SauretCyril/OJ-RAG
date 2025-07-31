@@ -7,15 +7,11 @@ cd ..
 call .venv\Scripts\activate
 
 echo Environnement virtuel activé.
-echo Démarrage de l'application...
-echo.
+echo Démarrage de l'exploreur launcher...
+rem start "" python backend\exploreur_launcher.py
 
+echo Démarrage de l'application...
 python launcher.py
 
-if %ERRORLEVEL% NEQ 0 (
-    echo.
-    echo Une erreur s'est produite lors du démarrage. Code: %ERRORLEVEL%
-    echo Vérifiez que toutes les dépendances sont installées.
-    echo Veuillez consulter le fichier de log pour plus de détails.
-    pause
-)
+REM Pour arrêter le launcher, vous pouvez fermer la fenêtre ou utiliser taskkill si besoin.
+rem taskkill /F /IM python.exe /T

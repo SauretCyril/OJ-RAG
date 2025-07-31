@@ -365,18 +365,21 @@ def prompt_table_open():
     isdependon = request.json.get('isDependOn', False)
     num_dossier = request.json.get('num_dossier', "")
     descriptif = request.json.get('descriptif', "")
-    print(f"File path: {file_path}, File name: {file_name}, isDependOn: {isdependon}, num_dossier: {num_dossier}, descriptif: {descriptif}")
-    if not file_path:
-        file_path = "prompts.json"
-    app = PromptTableApp(
-        file_path=file_path,
-        isDependOn=isdependon,
-        num_dossier=num_dossier,
-        nom_fichier=file_name,
-        descriptif=descriptif
-    )
-    app.mainloop()
-    return "OK"
+    # Ajout d'autres paramètres si besoin
+
+    # Écrire tous les paramètres dans un fichier JSON
+    params = {
+        "file_path": file_path,
+        "file_name": file_name,
+        "isDependOn": isdependon,
+        "num_dossier": num_dossier,
+        "descriptif": descriptif
+        # Ajoutez ici d'autres paramètres si nécessaire
+    }
+    with open("prompt_command.json", "w", encoding="utf-8") as f:
+        json.dump(params, f, ensure_ascii=False, indent=2)
+
+    return {"status": "success", "message": "Commande JSON écrite."}, 200
 
 
 """ if __name__ == "__main__":

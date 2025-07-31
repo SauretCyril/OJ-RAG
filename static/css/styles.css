@@ -731,3 +731,7 @@ textarea {
     font-weight: bold;
     color: #2b579a;
 }
+.excluded-combo {
+  float: right;
+  margin-left: 32px;
+}

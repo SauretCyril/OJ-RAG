@@ -830,86 +830,26 @@ class ConfigExplorer(FileExplorer):
         super().__init__(title, initial_dir, explorer_type="config")
 
 
-    # def populate_treeview(self, parent, path):
-    #     """
-    #     Remplit le Treeview avec UNIQUEMENT les fichiers du répertoire courant.
-    #     Ne montre pas les sous-répertoires et n'ajoute pas d'éléments fictifs pour l'expansion.
-    #     """
-    #     try:
-    #         items = os.listdir(path)
-            
-    #         # Ne garder que les fichiers (ignorer les répertoires)
-    #         files = [item for item in items if os.path.isfile(os.path.join(path, item))]
-            
-    #         # Trier alphabétiquement
-    #         files.sort()
-            
-    #         # Vérifier s'il y a des filtres par nom actifs
-    #         active_name_filters = {name: info['pattern'] for name, info in self.NAME_FILTERS.items() 
-    #                             if self.active_filters.get(name, False)}
-            
-    #         # Ajouter les fichiers en tenant compte des filtres
-    #         for item in files:
-    #             item_path = os.path.join(path, item)
-                
-    #             # Si des filtres par nom sont actifs, vérifier si le fichier correspond à au moins un des motifs
-    #             if active_name_filters:
-    #                 # Par défaut, on exclut le fichier s'il ne correspond à aucun filtre actif
-    #                 should_display = False
-                    
-    #                 # Vérifier si le fichier correspond à au moins un des motifs de filtres actifs
-    #                 for filter_name, pattern in active_name_filters.items():
-    #                     if pattern in item:
-    #                         should_display = True
-    #                         break
-                    
-    #                 # Si le fichier ne correspond à aucun filtre actif, passer au suivant
-    #                 if not should_display:
-    #                     continue
-                
-    #             file_type = self.get_file_extension(item_path)
-    #             file_info = self.get_file_type(item_path)
-    #             icon = file_info['icon']
-    #             color = file_info['color']
-                
-    #             # Vérifier si le type de fichier est dans un groupe actif
-    #             is_in_active_group = False
-    #             for group_name, group_info in self.FILE_GROUPS.items():
-    #                 if file_type in group_info['types'] and self.active_filters.get(group_name, False):
-    #                     is_in_active_group = True
-    #                     break
-                
-    #             # Si le fichier appartient à un groupe actif, l'afficher
-    #             if is_in_active_group or file_type in self.active_filters:
-    #                 # Ajouter avec tag de couleur personnalisé
-    #                 self.tree.insert(parent, 'end', text=f"{icon} {item}", values=[item_path], 
-    #                                 tags=(f"color_{color.replace('#', '')}",))
-                
-    #     except Exception as e:
-    #         print(f"Erreur lors du peuplement de l'arborescence : {e}")
-    #         import traceback
-    #         traceback.print_exc()
-    
-    # def refresh_treeview(self):
-    #     """
-    #     Rafraîchit l'affichage du Treeview en fonction des filtres actifs.
-    #     Version simplifiée car nous n'avons pas d'éléments développés à conserver.
-    #     """
-    #     # Réinitialiser et repeupler l'arborescence
-    #     self.tree.delete(*self.tree.get_children())
-    #     self.populate_treeview('', self.current_path)
-        
-    #     # Mettre à jour le label d'information
-    #     self.label_result.config(text=f"Répertoire: {self.current_path} | Filtres actifs: {self.count_active_filters()}/{len(self.active_filters)}")
-    
-    # def on_tree_expand(self, event):
-    #     """
-    #     Ne fait rien car nous n'avons pas d'éléments à développer.
-    #     Cette méthode est surchargée pour désactiver l'expansion.
-    #     """
-    #     pass
+   
+# Route Flask pour ouvrir l'explorateur
+@exploreur.route('/open_exploreur', methods=['POST'])
+def open_exploreur():
+    dir_path = request.json.get('path')
+    explorer_type = request.json.get('TypeExploreur', 'standard')
+    if not dir_path or not os.path.exists(dir_path):
+        return {"error": "Le répertoire spécifié est invalide ou n'existe pas."}, 400
+    # Écrire la commande dans un fichier JSON pour le launcher universel
+    command = {
+        "action": "explorer",
+        "path": dir_path,
+        "explorer_type": explorer_type
+    }
+    with open("explorer_command.json", "w", encoding="utf-8") as f:
+        import json
+        json.dump(command, f, ensure_ascii=False, indent=2)
+    return {"status": "success", "message": "Commande envoyée."}, 200
 
-
+""" 
 # Route Flask pour ouvrir l'explorateur
 @exploreur.route('/open_exploreur', methods=['POST'])
 def open_exploreur():
@@ -934,5 +874,5 @@ def open_exploreur():
     # Lancer l'explorateur
     explorer.run()
 
-    return {"status": "Explorateur ouvert avec succès."}, 200
+    return {"status": "Explorateur ouvert avec succès."}, 200 """
 

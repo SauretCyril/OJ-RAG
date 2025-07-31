@@ -83,85 +83,71 @@ function switchTab(tabId) {
 // Nouvelle fonction pour charger le texte extrait
 function loadTextExtract(rowId) {
     try {
-       
+        if (!rowId) {
+            showTextError('Identifiant de ligne manquant.' + rowId);
+            return;
+        }
+
         const textViewer = document.getElementById('text-viewer');
         const saveBtn = document.getElementById('save-text-btn');
         const annonceData = getAnnonce_byfile(rowId);
-        
-        console.log('Dbg02-a Text Extract - rowId:', rowId);
-        console.log('Dbg02-b Text Extract - annonceData:', annonceData);
-        
-        if (annonceData) {
-            const numDossier = annonceData.dossier;
-            const pdfFilePath = numDossier + "/" + numDossier + "_annonce_.pdf";
-            console.log('Dbg02-c Text Extract - pdfFilePath:', pdfFilePath);
 
-            // Afficher un indicateur de chargement
-            textViewer.innerHTML = `
-                <div class="text-loading">
-                    <i class="fas fa-spinner fa-spin"></i>
-                    <p>Extraction du texte en cours...</p>
-                </div>
-            `;
-            
-            // Masquer le bouton pendant le chargement
-            if (saveBtn) {
-                saveBtn.style.display = 'none';
-            }
-            
-            // Appeler l'API pour extraire le texte
-            console.log('DEBUG: Envoi de la requête à /extract_pdf_text');
+        console.log('TextExtract - rowId:', rowId);
+        console.log('TextExtract - annonceData:', annonceData);
 
-            fetch('/extract_pdf_text', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    file: pdfFilePath
-                })
-            })
-            .then(response => {
-                if (response.status === 404) {
-                    // Afficher un message utilisateur, pas d'exception
-                    showTextError("Aucun fichier PDF trouvé à extraire.");
-                    return null;
-                }
-                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-                return response.json();
-            })
-            .then(data => {
-                if (!data) return;
-                console.log('DEBUG: Données reçues:', data);
-                if (data.success) {
-                    showTextContent(data.text);
-                    showSaveButton('save', rowId);
-                } else {
-                    showTextError(data.error || 'Erreur lors de l\'extraction du texte');
-                    showSaveButton('new', rowId);
-                }
-            })
-            .catch(error => {
-                console.error('Erreur détaillée lors de l\'extraction du texte:', error);
-                showTextError('Erreur de connexion: ' + error.message);
-                showSaveButton('new', rowId);
-            });
-            
-        } else {
-            console.log('DEBUG: Aucune donnée trouvée pour rowId:', rowId);
+        if (!annonceData) {
             showTextError('Aucune donnée trouvée pour ce dossier');
-            if (saveBtn) {
-                saveBtn.style.display = 'none';
-            }
+            if (saveBtn) saveBtn.style.display = 'none';
+            return;
         }
-        
+
+        const numDossier = annonceData.dossier;
+        const pdfFilePath = numDossier + "/" + numDossier + "_annonce_.pdf";
+
+        // Afficher un indicateur de chargement
+        textViewer.innerHTML = `
+            <div class="text-loading">
+                <i class="fas fa-spinner fa-spin"></i>
+                <p>Extraction du texte en cours...</p>
+            </div>
+        `;
+        if (saveBtn) saveBtn.style.display = 'none';
+
+        // Appeler l'API pour extraire le texte
+        fetch('/extract_pdf_text', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ file: pdfFilePath })
+        })
+        .then(response => {
+            if (response.status === 404) {
+                showTextError("Aucun fichier PDF trouvé à extraire.");
+                return null;
+            }
+            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+            return response.json();
+        })
+        .then(data => {
+            if (!data) return;
+            if (data.success) {
+                showTextContent(data.text);
+                showSaveButton('save', rowId);
+            } else {
+                showTextError(data.error || 'Erreur lors de l\'extraction du texte');
+                showSaveButton('new', rowId);
+            }
+        })
+        .catch(error => {
+            console.error('Erreur lors de l\'extraction du texte:', error);
+            showTextError('Erreur de connexion: ' + error.message);
+            showSaveButton('new', rowId);
+        });
+
     } catch (error) {
-        console.error('Erreur lors du chargement du texte:', error);
+        console.error('Erreur loadTextExtract:', error);
         showTextError('Erreur lors du chargement du texte: ' + error.message);
         const saveBtn = document.getElementById('save-text-btn');
-        if (saveBtn) {
-            saveBtn.style.display = 'none';
-        }
+        if (saveBtn) saveBtn.style.display = 'none';
     }
 }
 
