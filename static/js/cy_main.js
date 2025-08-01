@@ -188,34 +188,7 @@ async function showCurrentDossier() {
     }
 }
 
-async function prompt_table_open() {
-    try {
-        const num_dossier = "";
-        const file_name = "_prompt_"
-        const isDependOn = false;
-        const file_path = "";
 
-        const response = await fetch('/open_prompt_table', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                file_path:file_path,
-                file_name:file_name,
-                isDependOn:isDependOn,
-                num_dossier:num_dossier,
-                descriptif:"Default"
-
-            })
-        });
-        const data = await response.json();
-        console.log('Boîte de dialogue ouverte:', data);
-        // Traiter la réponse ici si nécessaire
-    } catch (error) {
-        console.error('Erreur lors de l\'ouverture de la boîte de dialogue:', error);
-    }
-}
 
 /**
  * Charge les colonnes depuis le serveur

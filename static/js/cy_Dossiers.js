@@ -126,10 +126,10 @@ function loadTableData(callback) {
                         
                         // Utilisez la fonction correcte pour ouvrir le dossier
                         folderIcon.addEventListener('click', (e) => {
-                            console.log('Folder icon clicked!'); // Debug
+                            console.log('Folder icon clicked!');
                             e.preventDefault();
-                            e.stopPropagation(); // Empêcher le déclenchement de l'événement sur la ligne
-                             (dir_path, "document");
+                            e.stopPropagation();
+                            ask_Local_file_explorer(dir_path, "document"); // ← à adapter selon ta fonction
                         });
                         
                         // Ajout d'un effet hover pour feedback visuel

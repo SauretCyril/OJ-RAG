@@ -8,7 +8,7 @@ import threading
 
 exploreur = Blueprint('exploreur', __name__)
 
-class FileExplorer:
+class cls_local_FileExplorer:
     """Classe générique pour l'explorateur de fichiers"""
     
     # Dictionnaire pour suivre l'état des filtres (statique par défaut)
@@ -809,21 +809,21 @@ class FileExplorer:
 
 
 # Créer des classes d'explorateurs spécialisés
-class DocumentExplorer(FileExplorer):
+class DocumentExplorer(cls_local_FileExplorer):
     """Explorateur spécialisé pour les documents"""
     
     def __init__(self, title="Explorateur de Documents", initial_dir=None):
         super().__init__(title, initial_dir, explorer_type="document")
 
 
-class DataExplorer(FileExplorer):
+class DataExplorer(cls_local_FileExplorer):
     """Explorateur spécialisé pour les données"""
     
     def __init__(self, title="Explorateur de Données", initial_dir=None):
         super().__init__(title, initial_dir, explorer_type="data")
 
 
-class ConfigExplorer(FileExplorer):
+class ConfigExplorer(cls_local_FileExplorer):
     """Explorateur spécialisé pour les fichiers de configuration"""
     
     def __init__(self, title="Explorateur de Configuration", initial_dir=None):
@@ -831,23 +831,7 @@ class ConfigExplorer(FileExplorer):
 
 
    
-# Route Flask pour ouvrir l'explorateur
-@exploreur.route('/open_exploreur', methods=['POST'])
-def open_exploreur():
-    dir_path = request.json.get('path')
-    explorer_type = request.json.get('explorer_type', 'dpcument')
-    if not dir_path or not os.path.exists(dir_path):
-        return {"error": "Le répertoire spécifié est invalide ou n'existe pas."}, 400
-    # Écrire la commande dans un fichier JSON pour le launcher universel
-    command = {
-        "action": "explorer",
-        "path": dir_path,
-        "explorer_type": explorer_type
-    }
-    with open("explorer_command.json", "w", encoding="utf-8") as f:
-        import json
-        json.dump(command, f, ensure_ascii=False, indent=2)
-    return {"status": "success", "message": "Commande envoyée."}, 200
+
 
 """ 
 

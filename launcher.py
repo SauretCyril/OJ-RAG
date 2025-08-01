@@ -2,6 +2,7 @@ import os
 import sys
 import subprocess
 import pkg_resources
+import threading
 
 # Ajouter le dossier du projet au PYTHONPATH
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -28,19 +29,28 @@ except pkg_resources.DistributionNotFound:
  """
 # Importer et exécuter l'application
 try:
-    # Utilisation de l'application originale
     from backend.app import app
-    
+    from backend.app_local import applocal
+
+    def run_main():
+        app.run(debug=True, use_reloader=False)
+
+    def run_local():
+        applocal.run(port=5005, debug=True, use_reloader=False)
+
     if __name__ == "__main__":
         from multiprocessing import freeze_support
         freeze_support()
-        app.run(debug=True)
-        
+        t1 = threading.Thread(target=run_main)
+        t2 = threading.Thread(target=run_local)
+        t1.start()
+        t2.start()
+        t1.join()
+        t2.join()
+
 except Exception as e:
     print(f"ERREUR DE DÉMARRAGE: {str(e)}")
     print("\nTraceback complet:")
     import traceback
     traceback.print_exc()
-    
-    # Attendre avant de fermer
     input("\nAppuyez sur Entrée pour quitter...")

@@ -6,7 +6,7 @@ from werkzeug.serving import run_simple
 import sys
 import psutil
 import subprocess
-
+import requests  # Ajoutez cette ligne avec les autres imports
 # Définir le chemin de PYTHONPATH pour inclure le dossier actuel
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
@@ -35,9 +35,6 @@ app.register_blueprint(paths)  # Register the blueprint
 from cy_routes import cy_routes 
 app.register_blueprint(cy_routes)  # Register the blueprint
 
-from cy_exploreur import exploreur
-app.register_blueprint(exploreur)  # Register the blueprint      
-
 from cy_cookies import cy_cookies
 app.register_blueprint(cy_cookies)  # Register the blueprint
 
@@ -57,8 +54,8 @@ register_directories_routes(app)  # Enregistrer les routes de gestion des réper
 from cy_file_picker import file_picker
 app.register_blueprint(file_picker)  # Register the file picker blueprint
 
-from cy_analyse_prompt import cy_analyse_prompt
-app.register_blueprint(cy_analyse_prompt)  # Register the blueprint
+# from cy_analyse_prompt import cy_analyse_prompt
+# app.register_blueprint(cy_analyse_prompt)  # Register the blueprint
 
 # Ajoutez ce code dans votre app.py après avoir enregistré le Blueprint
 """ print("Routes disponibles:")
@@ -75,6 +72,51 @@ def index():
 @app.route("/columns_manager")
 def columns_manager():
     return render_template("columns_manager.html")
+
+
+
+# Route Flask pour ouvrir l'explorateur
+@app.route('/get_local_FileExplorer', methods=['POST'])
+def get_local_FileExplorer():
+    data = request.get_json()
+    dir_path = data.get('path')
+    if not dir_path or not os.path.exists(dir_path):
+        return {"status": "error", "message": "Le répertoire spécifié est invalide ou n'existe pas."}, 400
+
+    try:
+        response = requests.post(
+            "http://127.0.0.1:5005/local_FileExplorer",
+            json=data,
+            timeout=2
+        )
+        if response.ok:
+            return {"status": "success", "message": "Commande envoyée au serveur local."}, 200
+        else:
+            return {"status": "error", "message": "Erreur lors de l'appel au serveur local."}, 500
+    except Exception as e:
+        print(f"Erreur lors de l'appel à 5005: {e}")  # Ajoutez ceci pour voir l'erreur exacte
+        return {"status": "error", "message": f"Impossible de contacter le serveur local: {e}"}, 500
+
+@app.route('/get_local_PromptTable', methods=['POST'])
+def prompt_table_open():
+    print("dbg-667a : Received request to open prompt table")
+    data = request.json
+    try:
+        response = requests.post(
+            "http://127.0.0.1:5005/local_PromptTable",
+            json=data,
+            timeout=2
+        )
+        if response.ok:
+            return {"status": "success", "message": "Commande envoyée au serveur local."}, 200
+        else:
+            return {"status": "error", "message": "Erreur lors de l'appel au serveur local."}, 500
+    except Exception as e:
+        print(f"Erreur lors de l'appel à 5005: {e}")
+        return {"status": "error", "message": f"Impossible de contacter le serveur local: {e}"}, 500
+
+
+
 
 
 if __name__ == '__main__':

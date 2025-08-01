@@ -6,11 +6,12 @@ from flask import request, Blueprint
 from cy_paths import GetRoot  # Assurez-vous que cette fonction est définie dans cy_paths.py
 
 from cy_mistral import get_mistral_answer  # en haut du fichier
+import requests  # Ajoutez cet import en haut du fichier si ce n'est pas déjà fait
 
 TYPES = ["Prompt", "personnage", "habits", "lumières", "lieux", 'lumière', "Qualité", 'Atmosphere', 'Age',"Negative", "Autre"]
 cy_analyse_prompt = Blueprint('cy_analyse_prompt', __name__)
 
-class PromptTableApp(tk.Tk):
+class cls_local_PromptTable(tk.Tk):
     def __init__(self, file_path="prompts.json", isDependOn=False, num_dossier="", chemin="", nom_fichier="", descriptif=""):
         super().__init__()
         self.isDependOn = isDependOn
@@ -358,31 +359,7 @@ class PromptTableApp(tk.Tk):
         self.apply_filter()
         messagebox.showinfo("Reconstruit", "Le prompt a été reconstruit et mis à jour.")
 
-@cy_analyse_prompt.route('/open_prompt_table', methods=['POST'])
-def prompt_table_open():
-    print ("dbg-667a : Received request to open prompt table")
-    file_path = request.json.get('file_path')
-    file_name = request.json.get('file_name')
-    isdependon = request.json.get('isDependOn', False)
-    num_dossier = request.json.get('num_dossier', "")
-    descriptif = request.json.get('descriptif', "")
-    # Ajout d'autres paramètres si besoin
 
-    # Écrire tous les paramètres dans un fichier JSON
-    params = {
-        "action": "prompt",
-        "file_path": file_path,
-        "file_name": file_name,
-        "isDependOn": isdependon,
-        "num_dossier": num_dossier,
-        "descriptif": descriptif
-        # Ajoutez ici d'autres paramètres si nécessaire
-    }
-    with open("prompt_command.json", "w", encoding="utf-8") as f:
-        json.dump(params, f, ensure_ascii=False, indent=2)
-    print ("dbg-667b : Command JSON written to prompt_command.json")
-
-    return {"status": "success", "message": "Commande JSON écrite."}, 200
 
 
 """ if __name__ == "__main__":

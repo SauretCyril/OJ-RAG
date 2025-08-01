@@ -177,31 +177,19 @@ async function Get_dir_Root() {
 
 function open_files_Setting() 
 {
-    ApiClient.files.getDirectoryRoot()
+ApiClient.files.getDirectoryRoot()
   .then(response => {
     // Utilisation de response.root_direc  tory
+    alert("Répertoire racine : " + response.root_directory);
     console.log("Répertoire racine:", response.root_directory);
-    open_dossier(response.root_directory,"config"); 
+
+    ask_Local_file_explorer(response.root_directory,"config"); 
   })
   .catch(error => {
     console.error("Erreur lors de la récupération du répertoire racine:", error);
   });
 }
-function open_dossier(chemin, TypeExploreur="Document") {
-    const path = chemin.replace(/\\/g, '/');
-    //alert("Ouverture de l'explorateur de fichiers pour le chemin : " + path);
-    ApiClient.files.openexploreur(path, TypeExploreur)
-        .then(response => {
-            if (response.status === "success") {
-                console.log("Directory explorer opened successfully.");
-            } else {
-                console.error("Error opening directory explorer:", response.message);
-            }
-        })
-        .catch(error => {
-            console.error("Error opening directory explorer:", error);
-        });
-}
+
 
 
 /**
