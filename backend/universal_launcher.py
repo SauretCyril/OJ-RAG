@@ -12,12 +12,22 @@ def main():
         if os.path.exists(COMMAND_FILE):
             with open(COMMAND_FILE, "r", encoding="utf-8") as f:
                 command = json.load(f)
+            print (f"dbg-666a : Received command: {command}")
             if command != last_command:
                 action = command.get("action")
                 if action == "explorer":
+                    print (f"dbg-666a : Action: {action}")
                     path = command.get("path")
+                    explorer_type = command.get("explorer_type", "")
+                    print (f"dbg-666b Path : {path}")
+                    print (f"dbg-666c Type : {explorer_type}")
                     if path and os.path.exists(path):
-                        explorer = FileExplorer(initial_dir=path)
+                        print (f"dbg-666d : Opening file explorer at: {path}")
+
+                        explorer = FileExplorer(
+                            initial_dir=path, 
+                            explorer_type=explorer_type
+                        )
                         explorer.run()
                 elif action == "prompt":
                     app = PromptTableApp(

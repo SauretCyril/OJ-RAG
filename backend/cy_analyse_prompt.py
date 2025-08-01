@@ -360,6 +360,7 @@ class PromptTableApp(tk.Tk):
 
 @cy_analyse_prompt.route('/open_prompt_table', methods=['POST'])
 def prompt_table_open():
+    print ("dbg-667a : Received request to open prompt table")
     file_path = request.json.get('file_path')
     file_name = request.json.get('file_name')
     isdependon = request.json.get('isDependOn', False)
@@ -369,6 +370,7 @@ def prompt_table_open():
 
     # Écrire tous les paramètres dans un fichier JSON
     params = {
+        "action": "prompt",
         "file_path": file_path,
         "file_name": file_name,
         "isDependOn": isdependon,
@@ -378,6 +380,7 @@ def prompt_table_open():
     }
     with open("prompt_command.json", "w", encoding="utf-8") as f:
         json.dump(params, f, ensure_ascii=False, indent=2)
+    print ("dbg-667b : Command JSON written to prompt_command.json")
 
     return {"status": "success", "message": "Commande JSON écrite."}, 200
 

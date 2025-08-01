@@ -129,7 +129,7 @@ function loadTableData(callback) {
                             console.log('Folder icon clicked!'); // Debug
                             e.preventDefault();
                             e.stopPropagation(); // Empêcher le déclenchement de l'événement sur la ligne
-                            open_dossier(dir_path);
+                             (dir_path, "document");
                         });
                         
                         // Ajout d'un effet hover pour feedback visuel

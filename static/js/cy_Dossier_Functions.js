@@ -187,7 +187,7 @@ function open_files_Setting()
     console.error("Erreur lors de la récupération du répertoire racine:", error);
   });
 }
-function open_dossier(chemin, TypeExploreur="Standard") {
+function open_dossier(chemin, TypeExploreur="Document") {
     const path = chemin.replace(/\\/g, '/');
     //alert("Ouverture de l'explorateur de fichiers pour le chemin : " + path);
     ApiClient.files.openexploreur(path, TypeExploreur)

@@ -74,7 +74,7 @@ const ApiClient = {
     
     // Gestion des fichiers
     files: {
-        openexploreur: (path, TypeExploreur) => httpPost('/open_exploreur', { path: path, type: TypeExploreur }),
+        openexploreur: (path, explorer_type) => httpPost('/open_exploreur', { path: path, explorer_type: explorer_type }),
         openDirectory: (filePath) => httpPost('/open_parent_directory', { file_path: filePath }),
         openUrl: (url) => httpPost('/open_url', { url }),
         readNotes: (filePath) => httpPost('/read_notes', { file_path: filePath }),

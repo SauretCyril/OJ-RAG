@@ -14,7 +14,7 @@
 <body>
   <div id="main-section">
     <header class="header-bar">
-
+      <button id="launcher-btn" class="btn" style="margin-right: 16px;">Universal Launcher</button>
       <nav>
         <ul>
           <li><a href="#home">Home</a></li>
@@ -28,11 +28,11 @@
 
         </ul>
       </nav>
-       <div style="float: right">
-          <select id="Excluded" title="Filtrer les dossiers">
-            <option value="En cours">En cours</option>
-            <option value="Done">Done</option>
-          </select>
+      <div style="float: right">
+        <select id="Excluded" title="Filtrer les dossiers">
+          <option value="En cours">En cours</option>
+          <option value="Done">Done</option>
+        </select>
       </div>
     </header>
     <div id="settings-bar-container">
@@ -48,7 +48,7 @@
             <div style="display: flex; flex-direction: row; width: 100%; align-items: center;">
               <button id="fix_btn-edit" class="action-btn">Edit</button>
               <button id="fix_btn-open" class="action-btn">Open Dossier</button>
-              
+
               <div style="margin-left: auto; display: flex; gap: 8px;">
                 <!--<button id="fix_btn-repondue" class="action-btn">To Répondue</button>-->
                 <button id="fix_btn-delete" class="action-btn">Delete</button>
@@ -63,10 +63,10 @@
 
         </div>
 
-       
-       
+
+
       </div>
-     
+
     </div>
     <div class="tabs" id="tabs">
       <!-- tab will be dynamically added here -->
@@ -103,7 +103,7 @@
         </div>
 
         <div class="tabs-header">
-        
+
           <button id="tab-button-texte-extrait" class="tab-button" onclick="switchTab('texte-extrait')">
             <i class="fas fa-file-alt"></i> Texte extrait
           </button>
@@ -117,14 +117,14 @@
           <!-- Onglet Texte extrait -->
           <div class="tab-content" id="texte-extrait">
             <div class="text-container">
-              
+
               <div class="text-header">
                 <h3>Texte extrait du PDF</h3>
                 <button id="save-text-btn" class="btn btn-primary" style="display: none;">
                   <i class="fas fa-save"></i> Enregistrer
                 </button>
               </div>
-              
+
               <div id="text-viewer" class="text-viewer">
                 <div id="text-placeholder" class="text-placeholder">
                   <i class="fas fa-file-alt"></i>
@@ -169,7 +169,7 @@
     <ul>
       <li id="EditRow">Edit</li>
       <li id="Open">Open Dossier</li>
-       <!--<li id="Resume">Do Resume</li>-->
+      <!--<li id="Resume">Do Resume</li>-->
       <li>---------</li>
       <li id="Repondue">To Répondue</li>
       <li id="Delete">Delete</li>
@@ -188,7 +188,7 @@
   <script src="{{ url_for('static', filename='js/cy_main.js') }}"></script>
   <script src="{{ url_for('static', filename='js/cy_Tableau.js') }}"></script>
   <script src="{{ url_for('static', filename='js/cy_Columns.js') }}"></script>
-   <!--<script src="{{ url_for('static', filename='js/cy_Columns_Edit.js') }}"></script>-->
+  <!--<script src="{{ url_for('static', filename='js/cy_Columns_Edit.js') }}"></script>-->
 
 
   <!-- Modules pour les onglets et filtres -->
@@ -209,6 +209,8 @@
   <!-- Nouveau module pour la gestion des fiches -->
   <script src="{{ url_for('static', filename='js/cy_Panel.js') }}"></script>
   <script src="{{ url_for('static', filename='js/cy_Directories.js') }}"></script>
+  <!-- Ajoutez ceci avant </body> -->
+  
 </body>
 
 </html>

@@ -835,7 +835,7 @@ class ConfigExplorer(FileExplorer):
 @exploreur.route('/open_exploreur', methods=['POST'])
 def open_exploreur():
     dir_path = request.json.get('path')
-    explorer_type = request.json.get('TypeExploreur', 'standard')
+    explorer_type = request.json.get('explorer_type', 'dpcument')
     if not dir_path or not os.path.exists(dir_path):
         return {"error": "Le répertoire spécifié est invalide ou n'existe pas."}, 400
     # Écrire la commande dans un fichier JSON pour le launcher universel
@@ -850,14 +850,6 @@ def open_exploreur():
     return {"status": "success", "message": "Commande envoyée."}, 200
 
 """ 
-# Route Flask pour ouvrir l'explorateur
-@exploreur.route('/open_exploreur', methods=['POST'])
-def open_exploreur():
-    dir_path = request.json.get('path')  # Récupérer le répertoire initial depuis la requête
-    explorer_type = request.json.get('type', 'standard')  # Type d'explorateur, par défaut 'standard'
-    
-    if not dir_path or not os.path.exists(dir_path):
-        return {"error": "Le répertoire spécifié est invalide ou n'existe pas."}, 400
 
     # Créer l'explorateur selon le type demandé
     if explorer_type == 'document':
@@ -867,12 +859,7 @@ def open_exploreur():
     elif explorer_type == 'data':
         explorer = DataExplorer(initial_dir=dir_path)
    
-    else:
-        # Explorer standard par défaut
-        explorer = FileExplorer(initial_dir=dir_path)
     
-    # Lancer l'explorateur
-    explorer.run()
 
     return {"status": "Explorateur ouvert avec succès."}, 200 """
 
