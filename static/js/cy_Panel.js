@@ -8,6 +8,68 @@ window.addEventListener('error', function(e) {
 
 //let currentSelectedRow = null;
 
+// === OPTIMISATIONS DE PERFORMANCE ===
+// Système de debounce pour éviter trop d'appels répétés
+function debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+        const later = () => {
+            clearTimeout(timeout);
+            func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+    };
+}
+
+// Cache local pour les données fréquemment utilisées
+const localCache = {
+    textContent: new Map(),
+    aiRoles: new Map(),
+    
+    set(key, value, ttl = 300000) { // TTL par défaut : 5 minutes
+        this.textContent.set(key, {
+            value,
+            expires: Date.now() + ttl
+        });
+    },
+    
+    get(key) {
+        const item = this.textContent.get(key);
+        if (!item) return null;
+        if (Date.now() > item.expires) {
+            this.textContent.delete(key);
+            return null;
+        }
+        return item.value;
+    },
+    
+    clear() {
+        this.textContent.clear();
+        this.aiRoles.clear();
+    }
+};
+
+// Cache des éléments DOM fréquemment utilisés
+const domCache = {
+    elements: new Map(),
+    
+    get(id) {
+        if (!this.elements.has(id)) {
+            const element = document.getElementById(id);
+            if (element) {
+                this.elements.set(id, element);
+            }
+            return element;
+        }
+        return this.elements.get(id);
+    },
+    
+    clear() {
+        this.elements.clear();
+    }
+};
+
 // Fonction pour récupérer un enregistrement par nom de fichier
 function getAnnonce_byfile(file) {
     try {
@@ -49,6 +111,20 @@ function getAnnonce_value_byfile(file, key) {
     }
 }
 
+// Fonction pour récupérer l'annonce actuellement sélectionnée
+function get_currentAnnonce() {
+    try {
+        const currentRow = getState('currentSelectedRow');
+        if (!currentRow || !currentRow.id) {
+            return null;
+        }
+        return getAnnonce_byfile(currentRow.id);
+    } catch (err) {
+        console.error("Erreur dans get_currentAnnonce:", err);
+        return null;
+    }
+}
+
 // Fonction pour changer d'onglet (mise à jour pour inclure chatbot)
 function switchTab(tabId) {
     // Désactiver tous les onglets
@@ -80,7 +156,7 @@ function switchTab(tabId) {
     }
 }
 
-// Nouvelle fonction pour charger le texte extrait
+// Nouvelle fonction pour charger le texte extrait (optimisée avec cache)
 function loadTextExtract(rowId) {
     try {
         if (!rowId) {
@@ -88,12 +164,23 @@ function loadTextExtract(rowId) {
             return;
         }
 
-        const textViewer = document.getElementById('text-viewer');
-        const saveBtn = document.getElementById('save-text-btn');
-        const annonceData = getAnnonce_byfile(rowId);
+        // Vérifier le cache local d'abord
+        const cachedText = localCache.get(`text_${rowId}`);
+        if (cachedText) {
+            showTextContent(cachedText);
+            showSaveButton('save', rowId);
+            return;
+        }
 
-        console.log('TextExtract - rowId:', rowId);
-        console.log('TextExtract - annonceData:', annonceData);
+        const textViewer = domCache.get('text-viewer');
+        const saveBtn = domCache.get('save-text-btn');
+        
+        if (!textViewer) {
+            console.error('Element text-viewer non trouvé');
+            return;
+        }
+        
+        const annonceData = getAnnonce_byfile(rowId);
 
         if (!annonceData) {
             showTextError('Aucune donnée trouvée pour ce dossier');
@@ -130,6 +217,8 @@ function loadTextExtract(rowId) {
         .then(data => {
             if (!data) return;
             if (data.success) {
+                // Mettre en cache le texte récupéré
+                localCache.set(`text_${rowId}`, data.text);
                 showTextContent(data.text);
                 showSaveButton('save', rowId);
             } else {
@@ -146,14 +235,18 @@ function loadTextExtract(rowId) {
     } catch (error) {
         console.error('Erreur loadTextExtract:', error);
         showTextError('Erreur lors du chargement du texte: ' + error.message);
-        const saveBtn = document.getElementById('save-text-btn');
+        const saveBtn = domCache.get('save-text-btn');
         if (saveBtn) saveBtn.style.display = 'none';
     }
 }
 
-// Fonction pour afficher le texte extrait
+// Fonction pour afficher le texte extrait (optimisée)
 function showTextContent(text) {
-    const textViewer = document.getElementById('text-viewer');
+    const textViewer = domCache.get('text-viewer');
+    if (!textViewer) {
+        console.error('Element text-viewer non trouvé');
+        return;
+    }
     
     if (text && text.trim()) {
         textViewer.innerHTML = `
@@ -171,9 +264,13 @@ function showTextContent(text) {
     }
 }
 
-// Fonction pour afficher une erreur texte
+// Fonction pour afficher une erreur texte (optimisée)
 function showTextError(errorMessage) {
-    const textViewer = document.getElementById('text-viewer');
+    const textViewer = domCache.get('text-viewer');
+    if (!textViewer) {
+        console.error('Element text-viewer non trouvé');
+        return;
+    }
     
     textViewer.innerHTML = `
         <div class="text-placeholder">
@@ -186,21 +283,22 @@ function showTextError(errorMessage) {
 
 
 
-//<div id="action-bar"
 // Fonction pour gérer la sélection d'une ligne (mise à jour)
-function selectRow(row) {
+const selectRow = debounce(function(row) {
     try {
-         
-        document.querySelectorAll('#table-body tr').forEach(tr => {
-            tr.classList.remove('selected');
-        });
+        // Utiliser le cache DOM pour des accès plus rapides
+        const tableBody = domCache.get('table-body');
+        if (tableBody) {
+            tableBody.querySelectorAll('tr').forEach(tr => {
+                tr.classList.remove('selected');
+            });
+        }
          
         row.classList.add('selected');
        
         setState('currentSelectedRow', row);
         
         showActionBar();
-      
         updatePromptButtonVisibility();
         
         const activeTab = document.querySelector('.tab-content.active');
@@ -216,7 +314,7 @@ function selectRow(row) {
     } catch (error) {
         console.error('Erreur lors de la sélection de la ligne:', error);
     }
-}
+}, 100); // Debounce de 100ms
 
 
 
@@ -926,21 +1024,25 @@ function saveChatToPDF(rowId) {
     });
 }
 
-// Fonction pour afficher la barre d'action
-function showActionBar() {
-    const bar = document.getElementById('action-bar');
+// Fonctions optimisées pour l'affichage des barres d'action
+const showActionBar = debounce(function() {
+    const bar = domCache.get('action-bar');
     if (bar) bar.style.display = 'flex';
-}
+}, 50);
 
-// Fonction pour cacher la barre d'action
-function hideActionBar() {
-    const bar = document.getElementById('action-bar');
+const hideActionBar = debounce(function() {
+    const bar = domCache.get('action-bar');
     if (bar) bar.style.display = 'none';
-}
- 
-function populateDirectorySelect() {
-    const select = document.getElementById('directory-select');
-    if (!window.AppState || !AppState.directories) return;
+}, 50);
+
+// Fonction optimisée pour la gestion des répertoires
+const populateDirectorySelect = debounce(function() {
+    const select = domCache.get('directory-select');
+    if (!select || !window.AppState || !AppState.directories) {
+        console.warn('populateDirectorySelect: éléments manquants');
+        return;
+    }
+    
     select.innerHTML = '';
     AppState.directories.forEach(dir => {
         const option = document.createElement('option');
@@ -952,7 +1054,7 @@ function populateDirectorySelect() {
         }
         select.appendChild(option);
     });
-}
+}, 100);
 
 // Affiche ou cache le bouton selon le type de la ligne sélectionnée
 function updatePromptButtonVisibility() {
