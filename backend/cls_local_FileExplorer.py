@@ -54,7 +54,7 @@ class cls_local_FileExplorer:
         },
         'Configuration': {
             'icon': '⚙️',
-            'types': ['conf','col','exclued' ],
+            'types': ['conf','exclued' ],
             'color': '#5ba478'
         },
         'Données': {
@@ -109,7 +109,7 @@ class cls_local_FileExplorer:
             self.title = "Explorateur de Documents"
             # Filtrer uniquement les types de documents
             for group in list(self.FILE_GROUPS.keys()):
-                if group != "Documents":  # CORRECTION: garder seulement "Documents"
+                if group != "ocuments":  # CORRECTION: garder seulement "Documents"
                     self.FILE_GROUPS.pop(group)
             # Activer uniquement le filtre de documents
             for group in self.active_filters:
@@ -755,18 +755,17 @@ class cls_local_FileExplorer:
         self.root.title(self.title)
         self.root.geometry("800x600")  # Taille de la fenêtre
         
-        # Créer un cadre pour les contrôles
+         # Créer un cadre pour les contrôles
         control_frame = tk.Frame(self.root)
         control_frame.pack(fill='x', padx=10, pady=5)
         
-        # Ajouter un slider pour ajuster la taille de la police
-        #font_size_label = tk.Label(control_frame, text="Taille de la police :")
-        #font_size_label.pack(side='left', padx=(0, 10))
-        
-        #font_size_slider = Scale(control_frame, from_=8, to=20, orient='horizontal', 
-        #                        length=200, resolution=1)
-        #font_size_slider.set(10)  # Valeur par défaut
-        #font_size_slider.pack(side='left')
+        # --- Barre de menu ---
+        menubar = tk.Menu(self.root)
+        param_menu = tk.Menu(menubar, tearoff=0)
+        param_menu.add_command(label="Afficher les paramètres", command=self.show_params_window)
+        menubar.add_cascade(label="Paramètres", menu=param_menu)
+        self.root.config(menu=menubar)
+        # --- Fin barre de menu ---
         
         # Ajouter un Treeview pour afficher les fichiers et répertoires
         self.tree = ttk.Treeview(self.root, columns=("fullpath",), displaycolumns=())
@@ -806,44 +805,23 @@ class cls_local_FileExplorer:
         self.root.mainloop()
         
         return True  # Indiquer que l'explorateur s'est terminé avec succès
-
-
-# Créer des classes d'explorateurs spécialisés
-class DocumentExplorer(cls_local_FileExplorer):
-    """Explorateur spécialisé pour les documents"""
-    
-    def __init__(self, title="Explorateur de Documents", initial_dir=None):
-        super().__init__(title, initial_dir, explorer_type="document")
-
-
-class DataExplorer(cls_local_FileExplorer):
-    """Explorateur spécialisé pour les données"""
-    
-    def __init__(self, title="Explorateur de Données", initial_dir=None):
-        super().__init__(title, initial_dir, explorer_type="data")
-
-
-class ConfigExplorer(cls_local_FileExplorer):
-    """Explorateur spécialisé pour les fichiers de configuration"""
-    
-    def __init__(self, title="Explorateur de Configuration", initial_dir=None):
-        super().__init__(title, initial_dir, explorer_type="config")
-
-
+    def show_params_window(self):
+        """Ouvre une petite fenêtre listant les paramètres sous forme de liste"""
+        params = [
+            f"Titre : {self.title}",
+            f"Répertoire initial : {self.initial_dir}",
+            f"Type d'explorateur : {self.explorer_type}",
+            f"Répertoire courant : {self.current_path}",
+            f"Filtres actifs : {', '.join([k for k, v in self.active_filters.items() if v])}"
+        ]
+        win = tk.Toplevel(self.root)
+        win.title("Paramètres de l'explorateur")
+        win.geometry("350x200")
+        tk.Label(win, text="Paramètres :", font=("Arial", 12, "bold")).pack(pady=5)
+        listbox = tk.Listbox(win, width=50)
+        for param in params:
+            listbox.insert(tk.END, param)
+        listbox.pack(padx=10, pady=10, fill="both", expand=True)
+        tk.Button(win, text="Fermer", command=win.destroy).pack(pady=5)
    
-
-
-""" 
-
-    # Créer l'explorateur selon le type demandé
-    if explorer_type == 'document':
-        explorer = DocumentExplorer(initial_dir=dir_path)
-    elif explorer_type == 'config':
-        explorer = ConfigExplorer(initial_dir=dir_path)
-    elif explorer_type == 'data':
-        explorer = DataExplorer(initial_dir=dir_path)
-   
-    
-
-    return {"status": "Explorateur ouvert avec succès."}, 200 """
 

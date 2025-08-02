@@ -1,11 +1,3 @@
-{/* <div class="form-group">
-                    <label for="creationMode">Mode de création:</label>
-                    <select id="creationMode" class="rich-text-field">
-                         <option value="creer_annonce">Contenu</option>
-                         <option value="Action">Action</option>
-                         <option value="scan_url_annonce">Url</option>
-                    </select>
-                </div> */}
 
 let currentTab = "Default"; // Ajout de l'indicateur d'onglet
 
@@ -105,20 +97,9 @@ function createAnnouncementForm() {
 }
 
 function executeCreationMode() {
-    // Utilise currentTab pour savoir où tu es
-    //if (currentTab === "Default") {
-    /*     const creationMode = document.getElementById('creationMode').value;
-        if (creationMode === 'scan_url_annonce') {
-            scan_url_annonce(); 
-        } else if (creationMode === 'creer_annonce') {
-            submitAnnouncement(window.CONSTANTS["ANNONCE_SUFFIX"]);
-        }
-        else if (creationMode === 'Action') {
-            submitAnnouncement(window.CONSTANTS["ACTION_SUFFIX"]);
-        } */
-
+ 
         submitAnnouncement(window.CONSTANTS["ANNONCE_SUFFIX"]);
-    //} 
+  
 }
 
 
@@ -202,11 +183,7 @@ function submitAnnouncement(type) {
         alert('Erreur lors de la création de l\'annonce.');
     });
     hideLoadingOverlay();
-    // Handle the announcement content (e.g., send it to the server)
-    //console.log('Announcement content:', content);
 
-    // Close form
-    //closeAnnouncementForm();
 }
 
 

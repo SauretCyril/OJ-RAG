@@ -180,8 +180,8 @@ function open_files_Setting()
 ApiClient.files.getDirectoryRoot()
   .then(response => {
     // Utilisation de response.root_direc  tory
-    alert("Répertoire racine : " + response.root_directory);
-    console.log("Répertoire racine:", response.root_directory);
+    //alert("Répertoire racine : " + response.root_directory);
+    console.log("dbg-c001 : Répertoire racine:", response.root_directory);
 
     ask_Local_file_explorer(response.root_directory,"config"); 
   })

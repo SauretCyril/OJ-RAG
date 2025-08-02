@@ -777,7 +777,7 @@ function saveTextContent(rowId) {
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
-                        //alert('PDF sauvegardé avec succès');
+                        alert('PDF sauvegardé avec succès');
                         // Plus besoin de recharger l'onglet PDF
                     } else {
                         alert('Erreur lors de la sauvegarde: ' + data.error);
