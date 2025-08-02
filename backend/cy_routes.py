@@ -33,7 +33,7 @@ from cy_mistral import get_mistral_answer
 import os
 import shutil
 import threading
-
+import re
 save_annonces_lock = threading.Lock()
 
 load_dotenv()
@@ -110,7 +110,7 @@ async def read_annonces_json():
         print("DBG-4658.0: Début de la fonction read_annonces_json")
         isDetectNew = "O"
         # buildAllPaths()
-        data = request.get_json()
+        data = request.get_json(force=True)
         if not data:
             print("DBG-4658.1: Pas de données JSON reçues")
             return (
@@ -192,7 +192,7 @@ async def read_annonces_json():
                 if filename == file_cv or filename == file_cv_New:
                     isCVin = "O"
                 if filename == file_cv_pdf or filename == file_cv_pdf_New:
-                    isCVinpdf = "O"
+                    isCVinpdf = "O" 
                 if filename == file_BA_pdf:
                     isBAinpdf = "O"
                 if filename == file_doc:
@@ -203,6 +203,7 @@ async def read_annonces_json():
                     file_path_gpt = os.path.join(root, file_isGptResum)
             record_added = False
             # Traitement des fichiers de données
+            uscase="unkunown"
             for filename in files:
                 file_path = os.path.join(root, filename)
                 file_path = file_path.replace("\\", "/")
@@ -221,9 +222,9 @@ async def read_annonces_json():
                                 or datajson["etat"] == "ARCHIVE"
                                 or datajson["etat"] == "ClOSED"
                                 or datajson["etat"] == "DONE"
+                                or datajson["etat"] == "MOVED"
                             ):
                                 isExclued = True
-
                             if not isExclued:
                                 # Ajout des métadonnées supplémentaires
                                 datajson["dossier"] = parent_dir
@@ -234,11 +235,13 @@ async def read_annonces_json():
                                 datajson["BA"] = isBAdocx
                                 datajson["isAction"] = isAction
                                 datajson["BApdf"] = isBAinpdf
+                                # Ajouter la variable DosType si elle n'existe pas
+                               
                                 # Ajouter à la liste des dossiers
                                 jData = {file_path: datajson}
                                 dossier_list.append(jData)
-
-                                #print(
+                                uscase="Existing"
+                                #print( 
                                 #    f"{parent_dir}-NEW-4658 LOADING : Fichier {file_path} chargé avec succès"
                                 #)
 
@@ -266,7 +269,7 @@ async def read_annonces_json():
                         if isJo == "O":
                             thefile = file_path_isJo
                             print(
-                                #f"{parent_dir}NEW-4658a file_path_isJo trouvé = ",
+                                f"{parent_dir}NEW-4658a file_path_isJo trouvé = ",
                                 file_path_isJo,
                             )
                             Piece_exist = True
@@ -275,17 +278,23 @@ async def read_annonces_json():
                             Piece_exist = True
 
                         if Piece_exist:
-                            print(
-                                #f"{parent_dir}NEW-4658b le fichier main va être traité = ",
-                                thefile,
-                            )
                             # thefile = thefile.replace('\\', '/')
+                            thedescription = ""
                             texte = extract_text_from_pdf(thefile)
+                            # Extraire la description si présente dans le texte
+                            
+                            match = re.search(r"#Description#\s*:\s*(.*)", texte, re.IGNORECASE)
+                            if match:
+                                thedescription = match.group(1).strip()
+                            match = re.search(r"#Categorie#\s*:\s*(.*)", texte, re.IGNORECASE)
+                            if match:
+                                thecategorie = match.group(1).strip()
+                            # data["Categorie"] = parsed_json.get("#categorie#", "N/A")
                             infos = texte
                             the_request = await load_Instruction_classement()
                             print(
-                                #f"{parent_dir}NEW-4658c- la question pour le classement",
-                                the_request,
+                                 f"{parent_dir}NEW-4658c- la question pour le classement",
+                                 the_request,
                             )
                             if not the_request or the_request.strip() == "":
                                 print(
@@ -303,6 +312,7 @@ async def read_annonces_json():
                                 #print(f"{parent_dir}NEW-4658e answer mistral = ", infos)
                             if infos:
                                 try:
+                                    print(f"{parent_dir}NEW-4658d")    
                                     # Tenter de parser comme JSON
                                     parsed_json = json.loads(infos)
                                     data["url"] = parsed_json.get("url", "N/A")
@@ -314,6 +324,8 @@ async def read_annonces_json():
                                         "poste", "N/A"
                                     )
                                     data["Lieu"] = parsed_json.get("lieu", "N/A")
+                                    
+                                 
                                 except json.JSONDecodeError:
                                     # La réponse n'est pas du JSON valide
                                     print(
@@ -322,8 +334,7 @@ async def read_annonces_json():
                                     # Extraction basique (peut être améliorée)
                                     try:
                                         # Tenter de trouver des données structurées dans la réponse texte
-                                        import re
-
+                                       
                                         # Chercher un objet JSON dans la réponse
                                         json_match = re.search(
                                             r"(\{.*\})", infos, re.DOTALL
@@ -339,12 +350,10 @@ async def read_annonces_json():
                                                 data["Date"] = extracted_json.get(
                                                     "Date", "N/A"
                                                 )
-                                                data["entreprise"] = extracted_json.get(
-                                                    "entreprise", "N/A"
-                                                )
-                                                data["description"] = (
-                                                    extracted_json.get("poste", "N/A")
-                                                )
+                                                if data["description"] == "":
+                                                    data["description"] = (
+                                                        extracted_json.get("poste", "N/A")
+                                                    )
                                                 data["Lieu"] = extracted_json.get(
                                                     "lieu", "N/A"
                                                 )
@@ -352,15 +361,18 @@ async def read_annonces_json():
                                                 # Utiliser le texte brut
                                                 data["url"] = "N/A"
                                                 data["Date"] = "N/A"
-                                                data["entreprise"] = "N/A"
+                                                 
+                                                if data["description"] == "":
+                                                    data["entreprise"] = "N/A"
                                                 data["description"] = "Pas d'infos"
                                                 data["Lieu"] = "N/A"
                                         else:
                                             # Utiliser le texte brut
                                             data["url"] = "N/A"
                                             data["Date"] = "N/A"
-                                            data["entreprise"] = "N/A"
-                                            data["description"] = "Pas d'infos"
+                                            if data["description"] == "":
+                                                data["entreprise"] = "Pas d'infos"
+                                            
                                             data["Lieu"] = "N/A"
                                     except Exception as extraction_error:
                                         print(
@@ -369,7 +381,6 @@ async def read_annonces_json():
                                         # Fallback en cas d'échec total
                                         data["url"] = "N/A"
                                         data["Date"] = "N/A"
-                                        data["entreprise"] = "N/A"
                                         data["description"] = (
                                             "Erreur lors du traitement"
                                         )
@@ -386,11 +397,18 @@ async def read_annonces_json():
                             data["BApdf"] = isBAinpdf
                             # block info piece
                             data["etat"] = "New"
+                            
+                            if  data["description"] != "":
+                                data["description"] = thedescription
+                            if data["categorie"] != "":
+                                data["categorie"] = thecategorie
+
                             # Créer l'objet de données pour ajouter à la liste
                             file_path_nodata = os.path.join(root, ".data.json")
                             file_path_nodata = file_path_nodata.replace("\\", "/")
                             jData = {file_path_nodata: data}
-
+                            uscase="_annonce_"
+                            print(f"{parent_dir}NEW-4658e")    
                             try:
                                 # Vérifier si le répertoire parent existe
                                 parent_dir_path = os.path.dirname(file_path_nodata)
@@ -435,13 +453,11 @@ async def read_annonces_json():
                                                 data, file, ensure_ascii=False, indent=4
                                             )
 
-                                        print(
-                                            #f"{parent_dir}-NEW-4658h : Fichier {file_path_nodata} sauvegardé avec succès"
-                                        )
-
+                                       
                                         # Puis ajouter à la liste de dossiers
                                         dossier_list.append(jData)
                                         record_added = True
+                                        uscase="vide"
 
                                 except Exception as e:
                                         print(
@@ -453,9 +469,9 @@ async def read_annonces_json():
                                 )
                     except Exception as e:
                         print(
-                            f"{parent_dir}ERR-4658f : Erreur lors de la création d'un nouvel enregistrement: {str(e)}"
+                            f"{parent_dir} ERR-4658f : Erreur lors de la création d'un nouvel enregistrement: {str(e)}"
                         )
-
+                print(uscase + f" - {parent_dir} - NEW-4658-m : Nombre de dossiers traités: {len(dossier_list)}")
                         
 
         #print(f"NEW-4658j: Nombre de dossiers traités: {len(dossier_list)}")
@@ -866,7 +882,7 @@ def define_default_data_dossier_vide():
     return {
         "id": "",
         "description": "Dossier Vide",
-        "etat": "New",
+        "etat": "Vide",
         "entreprise": "?",
         "categorie": "A définir",
         "Date": "",
@@ -885,53 +901,47 @@ def define_default_data_dossier_vide():
 @cy_routes.route("/save_announcement", methods=["POST"])
 def save_announcement():
     try:
+        print(f"dbg-5434-a")
         data = request.get_json()
         num_dossier = data.get("contentNum")
         content = data.get("content")
         url = data.get("url")
         sufix = data.get("sufix")
-
-        if not num_dossier or not content or not url:
+        if not num_dossier:
             print("dbg4456 -------------------------------", num_dossier, content, url)
             return jsonify({"status": "error", "message": "Missing parameters"}), 400
 
         directory_path = os.path.join(GetRoot(), num_dossier)
         if not os.path.exists(directory_path):
-            # print("dbg-4456 creating directory", directory_path)
             os.makedirs(directory_path)
+        print(f"dbg-5434-b")
 
         docx_file_path = os.path.join(directory_path, f"{num_dossier}{sufix}.docx")
         pdf_file_path = os.path.join(directory_path, f"{num_dossier}{sufix}.pdf")
 
-        """ if os.path.exists(pdf_file_path):
-            return jsonify({"status": "error", "message": f"Fichier {pdf_file_path} existe déjà"}), 400 """
-
         if pythoncom:
             pythoncom.CoInitialize()
         try:
+            if not url:
+                url = "Pas d'URL"
+            if not content:
+                content = "Pas de contenu"
             doc = Document()
-            # Ensure URL is properly formatted
             doc.add_paragraph("<-")
             doc.add_paragraph(url)
             doc.add_paragraph("->")
             doc.add_paragraph(content)
-
             doc.save(docx_file_path)
             print(f"dbg-5434 : Converting {docx_file_path} to {pdf_file_path}")
             convert(docx_file_path, pdf_file_path)
         finally:
             if pythoncom:
                 pythoncom.CoUninitialize()
-
-        return (
-            jsonify(
-                {
-                    "status": "success",
-                    "message": f"Announcement saved as {pdf_file_path}",
-                }
-            ),
-            200,
-        )
+            print("dbg-5434-c : Conversion terminée")
+        return jsonify({
+            "status": "success",
+            "message": f"Announcement saved as {pdf_file_path}",
+        }), 200
     except Exception as e:
         print(f"Cyr_error_492 An error occurred while saving the announcement: {e}")
         return jsonify({"status": "error", "message": "492>" + str(e)}), 500
@@ -999,6 +1009,7 @@ def load_conf_cols():
         dir = GetRoot()
         filepath = os.path.join(dir, ".cols")
         filepath = filepath.replace("\\", "/")
+        print("dbg10012 :fichier conf", filepath)
         if os.path.exists(filepath):
             with open(filepath, "r", encoding="utf-8") as file:
                 content = json.load(file)
@@ -1464,286 +1475,3 @@ def serve_local_file():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-
-@cy_routes.route("/extract_text_from_pdf", methods=["POST"])
-def extract_text_from_pdf_api():
-    try:
-        data = request.get_json()
-        file = data.get("file")
-        
-        if not file:
-            return jsonify({"success": False, "error": "Paramètre 'file' manquant"}), 400
-            
-        # Construire le chemin complet
-        full_path = os.path.join(GetRoot(), file)
-        full_path = full_path.replace("\\", "/")
-        
-        print(f"dbg-1249: Chemin complet du PDF: {full_path}")
-        
-        if not os.path.exists(full_path):
-            return jsonify({"success": False, "error": "Fichier PDF non trouvé"}), 404
-          
-        # Extraire le texte
-        text = extract_text_from_pdf(full_path)
-        
-        return jsonify({
-            "success": True,
-            "text": text,
-            "file": file
-        })
-        
-    except Exception as e:
-        print(f"Erreur lors de l'extraction de texte PDF: {str(e)}")
-        return jsonify({
-            "success": False,
-            "error": str(e)
-        }), 500
-
-
-@cy_routes.route("/save_text_content", methods=["POST"])
-def save_text_content():
-    try:
-        data = request.get_json()
-        folder = data.get("folder")
-        text = data.get("text")
-        action = data.get("action")  # 'create' ou 'update'
-        annonceData= data.get("annonceData", {})
-        if not folder or not text:
-            return jsonify({"success": False, "error": "Dossier et texte requis"}), 400
-            
-        # Construire le chemin du fichier PDF
-        pdf_filename = f"{folder}_annonce_.pdf"
-        full_path = os.path.join(GetRoot(), folder, pdf_filename)
-        
-        # Créer le répertoire si nécessaire
-        os.makedirs(os.path.dirname(full_path), exist_ok=True)
-        
-        # Créer le PDF avec reportlab
-        from reportlab.lib.pagesizes import letter, A4
-        from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
-        from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-        from reportlab.lib.units import inch
-        from reportlab.pdfbase import pdfmetrics
-        from reportlab.pdfbase.ttfonts import TTFont
-        
-        try:
-            # Essayer d'utiliser une police qui supporte l'UTF-8
-            try:
-                # Registrer une police Unicode si disponible
-                pdfmetrics.registerFont(TTFont('DejaVuSans', 'DejaVuSans.ttf'))
-                font_name = 'DejaVuSans'
-            except:
-                # Fallback vers police par défaut
-                font_name = 'Helvetica'
-            
-            # Créer le document PDF
-            doc = SimpleDocTemplate(
-                full_path,
-                pagesize=A4,
-                rightMargin=72,
-                leftMargin=72,
-                topMargin=72,
-                bottomMargin=18
-            )
-            
-            # Styles
-            styles = getSampleStyleSheet()
-            
-            # Style personnalisé pour le texte principal
-            custom_style = ParagraphStyle(
-                'CustomStyle',
-                parent=styles['Normal'],
-                fontName=font_name,
-                fontSize=11,
-                spaceAfter=12,
-                leading=14,
-                alignment=0  # Alignement à gauche
-            )
-            
-            # Style pour le titre
-            title_style = ParagraphStyle(
-                'TitleStyle',
-                parent=styles['Title'],
-                fontName=font_name,
-                fontSize=16,
-                spaceAfter=20,
-                alignment=1  # Centré
-            )
-            
-            # Contenu du PDF
-            story = []
-
-            # Créer une cartouche d'en-tête avec les informations du dossier
-            from reportlab.lib import colors
-            from reportlab.platypus import Table, TableStyle
-
-            # Récupérer les informations du dossier
-            numero_dossier = annonceData.get('dossier', folder)
-            descriptif = annonceData.get('description', 'N/A')
-            sujet = annonceData.get('entreprise', 'N/A')
-            theme = annonceData.get('id', 'N/A')
-
-            # Créer la cartouche sous forme de tableau
-            cartouche_data = [
-                ['N° Dossier:', numero_dossier, 'Sujet:', sujet],
-                ['Descriptif:', descriptif, 'Thème:', theme]
-            ]
-
-            cartouche_table = Table(cartouche_data, colWidths=[2*inch, 2*inch, 1.5*inch, 2*inch])
-            cartouche_table.setStyle(TableStyle([
-                # Style général
-                ('BACKGROUND', (0, 0), (-1, -1), colors.lightgrey),
-                ('TEXTCOLOR', (0, 0), (-1, -1), colors.black),
-                ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
-                ('FONTNAME', (0, 0), (-1, -1), font_name),
-                ('FONTSIZE', (0, 0), (-1, -1), 10),
-                ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
-                ('TOPPADDING', (0, 0), (-1, -1), 6),
-                ('LEFTPADDING', (0, 0), (-1, -1), 6),
-                ('RIGHTPADDING', (0, 0), (-1, -1), 6),
-                
-                # Style pour les labels (colonnes 0 et 2)
-                ('BACKGROUND', (0, 0), (0, -1), colors.darkgrey),
-                ('BACKGROUND', (2, 0), (2, -1), colors.darkgrey),
-                ('TEXTCOLOR', (0, 0), (0, -1), colors.white),
-                ('TEXTCOLOR', (2, 0), (2, -1), colors.white),
-                ('FONTNAME', (0, 0), (0, -1), font_name),
-                ('FONTNAME', (2, 0), (2, -1), font_name),
-                ('FONTSIZE', (0, 0), (0, -1), 9),
-                ('FONTSIZE', (2, 0), (2, -1), 9),
-                
-                # Bordures
-                ('GRID', (0, 0), (-1, -1), 1, colors.black),
-                ('LINEBELOW', (0, 0), (-1, -1), 1, colors.black),
-                ('LINEABOVE', (0, 0), (-1, -1), 1, colors.black),
-                ('LINEBEFORE', (0, 0), (-1, -1), 1, colors.black),
-                ('LINEAFTER', (0, 0), (-1, -1), 1, colors.black),
-            ]))
-
-            # Ajouter la cartouche au document
-            story.append(cartouche_table)
-            story.append(Spacer(1, 20))
-
-            # Ajouter un titre pour le contenu
-            content_title = Paragraph("Contenu de l'annonce", title_style)
-            story.append(content_title)
-            story.append(Spacer(1, 12))
-
-            # Diviser le texte en paragraphes
-            paragraphs = text.split('\n\n')
-            
-            for para_text in paragraphs:
-                if para_text.strip():
-                    # Échapper les caractères spéciaux pour XML
-                    para_text = para_text.replace('&', '&amp;')
-                    para_text = para_text.replace('<', '&lt;')
-                    para_text = para_text.replace('>', '&gt;')
-                    para_text = para_text.replace('\n', '<br/>')
-                    
-                    para = Paragraph(para_text, custom_style)
-                    story.append(para)
-                    story.append(Spacer(1, 6))
-            
-            # Ajouter une note de bas de page
-            footer_style = ParagraphStyle(
-                'FooterStyle',
-                parent=styles['Normal'],
-                fontName=font_name,
-                fontSize=8,
-                textColor='gray',
-                alignment=1  # Centré
-            )
-            
-            #story.append(Spacer(1, 20))
-            #footer = Paragraph(f"Document généré le {datetime.now().strftime('%d/%m/%Y à %H:%M')}", footer_style)
-            #story.append(footer)
-            
-            # Construire le PDF
-            doc.build(story)
-            
-            return jsonify({
-                "success": True,
-                "message": f"PDF {'créé' if action == 'create' else 'sauvegardé'} avec succès",
-                "file_path": pdf_filename
-            })
-            
-        except ImportError:
-            # Si reportlab n'est pas disponible, utiliser une alternative avec fpdf
-            try:
-                from fpdf import FPDF
-                
-                class PDF(FPDF):
-                    def header(self):
-                        self.set_font('Arial', 'B', 15)
-                        self.cell(0, 10, f'Annonce - Dossier {folder}', 0, 1, 'C')
-                        self.ln(10)
-                    
-                    def footer(self):
-                        self.set_y(-15)
-                        self.set_font('Arial', 'I', 8)
-                        self.cell(0, 10, f'Page {self.page_no()} - Généré le {datetime.now().strftime("%d/%m/%Y à %H:%M")}', 0, 0, 'C')
-                
-                pdf = PDF()
-                pdf.add_page()
-                pdf.set_font('Arial', '', 11)
-                
-                # Diviser le texte en lignes
-                lines = text.split('\n')
-                for line in lines:
-                    if line.strip():
-                        # Gérer les caractères spéciaux
-                        try:
-                            line = line.encode('latin-1', 'ignore').decode('latin-1')
-                        except:
-                            line = line.encode('ascii', 'ignore').decode('ascii')
-                        
-                        # Diviser les lignes trop longues
-                        if len(line) > 80:
-                            words = line.split(' ')
-                            current_line = ''
-                            for word in words:
-                                if len(current_line + ' ' + word) <= 80:
-                                    current_line += ' ' + word if current_line else word
-                                else:
-                                    if current_line:
-                                        pdf.cell(0, 6, current_line, 0, 1)
-                                    current_line = word
-                            if current_line:
-                                pdf.cell(0, 6, current_line, 0, 1)
-                        else:
-                            pdf.cell(0, 6, line, 0, 1)
-                    else:
-                        pdf.ln(3)
-                
-                pdf.output(full_path)
-                
-                return jsonify({
-                    "success": True,
-                    "message": f"PDF {'créé' if action == 'create' else 'sauvegardé'} avec succès (fpdf)",
-                    "file_path": pdf_filename
-                })
-                
-            except ImportError:
-                # Si aucune bibliothèque PDF n'est disponible, créer un fichier texte en fallback
-                txt_filename = f"{folder}_annonce_text.txt"
-                txt_full_path = os.path.join(GetRoot(), folder, txt_filename)
-                
-                with open(txt_full_path, 'w', encoding='utf-8') as f:
-                    f.write(f"Annonce - Dossier {folder}\n")
-                    f.write("=" * 50 + "\n\n")
-                    f.write(text)
-                    f.write(f"\n\nDocument généré le {datetime.now().strftime('%d/%m/%Y à %H:%M')}")
-                
-                return jsonify({
-                    "success": True,
-                    "message": f"Fichier texte {'créé' if action == 'create' else 'sauvegardé'} avec succès (fallback)",
-                    "file_path": txt_filename,
-                    "warning": "Bibliothèques PDF non disponibles, fichier texte créé en remplacement"
-                })
-        
-    except Exception as e:
-        print(f"Erreur lors de la sauvegarde du PDF: {str(e)}")
-        return jsonify({
-            "success": False,
-            "error": str(e)
-        }), 500

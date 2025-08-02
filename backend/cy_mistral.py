@@ -250,7 +250,14 @@ def analyser_documents(directory,subject,type_doc_source,question,role):
         else:
             return jsonify({'status': 'error', 'message': str(e)}), 500
 
-
+def get_mistral_translate(text, src_lang="fr", tgt_lang="en"):
+    """
+    Utilise get_mistral_answer pour traduire du texte via un prompt.
+    """
+    question = f"Traduis le texte suivant du {src_lang} vers le {tgt_lang} :"
+    role = "Tu es un traducteur professionnel. Réponds uniquement par la traduction, sans explication."
+    content = text
+    return get_mistral_answer(question, role, content)
 
 if __name__ == '__main__':
     #Question à poser aux documents

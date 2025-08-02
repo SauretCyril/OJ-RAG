@@ -9,6 +9,13 @@
  * @param {string} filepath - Chemin du fichier
  * @returns {Promise} - Promise contenant le résultat de l'opération
  */
+async function fix_open_dir(filepath)
+{
+    currow=getState('currentSelectedRow', null);
+    if (currow) {
+        open_dir(currow.id);
+    }
+}
 async function open_dir(filepath) {
     try {
         const data = await ApiClient.files.openDirectory(filepath);
@@ -170,31 +177,19 @@ async function Get_dir_Root() {
 
 function open_files_Setting() 
 {
-    ApiClient.files.getDirectoryRoot()
+ApiClient.files.getDirectoryRoot()
   .then(response => {
     // Utilisation de response.root_direc  tory
-    console.log("Répertoire racine:", response.root_directory);
-    open_dossier(response.root_directory,"config"); 
+    //alert("Répertoire racine : " + response.root_directory);
+    console.log("dbg-c001 : Répertoire racine:", response.root_directory);
+
+    ask_Local_file_explorer(response.root_directory,"config"); 
   })
   .catch(error => {
     console.error("Erreur lors de la récupération du répertoire racine:", error);
   });
 }
-function open_dossier(chemin, TypeExploreur="Standard") {
-    const path = chemin.replace(/\\/g, '/');
-    //alert("Ouverture de l'explorateur de fichiers pour le chemin : " + path);
-    ApiClient.files.openexploreur(path, TypeExploreur)
-        .then(response => {
-            if (response.status === "success") {
-                console.log("Directory explorer opened successfully.");
-            } else {
-                console.error("Error opening directory explorer:", response.message);
-            }
-        })
-        .catch(error => {
-            console.error("Error opening directory explorer:", error);
-        });
-}
+
 
 
 /**
@@ -217,41 +212,6 @@ async function open_notes(file_notes) {
     }
 }
 
-/**
- * Remplit le prochain nom de dossier disponible
- */
-async function fillNextDossierName() {
-    let lastDossier = getState('annonces').reduce((last, current) => {
-        const currentDossier = Object.values(current)[0].dossier;
-        return currentDossier > last ? currentDossier : last;
-    }, "A000");
-   
-    let letter = lastDossier.charAt(0);
-    let number = parseInt(lastDossier.slice(1)) + 1;
-    let nextDossier = letter + number.toString().padStart(3, '0');
-    
-    while (await checkDossierExists(nextDossier)) {
-        number += 1;
-        nextDossier = letter + number.toString().padStart(3, '0');
-    }
-
-    document.getElementById('announcementDossier').value = nextDossier;
-}
-
-/**
- * Vérifie si un dossier existe déjà
- * @param {string} dossier - Numéro du dossier à vérifier
- * @returns {Promise<boolean>} - true si le dossier existe, false sinon
- */
-async function checkDossierExists(dossier) {
-    try {
-        const response = await httpPost('/check_dossier_exists', { dossier: dossier });
-        return response.exists;
-    } catch (error) {
-        console.error('Error checking dossier existence:', error);
-        return false;
-    }
-}
 
 // Exposer les fonctions globalement
 // Note: nous gardons les mêmes noms pour maintenir la compatibilité avec le code existant
@@ -261,5 +221,4 @@ window.convert_cv = convert_cv;
 window.get_cv = get_cv;
 window.open_url = open_url;
 window.open_notes = open_notes;
-window.fillNextDossierName = fillNextDossierName;
-window.checkDossierExists = checkDossierExists;
+

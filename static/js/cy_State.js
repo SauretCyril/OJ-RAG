@@ -13,7 +13,7 @@ window.columns = [
     { 
         key: 'description', 
         class: 'description-cell', 
-        editable: false, 
+        editable: true, 
         style: { cursor: 'pointer', color: 'blue', textDecoration: 'underline' }, 
         event: 'click', 
         eventHandler: 'openUrlHandler', // Store function name as string
@@ -91,15 +91,18 @@ const AppState = {
     // Configuration
     conf: {},
     CONSTANTS: window.CONSTANTS, // Initialiser avec la valeur par défaut
-    
+
     // Navigation
     currentRow: "",
+    currentSelectedRow: null, // <-- Ajout ici
+    
     tabActive: "Campagne",
-    
+    currentDossier : null,
+
     // Données
-    annonces: [],
-    portalLinks: [],
     
+   
+
     // Configuration des colonnes (initialisé avec les colonnes par défaut)
     columns: [...window.columns]
 };
@@ -120,7 +123,7 @@ function getState(key) {
  */
 function setState(key, value) {
     AppState[key] = value;
-    
+    console.log(`dbg-A022 : State updated: ${key} =`, value);
     // Mise à jour de window.CONSTANTS pour compatibilité si la clé est 'CONSTANTS'
     // uniquement en utilisant l'affectation directe à la propriété interne
     if (key === 'CONSTANTS') {

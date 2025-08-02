@@ -70,6 +70,8 @@ class FBXExplorer:
             self.tree.delete(*self.tree.get_children())
             self.populate_treeview('', self.initial_dir)
 
-if __name__ == "__main__":
+
+
+""" if __name__ == "__main__":
     explorer = FBXExplorer(initial_dir="H:/Entreprendre/Actions-11-Projects")  # Mets ton dossier par défaut ici
-    explorer.run()
+    explorer.run() """

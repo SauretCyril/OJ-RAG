@@ -42,7 +42,7 @@ function loadTableData(callback) {
             } 
            
  
-            window.columns.forEach((col, colIndex) => {
+            (getState('columns') || []).forEach((col, colIndex) => {
                 if (colisvisible(col.type) && col.visible === true) {
                     
                     const cell = document.createElement('td');
@@ -126,10 +126,10 @@ function loadTableData(callback) {
                         
                         // Utilisez la fonction correcte pour ouvrir le dossier
                         folderIcon.addEventListener('click', (e) => {
-                            console.log('Folder icon clicked!'); // Debug
+                            console.log('Folder icon clicked!');
                             e.preventDefault();
-                            e.stopPropagation(); // Empêcher le déclenchement de l'événement sur la ligne
-                            open_dossier(dir_path);
+                            e.stopPropagation();
+                            ask_Local_file_explorer(dir_path, "document"); // ← à adapter selon ta fonction
                         });
                         
                         // Ajout d'un effet hover pour feedback visuel
@@ -157,19 +157,51 @@ function loadTableData(callback) {
                         cell.style.overflow = 'visible';
                 
                     }   else if (col.key === 'description') {
-                        // Create a link for the description field
-                        const link = document.createElement('a');
-                        link.textContent = item[col.key];
-                        if (item['url']!=="") {
-                           
-                            link.style.textDecoration = 'underline';
-                            link.style.color = 'blue';
-                            link.target = '_blank'; // Open in a new tab
-                            link.style.cursor = 'pointer';
-                            cell.addEventListener('click', () => open_url(item['url']));
-                            
+                        cell.style.display = 'flex';
+                        cell.style.alignItems = 'center';
+                        cell.style.justifyContent = 'space-between';
+
+                        const leftPart = document.createElement('span');
+                        leftPart.style.display = 'flex';
+                        leftPart.style.alignItems = 'center';
+
+                        // Icône lien URL (si url existe)
+                        if (item['url'] && item['url'] !== "" && item['url'] !== "N/A") {
+                            const urlIcon = document.createElement('span');
+                            urlIcon.textContent = '🔗';
+                            urlIcon.style.cursor = 'pointer';
+                            urlIcon.style.marginRight = '6px';
+                            urlIcon.title = 'Ouvrir le lien';
+                            urlIcon.addEventListener('click', (e) => {
+                                e.stopPropagation();
+                                window.open(item['url'], '_blank');
+                            });
+                            leftPart.appendChild(urlIcon);
                         }
-                        cell.appendChild(link);
+
+                        // Texte description
+                        const descSpan = document.createElement('span');
+                        descSpan.textContent = item[col.key];
+                        leftPart.appendChild(descSpan);
+
+                        // Icône édition à droite
+                        const editIcon = document.createElement('span');
+                        editIcon.textContent = '✏️';
+                        editIcon.style.cursor = 'pointer';
+                        editIcon.style.marginLeft = '8px';
+                        editIcon.title = 'Éditer la description';
+                        editIcon.style.alignSelf = 'flex-end';
+                        editIcon.addEventListener('click', (e) => {
+                            e.stopPropagation();
+                            const newDesc = prompt('Modifier la description :', item[col.key]);
+                            if (newDesc !== null && newDesc !== item[col.key]) {
+                                descSpan.textContent = newDesc;
+                                updateAnnonces(index, col.key, newDesc);
+                            }
+                        });
+
+                        cell.appendChild(leftPart);
+                        cell.appendChild(editIcon);
                     }
 
                     else {
@@ -205,62 +237,33 @@ function loadTableData(callback) {
 
                 document.getElementById('EditRow').onclick = () => {
                     window.CurrentRow=contextMenu.dataset.targetRow;
-                    set_current_row();
-                    openEditModal(row.id);
+                    //set_current_row();
+                    curRow=getState('currentSelectedRow', row);
+                    openEditModal(curRow.id);
                     contextMenu.style.display = 'none';
                 };
-             
-                document.getElementById('SetCurrentRow').onclick = () => {
-                    window.CurrentRow=contextMenu.dataset.targetRow;
-                    contextMenu.style.display = 'none';
-                    set_current_row();
-                };
+                
+                // document.getElementById('SetCurrentRow').onclick = () => {
+                //     window.CurrentRow=contextMenu.dataset.targetRow;
+                //     contextMenu.style.display = 'none';
+                //     set_current_row();
+                // };
                 document.getElementById('Open').onclick = () => {
                     window.CurrentRow=contextMenu.dataset.targetRow;
-                    set_current_row();
+                    alert("Open: " + window.CurrentRow);
+                    set_current_row();  
                     open_dir(filePath);
                   
                     contextMenu.style.display = 'none';
                 };
+               
 
-                 document.getElementById('Sscrape_url').onclick = () => {
-                    window.CurrentRow=contextMenu.dataset.targetRow;
-                    set_current_row();
-                    
-
-                    scrape_url(item.url,item.dossier);
-                  
-                    contextMenu.style.display = 'none';
-                };
-                let resumexist="";
-                document.getElementById('Resume').onclick = () => 
-                {
-                    let thefile="";
-                    resuReady=false;
-                    if (item.isJo=="O") {
-                        thefile= fichier_annonce;
-                        resuReady=true;
-                    }
-                   
-                    if (resuReady) 
-                    {
-                        const rowId = contextMenu.dataset.targetRow;
-                        if (confirm("Voulez vous résumer le document ? "+resumexist +"->" +thefile+ " dans le dossier " + item.dossier )) {
-                            window.CurrentRow=contextMenu.dataset.targetRow;
-                            set_current_row();       
-                            // call the function get answers
-                          
-                            get_job_answer(thefile,item.dossier, item.type,false,item.request);
-                            
-                            }
-                    } else
-                    {alert("document à résumer non trouvée")}
-                }
+          
 
                 document.getElementById('Delete').onclick = () => {
              
                     if (confirm("Voulez-vous vraiment supprimer ce dossier ?")) {
-                           updateAnnonces(index, 'etat', 'DELETED');
+                       updateAnnonces(index, 'etat', 'DELETED');
                         // Update the 'etat' column in the HTML row
                         const etatCell = row.querySelector('td:nth-child(' + (window.columns.filter(col => col.visible).findIndex(col => col.key === 'etat') + 1) + ')');
                         if (etatCell) {
@@ -360,18 +363,18 @@ function getStatus(filepath){
 function saveTableData() {
     disableDirectoryChangeButton();
     return new Promise((resolve, reject) => {
+        const data = window.annonces; // ← Correction ici
+        console.log('Data envoyé:', data);
         fetch('/save_annonces_json', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(window.annonces)
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
         })
         .then(response => response.json())
         .then(data => {
             if (data.status === "success") {
                 console.log('dbg445 Data successfully saved.');
-                enableDirectoryChangeButton()
+                enableDirectoryChangeButton();
                 resolve();
             } else {
                 console.error('Error saving data:', data.message);
@@ -399,3 +402,5 @@ function refresh()
             console.error('Error during refresh:', error);
         });
 }
+
+

@@ -22,6 +22,24 @@ function updateAnnonces_byfile(file, key, value) {
     }
 }
 
+
+
+function updateStateCurrentAnnonce(colName, value) 
+{
+    const index = get_currentAnnonce_index();
+    if (index === -1) {
+        console.error("dbg01-120 : Aucune annonce sélectionnée pour la mise à jour.");
+        return; 
+    }
+    const rowId = Object.keys(window.annonces[index])[0];
+   
+    updateAnnonces(index, colName, value);
+    UpdateState(rowId, colName, value);
+        
+}
+ 
+
+
 function updateAnnonces(index, key, value) {
     try {
         const filePath = Object.keys(window.annonces[index])[0];
@@ -65,13 +83,18 @@ function updateAnnonces_externe(index, key, value) {
 
 
 
-function UpdateState(rowId,col,value) {
+function UpdateState(rowId, col, value) {
     const selectedRow = document.getElementById(rowId);
-    const Cell = selectedRow.querySelector('td:nth-child(' + (window.columns.findIndex(col => col.key === col) + 1) + ')');
-                            if (Cell) {
-                                Cell.textContent = value;
-                                //updateAnnonces(index, col, value);
-                            }
+    if (!selectedRow) return;
+
+    // Utiliser l'attribut data-key pour trouver la cellule
+    const cell = selectedRow.querySelector(`td[data-key="${col}"]`);
+    if (cell) {
+        cell.textContent = value;
+        return true;
+        //updateAnnonces(index, col, value);
+    }
+    return false;
 }
 
 

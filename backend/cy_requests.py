@@ -32,6 +32,20 @@ cy_requests = Blueprint('requests', __name__)
 
 
 @cy_requests.route('/extract_pdf_text', methods=['POST'])
+# root of the function to extract text from a PDF file
+def extract_pdf_text():
+    data = request.get_json()
+    pdf_path = data.get('file')
+    pdf_path_full = os.path.join(GetRoot(), pdf_path)  # Ensure the path is absolute
+    if not pdf_path_full or not os.path.exists(pdf_path_full):
+        return jsonify({'success': False, 'error': 'PDF file not found'}), 404
+
+    text = extract_text_from_pdf(pdf_path_full)
+    if not text:
+        return jsonify({'success': False, 'error': 'Failed to extract text from PDF'}), 500
+
+    return jsonify({'success': True, 'text': text}), 200
+    
 
 def extract_text_from_pdf(pdf_path):
     try:
@@ -307,23 +321,7 @@ get info of pdf file and return'''
 def get_info(file_path,role, question):
     try:
         
-        # client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))  # Assurez-vous que OPENAI_API_KEY est défini dans vos variables d'environnement
-        # context = extract_text_from_pdf(file_path)
-        # if (context == ""):
-        #     return "{'url':'', 'entreprise':'inconnue', 'poste':'Annonce non lisible'}"
         
-        # #print(f"Contexte extrait: {context[:200]}...")
-        # full_context = f"{question}\n\nContexte:\n{context}"
-        
-        # response = client.chat.completions.create(
-        #     model="gpt-3.5-turbo",
-        #     messages=[
-        #         {"role": "system", "content": "analyse le texte suivant et réponds à cette question, peux tu renvoyer les informations sous forme de données json, les champs son définie dans la question entre [ et ]"},
-        #         {"role": "user", "content": full_context}
-        #     ],
-        #     temperature=0.7,
-        #     max_tokens=1000
-        # )
         context = extract_text_from_pdf(file_path)
         response = get_mistral_answer(question, role, context)
         return response
@@ -455,14 +453,15 @@ async def save_AI_Instructions(file_name, NumDos, content):
         logger.error(f"Error saving AI instructions: {str(e)}")
         return False
 
-@cy_requests.route('/save_chat_pdf', methods=['POST'])
-def save_chat_pdf():
+@cy_requests.route('/save_text_pdf', methods=['POST'])
+def save_text_pdf():
     try:
         data = request.json
         num_dos = data.get('NumDos')
         dossier = os.path.join(GetRoot(), num_dos)
-        chat = data.get('chat', '')
-        file_name = f"{num_dos}_chat.pdf"
+        docname= data.get('docname')
+        chat = data.get('text', '')
+        file_name = f"{num_dos}{docname}"
         file_path = os.path.join(dossier, file_name)
 
         if not os.path.exists(dossier):

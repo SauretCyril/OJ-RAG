@@ -22,7 +22,9 @@ async function initializeApp() {
         
         // Charger les colonnes
         await loadColumnsFromServer();
-        
+
+        await fetchAndSetDirectoriesListe();
+
         // Afficher le dossier courant
         await showCurrentDossier();
         
@@ -33,7 +35,8 @@ async function initializeApp() {
         
         // Mettre à jour les onglets
         setNewTab();
-        
+        // Appel initial au chargement
+        updateActionBarVisibility();
         // Ajouter des événements
         //attachEventListeners();
         
@@ -82,7 +85,7 @@ async function loadCookies() {
  * Enregistre la configuration des colonnes
  * @returns {Promise} - Promise contenant le résultat de l'opération
  */
-async function saveConfigCol() {
+/* async function saveConfigCol() {
     try {
         const columns = getState('columns');
         const tabActive = getState('tabActive');
@@ -101,7 +104,7 @@ async function saveConfigCol() {
         console.error('Erreur lors de l\'enregistrement de la configuration:', error);
         throw error;
     }
-}
+} */
 
 /**
  * Affiche les résultats
@@ -145,27 +148,27 @@ async function loadFilterValues(tabActive) {
  */
 async function showCurrentDossier() {
     try {
-        let currentDossier = null;
-        
+        //let currentDossier = null;
+        ;
         // Tenter de récupérer le cookie current_dossier
         try {
-            currentDossier = await getCookie('current_dossier');
+            AppState.currentDossier = await getCookie('current_dossier');
         } catch (cookieError) {
             console.log('Cookie current_dossier non trouvé ou erreur lors de la récupération:', cookieError.message);
             // currentDossier reste null
         }
         
-        if (currentDossier) {
+        if (AppState.currentDossier) {
             // Vérifier si le répertoire existe
-            const directoryExists = await checkDirectoryExists(currentDossier);
+            const directoryExists = await checkDirectoryExists(AppState.currentDossier);
             
             if (directoryExists) {
-                document.getElementById('current-dir').textContent = currentDossier;
+                document.getElementById('current-dir').textContent = AppState.currentDossier;
                 document.getElementById('current-dir').style.color = ''; // Couleur normale
             } else {
                 // Le répertoire n'existe plus
-                console.warn(`Le répertoire '${currentDossier}' n'existe plus.`);
-                document.getElementById('current-dir').textContent = `INVALIDE: ${currentDossier}`;
+                console.warn(`Le répertoire '${AppState.currentDossier}' n'existe plus.`);
+                document.getElementById('current-dir').textContent = `INVALIDE: ${AppState. currentDossier}`;
                 document.getElementById('current-dir').style.color = 'red';
                 await promptUserForValidDirectory();
             }
@@ -176,7 +179,7 @@ async function showCurrentDossier() {
             document.getElementById('current-dir').style.color = 'orange';
             await promptUserForValidDirectory();
         }
-    } catch (error) {
+    } catch (error) {   
         console.error('Erreur lors de la récupération du dossier courant:', error);
         // En cas d'erreur, demander quand même à l'utilisateur de sélectionner un répertoire
         document.getElementById('current-dir').textContent = 'Erreur - Sélection requise';
@@ -185,29 +188,43 @@ async function showCurrentDossier() {
     }
 }
 
+
+
 /**
  * Charge les colonnes depuis le serveur
- * @returns {Promise} - Promise contenant le résultat de l'opération
+ * @returns {Promise} - Promise contenant le résultat de l'opérationDEBUG:
  */
 async function loadColumnsFromServer() {
     try {
+        console.log('DBG-2255: Appel à loadColumnsFromServer');
         const response = await ApiClient.config.loadColumns();
-        
-        if (response && response.columns) {
-            // Désérialiser les colonnes
-            const deserializedColumns = deserializeColumns(response.columns);
-            setState('columns', deserializedColumns);
-            
-            // Mettre à jour l'onglet actif si présent
+        console.log('DBG-2255=Colonnes chargées depuis le serveur:', response);
+
+        let columns = null;
+        if (Array.isArray(response)) {
+            columns = deserializeColumns(response);
+        } else if (response && response.columns) {
+            columns = deserializeColumns(response.columns);
             if (response.tabActive) {
                 setState('tabActive', response.tabActive);
             }
         }
-        
-        return response;
+
+        // Fallback si tableau vide ou non défini
+        if (!Array.isArray(columns) || columns.length === 0) {
+            console.warn('Colonnes serveur absentes ou vides, fallback sur colonnes locales');
+            columns = getState('columns');
+        }
+
+        setState('columns', columns);
+        console.log("dbg-0021", getState('columns'));
+        return columns;
     } catch (error) {
+        // Fallback en cas d'erreur
         console.error('err006-Erreur lors du chargement des colonnes:', error);
-        throw error;
+        const fallback = getState('columns');
+        setState('columns', fallback);
+        return fallback;
     }
 }
 
@@ -340,13 +357,47 @@ function disableDirectoryChangeButton() {
     }
 }
 
+/**
+ * Met à jour les informations de l'annonce sélectionnée
+ */
+function updateSelectedAnnonceInfo() {
+    const infoDiv = document.getElementById('selected-annonce-info');
+    
+    
+    const row = getState('currentSelectedRow');
+    if (row && row.id) {
+        const annonce = getAnnonce_byfile(row.id);
+        let infoHtml = `Dossier : ${annonce['dossier']} - ${annonce['description']}`;
+        if (annonce['url'] && /^https?:\/\/.+/.test(annonce['url'])) {
+            infoHtml += ` <a href="${annonce['url']}" target="_blank" title="Ouvrir le lien">
+            <span style="vertical-align:middle; margin-left:5px;">
+                <svg width="32" height="32" viewBox="0 0 16 16" fill="none" style="display:inline;">
+                <path d="M10.5 2H14v3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                <path d="M6 10L14 2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                <rect x="2" y="6" width="8" height="8" rx="2" stroke="currentColor" stroke-width="1.5"/>
+                </svg>
+            </span>
+            </a>`;
+        }
+        infoDiv.innerHTML = infoHtml;
+    } else {
+        infoDiv.textContent = '';
+    }
+}
+
+// Mets à jour à chaque changement de sélection
+subscribeToState('currentSelectedRow', updateSelectedAnnonceInfo);
+
+// Mets à jour à l'initialisation (optionnel)
+document.addEventListener('DOMContentLoaded', updateSelectedAnnonceInfo);
+
 // Initialiser l'application au chargement de la page
 window.addEventListener('load', initializeApp);
 
 // Exposer les fonctions globalement
 // Note: nous gardons les mêmes noms pour maintenir la compatibilité avec le code existant
 window.colisvisible = colIsVisible;
-window.save_config_col = saveConfigCol;
+//window.save_config_col = saveConfigCol;
 window.view_results = viewResults;
 window.loadFilterValues = loadFilterValues;
 window.show_current_dossier = showCurrentDossier;
@@ -355,3 +406,44 @@ window.promptUserForValidDirectory = promptUserForValidDirectory;
 window.openDirectorySelector = openDirectorySelector;
 window.enableDirectoryChangeButton = enableDirectoryChangeButton;
 window.disableDirectoryChangeButton = disableDirectoryChangeButton;
+
+/**
+ * Met à jour la visibilité de la barre d'actions
+ */
+function updateActionBarVisibility() {
+    const actionBar = document.getElementById('action-bar');
+    const selected = getState('currentSelectedRow');
+    if (actionBar) {
+        actionBar.style.display = selected ? '' : 'none';
+    }
+}
+
+// À appeler après chaque changement de sélection
+document.addEventListener('state-changed', (event) => {
+    if (event.detail.key === 'currentSelectedRow') {
+        updateActionBarVisibility();
+    }
+});
+
+
+// Fonction pour récupérer les répertoires et mettre à jour AppState.directories
+async function fetchAndSetDirectoriesListe() {
+    try {
+        const response = await fetch('/get_directories');
+        if (!response.ok) {
+            throw new Error('Erreur lors du chargement des répertoires');
+        }
+        const directories = await response.json();
+        if (window.AppState && typeof window.AppState === 'object') {
+            window.AppState.directories = directories;
+        } else {
+            window.AppState = { directories };
+        }
+    } catch (error) {
+        console.error('Erreur lors de la récupération des répertoires:', error);
+    }
+}
+
+
+
+

@@ -1,26 +1,25 @@
 
-
-
 function generateTableHeaders() {
-    const thead = document.querySelector('thead tr');
-    const filterRow = document.querySelector('thead tr:nth-child(2)');
-    // Clear existing headers
+    const thead = document.querySelector('thead');
+    if (!thead) return;
     thead.innerHTML = '';
-    filterRow.innerHTML = '';
-    
-    window.columns.forEach(col => {
-        if (colisvisible(col.type) && col.visible === true) {
-            // Create header cell
-            const th = document.createElement('th');
-            th.style.width = col.width;
-            th.classList.add('filter-cell-col');
-            //th.textContent = col.title.charAt(0).toUpperCase() + col.key.slice(1);
-            th.textContent = col.title;
-            thead.appendChild(th);
 
-            // Create filter cell
+    // Ligne des titres
+    const theadRow = document.createElement('tr');
+    // Ligne des filtres
+    const filterRow = document.createElement('tr');
+
+    (getState('columns') || []).forEach(col => {
+        if (colisvisible(col.type) && col.visible === true) {
+            // Header cell
+            const th = document.createElement('th');
+            th.style.width = col.width || '';
+            th.classList.add('filter-cell-col');
+            th.textContent = col.title || col.key || '';
+            theadRow.appendChild(th);
+
+            // Filter cell
             const filterCell = document.createElement('th');
-            
             filterCell.classList.add('filter-cell');
             if (col.key === 'categorie' || col.key === 'etat' || col.key === 'todo' || col.key === 'type') {
                 const container = document.createElement('div');
@@ -49,24 +48,33 @@ function generateTableHeaders() {
                 });
             } else {
                 const input = document.createElement('input');
-                input.classList.add('filter-container')
+                input.classList.add('filter-container');
                 input.type = 'text';
                 input.id = `filter-${col.key}`;
                 input.placeholder = 'Filter';
                 filterCell.appendChild(input);
                 input.addEventListener('input', filterTable);
             }
-            filterCell.classList.add('filter-cell');
             filterRow.appendChild(filterCell);
         }
     });
 
-    // Add status header and filter cell
-    const statusHeader = document.createElement('th');
-    statusHeader.classList.add('header');
-    // statusHeader.textContent = 'Status';
-    thead.appendChild(statusHeader);
+    // Ajout des boutons fixes si besoin
+    // (à adapter selon ton besoin, ici exemple)
+     document.getElementById('fix_btn-edit').onclick = () => { fix_openEditModal(); };
+     document.getElementById('fix_btn-open').onclick = () => { fix_open_dir(); };
+     document.getElementById('fix_btn-delete').onclick = () => { updateStateCurrentAnnonce('etat', 'DELETED'); };
+     document.getElementById('fix_btn-change').onclick = () => { fix_change_dir(); };
+     document.getElementById('fix_open_prompt_analyse').onclick = () => { ask_local_PromptTable(); };
+     // Ajout des lignes au thead fix_btn-change
+    thead.appendChild(theadRow);
+    thead.appendChild(filterRow);
 
-    const statusFilterCell = document.createElement('th');
-    
+    // Ajout du header et filtre status si besoin
+    // const statusHeader = document.createElement('th');
+    // statusHeader.classList.add('header');
+    // theadRow.appendChild(statusHeader);
+
+    // const statusFilterCell = document.createElement('th');
+    // filterRow.appendChild(statusFilterCell);
 }

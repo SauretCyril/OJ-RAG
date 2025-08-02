@@ -6,7 +6,7 @@ window.addEventListener('error', function(e) {
     }
 });
 
-let currentSelectedRow = null;
+//let currentSelectedRow = null;
 
 // Fonction pour récupérer un enregistrement par nom de fichier
 function getAnnonce_byfile(file) {
@@ -52,23 +52,30 @@ function getAnnonce_value_byfile(file, key) {
 // Fonction pour changer d'onglet (mise à jour pour inclure chatbot)
 function switchTab(tabId) {
     // Désactiver tous les onglets
+    
     document.querySelectorAll('.tab-button').forEach(btn => {
         btn.classList.remove('active');
     });
     document.querySelectorAll('.tab-content').forEach(content => {
         content.classList.remove('active');
     });
-    
+   
     // Activer l'onglet sélectionné
-    document.querySelector(`[onclick="switchTab('${tabId}')"]`).classList.add('active');
-    document.getElementById(tabId).classList.add('active');
+   
     
-    // Charger le contenu selon l'onglet
-    if (currentSelectedRow) {
-        if (tabId === 'texte-extrait') {
-            loadTextExtract(currentSelectedRow.id);
-        } else if (tabId === 'chatbot') {
-            initializeChatbot(currentSelectedRow.id);
+    //document.querySelector(`[onclick="switchTab('${tabId}')"]`).classList.add('active');
+    btnswitchTab = document.getElementById(`tab-button-${tabId}`);
+    if (btnswitchTab) {
+        document.getElementById(tabId).classList.add('active');
+        document.getElementById(`tab-button-${tabId}`).classList.add('active');
+        currentrow = getState('currentSelectedRow');
+        // Charger le contenu selon l'onglet
+        if (currentrow) {
+            if (tabId === 'texte-extrait') {
+                loadTextExtract(currentrow.id);
+            } else if (tabId === 'chatbot') {
+                initializeChatbot(currentrow.id);
+            }
         }
     }
 }
@@ -76,91 +83,71 @@ function switchTab(tabId) {
 // Nouvelle fonction pour charger le texte extrait
 function loadTextExtract(rowId) {
     try {
+        if (!rowId) {
+            showTextError('Identifiant de ligne manquant.' + rowId);
+            return;
+        }
+
         const textViewer = document.getElementById('text-viewer');
         const saveBtn = document.getElementById('save-text-btn');
         const annonceData = getAnnonce_byfile(rowId);
-        
-        console.log('DEBUG loadTextExtract - rowId:', rowId);
-        console.log('DEBUG loadTextExtract - annonceData:', annonceData);
-        
-        if (annonceData) {
-            const numDossier = annonceData.dossier;
-            const pdfFilePath = numDossier + "/" + numDossier + "_annonce_.pdf";
-            
-            console.log('DEBUG loadTextExtract - pdfFilePath:', pdfFilePath);
-            
-            // Afficher un indicateur de chargement
-            textViewer.innerHTML = `
-                <div class="text-loading">
-                    <i class="fas fa-spinner fa-spin"></i>
-                    <p>Extraction du texte en cours...</p>
-                </div>
-            `;
-            
-            // Masquer le bouton pendant le chargement
-            if (saveBtn) {
-                saveBtn.style.display = 'none';
-            }
-            
-            // Appeler l'API pour extraire le texte
-            console.log('DEBUG: Envoi de la requête à /extract_text_from_pdf');
-            
-            fetch('/extract_text_from_pdf', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    file: pdfFilePath
-                })
-            })
-            .then(response => {
-                console.log('DEBUG: Réponse reçue, status:', response.status);
-                console.log('DEBUG: Réponse headers:', response.headers);
-                
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-                return response.json();
-            })
-            .then(data => {
-                console.log('DEBUG: Données reçues:', data);
-                
-                if (data.success) {
-                    console.log("DEBUG: loadTextExtract SUCCESS - text length:", data.text ? data.text.length : 0);
-                    showTextContent(data.text);
-                    // Afficher le bouton "Enregistrer" car le PDF existe
-                    showSaveButton('save', rowId);
-                } else {
-                    console.log("DEBUG: loadTextExtract FAILED:", data.error);
-                    showTextError(data.error || 'Erreur lors de l\'extraction du texte');
-                    // Afficher le bouton "Nouveau" car le PDF n'existe pas
-                    showSaveButton('new', rowId);
-                }
-            })
-            .catch(error => {
-                console.error('Erreur détaillée lors de l\'extraction du texte:', error);
-                console.error('Error stack:', error.stack);
-                showTextError('Erreur de connexion: ' + error.message);
-                // Afficher le bouton "Nouveau" en cas d'erreur
-                showSaveButton('new', rowId);
-            });
-            
-        } else {
-            console.log('DEBUG: Aucune donnée trouvée pour rowId:', rowId);
+
+        console.log('TextExtract - rowId:', rowId);
+        console.log('TextExtract - annonceData:', annonceData);
+
+        if (!annonceData) {
             showTextError('Aucune donnée trouvée pour ce dossier');
-            if (saveBtn) {
-                saveBtn.style.display = 'none';
-            }
+            if (saveBtn) saveBtn.style.display = 'none';
+            return;
         }
-        
+
+        const numDossier = annonceData.dossier;
+        const pdfFilePath = numDossier + "/" + numDossier + "_annonce_.pdf";
+
+        // Afficher un indicateur de chargement
+        textViewer.innerHTML = `
+            <div class="text-loading">
+                <i class="fas fa-spinner fa-spin"></i>
+                <p>Extraction du texte en cours...</p>
+            </div>
+        `;
+        if (saveBtn) saveBtn.style.display = 'none';
+
+        // Appeler l'API pour extraire le texte
+        fetch('/extract_pdf_text', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ file: pdfFilePath })
+        })
+        .then(response => {
+            if (response.status === 404) {
+                showTextError("Aucun fichier PDF trouvé à extraire.");
+                return null;
+            }
+            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+            return response.json();
+        })
+        .then(data => {
+            if (!data) return;
+            if (data.success) {
+                showTextContent(data.text);
+                showSaveButton('save', rowId);
+            } else {
+                showTextError(data.error || 'Erreur lors de l\'extraction du texte');
+                showSaveButton('new', rowId);
+            }
+        })
+        .catch(error => {
+            console.error('Erreur lors de l\'extraction du texte:', error);
+            showTextError('Erreur de connexion: ' + error.message);
+            showSaveButton('new', rowId);
+        });
+
     } catch (error) {
-        console.error('Erreur lors du chargement du texte:', error);
+        console.error('Erreur loadTextExtract:', error);
         showTextError('Erreur lors du chargement du texte: ' + error.message);
         const saveBtn = document.getElementById('save-text-btn');
-        if (saveBtn) {
-            saveBtn.style.display = 'none';
-        }
+        if (saveBtn) saveBtn.style.display = 'none';
     }
 }
 
@@ -197,25 +184,42 @@ function showTextError(errorMessage) {
     `;
 }
 
-// Fonction pour changer d'onglet (simplifiée pour un seul onglet)
-function switchTab(tabId) {
-    // Désactiver tous les onglets
-    document.querySelectorAll('.tab-button').forEach(btn => {
-        btn.classList.remove('active');
-    });
-    document.querySelectorAll('.tab-content').forEach(content => {
-        content.classList.remove('active');
-    });
-    
-    // Activer l'onglet sélectionné
-    document.querySelector(`[onclick="switchTab('${tabId}')"]`).classList.add('active');
-    document.getElementById(tabId).classList.add('active');
-    
-    // Charger le contenu selon l'onglet (seulement texte-extrait)
-    if (currentSelectedRow && tabId === 'texte-extrait') {
-        loadTextExtract(currentSelectedRow.id);
+
+
+//<div id="action-bar"
+// Fonction pour gérer la sélection d'une ligne (mise à jour)
+function selectRow(row) {
+    try {
+         
+        document.querySelectorAll('#table-body tr').forEach(tr => {
+            tr.classList.remove('selected');
+        });
+         
+        row.classList.add('selected');
+       
+        setState('currentSelectedRow', row);
+        
+        showActionBar();
+      
+        updatePromptButtonVisibility();
+        
+        const activeTab = document.querySelector('.tab-content.active');
+        if (activeTab) {
+            if (activeTab.id === 'texte-extrait') {
+                loadTextExtract(row.id);
+            } else if (activeTab.id === 'chatbot') {
+                initializeChatbot(row.id);
+            }
+        }
+        populateDirectorySelect();
+        
+    } catch (error) {
+        console.error('Erreur lors de la sélection de la ligne:', error);
     }
 }
+
+
+
 
 // Nouvelle fonction pour initialiser le chatbot
 function initializeChatbot(rowId) {
@@ -599,38 +603,14 @@ function removeChatMessage(chatContainer, messageId) {
     }
 }
 
-// Fonction pour gérer la sélection d'une ligne (mise à jour)
-function selectRow(row) {
-    try {
-        // Désélectionner toutes les lignes
-        document.querySelectorAll('#table-body tr').forEach(tr => {
-            tr.classList.remove('selected');
-        });
-        
-        // Sélectionner la ligne actuelle
-        row.classList.add('selected');
-        currentSelectedRow = row;
-        
-        // Charger le contenu selon l'onglet actif
-        const activeTab = document.querySelector('.tab-content.active');
-        if (activeTab) {
-            if (activeTab.id === 'texte-extrait') {
-                loadTextExtract(row.id);
-            } else if (activeTab.id === 'chatbot') {
-                initializeChatbot(row.id);
-            }
-        }
-        
-    } catch (error) {
-        console.error('Erreur lors de la sélection de la ligne:', error);
-    }
-}
+
+
 
 // Fonction pour réinitialiser l'aperçu (mise à jour)
 function resetPreview() {
     resetTextPreview();
     resetChatbot();
-    currentSelectedRow = null;
+    //currentSelectedRow = null;
 }
 
 // Fonction pour réinitialiser le chatbot
@@ -782,22 +762,22 @@ function saveTextContent(rowId) {
                 const numDossier = annonceData.dossier;
                 
                 // Appeler l'API pour sauvegarder le texte
-                fetch('/save_text_content', {
+                fetch('/save_text_pdf', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                     },
                     body: JSON.stringify({
-                        folder: numDossier,
+                        NumDos: numDossier,
                         text: text,
-                        action: 'update',
-                        annonceData: annonceData
+                        Docname:"_annonce_.pdf",    
+
                     })
                 })
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
-                        //alert('PDF sauvegardé avec succès');
+                        alert('PDF sauvegardé avec succès');
                         // Plus besoin de recharger l'onglet PDF
                     } else {
                         alert('Erreur lors de la sauvegarde: ' + data.error);
@@ -924,12 +904,13 @@ function saveChatToPDF(rowId) {
     // Appeler l'API pour générer le PDF côté serveur
     const annonceData = getAnnonce_byfile(rowId);
     const numDossier = annonceData ? annonceData.dossier : '';
-    fetch('/save_chat_pdf', {
+    fetch('/save_text_pdf', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
             NumDos: numDossier,
-            chat: chatText
+            text: chatText,
+            Docname:"_chat.pdf"
         })
     })
     .then(response => response.json())
@@ -943,4 +924,55 @@ function saveChatToPDF(rowId) {
     .catch(error => {
         alert("Erreur lors de la sauvegarde du PDF : " + error.message);
     });
+}
+
+// Fonction pour afficher la barre d'action
+function showActionBar() {
+    const bar = document.getElementById('action-bar');
+    if (bar) bar.style.display = 'flex';
+}
+
+// Fonction pour cacher la barre d'action
+function hideActionBar() {
+    const bar = document.getElementById('action-bar');
+    if (bar) bar.style.display = 'none';
+}
+ 
+function populateDirectorySelect() {
+    const select = document.getElementById('directory-select');
+    if (!window.AppState || !AppState.directories) return;
+    select.innerHTML = '';
+    AppState.directories.forEach(dir => {
+        const option = document.createElement('option');
+        option.value = dir.path;
+        option.textContent = dir.label;
+        // Correction ici : on compare avec currentDossier
+        if (dir.path === AppState.currentDossier) {
+            option.selected = true;
+        }
+        select.appendChild(option);
+    });
+}
+
+// Affiche ou cache le bouton selon le type de la ligne sélectionnée
+function updatePromptButtonVisibility() {
+    const annonce = get_currentAnnonce();
+    console.log('dbg-555a : Annonce sélectionnée:', annonce);
+    if (!annonce) {
+        console.warn('Aucune annonce sélectionnée pour mettre à jour le bouton Prompt.');
+        return false;
+    }
+    const type = annonce.type;
+    const btn = document.getElementById('fix_open_prompt_analyse');
+    if (!btn) {
+        console.error('Bouton fix_open_prompt_analyse non trouvé dans le DOM');
+        return false;
+    }
+    if (type === "Prompt") {
+        btn.style.display = "inline-block";
+        return true;
+    } else {
+        btn.style.display = "none";
+        return false;
+    }
 }

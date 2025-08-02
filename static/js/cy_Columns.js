@@ -1,49 +1,4 @@
-/**
- * Charge les colonnes depuis le serveur
- * Si le fichier n'existe pas, conserve les colonnes par défaut
- */
-async function loadColumnsFromServer() {
-    try {
-        const response = await fetch('/charger_cols_file', {
-            method: 'GET',
-            headers: {
-                'Content-Type': 'application/json'
-            }
-        });
 
-        if (!response.ok) {
-            console.log(`err001-Erreur lors du chargement des colonnes : ${response.statusText}`);
-            // En cas d'échec, on s'assure que les colonnes par défaut sont utilisées
-            setState('columns', [...window.columns]);
-            return;
-        }
-
-        const data = await response.json();
-
-        if (data.error) {
-            console.error('Erreur du serveur :', data.error);
-            // En cas d'erreur, on s'assure que les colonnes par défaut sont utilisées
-            setState('columns', [...window.columns]);
-            return;
-        }
-
-        if (Array.isArray(data)) {
-            // Mettre à jour les colonnes globales en conservant la compatibilité
-            updateColumns(data);
-            console.log('Colonnes chargées avec succès depuis le serveur.');
-        } else {
-            console.error('Le fichier .cols ne contient pas un tableau valide.');
-            //alert('Le fichier .cols est invalide.');
-            // En cas de format invalide, on s'assure que les colonnes par défaut sont utilisées
-            setState('columns', [...window.columns]);
-        }
-    } catch (error) {
-        console.error('err004-Erreur lors du chargement des colonnes :', error);
-        //alert('Erreur lors du chargement des colonnes.');
-        // En cas d'exception, on s'assure que les colonnes par défaut sont utilisées
-        setState('columns', [...window.columns]);
-    }
-}
 
 /**
  * Met à jour les colonnes en fusionnant les nouvelles avec les existantes

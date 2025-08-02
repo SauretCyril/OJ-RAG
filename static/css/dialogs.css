@@ -130,20 +130,6 @@
     margin-bottom: 15px;
 }
 
-.tab-button {
-    background-color: #7eda72;
-    border: none;
-    outline: none;
-    cursor: pointer;
-    padding: 10px 15px;
-    margin-right: 5px;
-    border-radius: 5px 5px 0 0;
-}
-
-.tab-button.active {
-    background-color: #4CAF50;
-    color: white;
-}
 
 .tab-content {
     display: none;

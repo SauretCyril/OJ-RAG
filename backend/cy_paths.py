@@ -1,7 +1,8 @@
-from backend.cy_cookies import *
+from cy_cookies import *
 import os
 import tkinter as tk
 from tkinter import filedialog
+import shutil
 
 import platform
 if platform.system() == "Windows":
@@ -33,7 +34,7 @@ def GetRoot():
     
     # Utiliser le répertoire personnalisé s'il existe
     if newroot and os.path.exists(newroot):
-        print(f"[INFO] Utilisation du répertoire personnalisé: {newroot}")
+        #print(f"[INFO] Utilisation du répertoire personnalisé: {newroot}")
         root_dir = newroot
     
     # Normaliser le chemin (remplacer les backslashes par des slashes)
@@ -217,5 +218,33 @@ def select_directory():
             'success': False,
             'error': str(e)
         }), 500
+
+@paths.route('/move_current_dossier', methods=['POST'])
+def move_current_dossier():
+    try:
+        data = request.get_json()
+        source = data.get('source')
+        target = data.get('target')
+        if not source or not target:
+            return jsonify({'success': False, 'error': 'Source ou cible manquante'}), 400
+
+        # Normalisation des chemins
+        source = source.replace('\\', '/')
+        target = target.replace('\\', '/')
+
+        # Annule si le dossier cible existe déjà
+        if os.path.exists(target):
+            return jsonify({'success': False, 'error': 'Le dossier cible existe déjà'}), 409
+
+        # Vérifie que le dossier source existe
+        if not os.path.exists(source):
+            return jsonify({'success': False, 'error': 'Le dossier source est introuvable'}), 404
+
+        # Déplace le dossier
+        shutil.move(source, target)
+        return jsonify({'success': True, 'message': 'Dossier déplacé'}), 200
+
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 

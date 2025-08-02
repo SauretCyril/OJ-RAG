@@ -230,7 +230,7 @@ async function selectRep() {
             box-sizing: border-box;
         }
         .selected-row {
-            background-color: #e8f4ff;
+            background-color: #042c52ff;
         }
         .action-buttons {
             display: flex;
@@ -280,6 +280,7 @@ async function selectRep() {
     `;
     document.head.appendChild(style6);
 }
+
 
 // Charger les répertoires depuis le serveur
 async function loadDirectories() {
@@ -527,38 +528,79 @@ async function closeDirectoryForm() {
         form.close();
         form.remove(); // Ensure the form is removed from the DOM
         window.conf = conf_loadconf();
-        
-        // Vérifier si la fonction loadColumnsFromServer existe et si l'élément DOM nécessaire est présent
-        if (typeof loadColumnsFromServer === 'function') {
-            try {
-                // Vérifier si l'élément DOM requis pour les colonnes existe
-                const columnsContainer = document.getElementById('columnsTableBody') || 
-                                       document.getElementById('columns-container') || 
-                                       document.querySelector('.columns-table');
-                
-                if (columnsContainer) {
-                    await loadColumnsFromServer();
-                } else {
-                    console.warn('Container pour les colonnes non trouvé, skip loadColumnsFromServer');
-                }
-            } catch (error) {
-                console.error('err005-Erreur lors du chargement des colonnes:', error);
-                // Ne pas bloquer le refresh même si loadColumnsFromServer échoue
-                console.warn('Continuing with refresh despite column loading error');
-            }
-        } else {
-            console.warn('loadColumnsFromServer function not found, skipping column loading');
-        }
-        
-        // S'assurer que refresh existe avant de l'appeler
-        if (typeof refresh === 'function') {
-            refresh();
-        } else {
-            console.warn('refresh function not found');
-            // Solution alternative : recharger la page
-            window.location.reload();
+        await loadColumnsFromServer();
+        await fetchAndSetDirectoriesListe();
+        refresh();
+       
+    }
+}
+window.selectRep = selectRep;
+
+
+
+/* function onDirectoryChangeClick() {
+    const select = document.getElementById('directory-select');
+    if (select) {
+        const value = select.value;
+        alert("Dossier sélectionné : " + value);
+    }
+}
+ */
+/*
+function onDirectoryChange(newPath) {
+                    // Met à jour le currentDossier dans AppState et effectue les actions nécessaires
+                    if (window.AppState) {
+                      AppState.currentDossier = newPath;
+                      // Ajoutez ici le code pour rafraîchir l'affichage ou charger le nouveau dossier
+                      if (typeof refresh === 'function') refresh();
+                    }
+                  }
+
+                  // Appeler la fonction au chargement de la page ou après chargement d'AppState
+                  document.addEventListener('DOMContentLoaded', populateDirectorySelect);
+*/
+
+async function fix_change_dir() {
+    const select = document.getElementById('directory-select');
+    if (!select) return;
+    const targetRoot = select.value;
+    const sourceRoot = AppState.currentDossier;
+    const annonce = get_currentAnnonce();
+    const numeroDossier = annonce.dossier;
+    const id = annonce.id;
+    if (!numeroDossier) {
+        //alert("Numéro de dossier introuvable.");
+        return;
+    }
+    const source = sourceRoot.replace(/\/$/, '') + '/' + numeroDossier;
+    const target = targetRoot.replace(/\/$/, '') + '/' + numeroDossier;
+    if (source === target) {
+        //alert("Aucun changement à effectuer.");
+        return;
+    }
+
+    const ok = confirm(`Voulez-vous vraiment déplacer le dossier\n\n${source}\nvers\n${target} ?`);
+   
+
+    if (!ok) return;
+    updateStateCurrentAnnonce('etat', 'MOVING');
+    const res = await fetch('/move_current_dossier', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ source, target })
+    });
+    const data = await res.json();
+    if (data.success) {
+         updateStateCurrentAnnonce('etat', 'MOVED');
+    } else {
+        if (res.status === 409) {
+            alert("Erreur : Le dossier cible existe déjà.");
+            updateStateCurrentAnnonce('etat', 'ERROR');
+            return;
         }
     }
 }
 
-// ...existing code...
+
+
+window.fix_change_dir = fix_change_dir;

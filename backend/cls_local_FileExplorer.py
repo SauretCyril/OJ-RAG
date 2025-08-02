@@ -1,11 +1,14 @@
 import os
+import requests
 import tkinter as tk
 from tkinter import ttk, filedialog, Scale
 from flask import Blueprint, request
+from cy_fbx_exploreur import launch_fbxreview
+import threading
 
 exploreur = Blueprint('exploreur', __name__)
 
-class FileExplorer:
+class cls_local_FileExplorer:
     """Classe générique pour l'explorateur de fichiers"""
     
     # Dictionnaire pour suivre l'état des filtres (statique par défaut)
@@ -51,7 +54,7 @@ class FileExplorer:
         },
         'Configuration': {
             'icon': '⚙️',
-            'types': ['conf','col','exclued' ],
+            'types': ['conf','exclued' ],
             'color': '#5ba478'
         },
         'Données': {
@@ -106,7 +109,7 @@ class FileExplorer:
             self.title = "Explorateur de Documents"
             # Filtrer uniquement les types de documents
             for group in list(self.FILE_GROUPS.keys()):
-                if group != "Documents":  # CORRECTION: garder seulement "Documents"
+                if group != "ocuments":  # CORRECTION: garder seulement "Documents"
                     self.FILE_GROUPS.pop(group)
             # Activer uniquement le filtre de documents
             for group in self.active_filters:
@@ -239,11 +242,11 @@ class FileExplorer:
                 icon = file_info['icon']
                 color = file_info['color']
 
-                print (f"<FILE > fichier inserting {item}: => {file_type}")
-                print (f"<FILEa> >self.FILE_GROUPS = {self.FILE_GROUPS}")
+                #print (f"<FILE > fichier inserting {item}: => {file_type}")
+                #print (f"<FILEa> >self.FILE_GROUPS = {self.FILE_GROUPS}")
 
                 is_in_active_group = False
-                print (f"<FILEa> >self.FILE_GROUPS = {self.FILE_GROUPS}")
+                #print (f"<FILEa> >self.FILE_GROUPS = {self.FILE_GROUPS}")
                 if self.active_filters.get(file_type) or self.explorer_type == "standard":
                     self.tree.insert(parent, 'end', text=f"{icon} {item}", values=[item_path], 
                     tags=(f"color_{color.replace('#', '')}",))
@@ -323,11 +326,19 @@ class FileExplorer:
         path = self.tree.item(node, 'values')[0]
 
         try:
-            # Vérifier si c'est un fichier image
-            if path.lower().endswith(('.png', '.jpg', '.jpeg', '.gif', '.bmp')):
+            # Si c'est un fichier FBX, appeler la route Flask dans un thread séparé
+            if path.lower().endswith('.fbx'):
+                normalized_path = os.path.normpath(path)
+                print(f"[DEBUG-14] Envoi du chemin FBX normalisé : {normalized_path}")
+                def call_fbxreview():
+                    try:
+                        launch_fbxreview(normalized_path)
+                    except Exception as e:
+                        print(f"Erreur lors de l'appel à /launch_fbxreview : {e}")
+                threading.Thread(target=call_fbxreview, daemon=True).start()
+            elif path.lower().endswith(('.png', '.jpg', '.jpeg', '.gif', '.bmp')):
                 self.show_image_viewer(path)
             else:
-                # Pour les autres types de fichiers, utiliser l'application par défaut
                 os.startfile(path)
         except Exception as e:
             print(f"Erreur lors de l'ouverture du fichier : {e}")
@@ -347,7 +358,7 @@ class FileExplorer:
                         print(f"Erreur lors de l'ouverture du fichier PDF : {e}")
                 elif path.endswith('.xlsx'):
                     try:
-                        os.system(f'start excel "{path}"')
+                        os.system(f'start excel \"{path}\"')
                     except Exception as e:
                         print(f"Erreur lors de l'ouverture du fichier Excel : {e}")
     
@@ -744,18 +755,17 @@ class FileExplorer:
         self.root.title(self.title)
         self.root.geometry("800x600")  # Taille de la fenêtre
         
-        # Créer un cadre pour les contrôles
+         # Créer un cadre pour les contrôles
         control_frame = tk.Frame(self.root)
         control_frame.pack(fill='x', padx=10, pady=5)
         
-        # Ajouter un slider pour ajuster la taille de la police
-        #font_size_label = tk.Label(control_frame, text="Taille de la police :")
-        #font_size_label.pack(side='left', padx=(0, 10))
-        
-        #font_size_slider = Scale(control_frame, from_=8, to=20, orient='horizontal', 
-        #                        length=200, resolution=1)
-        #font_size_slider.set(10)  # Valeur par défaut
-        #font_size_slider.pack(side='left')
+        # --- Barre de menu ---
+        menubar = tk.Menu(self.root)
+        param_menu = tk.Menu(menubar, tearoff=0)
+        param_menu.add_command(label="Afficher les paramètres", command=self.show_params_window)
+        menubar.add_cascade(label="Paramètres", menu=param_menu)
+        self.root.config(menu=menubar)
+        # --- Fin barre de menu ---
         
         # Ajouter un Treeview pour afficher les fichiers et répertoires
         self.tree = ttk.Treeview(self.root, columns=("fullpath",), displaycolumns=())
@@ -795,133 +805,23 @@ class FileExplorer:
         self.root.mainloop()
         
         return True  # Indiquer que l'explorateur s'est terminé avec succès
-
-
-# Créer des classes d'explorateurs spécialisés
-class DocumentExplorer(FileExplorer):
-    """Explorateur spécialisé pour les documents"""
-    
-    def __init__(self, title="Explorateur de Documents", initial_dir=None):
-        super().__init__(title, initial_dir, explorer_type="document")
-
-
-class DataExplorer(FileExplorer):
-    """Explorateur spécialisé pour les données"""
-    
-    def __init__(self, title="Explorateur de Données", initial_dir=None):
-        super().__init__(title, initial_dir, explorer_type="data")
-
-
-class ConfigExplorer(FileExplorer):
-    """Explorateur spécialisé pour les fichiers de configuration"""
-    
-    def __init__(self, title="Explorateur de Configuration", initial_dir=None):
-        super().__init__(title, initial_dir, explorer_type="config")
-
-
-    # def populate_treeview(self, parent, path):
-    #     """
-    #     Remplit le Treeview avec UNIQUEMENT les fichiers du répertoire courant.
-    #     Ne montre pas les sous-répertoires et n'ajoute pas d'éléments fictifs pour l'expansion.
-    #     """
-    #     try:
-    #         items = os.listdir(path)
-            
-    #         # Ne garder que les fichiers (ignorer les répertoires)
-    #         files = [item for item in items if os.path.isfile(os.path.join(path, item))]
-            
-    #         # Trier alphabétiquement
-    #         files.sort()
-            
-    #         # Vérifier s'il y a des filtres par nom actifs
-    #         active_name_filters = {name: info['pattern'] for name, info in self.NAME_FILTERS.items() 
-    #                             if self.active_filters.get(name, False)}
-            
-    #         # Ajouter les fichiers en tenant compte des filtres
-    #         for item in files:
-    #             item_path = os.path.join(path, item)
-                
-    #             # Si des filtres par nom sont actifs, vérifier si le fichier correspond à au moins un des motifs
-    #             if active_name_filters:
-    #                 # Par défaut, on exclut le fichier s'il ne correspond à aucun filtre actif
-    #                 should_display = False
-                    
-    #                 # Vérifier si le fichier correspond à au moins un des motifs de filtres actifs
-    #                 for filter_name, pattern in active_name_filters.items():
-    #                     if pattern in item:
-    #                         should_display = True
-    #                         break
-                    
-    #                 # Si le fichier ne correspond à aucun filtre actif, passer au suivant
-    #                 if not should_display:
-    #                     continue
-                
-    #             file_type = self.get_file_extension(item_path)
-    #             file_info = self.get_file_type(item_path)
-    #             icon = file_info['icon']
-    #             color = file_info['color']
-                
-    #             # Vérifier si le type de fichier est dans un groupe actif
-    #             is_in_active_group = False
-    #             for group_name, group_info in self.FILE_GROUPS.items():
-    #                 if file_type in group_info['types'] and self.active_filters.get(group_name, False):
-    #                     is_in_active_group = True
-    #                     break
-                
-    #             # Si le fichier appartient à un groupe actif, l'afficher
-    #             if is_in_active_group or file_type in self.active_filters:
-    #                 # Ajouter avec tag de couleur personnalisé
-    #                 self.tree.insert(parent, 'end', text=f"{icon} {item}", values=[item_path], 
-    #                                 tags=(f"color_{color.replace('#', '')}",))
-                
-    #     except Exception as e:
-    #         print(f"Erreur lors du peuplement de l'arborescence : {e}")
-    #         import traceback
-    #         traceback.print_exc()
-    
-    # def refresh_treeview(self):
-    #     """
-    #     Rafraîchit l'affichage du Treeview en fonction des filtres actifs.
-    #     Version simplifiée car nous n'avons pas d'éléments développés à conserver.
-    #     """
-    #     # Réinitialiser et repeupler l'arborescence
-    #     self.tree.delete(*self.tree.get_children())
-    #     self.populate_treeview('', self.current_path)
-        
-    #     # Mettre à jour le label d'information
-    #     self.label_result.config(text=f"Répertoire: {self.current_path} | Filtres actifs: {self.count_active_filters()}/{len(self.active_filters)}")
-    
-    # def on_tree_expand(self, event):
-    #     """
-    #     Ne fait rien car nous n'avons pas d'éléments à développer.
-    #     Cette méthode est surchargée pour désactiver l'expansion.
-    #     """
-    #     pass
-
-
-# Route Flask pour ouvrir l'explorateur
-@exploreur.route('/open_exploreur', methods=['POST'])
-def open_exploreur():
-    dir_path = request.json.get('path')  # Récupérer le répertoire initial depuis la requête
-    explorer_type = request.json.get('type', 'standard')  # Type d'explorateur, par défaut 'standard'
-    
-    if not dir_path or not os.path.exists(dir_path):
-        return {"error": "Le répertoire spécifié est invalide ou n'existe pas."}, 400
-
-    # Créer l'explorateur selon le type demandé
-    if explorer_type == 'document':
-        explorer = DocumentExplorer(initial_dir=dir_path)
-    elif explorer_type == 'config':
-        explorer = ConfigExplorer(initial_dir=dir_path)
-    elif explorer_type == 'data':
-        explorer = DataExplorer(initial_dir=dir_path)
+    def show_params_window(self):
+        """Ouvre une petite fenêtre listant les paramètres sous forme de liste"""
+        params = [
+            f"Titre : {self.title}",
+            f"Répertoire initial : {self.initial_dir}",
+            f"Type d'explorateur : {self.explorer_type}",
+            f"Répertoire courant : {self.current_path}",
+            f"Filtres actifs : {', '.join([k for k, v in self.active_filters.items() if v])}"
+        ]
+        win = tk.Toplevel(self.root)
+        win.title("Paramètres de l'explorateur")
+        win.geometry("350x200")
+        tk.Label(win, text="Paramètres :", font=("Arial", 12, "bold")).pack(pady=5)
+        listbox = tk.Listbox(win, width=50)
+        for param in params:
+            listbox.insert(tk.END, param)
+        listbox.pack(padx=10, pady=10, fill="both", expand=True)
+        tk.Button(win, text="Fermer", command=win.destroy).pack(pady=5)
    
-    else:
-        # Explorer standard par défaut
-        explorer = FileExplorer(initial_dir=dir_path)
-    
-    # Lancer l'explorateur
-    explorer.run()
-
-    return {"status": "Explorateur ouvert avec succès."}, 200
 
