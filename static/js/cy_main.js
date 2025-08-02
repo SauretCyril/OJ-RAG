@@ -199,25 +199,32 @@ async function loadColumnsFromServer() {
         console.log('DBG-2255: Appel à loadColumnsFromServer');
         const response = await ApiClient.config.loadColumns();
         console.log('DBG-2255=Colonnes chargées depuis le serveur:', response);
+
+        let columns = null;
         if (Array.isArray(response)) {
-            const deserializedColumns = deserializeColumns(response);
-            setState('columns', deserializedColumns);
-            console.log("dbg-0021", getState('columns'));
-            // tabActive n'est pas présent ici
+            columns = deserializeColumns(response);
         } else if (response && response.columns) {
-            const deserializedColumns = deserializeColumns(response.columns);
-            setState('columns', deserializedColumns);
-            console.log("dbg-0022-A", getState('columns'));
+            columns = deserializeColumns(response.columns);
             if (response.tabActive) {
                 setState('tabActive', response.tabActive);
             }
-        } else {
-            console.warn('Réponse sans colonnes:', response);
         }
-        return response;
+
+        // Fallback si tableau vide ou non défini
+        if (!Array.isArray(columns) || columns.length === 0) {
+            console.warn('Colonnes serveur absentes ou vides, fallback sur colonnes locales');
+            columns = getState('columns');
+        }
+
+        setState('columns', columns);
+        console.log("dbg-0021", getState('columns'));
+        return columns;
     } catch (error) {
+        // Fallback en cas d'erreur
         console.error('err006-Erreur lors du chargement des colonnes:', error);
-        throw error;
+        const fallback = getState('columns');
+        setState('columns', fallback);
+        return fallback;
     }
 }
 
