@@ -1,0 +1,7 @@
+[run]
+branch = True
+source = backend
+omit =
+    */tests/*
+    */venv/*
+    */__init__.py

@@ -4,9 +4,18 @@
   "description": "",
   "main": "app.py",
   "scripts": {
-    "start": "http-server ./ -o"
+    "start": "http-server ./ -o",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "test:backend": "python -m pytest tests/backend/ -v",
+    "test:backend:coverage": "python -m pytest tests/backend/ --cov=backend --cov-report=html",
+    "test:all": "npm run test && npm run test:backend"
   },
   "devDependencies": {
-    "http-server": "^14.1.1"
+    "http-server": "^14.1.1",
+    "jest": "^29.7.0",
+    "jest-environment-jsdom": "^29.7.0",
+    "@testing-library/jest-dom": "^6.1.4"
   }
 }

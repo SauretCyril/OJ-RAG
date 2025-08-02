@@ -1,0 +1,15 @@
+# Ignore les dépendances Node.js
+node_modules/
+
+# Ignore les rapports de couverture
+coverage/
+*.lcov
+
+# Ignore les fichiers de cache
+.pytest_cache/
+__pycache__/
+*.pyc
+
+# Ignore les rapports de test
+junit.xml
+test-results.xml

@@ -1,0 +1,3 @@
+[pytest]
+addopts = --cov=backend
+testpaths = tests/backend
