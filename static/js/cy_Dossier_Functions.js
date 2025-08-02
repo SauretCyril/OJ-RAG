@@ -212,50 +212,6 @@ async function open_notes(file_notes) {
     }
 }
 
-/**
- * Remplit le prochain nom de dossier disponible
- */
-async function fillNextDossierName() {
-    // Get the last used dossier name
-    let lastDossier = getState('currentSelectedRow')
-
-    if (!lastDossier) {
-        lastDossier = getState('annonces').reduce((last, current) => {
-        const currentDossier = Object.values(current)[0].dossier;
-        return currentDossier > last ? currentDossier : last;
-    }, "A000");
-    }
-    else {
-        lastDossier = get_currentAnnonce().dossier;
-        alert("Dernier dossier utilisé : " + lastDossier);
-    }
-
-    let letter = lastDossier.charAt(0);
-    let number = parseInt(lastDossier.slice(1)) + 1;
-    let nextDossier = letter + number.toString().padStart(3, '0');
-    
-    while (await checkDossierExists(nextDossier)) {
-        number += 1;
-        nextDossier = letter + number.toString().padStart(3, '0');
-    }
-
-    document.getElementById('announcementDossier').value = nextDossier;
-}
-
-/**
- * Vérifie si un dossier existe déjà
- * @param {string} dossier - Numéro du dossier à vérifier
- * @returns {Promise<boolean>} - true si le dossier existe, false sinon
- */
-async function checkDossierExists(dossier) {
-    try {
-        const response = await httpPost('/check_dossier_exists', { dossier: dossier });
-        return response.exists;
-    } catch (error) {
-        console.error('Error checking dossier existence:', error);
-        return false;
-    }
-}
 
 // Exposer les fonctions globalement
 // Note: nous gardons les mêmes noms pour maintenir la compatibilité avec le code existant
@@ -265,5 +221,4 @@ window.convert_cv = convert_cv;
 window.get_cv = get_cv;
 window.open_url = open_url;
 window.open_notes = open_notes;
-window.fillNextDossierName = fillNextDossierName;
-window.checkDossierExists = checkDossierExists;
+

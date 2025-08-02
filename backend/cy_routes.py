@@ -203,6 +203,7 @@ async def read_annonces_json():
                     file_path_gpt = os.path.join(root, file_isGptResum)
             record_added = False
             # Traitement des fichiers de données
+            uscase="unkunown"
             for filename in files:
                 file_path = os.path.join(root, filename)
                 file_path = file_path.replace("\\", "/")
@@ -239,8 +240,8 @@ async def read_annonces_json():
                                 # Ajouter à la liste des dossiers
                                 jData = {file_path: datajson}
                                 dossier_list.append(jData)
-
-                                #print(
+                                uscase="Existing"
+                                #print( 
                                 #    f"{parent_dir}-NEW-4658 LOADING : Fichier {file_path} chargé avec succès"
                                 #)
 
@@ -278,6 +279,7 @@ async def read_annonces_json():
 
                         if Piece_exist:
                             # thefile = thefile.replace('\\', '/')
+                            thedescription = ""
                             texte = extract_text_from_pdf(thefile)
                             # Extraire la description si présente dans le texte
                             
@@ -322,7 +324,7 @@ async def read_annonces_json():
                                         "poste", "N/A"
                                     )
                                     data["Lieu"] = parsed_json.get("lieu", "N/A")
-
+                                    
                                  
                                 except json.JSONDecodeError:
                                     # La réponse n'est pas du JSON valide
@@ -405,6 +407,7 @@ async def read_annonces_json():
                             file_path_nodata = os.path.join(root, ".data.json")
                             file_path_nodata = file_path_nodata.replace("\\", "/")
                             jData = {file_path_nodata: data}
+                            uscase="_annonce_"
                             print(f"{parent_dir}NEW-4658e")    
                             try:
                                 # Vérifier si le répertoire parent existe
@@ -454,6 +457,7 @@ async def read_annonces_json():
                                         # Puis ajouter à la liste de dossiers
                                         dossier_list.append(jData)
                                         record_added = True
+                                        uscase="vide"
 
                                 except Exception as e:
                                         print(
@@ -467,7 +471,7 @@ async def read_annonces_json():
                         print(
                             f"{parent_dir} ERR-4658f : Erreur lors de la création d'un nouvel enregistrement: {str(e)}"
                         )
-
+                print(uscase + f" - {parent_dir} - NEW-4658-m : Nombre de dossiers traités: {len(dossier_list)}")
                         
 
         #print(f"NEW-4658j: Nombre de dossiers traités: {len(dossier_list)}")
@@ -903,10 +907,6 @@ def save_announcement():
         content = data.get("content")
         url = data.get("url")
         sufix = data.get("sufix")
-        flddescription = data.get("flddescription")
-        fldcategorie = data.get("fldcategorie")
-        currentTab = data.get("currentTab")
-        pickedFilesList = data.get("pickedFilesList", [])
         if not num_dossier:
             print("dbg4456 -------------------------------", num_dossier, content, url)
             return jsonify({"status": "error", "message": "Missing parameters"}), 400
@@ -915,35 +915,33 @@ def save_announcement():
         if not os.path.exists(directory_path):
             os.makedirs(directory_path)
         print(f"dbg-5434-b")
-       
+
         docx_file_path = os.path.join(directory_path, f"{num_dossier}{sufix}.docx")
         pdf_file_path = os.path.join(directory_path, f"{num_dossier}{sufix}.pdf")
 
         if pythoncom:
             pythoncom.CoInitialize()
         try:
-            if url == "":
+            if not url:
                 url = "Pas d'URL"
-            if content == "":
+            if not content:
                 content = "Pas de contenu"
             doc = Document()
             doc.add_paragraph("<-")
             doc.add_paragraph(url)
             doc.add_paragraph("->")
             doc.add_paragraph(content)
-            doc.add_paragraph(f"#Description# : {flddescription}")
-            doc.add_paragraph(f"#Categorie#   : {fldcategorie}")
             doc.save(docx_file_path)
             print(f"dbg-5434 : Converting {docx_file_path} to {pdf_file_path}")
             convert(docx_file_path, pdf_file_path)
         finally:
             if pythoncom:
                 pythoncom.CoUninitialize()
-                print("dbg-5434-c : Conversion terminée")
-            return jsonify({
+            print("dbg-5434-c : Conversion terminée")
+        return jsonify({
             "status": "success",
             "message": f"Announcement saved as {pdf_file_path}",
-            }), 200
+        }), 200
     except Exception as e:
         print(f"Cyr_error_492 An error occurred while saving the announcement: {e}")
         return jsonify({"status": "error", "message": "492>" + str(e)}), 500
