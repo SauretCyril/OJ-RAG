@@ -324,16 +324,24 @@ function addDirectoryToTable(label = '', path = '') {
     const tableBody = document.getElementById('directoriesTableBody');
     const row = document.createElement('tr');
     
-  // Bouton Select avec icône
-  const selectButton = document.createElement('button');
-  selectButton.innerHTML = '👆'; // Icône de dossier ouvert
-  selectButton.title = 'Sélectionner ce répertoire';
-  selectButton.className = 'select-btn';
-  selectButton.addEventListener('click', (event) => {
-      event.stopPropagation();
-      OpenSubdirectory(pathInput.value);
-  });
-  
+    // Cellule pour le bouton de sélection
+    const selectCell = document.createElement('td');
+    const selectButton = document.createElement('button');
+    selectButton.innerHTML = '👆';
+    selectButton.title = 'Sélectionner ce répertoire';
+    selectButton.className = 'select-btn';
+    selectButton.addEventListener('click', (event) => {
+        event.stopPropagation();
+        const pathInput = row.querySelector('.directory-path');
+        if (pathInput && pathInput.value.trim() !== '') {
+            console.log('Sélection du répertoire:', pathInput.value);
+            OpenSubdirectory(pathInput.value);
+        } else {
+            alert('Veuillez entrer un chemin de répertoire valide.');
+        }
+    });
+    selectCell.appendChild(selectButton);
+    
     // Cellule pour le nom
     const labelCell = document.createElement('td');
     const labelInput = document.createElement('input');
@@ -353,11 +361,11 @@ function addDirectoryToTable(label = '', path = '') {
     // Cellule pour les actions
     const actionsCell = document.createElement('td');
     actionsCell.className = 'action-buttons';
-    actionsCell.style.visibility = 'hidden'; // Cacher par défaut
+    actionsCell.style.visibility = 'hidden';
     
-    // Bouton Browse avec icône de curseur
+    // Bouton Browse
     const browseButton = document.createElement('button');
-    browseButton.innerHTML = '📂'; // Icône de curseur/pointer
+    browseButton.innerHTML = '📂';
     browseButton.title = 'Parcourir les répertoires';
     browseButton.className = 'browse-btn';
     browseButton.addEventListener('click', (event) => {
@@ -365,17 +373,14 @@ function addDirectoryToTable(label = '', path = '') {
         selectDirectoryDialog(pathInput);
     });
     
-  
-
-    // Bouton Remove avec icône
+    // Bouton Remove
     const removeButton = document.createElement('button');
-    removeButton.innerHTML = '🗑️'; // Icône de corbeille
+    removeButton.innerHTML = '🗑️';
     removeButton.title = 'Supprimer ce répertoire';
     removeButton.className = 'remove-btn';
     removeButton.addEventListener('click', (event) => {
         event.stopPropagation();
         row.remove();
-        // Si la ligne supprimée était sélectionnée, réinitialiser la sélection
         if (selectedDirectoryRow === row) {
             selectedDirectoryRow = null;
         }
@@ -385,21 +390,18 @@ function addDirectoryToTable(label = '', path = '') {
     actionsCell.appendChild(removeButton);
     
     // Ajouter les cellules à la ligne
-    
-    row.appendChild(selectButton);
+    row.appendChild(selectCell);
     row.appendChild(labelCell);
     row.appendChild(pathCell);
     row.appendChild(actionsCell);
     
     // Ajouter un événement de clic pour sélectionner la ligne
     row.addEventListener('click', (event) => {
-        // Ne pas déclencher si on clique sur un bouton
         if (event.target.tagName !== 'BUTTON') {
             selectDirectoryRow(row);
         }
     });
     
-    // Ajouter la ligne au tableau
     tableBody.appendChild(row);
 }
 
@@ -488,6 +490,9 @@ function OpenSubdirectory(directoryPath) {
         return;
     }
 
+    // Ajouter une vérification de l'existence du répertoire côté client si possible
+    console.log('Tentative d\'enregistrement du répertoire:', directoryPath);
+
     fetch('/save_cookie', {
         method: 'POST',
         headers: {
@@ -496,111 +501,149 @@ function OpenSubdirectory(directoryPath) {
         body: JSON.stringify({ 'cookie_name': 'current_dossier' , 'cookie_value': directoryPath})
     })
     .then(response => {
+        console.log('Statut de la réponse:', response.status);
+        console.log('Réponse complète:', response);
+        
         if (!response.ok) {
-            throw new Error('Network response was not ok');
+            throw new Error(`Network response was not ok - Status: ${response.status} ${response.statusText}`);
         }
         return response.json();
     })
     .then(data => {
+        console.log('Données reçues:', data);
+        
         if (data.message === "done") {
-            //alert('Répertoire enregistré avec succès.');
+            console.log('Répertoire enregistré avec succès');
             save_cookie('current_dossier', directoryPath);
             show_current_dossier();
             refresh();
-           
         } else {
-            alert('Err 4532 - lors de l\'enregistrement du répertoire: ' + (data.message || 'Unknown error'));
+            const errorMsg = `Err 4532 - lors de l'enregistrement du répertoire: ${data.message || data.error || 'Unknown error'}`;
+            console.error('Erreur côté serveur:', errorMsg);
+            alert(errorMsg);
         }
     })
     .catch(error => {
-        console.error('Error saving directory:', error);
-        alert('Err 4523 lors de l\'enregistrement du répertoire.');
+        console.error('Error details:', {
+            message: error.message,
+            stack: error.stack,
+            directoryPath: directoryPath
+        });
+        
+        // Vérifications supplémentaires
+        if (error.message.includes('Failed to fetch')) {
+            alert('Err 4523 - Impossible de contacter le serveur. Vérifiez votre connexion réseau.');
+        } else if (error.message.includes('Network')) {
+            alert('Err 4523 - Erreur réseau lors de l\'enregistrement du répertoire: ' + error.message);
+        } else {
+            alert('Err 4523 - Erreur lors de l\'enregistrement du répertoire: ' + error.message);
+        }
     });
 
     // Close form
     closeDirectoryForm();
-    
 }
 
-async function closeDirectoryForm() {
+// Fonction pour fermer le formulaire
+function closeDirectoryForm() {
     const form = document.getElementById('directoryForm');
     if (form) {
         form.close();
-        form.remove(); // Ensure the form is removed from the DOM
-        window.conf = conf_loadconf();
-        await loadColumnsFromServer();
-        await fetchAndSetDirectoriesListe();
-        refresh();
-       
+        form.remove();
     }
+    selectedDirectoryRow = null;
 }
-window.selectRep = selectRep;
 
-
-
-/* function onDirectoryChangeClick() {
-    const select = document.getElementById('directory-select');
-    if (select) {
-        const value = select.value;
-        alert("Dossier sélectionné : " + value);
-    }
-}
- */
-/*
-function onDirectoryChange(newPath) {
-                    // Met à jour le currentDossier dans AppState et effectue les actions nécessaires
-                    if (window.AppState) {
-                      AppState.currentDossier = newPath;
-                      // Ajoutez ici le code pour rafraîchir l'affichage ou charger le nouveau dossier
-                      if (typeof refresh === 'function') refresh();
-                    }
-                  }
-
-                  // Appeler la fonction au chargement de la page ou après chargement d'AppState
-                  document.addEventListener('DOMContentLoaded', populateDirectorySelect);
-*/
-
-async function fix_change_dir() {
-    const select = document.getElementById('directory-select');
-    if (!select) return;
-    const targetRoot = select.value;
-    const sourceRoot = AppState.currentDossier;
-    const annonce = get_currentAnnonce();
-    const numeroDossier = annonce.dossier;
-    const id = annonce.id;
-    if (!numeroDossier) {
-        //alert("Numéro de dossier introuvable.");
-        return;
-    }
-    const source = sourceRoot.replace(/\/$/, '') + '/' + numeroDossier;
-    const target = targetRoot.replace(/\/$/, '') + '/' + numeroDossier;
-    if (source === target) {
-        //alert("Aucun changement à effectuer.");
-        return;
-    }
-
-    const ok = confirm(`Voulez-vous vraiment déplacer le dossier\n\n${source}\nvers\n${target} ?`);
-   
-
-    if (!ok) return;
-    updateStateCurrentAnnonce('etat', 'MOVING');
-    const res = await fetch('/move_current_dossier', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ source, target })
-    });
-    const data = await res.json();
-    if (data.success) {
-         updateStateCurrentAnnonce('etat', 'MOVED');
-    } else {
-        if (res.status === 409) {
-            alert("Erreur : Le dossier cible existe déjà.");
-            updateStateCurrentAnnonce('etat', 'ERROR');
-            return;
+// Fonction pour afficher le répertoire courant
+function show_current_dossier() {
+    get_cookie('current_dossier').then(currentDossier => {
+        if (currentDossier) {
+            // Mettre à jour l'affichage du répertoire courant
+            const currentDirElements = document.querySelectorAll('.current-directory-path');
+            currentDirElements.forEach(element => {
+                element.textContent = currentDossier;
+            });
+            
+            // Mettre à jour l'état global si nécessaire
+            if (typeof setState === 'function') {
+                setState('currentDossier', currentDossier);
+            }
         }
+    }).catch(error => {
+        console.error('Erreur lors de la récupération du répertoire courant:', error);
+    });
+}
+
+// Fonction pour sauvegarder un cookie
+async function save_cookie(name, value) {
+    try {
+        const response = await fetch('/save_cookie', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                'cookie_name': name,
+                'cookie_value': value
+            })
+        });
+        
+        if (response.ok) {
+            console.log(`Cookie ${name} sauvegardé`);
+        }
+    } catch (error) {
+        console.error('Erreur sauvegarde cookie:', error);
     }
 }
 
+// Fonction pour récupérer un cookie
+async function get_cookie(name) {
+    try {
+        const response = await fetch('/get_cookie', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                'cookie_name': name
+            })
+        });
+        
+        if (response.ok) {
+            const data = await response.json();
+            return data[name] || null;
+        } else {
+            console.warn(`Cookie ${name} non trouvé côté serveur`);
+            return null;
+        }
+    } catch (error) {
+        console.error('Erreur récupération cookie:', error);
+        return null;
+    }
+}
 
+// Fonction de test pour vérifier la connectivité
+async function testServerConnection() {
+    try {
+        const response = await fetch('/health_check', {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        if (response.ok) {
+            console.log('Connexion serveur OK');
+            return true;
+        } else {
+            console.error('Serveur non disponible, statut:', response.status);
+            return false;
+        }
+    } catch (error) {
+        console.error('Impossible de contacter le serveur:', error);
+        return false;
+    }
+}
 
-window.fix_change_dir = fix_change_dir;
+// Appeler cette fonction avant d'essayer d'enregistrer un répertoire
+window.testServerConnection = testServerConnection;
