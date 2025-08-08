@@ -30,7 +30,7 @@ def GetRoot():
         root_dir = os.getenv("ANNONCES_FILE_DIR")
     
     # Vérifier si l'utilisateur a sélectionné un répertoire personnalisé
-    newroot = get_cookie("current_dossier")
+    newroot = get_cookie_value("current_dossier")
     
     # Utiliser le répertoire personnalisé s'il existe
     if newroot and os.path.exists(newroot):

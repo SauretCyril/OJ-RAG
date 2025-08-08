@@ -356,12 +356,6 @@ function updateFilterValues(filters) {
     });
 }
 
-// Rechargement des données et rafraîchissement de l'interface
-async function refresh() {
-    await TableManager.loadAnnonces();
-    TableManager.renderTable();
-}
-
 // Initialiser le gestionnaire de tableau
 window.addEventListener('load', () => {
     TableManager.init();
@@ -369,6 +363,6 @@ window.addEventListener('load', () => {
 
 // Exposer les fonctions et objets globalement
 window.TableManager = TableManager;
-window.refresh = refresh;
+
 window.updateFilterValues = updateFilterValues;
 window.saveFilterValues = saveFilterValues;

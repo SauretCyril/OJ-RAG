@@ -146,45 +146,48 @@ async function loadFilterValues(tabActive) {
  * Affiche le dossier courant
  * @returns {Promise} - Promise contenant le résultat de l'opération
  */
-async function showCurrentDossier() {
+async function showCurrentDossier(forceRefresh = false) {
     try {
-        //let currentDossier = null;
-        ;
-        // Tenter de récupérer le cookie current_dossier
-        try {
-            AppState.currentDossier = await getCookie('current_dossier');
-        } catch (cookieError) {
-            console.log('Cookie current_dossier non trouvé ou erreur lors de la récupération:', cookieError.message);
-            // currentDossier reste null
-        }
+        // CHANGEMENT TRINITY → KORALIE : Utiliser get_cookie au lieu de getCookie
+        AppState.currentDossier = await get_cookie('current_dossier');
         
         if (AppState.currentDossier) {
-            // Vérifier si le répertoire existe
             const directoryExists = await checkDirectoryExists(AppState.currentDossier);
             
             if (directoryExists) {
                 document.getElementById('current-dir').textContent = AppState.currentDossier;
-                document.getElementById('current-dir').style.color = ''; // Couleur normale
+                document.getElementById('current-dir').style.color = '';
+                
+                // CHANGEMENT TRINITY → KORALIE : Mettre à jour tous les éléments .current-directory-path
+                const currentDirElements = document.querySelectorAll('.current-directory-path');
+                currentDirElements.forEach(element => {
+                    element.textContent = AppState.currentDossier;
+                });
+                
+                // CHANGEMENT TRINITY → KORALIE : Forcer refresh si demandé
+                if (forceRefresh && typeof refresh === 'function') {
+                    console.log('Rechargement des colonnes et données après changement de répertoire...');
+                    
+                    // 1. D'abord recharger les colonnes
+                    await loadColumnsFromServer();
+                    
+                    // 2. Puis rafraîchir les données
+                    await refresh();
+                    await conf_loadconf()
+                }
+                
             } else {
-                // Le répertoire n'existe plus
-                console.warn(`Le répertoire '${AppState.currentDossier}' n'existe plus.`);
-                document.getElementById('current-dir').textContent = `INVALIDE: ${AppState. currentDossier}`;
+                // Répertoire n'existe plus
+                document.getElementById('current-dir').textContent = `INVALIDE: ${AppState.currentDossier}`;
                 document.getElementById('current-dir').style.color = 'red';
-                await promptUserForValidDirectory();
             }
         } else {
-            // Aucun cookie current_dossier n'existe
-            console.log('Aucun répertoire courant défini. Demande de sélection à l\'utilisateur.');
+            // Aucun répertoire défini
             document.getElementById('current-dir').textContent = 'Aucun répertoire sélectionné';
             document.getElementById('current-dir').style.color = 'orange';
-            await promptUserForValidDirectory();
         }
-    } catch (error) {   
+    } catch (error) {
         console.error('Erreur lors de la récupération du dossier courant:', error);
-        // En cas d'erreur, demander quand même à l'utilisateur de sélectionner un répertoire
-        document.getElementById('current-dir').textContent = 'Erreur - Sélection requise';
-        document.getElementById('current-dir').style.color = 'red';
-        await promptUserForValidDirectory();
     }
 }
 
@@ -225,21 +228,6 @@ async function loadColumnsFromServer() {
         const fallback = getState('columns');
         setState('columns', fallback);
         return fallback;
-    }
-}
-
-/**
- * Charge la configuration
- * @returns {Promise} - Promise contenant le résultat de l'opération
- */
-async function conf_loadconf() {
-    try {
-        // Pour l'instant, nous retournons un objet vide
-        // À implémenter selon les besoins
-        return {};
-    } catch (error) {
-        console.error('Erreur lors du chargement de la configuration:', error);
-        throw error;
     }
 }
 
@@ -300,7 +288,7 @@ async function openDirectorySelector() {
         
         if (response && response.success && response.selected_directory) {
             // Mettre à jour le cookie avec le nouveau répertoire
-            await setCookie('current_dossier', response.selected_directory);
+            await save_cookie('current_dossier', response.selected_directory);
             
             // Mettre à jour l'affichage
             document.getElementById('current-dir').textContent = response.selected_directory;
@@ -400,7 +388,7 @@ window.colisvisible = colIsVisible;
 //window.save_config_col = saveConfigCol;
 window.view_results = viewResults;
 window.loadFilterValues = loadFilterValues;
-window.show_current_dossier = showCurrentDossier;
+
 window.checkDirectoryExists = checkDirectoryExists;
 window.promptUserForValidDirectory = promptUserForValidDirectory;
 window.openDirectorySelector = openDirectorySelector;

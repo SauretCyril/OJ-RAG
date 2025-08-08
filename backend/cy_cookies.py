@@ -1,4 +1,4 @@
-from flask import request, Blueprint, jsonify
+from flask import request,  Blueprint, jsonify
 import logging
 import json
 import os
@@ -8,11 +8,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 cy_cookies = Blueprint('cy_cookies', __name__)
-need_reload = True
-
-# ⚠️ CORRECTION CRITIQUE: Initialiser la variable globale
-cookies_data = {}
-
+need_reload=True
 # Define the path to the JSON file
 data_directory = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'data')
 os.makedirs(data_directory, exist_ok=True)
@@ -21,78 +17,29 @@ json_file_path = os.path.join(data_directory, 'cookies.json')
 @cy_cookies.route('/save_cookie', methods=['POST'])
 def save_cookie():
     global cookies_data
+    cookie_value = request.json.get('cookie_value')
+    cookie_name = request.json.get('cookie_name')
     
-    try:
-        logger.info("=== DEBUT save_cookie ===")
-        
-        # Vérifier que la requête contient du JSON
-        if not request.is_json:
-            logger.error("Erreur: La requête ne contient pas de JSON valide")
-            return jsonify({"error": "Request must be JSON"}), 400
-            
-        # Récupérer les données JSON
-        json_data = request.get_json()
-        if not json_data:
-            logger.error("Erreur: Données JSON vides")
-            return jsonify({"error": "Empty JSON data"}), 400
-            
-        cookie_value = json_data.get('cookie_value')
-        cookie_name = json_data.get('cookie_name')
-        
-        logger.info(f"Données reçues - Nom: '{cookie_name}', Valeur: '{cookie_value}'")
-        
-        if cookie_value is None or cookie_name is None:
-            logger.error("Erreur: cookie_name ou cookie_value manquant")
-            return jsonify({"error": "cookie_name and cookie_value are required"}), 400
+    if cookie_value is None or cookie_name is None:
+        return jsonify({"error": "cookie_name and cookie_value are required"}), 400
 
-        # Load existing cookies from the JSON file
-        try:
-            if os.path.exists(json_file_path):
-                logger.info(f"Chargement du fichier existant: {json_file_path}")
-                with open(json_file_path, 'r', encoding='utf-8') as file:
-                    content = file.read().strip()
-                    if content:
-                        cookies_data = json.loads(content)
-                        logger.info(f"Cookies chargés: {list(cookies_data.keys())}")
-                    else:
-                        cookies_data = {}
-                        logger.info("Fichier vide, initialisation d'un dictionnaire vide")
-            else:
-                cookies_data = {}
-                logger.info("Fichier n'existe pas, création d'un nouveau dictionnaire")
-                
-        except (json.JSONDecodeError, IOError) as e:
-            logger.error(f"Erreur lors du chargement du fichier cookies: {e}")
-            cookies_data = {}
+    # Load existing cookies from the JSON file
+    if os.path.exists(json_file_path):
+        with open(json_file_path, 'r') as file:
+            cookies_data = json.load(file)
+    else:
+        cookies_data = {}
 
-        # Save the new cookie
-        cookies_data[cookie_name] = cookie_value
-        logger.info(f"Cookie ajouté: {cookie_name} = {cookie_value}")
+    # Save the new cookie
+    cookies_data[cookie_name] = cookie_value
 
-        # Write the updated cookies back to the JSON file
-        try:
-            # Créer le répertoire s'il n'existe pas
-            os.makedirs(os.path.dirname(json_file_path), exist_ok=True)
-            
-            logger.info(f"Écriture dans le fichier: {json_file_path}")
-            with open(json_file_path, 'w', encoding='utf-8') as file:
-                json.dump(cookies_data, file, indent=2, ensure_ascii=False)
-                
-            logger.info(f"✅ Cookie sauvegardé avec succès: {cookie_name} = {cookie_value}")
-            
-        except IOError as e:
-            logger.error(f"❌ Erreur lors de l'écriture du fichier cookies: {e}")
-            return jsonify({"error": f"Could not save cookie to file: {str(e)}"}), 500
+    # Write the updated cookies back to the JSON file
+    with open(json_file_path, 'w') as file:
+        json.dump(cookies_data, file)
    
-        logger.info("=== FIN save_cookie - SUCCESS ===")
-        return jsonify({"message": "done"})
-        
-    except Exception as e:
-        logger.error(f"❌ Erreur 500 inattendue dans save_cookie: {str(e)}")
-        logger.error(f"Type d'erreur: {type(e).__name__}")
-        import traceback
-        logger.error(f"Stack trace: {traceback.format_exc()}")
-        return jsonify({"error": f"Internal server error: {str(e)}"}), 500
+    #logger.info(f"dbg5642 Cookie saved: {cookie_name} = {cookie_value}")
+    
+    return jsonify({"message": "done"})
 
 @cy_cookies.route('/load_cookies', methods=['GET'])
 def load_cookies():
@@ -134,45 +81,52 @@ def load_cookies():
 
 @cy_cookies.route('/get_cookie', methods=['POST'])
 def get_cookie():
-    global cookies_data
-    
     try:
-        logger.info("=== DEBUT get_cookie ===")
-        
-        if not request.is_json:
-            return jsonify({"error": "Request must be JSON"}), 400
-            
-        json_data = request.get_json()
-        cookie_name = json_data.get('cookie_name')
-        
-        if not cookie_name:
+        cookie_name = request.json.get('cookie_name')
+        if cookie_name is None:
             return jsonify({"error": "cookie_name is required"}), 400
-            
-        # Load cookies from file
+     
+        # Load existing cookies from the JSON file
         if os.path.exists(json_file_path):
-            with open(json_file_path, 'r', encoding='utf-8') as file:
+            with open(json_file_path, 'r') as file:
                 content = file.read().strip()
-                if content:
-                    cookies_data = json.loads(content)
-                else:
+                if not content:
                     cookies_data = {}
+                else:
+                    cookies_data = json.loads(content)
+        else:
+            cookies_data = {}
+        
+        # Get the cookie value
+        cookie_value = cookies_data.get(cookie_name)
+        #logger.info(f"dbg5641 cookies :{cookie_name} value = {cookie_value}")
+            
+        return jsonify({cookie_name: cookie_value})
+    except json.JSONDecodeError as e:
+        logger.error(f"Erreur de décodage JSON lors de la récupération du cookie {cookie_name}: {e}")
+        return jsonify({"error": "Corrupted cookies file"}), 500
+    except Exception as e:
+        logger.error(f"Erreur lors de la récupération du cookie {cookie_name}: {e}")
+        return jsonify({"error": "Failed to get cookie"}), 500
+
+#@cookies.route('/get_cookie_value', methods=['POST'])
+def get_cookie_value(key_name):
+    try:
+        if key_name is None:
+            return jsonify({"error": "key_name is required"}), 400
+        
+        # Initialiser cookies_data en lisant le fichier
+        if os.path.exists(json_file_path):
+            with open(json_file_path, 'r') as file:
+                cookies_data = json.load(file)
         else:
             cookies_data = {}
             
-        logger.info(f"Cookie demandé: {cookie_name}")
-        cookie_value = cookies_data.get(cookie_name)
-        
-        result = {cookie_name: cookie_value}
-        logger.info(f"Cookie retourné: {result}")
-        
-        return jsonify(result)
-        
+        # Get the value for the provided key
+        value = cookies_data.get(key_name)
+        #logger.info(f"dbg5643 Key: {key_name}, Value: {value}")
+        return value
     except Exception as e:
-        logger.error(f"❌ Erreur dans get_cookie: {str(e)}")
-        return jsonify({"error": f"Internal server error: {str(e)}"}), 500
-
-# Route de test pour diagnostiquer
-@cy_cookies.route('/health_check', methods=['GET'])
-def health_check():
-    return jsonify({"status": "ok", "message": "Server is running"})
+        logger.error(f"Error-3345 getting cookie value for key {key_name}: {e}")
+        return None
 

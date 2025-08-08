@@ -60,24 +60,7 @@ function isValidURL(url) {
     return pattern.test(url);
 }
 
-/**
- * Récupère un cookie côté client
- * @param {string} cookieName - Nom du cookie à récupérer
- * @returns {Promise<string>} - Valeur du cookie
- */
-async function getCookie(cookieName) {
-    try {
-        const data = await ApiClient.cookies.get(cookieName);
-        const cookieValue = data[cookieName];
-        
-        // Retourner null si le cookie n'existe pas ou est undefined
-        return cookieValue !== undefined ? cookieValue : null;
-    } catch (error) {
-        console.error(`Erreur lors de la récupération du cookie '${cookieName}':`, error);
-        // Retourner null en cas d'erreur plutôt que de lever une exception
-        return null;
-    }
-}
+
 
 /**
  * Efface le cache de l'explorateur
@@ -396,10 +379,10 @@ window.ErrorHandler = ErrorHandler;
 window.showLoadingOverlay = LoadingOverlay.show.bind(LoadingOverlay);
 window.hideLoadingOverlay = LoadingOverlay.hide.bind(LoadingOverlay);
 window.isValidURL = isValidURL;
-window.getCookie = getCookie;
+
 window.setCookie = setCookie;
-window.get_cookie = getCookie;  // Garder l'ancien nom pour compatibilité
-window.save_cookie = saveCookie; // Garder l'ancien nom pour compatibilité
+
+
 window.serializeColumns = ColumnUtils.serialize;
 window.deserializeColumns = ColumnUtils.deserialize;
 window.clearExplorerCache = clearExplorerCache; // Exposer la fonction d'effacement du cache

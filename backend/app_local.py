@@ -15,9 +15,25 @@ def launch_explorer():
     data = request.json
     path = data.get("path")
     explorer_type = data.get("explorer_type", "")
+    
+    # AJOUT DE LOGS POUR DIAGNOSTIQUER
+    print(f"=== DEBUG FILEEXPLORER ===")
+    print(f"Path reçu: {path}")
+    print(f"Explorer_type reçu: '{explorer_type}'")
+    print(f"Path existe: {os.path.exists(path)}")
+    
+    if os.path.exists(path):
+        # Lister les fichiers pour vérifier
+        try:
+            files_in_dir = os.listdir(path)
+            print(f"Fichiers dans le répertoire: {len(files_in_dir)} fichiers")
+            print(f"Exemples: {files_in_dir[:5]}")  # Afficher les 5 premiers
+        except Exception as e:
+            print(f"Erreur lors de la lecture du répertoire: {e}")
+    
     if path and os.path.exists(path):
         def run_explorer():
-            print(f"LOCAL :Launching explorer for path: {path} with type: {explorer_type}")
+            print(f"LOCAL: Launching explorer for path: {path} with type: {explorer_type}")
             explorer = cls_local_FileExplorer(initial_dir=path, explorer_type=explorer_type)
             explorer.run()
         threading.Thread(target=run_explorer).start()

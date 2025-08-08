@@ -1,7 +1,7 @@
 // ...existing code...
 
-// Variable pour suivre la ligne sélectionnée actuellement
-let selectedDirectoryRow = null;
+// Variable pour suivre si le répertoire a changé
+//let directoryChanged = false;
 
 // Fonction pour ouvrir une boîte de dialogue de sélection de répertoire
 async function selectDirectoryDialog(pathInput) {
@@ -490,7 +490,6 @@ function OpenSubdirectory(directoryPath) {
         return;
     }
 
-    // Ajouter une vérification de l'existence du répertoire côté client si possible
     console.log('Tentative d\'enregistrement du répertoire:', directoryPath);
 
     fetch('/save_cookie', {
@@ -501,22 +500,18 @@ function OpenSubdirectory(directoryPath) {
         body: JSON.stringify({ 'cookie_name': 'current_dossier' , 'cookie_value': directoryPath})
     })
     .then(response => {
-        console.log('Statut de la réponse:', response.status);
-        console.log('Réponse complète:', response);
-        
         if (!response.ok) {
             throw new Error(`Network response was not ok - Status: ${response.status} ${response.statusText}`);
         }
         return response.json();
     })
     .then(data => {
-        console.log('Données reçues:', data);
-        
         if (data.message === "done") {
             console.log('Répertoire enregistré avec succès');
-            save_cookie('current_dossier', directoryPath);
-            show_current_dossier();
-            refresh();
+            
+            // CORRECTION : Passer forceRefresh = true
+            showCurrentDossier(true); // ← Ajouter le paramètre true
+            
         } else {
             const errorMsg = `Err 4532 - lors de l'enregistrement du répertoire: ${data.message || data.error || 'Unknown error'}`;
             console.error('Erreur côté serveur:', errorMsg);
@@ -524,23 +519,10 @@ function OpenSubdirectory(directoryPath) {
         }
     })
     .catch(error => {
-        console.error('Error details:', {
-            message: error.message,
-            stack: error.stack,
-            directoryPath: directoryPath
-        });
-        
-        // Vérifications supplémentaires
-        if (error.message.includes('Failed to fetch')) {
-            alert('Err 4523 - Impossible de contacter le serveur. Vérifiez votre connexion réseau.');
-        } else if (error.message.includes('Network')) {
-            alert('Err 4523 - Erreur réseau lors de l\'enregistrement du répertoire: ' + error.message);
-        } else {
-            alert('Err 4523 - Erreur lors de l\'enregistrement du répertoire: ' + error.message);
-        }
+        console.error('Error details:', error);
+        alert('Err 4523 - Erreur lors de l\'enregistrement du répertoire: ' + error.message);
     });
 
-    // Close form
     closeDirectoryForm();
 }
 
@@ -552,27 +534,11 @@ function closeDirectoryForm() {
         form.remove();
     }
     selectedDirectoryRow = null;
+    
+    // CORRECTION : Passer forceRefresh = true
+    showCurrentDossier(true); // ← Ajouter le paramètre true
 }
 
-// Fonction pour afficher le répertoire courant
-function show_current_dossier() {
-    get_cookie('current_dossier').then(currentDossier => {
-        if (currentDossier) {
-            // Mettre à jour l'affichage du répertoire courant
-            const currentDirElements = document.querySelectorAll('.current-directory-path');
-            currentDirElements.forEach(element => {
-                element.textContent = currentDossier;
-            });
-            
-            // Mettre à jour l'état global si nécessaire
-            if (typeof setState === 'function') {
-                setState('currentDossier', currentDossier);
-            }
-        }
-    }).catch(error => {
-        console.error('Erreur lors de la récupération du répertoire courant:', error);
-    });
-}
 
 // Fonction pour sauvegarder un cookie
 async function save_cookie(name, value) {

@@ -32,7 +32,7 @@ async function ask_local_PromptTable() {
     const numeroDossier = annonce.dossier;
     const descriptif = annonce.description ;
     file_name = "_Prompt_";
-    file_path=AppState.currentDossier = await getCookie('current_dossier');
+    file_path=AppState.currentDossier = await get_Cookie('current_dossier');
     const response =  fetch('/get_local_PromptTable', {
             method: 'POST',
             headers: {

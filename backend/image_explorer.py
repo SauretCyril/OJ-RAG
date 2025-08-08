@@ -5,22 +5,56 @@ from PIL import Image, ImageTk
 import shutil
 import sqlite3
 import json
+from watchdog.observers import Observer
+from watchdog.events import FileSystemEventHandler
+import threading
+
+
+class DirectoryWatcher(FileSystemEventHandler):
+    def __init__(self, image_explorer):
+        self.image_explorer = image_explorer
+
+    def on_created(self, event):
+        """Appelé lorsqu'un fichier est créé dans le répertoire surveillé"""
+        if not event.is_directory:
+            # Vérifier si le fichier est une image
+            image_extensions = ('.png', '.jpg', '.jpeg', '.gif', '.bmp', '.tiff', '.webp')
+            if event.src_path.lower().endswith(image_extensions):
+                print(f"[INFO] New image detected: {event.src_path}")
+                self.image_explorer.add_new_image(event.src_path)
+
+class DirectoryWatcherThread:
+    def __init__(self, image_explorer):
+        self.image_explorer = image_explorer
+        self.observer = Observer()
+
+    def start(self):
+        event_handler = DirectoryWatcher(self.image_explorer)
+        self.observer.schedule(event_handler, self.image_explorer.current_directory, recursive=False)
+        self.observer.start()
+        print(f"[INFO] Started watching directory: {self.image_explorer.current_directory}")
+
+    def stop(self):
+        self.observer.stop()
+        self.observer.join()
 
 class ImageExplorer:
-    def __init__(self, root):
+    def __init__(self, root, db_path, default_directory, cible_directory):
         self.root = root
         self.root.title("Image Explorer")
         self.root.geometry("1200x800")
         
-        # Répertoire par défaut
-        self.current_directory = r"E:\Comfyui_G11\ComfyUI\output"
+        # Répertoire par défaut (passé via le constructeur)
+        self.current_directory = os.path.normpath(default_directory)
+        self.cible_directory = os.path.normpath(cible_directory)
         self.image_files = []
         self.image_widgets = []
         self.pending_changes = []  # Liste des changements en attente
         self.view_mode = "new"  # "new" ou "viewed"
         self.zoomed_images = {}  # Dictionnaire pour suivre les images zoomées
         
-        # Initialiser la base de données
+        # Initialiser la base de données avec le chemin fourni
+        self.db_path = os.path.normpath(db_path)
         self.init_database()
         
         self.setup_ui()
@@ -28,10 +62,27 @@ class ImageExplorer:
         if os.path.exists(self.current_directory):
             self.dir_label.config(text=f"Directory: {self.current_directory}")
             self.load_images()
+        else:
+            self.dir_label.config(text="No directory selected")
+            messagebox.showwarning(
+                "Invalid Directory",
+                f"The default directory does not exist:\n{self.current_directory}\n\nPlease select a valid directory."
+            )
+            self.select_directory()
+        
+        # Démarrer le watcher pour surveiller les nouvelles images
+        self.watcher_thread = DirectoryWatcherThread(self)
+        self.watcher_thread.start()
+
+    def __del__(self):
+        """Fermer la connexion à la base de données et arrêter le watcher"""
+        if hasattr(self, 'conn'):
+            self.conn.close()
+        if hasattr(self, 'watcher_thread'):
+            self.watcher_thread.stop()
     
     def init_database(self):
         """Initialise la base de données SQLite pour stocker les images vues"""
-        self.db_path = os.path.join(os.path.dirname(__file__), "image_explorer.db")
         self.conn = sqlite3.connect(self.db_path)
         self.cursor = self.conn.cursor()
         
@@ -47,6 +98,7 @@ class ImageExplorer:
     
     def is_image_viewed(self, image_path):
         """Vérifier si une image a été vue"""
+        image_path = os.path.normpath(image_path)
         self.cursor.execute(
             "SELECT COUNT(*) FROM viewed_images WHERE image_path = ?",
             (image_path,)
@@ -93,6 +145,7 @@ class ImageExplorer:
         
         for action, image_path in self.pending_changes:
             try:
+                print(f"[INFO] Processing {action} for {os.path.basename(image_path)}")
                 if action == 'viewed':
                     self.cursor.execute(
                         "INSERT OR IGNORE INTO viewed_images (image_path) VALUES (?)",
@@ -101,15 +154,11 @@ class ImageExplorer:
                     success_count += 1
                     
                 elif action == 'delete':
-                    # Supprimer le fichier
-                    if os.name == 'nt':  # Windows
-                        try:
-                            import send2trash
-                            send2trash.send2trash(image_path)
-                        except ImportError:
-                            os.remove(image_path)
-                    else:
-                        os.remove(image_path)
+                    # Déplacer le fichier vers le répertoire de suppression (trash)
+                    if not os.path.exists(self.cible_directory):
+                        os.makedirs(self.cible_directory)
+                    dest_path = os.path.join(self.cible_directory, os.path.basename(image_path))
+                    shutil.move(image_path, dest_path)
                     success_count += 1
                     
             except Exception as e:
@@ -135,36 +184,8 @@ class ImageExplorer:
             )
         else:
             messagebox.showinfo("Success", f"Successfully processed {success_count} items!")
-    
-    def reset_viewed_images(self):
-        """Réinitialiser toutes les images vues (bouton optionnel)"""
-        result = messagebox.askyesno(
-            "Reset Viewed Images", 
-            "Are you sure you want to reset all viewed images? This will show all images again."
-        )
-        if result:
-            self.cursor.execute("DELETE FROM viewed_images")
-            self.conn.commit()
-            self.load_images()
-            messagebox.showinfo("Success", "All viewed images have been reset!")
-            
-    def toggle_view_mode(self):
-        """Basculer entre le mode nouvelles images et images vues"""
-        if self.view_mode == "new":
-            self.view_mode = "viewed"
-            self.view_mode_btn.config(text="Show New Images", bg="blue")
-            self.mode_label.config(text="Mode: Viewed Images")
-        else:
-            self.view_mode = "new"
-            self.view_mode_btn.config(text="Show Viewed Images", bg="green")
-            self.mode_label.config(text="Mode: New Images")
-        
-        self.load_images()
 
-    def get_viewed_images(self):
-        """Récupérer toutes les images vues depuis la base de données"""
-        self.cursor.execute("SELECT image_path FROM viewed_images ORDER BY viewed_date DESC")
-        return [row[0] for row in self.cursor.fetchall()]
+    
 
     def unmark_image_as_viewed(self, image_path):
         """Retirer une image de la liste des images vues"""
@@ -191,7 +212,7 @@ class ImageExplorer:
         top_frame.pack(fill="x", padx=10, pady=5)
         
         ttk.Button(top_frame, text="Select Directory", command=self.select_directory).pack(side="left")
-        self.dir_label = ttk.Label(top_frame, text="No directory selected")
+        self.dir_label = ttk.Label(top_frame, text=f"Directory: {self.current_directory}")
         self.dir_label.pack(side="left", padx=(10, 0))
         
         # Mode frame
@@ -201,15 +222,15 @@ class ImageExplorer:
         self.mode_label = ttk.Label(mode_frame, text="Mode: New Images", font=("Arial", 9, "bold"))
         self.mode_label.pack()
         
-        self.view_mode_btn = tk.Button(
-            mode_frame,
-            text="Show Viewed Images",
-            command=self.toggle_view_mode,
-            bg="green",
-            fg="white",
-            font=("Arial", 9, "bold")
-        )
-        self.view_mode_btn.pack()
+        # self.view_mode_btn = tk.Button(
+        #     mode_frame,
+        #     text="Show Viewed Images",
+        #     command=self.toggle_view_mode,
+        #     bg="green",
+        #     fg="white",
+        #     font=("Arial", 9, "bold")
+        # )
+        # self.view_mode_btn.pack()
         
         # Bouton pour sauvegarder les changements
         self.save_btn = tk.Button(
@@ -224,7 +245,7 @@ class ImageExplorer:
         self.save_btn.pack(side="right", padx=(5, 0))
         
         # Bouton pour réinitialiser les images vues
-        ttk.Button(top_frame, text="Reset Viewed", command=self.reset_viewed_images).pack(side="right")
+        #ttk.Button(top_frame, text="Reset Viewed", command=self.reset_viewed_images).pack(side="right")
         
         # Scrollable frame for images
         self.canvas = tk.Canvas(self.root)
@@ -259,7 +280,8 @@ class ImageExplorer:
             self.current_directory = directory
             self.dir_label.config(text=f"Directory: {directory}")
             self.load_images()
-            
+     
+
     def load_images(self):
         # Clear existing widgets
         for widget in self.image_widgets:
@@ -276,7 +298,7 @@ class ImageExplorer:
             try:
                 for filename in os.listdir(self.current_directory):
                     if filename.lower().endswith(image_extensions):
-                        image_path = os.path.join(self.current_directory, filename)
+                        image_path = os.path.normpath(os.path.join(self.current_directory, filename))
                         # N'ajouter que les images non vues
                         if not self.is_image_viewed(image_path):
                             self.image_files.append(image_path)
@@ -284,11 +306,7 @@ class ImageExplorer:
                 messagebox.showerror("Error", f"Error reading directory: {str(e)}")
                 return
         
-        else:  # view_mode == "viewed"
-            # Mode images vues - récupérer depuis la base de données
-            self.image_files = self.get_viewed_images()
-            # Filtrer pour ne garder que les fichiers qui existent encore
-            self.image_files = [img for img in self.image_files if os.path.exists(img)]
+       
             
         # Display images
         self.display_images()
@@ -441,7 +459,7 @@ class ImageExplorer:
                         font=("Arial", 10, "bold"),
                         width=8,
                         height=1,
-                        command=lambda path=image_path: self.delete_viewed_image(path)
+                        command=lambda path=image_path: self.move_image_to(path)
                     )
                     delete_btn.pack(side="left", padx=2)
                     
@@ -478,7 +496,7 @@ class ImageExplorer:
         # Update scroll region
         self.root.after(100, lambda: self.canvas.configure(scrollregion=self.canvas.bbox("all")))
 
-    def delete_viewed_image(self, image_path):
+    def move_image_to(self, image_path):
         """Supprimer une image vue (suppression directe, pas de pending)"""
         result = messagebox.askyesno(
             "Confirm Delete", 
@@ -512,13 +530,33 @@ class ImageExplorer:
                 messagebox.showerror("Error", f"Error deleting image: {str(e)}")
 
     def __del__(self):
-        """Fermer la connexion à la base de données"""
+        """Fermer la connexion à la base de données et arrêter le watcher"""
         if hasattr(self, 'conn'):
             self.conn.close()
+        if hasattr(self, 'watcher_thread'):
+            self.watcher_thread.stop()
+
+    def add_new_image(self, image_path):
+        """Ajouter une nouvelle image à l'interface"""
+        try:
+            image_path = os.path.normpath(image_path)
+            if image_path not in self.image_files:
+                self.image_files.append(image_path)
+                print(f"[INFO] Adding new image to display: {image_path}")
+                self.display_images()
+        except Exception as e:
+            print(f"[ERROR] Error adding new image: {str(e)}")
+
+def normalize_path(path):
+    return os.path.normpath(path)
 
 def main():
     root = tk.Tk()
-    app = ImageExplorer(root)
+    db_path_dir = os.path.normpath(r"H:/Entreprendre/Actions-15-Images/I003/")
+    db_path_full = os.path.normpath(os.path.join(db_path_dir, "I003_images_.db"))
+    default_directory = os.path.normpath(r"E:/Comfyui_G11/ComfyUI/output")
+    cible_directory = os.path.normpath(r"E:/Comfyui_G11/ComfyUI/trash")  # <-- Ajoutez le chemin du répertoire de suppression ici
+    app = ImageExplorer(root, db_path_full, default_directory, cible_directory)
     root.mainloop()
 
 if __name__ == "__main__":
