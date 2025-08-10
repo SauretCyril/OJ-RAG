@@ -38,7 +38,7 @@ class DirectoryWatcherThread:
         self.observer.stop()
         self.observer.join()
 
-class ImageExplorer:
+class image_process:
     def __init__(self, root, db_path, default_directory, cible_directory):
         self.root = root
         self.root.title("Image Explorer")
@@ -556,7 +556,7 @@ def main():
     db_path_full = os.path.normpath(os.path.join(db_path_dir, "I003_images_.db"))
     default_directory = os.path.normpath(r"E:/Comfyui_G11/ComfyUI/output")
     cible_directory = os.path.normpath(r"E:/Comfyui_G11/ComfyUI/trash")  # <-- Ajoutez le chemin du répertoire de suppression ici
-    app = ImageExplorer(root, db_path_full, default_directory, cible_directory)
+    app = image_process(root, db_path_full, default_directory, cible_directory)
     root.mainloop()
 
 if __name__ == "__main__":
