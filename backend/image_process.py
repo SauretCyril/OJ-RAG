@@ -44,9 +44,11 @@ class image_process:
         self.root.title("Image Explorer")
         self.root.geometry("1200x800")
         
-        # Répertoire par défaut (passé via le constructeur)
-        self.current_directory = os.path.normpath(default_directory)
+        # Répertoires par défaut et cible
+        self.default_directory = os.path.normpath(default_directory)
         self.cible_directory = os.path.normpath(cible_directory)
+        self.current_directory = self.default_directory  # Répertoire actif
+        
         self.image_files = []
         self.image_widgets = []
         self.pending_changes = []  # Liste des changements en attente
@@ -105,7 +107,7 @@ class image_process:
         )
         return self.cursor.fetchone()[0] > 0
     
-    def mark_image_as_viewed(self, image_path):
+    def mark_action_1(self, image_path):
         """Marquer une image comme vue (en attente de sauvegarde)"""
         if image_path not in [change[1] for change in self.pending_changes if change[0] == 'viewed']:
             self.pending_changes.append(('viewed', image_path))
@@ -114,7 +116,7 @@ class image_process:
             # Activer le bouton de sauvegarde
             self.save_btn.config(state="normal", text=f"Save Changes ({len(self.pending_changes)})")
     
-    def delete_image_pending(self, image_path):
+    def mark_action_2(self, image_path):
         """Marquer une image pour suppression (en attente de sauvegarde)"""
         result = messagebox.askyesno(
             "Confirm Delete", 
@@ -187,7 +189,7 @@ class image_process:
 
     
 
-    def unmark_image_as_viewed(self, image_path):
+    def unmark_action_1(self, image_path):
         """Retirer une image de la liste des images vues"""
         result = messagebox.askyesno(
             "Confirm Unmark", 
@@ -215,22 +217,16 @@ class image_process:
         self.dir_label = ttk.Label(top_frame, text=f"Directory: {self.current_directory}")
         self.dir_label.pack(side="left", padx=(10, 0))
         
-        # Mode frame
-        mode_frame = ttk.Frame(top_frame)
-        mode_frame.pack(side="left", padx=(20, 0))
-        
-        self.mode_label = ttk.Label(mode_frame, text="Mode: New Images", font=("Arial", 9, "bold"))
-        self.mode_label.pack()
-        
-        # self.view_mode_btn = tk.Button(
-        #     mode_frame,
-        #     text="Show Viewed Images",
-        #     command=self.toggle_view_mode,
-        #     bg="green",
-        #     fg="white",
-        #     font=("Arial", 9, "bold")
-        # )
-        # self.view_mode_btn.pack()
+        # Ajouter un bouton pour basculer entre les répertoires
+        self.toggle_dir_btn = tk.Button(
+            top_frame,
+            text="Switch Directory",
+            command=self.toggle_directory,
+            bg="blue",
+            fg="white",
+            font=("Arial", 10, "bold")
+        )
+        self.toggle_dir_btn.pack(side="left", padx=(20, 5))
         
         # Bouton pour sauvegarder les changements
         self.save_btn = tk.Button(
@@ -243,9 +239,6 @@ class image_process:
             state="disabled"
         )
         self.save_btn.pack(side="right", padx=(5, 0))
-        
-        # Bouton pour réinitialiser les images vues
-        #ttk.Button(top_frame, text="Reset Viewed", command=self.reset_viewed_images).pack(side="right")
         
         # Scrollable frame for images
         self.canvas = tk.Canvas(self.root)
@@ -356,11 +349,7 @@ class image_process:
         
         if not self.image_files:
             # Afficher un message selon le mode
-            if self.view_mode == "new":
-                message = "No new images to display. All images have been viewed."
-            else:
-                message = "No viewed images found in database."
-                
+            message = "No images to display in the current directory."
             no_images_label = ttk.Label(
                 self.scrollable_frame, 
                 text=message,
@@ -405,10 +394,10 @@ class image_process:
                 button_frame = ttk.Frame(image_frame)
                 button_frame.pack(pady=5)
                 
-                if self.view_mode == "new":
+                if self.current_directory == self.default_directory:
                     # Boutons pour les nouvelles images
                     # Create OK button (viewed)
-                    ok_btn = tk.Button(
+                    action_1_btn = tk.Button(
                         button_frame, 
                         text="✓ OK", 
                         bg="green", 
@@ -416,12 +405,12 @@ class image_process:
                         font=("Arial", 10, "bold"),
                         width=6,
                         height=1,
-                        command=lambda path=image_path: self.mark_image_as_viewed(path)
+                        command=lambda path=image_path: self.mark_action_1(path)
                     )
-                    ok_btn.pack(side="left", padx=2)
+                    action_1_btn.pack(side="left", padx=2)
                     
                     # Create delete button (X)
-                    delete_btn = tk.Button(
+                    action_2_btn = tk.Button(
                         button_frame, 
                         text="✕ Delete", 
                         bg="red", 
@@ -429,41 +418,41 @@ class image_process:
                         font=("Arial", 10, "bold"),
                         width=8,
                         height=1,
-                        command=lambda path=image_path: self.delete_image_pending(path)
+                        command=lambda path=image_path: self.mark_action_2(path)
                     )
-                    delete_btn.pack(side="left", padx=2)
+                    action_2_btn.pack(side="left", padx=2)
                     
-                    self.image_widgets.extend([ok_btn, delete_btn])
+                    self.image_widgets.extend([action_1_btn, action_2_btn])
                 
-                else:  # view_mode == "viewed"
-                    # Boutons pour les images vues
-                    # Bouton pour retirer de la liste des vues
-                    unmark_btn = tk.Button(
+                elif self.current_directory == self.cible_directory:
+                    # Boutons pour les images dans le répertoire cible
+                    # Create New button (unmark)
+                    action_1_btn = tk.Button(
                         button_frame, 
-                        text="↺ Unmark", 
+                        text="New", 
                         bg="orange", 
                         fg="white", 
                         font=("Arial", 10, "bold"),
-                        width=8,
+                        width=6,
                         height=1,
-                        command=lambda path=image_path: self.unmark_image_as_viewed(path)
+                        command=lambda path=image_path: self.unmark_action_1(path)
                     )
-                    unmark_btn.pack(side="left", padx=2)
+                    action_1_btn.pack(side="left", padx=2)
                     
-                    # Bouton pour supprimer le fichier
-                    delete_btn = tk.Button(
+                    # Create Move Back button
+                    action_2_btn = tk.Button(
                         button_frame, 
-                        text="✕ Delete", 
-                        bg="red", 
+                        text="Move Back", 
+                        bg="blue", 
                         fg="white", 
                         font=("Arial", 10, "bold"),
-                        width=8,
+                        width=10,
                         height=1,
-                        command=lambda path=image_path: self.move_image_to(path)
+                        command=lambda path=image_path: self.unmark_action_2(path)
                     )
-                    delete_btn.pack(side="left", padx=2)
+                    action_2_btn.pack(side="left", padx=2)
                     
-                    self.image_widgets.extend([unmark_btn, delete_btn])
+                    self.image_widgets.extend([action_1_btn, action_2_btn])
                 
                 # Add filename label
                 filename = os.path.basename(image_path)
@@ -496,38 +485,43 @@ class image_process:
         # Update scroll region
         self.root.after(100, lambda: self.canvas.configure(scrollregion=self.canvas.bbox("all")))
 
-    def move_image_to(self, image_path):
-        """Supprimer une image vue (suppression directe, pas de pending)"""
+    def unmark_action_2(self, image_path):
+        """Déplacer une image du répertoire cible vers le répertoire par défaut"""
         result = messagebox.askyesno(
-            "Confirm Delete", 
-            f"Are you sure you want to delete:\n{os.path.basename(image_path)}?\n\nThis will permanently delete the file."
+            "Confirm Move",
+            f"Move this image back to the default directory:\n{os.path.basename(image_path)}?"
         )
         
         if result:
             try:
-                # Supprimer le fichier
-                if os.name == 'nt':  # Windows
-                    try:
-                        import send2trash
-                        send2trash.send2trash(image_path)
-                    except ImportError:
-                        os.remove(image_path)
-                else:
-                    os.remove(image_path)
+                # Construire le chemin de destination dans le répertoire par défaut
+                dest_path = os.path.join(self.default_directory, os.path.basename(image_path))
                 
-                # Retirer de la base de données
+                # Vérifier si le fichier existe déjà dans le répertoire par défaut
+                if os.path.exists(dest_path):
+                    messagebox.showerror(
+                        "Error",
+                        f"The file already exists in the default directory:\n{dest_path}"
+                    )
+                    return
+                
+                # Déplacer le fichier
+                shutil.move(image_path, dest_path)
+                
+                # Retirer l'image de la base de données si elle était marquée pour suppression
                 self.cursor.execute(
                     "DELETE FROM viewed_images WHERE image_path = ?",
                     (image_path,)
                 )
                 self.conn.commit()
                 
-                # Recharger l'affichage
+                # Recharger les images
                 self.load_images()
-                messagebox.showinfo("Success", "Image deleted successfully!")
                 
+                messagebox.showinfo("Success", "Image moved back to the default directory!")
+            
             except Exception as e:
-                messagebox.showerror("Error", f"Error deleting image: {str(e)}")
+                messagebox.showerror("Error", f"Error moving image: {str(e)}")
 
     def __del__(self):
         """Fermer la connexion à la base de données et arrêter le watcher"""
@@ -546,6 +540,18 @@ class image_process:
                 self.display_images()
         except Exception as e:
             print(f"[ERROR] Error adding new image: {str(e)}")
+
+    def toggle_directory(self):
+        """Basculer entre le répertoire par défaut et le répertoire cible"""
+        if self.current_directory == self.default_directory:
+            self.current_directory = self.cible_directory
+            self.dir_label.config(text=f"Directory: {self.cible_directory}")
+        else:
+            self.current_directory = self.default_directory
+            self.dir_label.config(text=f"Directory: {self.default_directory}")
+        
+        # Recharger les images du nouveau répertoire
+        self.load_images()
 
 def normalize_path(path):
     return os.path.normpath(path)
