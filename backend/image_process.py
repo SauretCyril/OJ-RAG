@@ -556,7 +556,7 @@ class image_process:
 def normalize_path(path):
     return os.path.normpath(path)
 
-def main():
+def process_default():
     root = tk.Tk()
     db_path_dir = os.path.normpath(r"H:/Entreprendre/Actions-15-Images/I003/")
     db_path_full = os.path.normpath(os.path.join(db_path_dir, "I003_images_.db"))
@@ -566,4 +566,4 @@ def main():
     root.mainloop()
 
 if __name__ == "__main__":
-    main()
+    process_default()
