@@ -39,7 +39,7 @@ class DirectoryWatcherThread:
         self.observer.join()
 
 class image_process:
-    def __init__(self, root, db_path, default_directory, cible_directory, title="Image Explorer"):
+    def __init__(self, root, db_path, default_directory, cible_directory, title="Image Explorer", changed_value="none"):
         self.root = root
         self.root.title(title)
         self.root.geometry("1200x800")
@@ -48,7 +48,7 @@ class image_process:
         self.default_directory = os.path.normpath(default_directory)
         self.cible_directory = os.path.normpath(cible_directory)
         self.current_directory = self.default_directory  # Répertoire actif
-        
+        self.changed_value = changed_value
         # Stocker le titre pour pouvoir l'utiliser ailleurs (par exemple pour les notifications)
         self.title = title
         

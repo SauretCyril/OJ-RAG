@@ -117,12 +117,12 @@ class FunctionDatabase:
             messagebox.showerror("Database Error", f"Could not retrieve function: {str(e)}")
             return None
     
-    def add_function(self, name, default_directory, cible_directory, db_path, function_type="default"):
+    def add_function(self, name, default_directory, cible_directory, db_path, ChangeValue="default"):
         """Ajouter une nouvelle fonction à la table"""
         try:
             self.cursor.execute(
                 "INSERT INTO functions (name, default_directory, cible_directory, db_path, type) VALUES (?, ?, ?, ?, ?)",
-                (name, default_directory, cible_directory, db_path, function_type)
+                (name, default_directory, cible_directory, db_path, ChangeValue)
             )
             self.conn.commit()
             return self.cursor.lastrowid
@@ -133,7 +133,7 @@ class FunctionDatabase:
             messagebox.showerror("Database Error", f"Could not add function: {str(e)}")
             return None
     
-    def update_function(self, function_id, name, default_directory, cible_directory, db_path, function_type):
+    def update_function(self, function_id, name, default_directory, cible_directory, db_path, ChangeValue):
         """Mettre à jour une fonction existante"""
         try:
             self.cursor.execute(
@@ -141,7 +141,7 @@ class FunctionDatabase:
                    name = ?, default_directory = ?, cible_directory = ?, 
                    db_path = ?, type = ? 
                    WHERE id = ?""",
-                (name, default_directory, cible_directory, db_path, function_type, function_id)
+                (name, default_directory, cible_directory, db_path, ChangeValue, function_id)
             )
             self.conn.commit()
             return self.cursor.rowcount > 0
@@ -231,13 +231,13 @@ class FunctionForm(tk.Toplevel):
         ttk.Label(main_frame, text="Type:").grid(row=4, column=0, sticky="w", pady=5)
         
         # Liste des types disponibles
-        self.function_types = ["default", "advanced", "custom", "specialized"]
+        self.ChangeValues = ["none", "delete", "canva"]
         
         # Créer le ComboBox
-        self.type_combo = ttk.Combobox(main_frame, width=38, values=self.function_types)
+        self.type_combo = ttk.Combobox(main_frame, width=38, values=self.ChangeValues)
         self.type_combo.grid(row=4, column=1, sticky="ew", pady=5)
-        self.type_combo.set("default")  # Valeur par défaut
-        
+        self.type_combo.set("none")  # Valeur par défaut
+
         # Description du type (optionnel)
         self.type_desc_label = ttk.Label(main_frame, text="", font=("Arial", 8), foreground="gray")
         self.type_desc_label.grid(row=5, column=1, sticky="w", pady=(0, 5))
@@ -263,10 +263,9 @@ class FunctionForm(tk.Toplevel):
         selected_type = self.type_combo.get()
         
         descriptions = {
-            "default": "Traitement standard des images sans options particulières",
-            "advanced": "Traitement avancé avec options de filtrage et d'analyse",
-            "custom": "Traitement personnalisé avec des paramètres spécifiques",
-            "specialized": "Traitement spécialisé pour des cas d'usage particuliers"
+            "none": "pas de changement de statue",
+            "delete": "L'image doit être supprimée",
+            "canva": "L'image peut être rattrapée grace à canva"
         }
         
         description = descriptions.get(selected_type, "")
@@ -296,14 +295,14 @@ class FunctionForm(tk.Toplevel):
             self.db_path_entry.insert(0, function_data[4])
             
             # Définir le type dans le ComboBox
-            function_type = function_data[5]
-            if function_type in self.function_types:
-                self.type_combo.set(function_type)
+            ChangeValue = function_data[5]
+            if ChangeValue in self.ChangeValues:
+                self.type_combo.set(ChangeValue)
             else:
                 # Si le type n'est pas dans la liste prédéfinie, l'ajouter
-                self.function_types.append(function_type)
-                self.type_combo.config(values=self.function_types)
-                self.type_combo.set(function_type)
+                self.ChangeValues.append(ChangeValue)
+                self.type_combo.config(values=self.ChangeValues)
+                self.type_combo.set(ChangeValue)
             
             # Mettre à jour la description du type
             self.update_type_description()
@@ -328,15 +327,15 @@ class FunctionForm(tk.Toplevel):
         if not db_path:
             errors.append("Database path is required")
         
-        function_type = self.type_combo.get()
-        if not function_type:
+        ChangeValue = self.type_combo.get()
+        if not ChangeValue:
             errors.append("Type is required")
         
-        return errors, name, default_dir, cible_dir, db_path, function_type
+        return errors, name, default_dir, cible_dir, db_path, ChangeValue
     
     def save_function(self):
         """Sauvegarder la fonction (ajouter ou mettre à jour)"""
-        errors, name, default_dir, cible_dir, db_path, function_type = self.validate_form()
+        errors, name, default_dir, cible_dir, db_path, ChangeValue = self.validate_form()
         
         if errors:
             messagebox.showerror("Validation Error", "\n".join(errors))
@@ -345,7 +344,7 @@ class FunctionForm(tk.Toplevel):
         if self.function_id:
             # Mettre à jour une fonction existante
             success = self.db.update_function(
-                self.function_id, name, default_dir, cible_dir, db_path, function_type
+                self.function_id, name, default_dir, cible_dir, db_path, ChangeValue
             )
             if success:
                 messagebox.showinfo("Success", "Function updated successfully")
@@ -353,7 +352,7 @@ class FunctionForm(tk.Toplevel):
                 self.destroy()
         else:
             # Ajouter une nouvelle fonction
-            function_id = self.db.add_function(name, default_dir, cible_dir, db_path, function_type)
+            function_id = self.db.add_function(name, default_dir, cible_dir, db_path, ChangeValue)
             if function_id:
                 messagebox.showinfo("Success", "Function added successfully")
                 self.parent.refresh_function_list()
@@ -517,7 +516,7 @@ class SplitApplication(tk.Tk):
         default_dir = function_data[2]
         cible_dir = function_data[3]
         db_path = function_data[4]
-        
+        changed_value = function_data[5]
         # Vérifier que les chemins existent
         if not os.path.exists(default_dir):
             messagebox.showerror("Error", f"Default directory does not exist: {default_dir}")
@@ -538,7 +537,8 @@ class SplitApplication(tk.Tk):
                 db_path, 
                 default_dir, 
                 cible_dir,
-                name
+                name,
+                changed_value
             )
         except Exception as e:
             messagebox.showerror("Error", f"Error loading image explorer: {str(e)}")
