@@ -39,15 +39,18 @@ class DirectoryWatcherThread:
         self.observer.join()
 
 class image_process:
-    def __init__(self, root, db_path, default_directory, cible_directory):
+    def __init__(self, root, db_path, default_directory, cible_directory, title="Image Explorer"):
         self.root = root
-        self.root.title("Image Explorer")
+        self.root.title(title)
         self.root.geometry("1200x800")
         
         # Répertoires par défaut et cible
         self.default_directory = os.path.normpath(default_directory)
         self.cible_directory = os.path.normpath(cible_directory)
         self.current_directory = self.default_directory  # Répertoire actif
+        
+        # Stocker le titre pour pouvoir l'utiliser ailleurs (par exemple pour les notifications)
+        self.title = title
         
         self.image_files = []
         self.image_widgets = []
@@ -556,13 +559,68 @@ class image_process:
 def normalize_path(path):
     return os.path.normpath(path)
 
+def load_config(config_file="config.json"):
+    """Charger la configuration depuis un fichier JSON"""
+    default_config = {
+        "db_path_dir": r"H:/Entreprendre/Actions-15-Images/I003/",
+        "db_filename": "I003_images_.db",
+        "default_directory": r"E:/Comfyui_G11/ComfyUI/output",
+        "cible_directory": r"E:/Comfyui_G11/ComfyUI/trash",
+        "title": "Image Explorer"
+    }
+    
+    try:
+        # Essayer de charger la configuration depuis le fichier JSON
+        with open(config_file, 'r') as f:
+            config = json.load(f)
+            
+        # Vérifier que tous les paramètres requis sont présents
+        for key in default_config:
+            if key not in config:
+                config[key] = default_config[key]
+                print(f"[WARNING] Missing key '{key}' in config file, using default value")
+        
+        return config
+    
+    except FileNotFoundError:
+        # Si le fichier n'existe pas, le créer avec la configuration par défaut
+        print(f"[INFO] Config file '{config_file}' not found, creating with default values")
+        try:
+            with open(config_file, 'w') as f:
+                json.dump(default_config, f, indent=4)
+        except Exception as e:
+            print(f"[ERROR] Failed to create config file: {str(e)}")
+        
+        return default_config
+    
+    except Exception as e:
+        # En cas d'erreur, utiliser la configuration par défaut
+        print(f"[ERROR] Failed to load config file: {str(e)}")
+        return default_config
+
 def process_default():
+    """Fonction principale qui initialise l'application avec la configuration chargée"""
+    # Charger la configuration
+    config = load_config()
+    
+    # Initialiser l'application
     root = tk.Tk()
-    db_path_dir = os.path.normpath(r"H:/Entreprendre/Actions-15-Images/I003/")
-    db_path_full = os.path.normpath(os.path.join(db_path_dir, "I003_images_.db"))
-    default_directory = os.path.normpath(r"E:/Comfyui_G11/ComfyUI/output")
-    cible_directory = os.path.normpath(r"E:/Comfyui_G11/ComfyUI/trash")  # <-- Ajoutez le chemin du répertoire de suppression ici
-    app = image_process(root, db_path_full, default_directory, cible_directory)
+    
+    # Construire le chemin complet de la base de données
+    db_path_dir = os.path.normpath(config["db_path_dir"])
+    db_path_full = os.path.normpath(os.path.join(db_path_dir, config["db_filename"]))
+    
+    # Normaliser les chemins des répertoires
+    default_directory = os.path.normpath(config["default_directory"])
+    cible_directory = os.path.normpath(config["cible_directory"])
+    
+    # Récupérer le titre de l'application
+    title = config.get("title", "Image Explorer")
+    
+    # Créer l'application
+    app = image_process(root, db_path_full, default_directory, cible_directory, title)
+    
+    # Lancer la boucle principale
     root.mainloop()
 
 if __name__ == "__main__":
