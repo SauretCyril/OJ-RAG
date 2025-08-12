@@ -31,6 +31,7 @@ class FBXExplorer:
                         values=[item_path]
                     )
         except Exception as e:
+            print(f"Error-14 populating treeview: {e}")
             messagebox.showerror("Erreur", f"Erreur lors du chargement des fichiers : {e}")
 
     def on_file_double_click(self, event):
@@ -39,6 +40,7 @@ class FBXExplorer:
         try:
             launch_fbxreview(path)
         except Exception as e:
+            print(f"Error-15 launching FBX Review: {e}")
             messagebox.showerror("Erreur", f"Impossible d'ouvrir le fichier : {e}")
 
     def run(self):

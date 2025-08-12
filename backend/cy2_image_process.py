@@ -8,12 +8,17 @@ import json
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
 import threading
+import time  # Ajoute cet import en haut du fichier
+
+
+
 
 
 class DirectoryWatcher(FileSystemEventHandler):
     def __init__(self, image_explorer):
+        super().__init__()
         self.image_explorer = image_explorer
-
+   
     def on_created(self, event):
         """Appelé lorsqu'un fichier est créé dans le répertoire surveillé"""
         if not event.is_directory:
@@ -39,34 +44,47 @@ class DirectoryWatcherThread:
         self.observer.join()
 
 class image_process:
-    def __init__(self, root, db_path, default_directory, cible_directory, title="Image Explorer", changed_value="none"):
+    def __init__(self, root, config):
         self.root = root
-        self.root.title(title)
+        self.root.title(config.get('title', 'Image Explorer'))
         self.root.geometry("1200x800")
         
-        # Répertoires par défaut et cible
-        self.default_directory = os.path.normpath(default_directory)
-        self.cible_directory = os.path.normpath(cible_directory)
+        # Extract configuration parameters with defaults
+        self.default_directory = os.path.normpath(config.get('default_directory', ''))
+        self.cible_directory = os.path.normpath(config.get('cible_directory', ''))
         self.current_directory = self.default_directory  # Répertoire actif
-        self.changed_value = changed_value
-        # Stocker le titre pour pouvoir l'utiliser ailleurs (par exemple pour les notifications)
-        self.title = title
+        self.changed_value = config.get('changed_value', 'none')
+        self.title = config.get('title', 'Image Explorer')
+        self.processor_type = config.get('processor_type', 'standard')
+
+        # Database path
+        self.db_path = os.path.normpath(config.get('db_path', ''))
         
+        # Initialize collections
         self.image_files = []
         self.image_widgets = []
-        self.pending_changes = []  # Liste des changements en attente
-        self.view_mode = "new"  # "new" ou "viewed"
-        self.zoomed_images = {}  # Dictionnaire pour suivre les images zoomées
+        self.pending_changes = []
+        self.view_mode = "new"
+        self.zoomed_images = {}
+        self.page = 0
+        self.page_size = 100
+        self.all_files = []
+        self.show_more_btn = None
         
-        # Initialiser la base de données avec le chemin fourni
-        self.db_path = os.path.normpath(db_path)
+        # Threading attributes
+        self.loading_lock = threading.Lock()
+        self.loading = False
+        
+        # Initialize database
         self.init_database()
         
+        # Set up UI
         self.setup_ui()
-        # Charger automatiquement les images du répertoire par défaut
+        
+        # Load images
         if os.path.exists(self.current_directory):
             self.dir_label.config(text=f"Directory: {self.current_directory}")
-            self.load_images()
+            self.load_images_async()
         else:
             self.dir_label.config(text="No directory selected")
             messagebox.showwarning(
@@ -75,16 +93,29 @@ class image_process:
             )
             self.select_directory()
         
-        # Démarrer le watcher pour surveiller les nouvelles images
+        # Start directory watcher
         self.watcher_thread = DirectoryWatcherThread(self)
         self.watcher_thread.start()
 
     def __del__(self):
-        """Fermer la connexion à la base de données et arrêter le watcher"""
-        if hasattr(self, 'conn'):
-            self.conn.close()
-        if hasattr(self, 'watcher_thread'):
-            self.watcher_thread.stop()
+        """Nettoyage des ressources lors de la destruction de l'objet"""
+        try:
+            # SQLite ne peut pas être fermé depuis un autre thread
+            import threading
+            if hasattr(self, 'conn') and self.conn:
+                try:
+                    # Tester si la connexion peut être fermée (même thread)
+                    self.cursor.execute("SELECT 1")
+                    # Si pas d'erreur, on peut fermer
+                    self.conn.close()
+                    print("[INFO] Database connection closed successfully")
+                except sqlite3.ProgrammingError as e:
+                    # Erreur de thread, on ignore la fermeture
+                    print("[INFO] Cannot close DB connection from different thread")
+                except Exception as e:
+                    print(f"[WARNING] Error closing database: {e}")
+        except Exception as e:
+            print(f"[ERROR] Error in __del__: {e}")
     
     def init_database(self):
         """Initialise la base de données SQLite pour stocker les images vues"""
@@ -99,16 +130,40 @@ class image_process:
                 viewed_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         ''')
+        
+        # Ne pas essayer de modifier la table functions ici
+        # La table functions est dans une autre base de données gérée par FunctionDatabase
+        
         self.conn.commit()
     
-    def is_image_viewed(self, image_path):
-        """Vérifier si une image a été vue"""
-        image_path = os.path.normpath(image_path)
-        self.cursor.execute(
-            "SELECT COUNT(*) FROM viewed_images WHERE image_path = ?",
-            (image_path,)
-        )
-        return self.cursor.fetchone()[0] > 0
+    def get_db_connection(self):
+        """Créer une nouvelle connexion à la base de données pour le thread actuel"""
+        conn = sqlite3.connect(self.db_path)
+        return conn, conn.cursor()
+
+    def is_image_viewed(self, image_path, cursor=None):
+        """Vérifier si une image a été vue, en utilisant un curseur spécifié ou celui par défaut"""
+        try:
+            image_path = os.path.normpath(image_path)
+            use_local_connection = cursor is None
+            
+            if use_local_connection:
+                # Si dans un thread différent, créer une connexion locale
+                thread_conn, cursor = self.get_db_connection()
+                
+            cursor.execute(
+                "SELECT COUNT(*) FROM viewed_images WHERE image_path = ?",
+                (image_path,)
+            )
+            result = cursor.fetchone()[0] > 0
+            
+            if use_local_connection:
+                thread_conn.close()
+                
+            return result
+        except Exception as e:
+            print(f"[ERROR][is_image_viewed] {type(e).__name__}: {e}")
+            return False
     
     def mark_action_1(self, image_path):
         """Marquer une image comme vue (en attente de sauvegarde)"""
@@ -125,10 +180,10 @@ class image_process:
             "Confirm Delete", 
             f"Mark for deletion:\n{os.path.basename(image_path)}?\n\nClick 'Save Changes' to apply."
         )
-        
+        print("dbg 1457 mark_action_2 : ",self.changed_value)
         if result:
             if image_path not in [change[1] for change in self.pending_changes]:
-                self.pending_changes.append(('delete', image_path))
+                self.pending_changes.append((self.changed_value, image_path))
                 # Masquer visuellement l'image immédiatement
                 self.hide_image_widget(image_path)
                 # Activer le bouton de sauvegarde
@@ -145,92 +200,26 @@ class image_process:
         if not self.pending_changes:
             return
             
-        errors = []
-        success_count = 0
-        
-        for action, image_path in self.pending_changes:
-            try:
-                print(f"[INFO] Processing {action} for {os.path.basename(image_path)}")
-                if action == 'viewed':
-                    self.cursor.execute(
-                        "INSERT OR IGNORE INTO viewed_images (image_path) VALUES (?)",
-                        (image_path,)
-                    )
-                    success_count += 1
-                    
-                elif action == 'delete':
-                    # Déplacer le fichier vers le répertoire de suppression (trash)
-                    if not os.path.exists(self.cible_directory):
-                        os.makedirs(self.cible_directory)
-                    dest_path = os.path.join(self.cible_directory, os.path.basename(image_path))
-                    shutil.move(image_path, dest_path)
-                    success_count += 1
-                    
-            except Exception as e:
-                errors.append(f"{os.path.basename(image_path)}: {str(e)}")
-        
-        # Sauvegarder dans la base de données
-        self.conn.commit()
-        
-        # Vider la liste des changements
-        self.pending_changes.clear()
-        
-        # Recharger l'affichage
-        self.load_images()
-        
-        # Désactiver le bouton de sauvegarde
-        self.save_btn.config(state="disabled", text="Save Changes")
-        
-        # Afficher le résultat
-        if errors:
-            messagebox.showwarning(
-                "Partial Success", 
-                f"Processed {success_count} items successfully.\n\nErrors:\n" + "\n".join(errors)
-            )
-        else:
-            messagebox.showinfo("Success", f"Successfully processed {success_count} items!")
+        import threading
+        import time  # Ajoute cet import en haut du fichier
 
+
+       
     
-
-    def unmark_action_1(self, image_path):
-        """Retirer une image de la liste des images vues"""
-        result = messagebox.askyesno(
-            "Confirm Unmark", 
-            f"Remove from viewed list:\n{os.path.basename(image_path)}?"
-        )
-        
-        if result:
-            try:
-                self.cursor.execute(
-                    "DELETE FROM viewed_images WHERE image_path = ?",
-                    (image_path,)
-                )
-                self.conn.commit()
-                self.load_images()
-                messagebox.showinfo("Success", "Image removed from viewed list!")
-            except Exception as e:
-                messagebox.showerror("Error", f"Error removing image from viewed list: {str(e)}")
-
     def setup_ui(self):
-        # Top frame for directory selection
+        """Initialise l'interface graphique principale"""
+        # Frame du haut pour la sélection du dossier
         top_frame = ttk.Frame(self.root)
         top_frame.pack(fill="x", padx=10, pady=5)
-        
-        ttk.Button(top_frame, text="Select Directory", command=self.select_directory).pack(side="left")
+
+        # Bouton pour sélectionner le dossier
+        select_btn = ttk.Button(top_frame, text="Select Directory", command=self.select_directory)
+        select_btn.pack(side="left")
+
+        # Label du dossier courant
         self.dir_label = ttk.Label(top_frame, text=f"Directory: {self.current_directory}")
         self.dir_label.pack(side="left", padx=(10, 0))
-        
-        # Ajouter un bouton pour basculer entre les répertoires
-        self.toggle_dir_btn = tk.Button(
-            top_frame,
-            text="Switch Directory",
-            command=self.toggle_directory,
-            bg="blue",
-            fg="white",
-            font=("Arial", 10, "bold")
-        )
-        self.toggle_dir_btn.pack(side="left", padx=(20, 5))
-        
+
         # Bouton pour sauvegarder les changements
         self.save_btn = tk.Button(
             top_frame, 
@@ -242,386 +231,306 @@ class image_process:
             state="disabled"
         )
         self.save_btn.pack(side="right", padx=(5, 0))
-        
-        # Scrollable frame for images
-        self.canvas = tk.Canvas(self.root)
-        self.scrollbar = ttk.Scrollbar(self.root, orient="vertical", command=self.canvas.yview)
+
+        # Frame principal pour les images
+        main_frame = ttk.Frame(self.root)
+        main_frame.pack(fill="both", expand=True, padx=10, pady=5)
+
+        # Canvas scrollable pour les images
+        self.canvas = tk.Canvas(main_frame, borderwidth=0)
+        self.scrollbar = ttk.Scrollbar(main_frame, orient="vertical", command=self.canvas.yview)
         self.canvas.configure(yscrollcommand=self.scrollbar.set)
-        
+
+        self.scrollbar.pack(side="right", fill="y")
+        self.canvas.pack(side="left", fill="both", expand=True)
+
+        # Frame interne pour placer les widgets d'image
         self.scrollable_frame = ttk.Frame(self.canvas)
         self.scrollable_frame.bind(
             "<Configure>",
             lambda e: self.canvas.configure(scrollregion=self.canvas.bbox("all"))
         )
-        
+
         self.canvas.create_window((0, 0), window=self.scrollable_frame, anchor="nw")
         
-        self.canvas.pack(side="left", fill="both", expand=True)
-        self.scrollbar.pack(side="right", fill="y")
-        
-        # Bind mousewheel to canvas (amélioration du scroll)
-        self.canvas.bind("<MouseWheel>", self._on_mousewheel)
-        self.scrollable_frame.bind("<MouseWheel>", self._on_mousewheel)
-        
-        # Bind focus to canvas for mousewheel to work
-        self.canvas.focus_set()
-        
-    def _on_mousewheel(self, event):
-        # Amélioration du scroll avec la molette
-        self.canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
-        
-    def select_directory(self):
-        directory = filedialog.askdirectory()
-        if directory:
-            self.current_directory = directory
-            self.dir_label.config(text=f"Directory: {directory}")
-            self.load_images()
-     
+        # Lier les événements à tous les widgets (y compris les enfants)
+        self.root.bind_all("<MouseWheel>", self._on_mousewheel)
+        self.root.bind_all("<Button-4>", self._on_mousewheel)
+        self.root.bind_all("<Button-5>", self._on_mousewheel)
+
+        # Pour le resize horizontal
+        self.scrollable_frame.bind(
+            "<Configure>",
+            lambda e: self.canvas.configure(scrollregion=self.canvas.bbox("all"))
+        )
+    
+    def load_images_async(self):
+        """Lance le chargement des images dans un thread pour ne pas bloquer l'UI"""
+        import threading
+        if hasattr(self, 'loading') and self.loading:
+            return  # Un chargement est déjà en cours
+        self.loading = True
+        threading.Thread(target=self.load_images, daemon=True).start()
 
     def load_images(self):
-        # Clear existing widgets
-        for widget in self.image_widgets:
-            widget.destroy()
-        self.image_widgets.clear()
-        
-        # Get image files based on mode
-        self.image_files = []
-        
-        if self.view_mode == "new":
-            # Mode nouvelles images (comportement existant)
-            image_extensions = ('.png', '.jpg', '.jpeg', '.gif', '.bmp', '.tiff', '.webp')
-            
-            try:
-                for filename in os.listdir(self.current_directory):
-                    if filename.lower().endswith(image_extensions):
-                        image_path = os.path.normpath(os.path.join(self.current_directory, filename))
-                        # N'ajouter que les images non vues
-                        if not self.is_image_viewed(image_path):
-                            self.image_files.append(image_path)
-            except Exception as e:
-                messagebox.showerror("Error", f"Error reading directory: {str(e)}")
-                return
-        
-       
-            
-        # Display images
-        self.display_images()
+        """Charge les images du dossier courant avec pagination"""
+        try:
+            with self.loading_lock:
+                # Créer une connexion spécifique à ce thread
+                thread_conn, thread_cursor = self.get_db_connection()
+                
+                # Nettoyer les widgets existants
+                for widget in self.image_widgets:
+                    widget.destroy()
+                self.image_widgets.clear()
 
+                # Obtenir les fichiers images
+                image_extensions = ('.png', '.jpg', '.jpeg', '.gif', '.bmp', '.tiff', '.webp')
+                if not self.all_files:
+                    self.all_files = [f for f in os.listdir(self.current_directory) if f.lower().endswith(image_extensions)]
+                    self.all_files.sort()
+
+                # Pagination
+                start = self.page * self.page_size
+                end = start + self.page_size
+                files = self.all_files[start:end]
+
+                self.image_files = []
+                total = len(files)
+                for idx, filename in enumerate(files):
+                    image_path = os.path.normpath(os.path.join(self.current_directory, filename))
+                    if self.view_mode == "new":
+                        if not self.is_image_viewed(image_path, thread_cursor):
+                            self.image_files.append(image_path)
+                    else:
+                        self.image_files.append(image_path)
+                    # Mise à jour de la barre de progression
+                    if hasattr(self, 'progressbar') and self.progressbar:
+                        value = int((idx + 1) / total * 100)
+                        self.root.after(0, lambda v=value: self.progressbar.config(value=v))
+                        self.root.update_idletasks()
+
+                # Fermer la connexion du thread
+                thread_conn.close()
+                
+                # Détruire la barre de progression
+                if hasattr(self, 'progressbar') and self.progressbar:
+                    self.root.after(0, self.progressbar.destroy)
+                    self.progressbar = None
+
+                # Afficher les images
+                self.root.after(0, self.display_images)
+                self.loading = False
+        except Exception as e:
+            print(f"[ERROR][load_images] {type(e).__name__}: {e}")
+            messagebox.showerror("Error", f"Error loading images: {str(e)}")
+            self.loading = False
+
+    def select_directory(self):
+        """Ouvrir un dialogue pour sélectionner un nouveau dossier d'images"""
+        try:
+            directory = filedialog.askdirectory()
+            if directory:
+                self.current_directory = os.path.normpath(directory)
+                self.dir_label.config(text=f"Directory: {self.current_directory}")
+                
+                # Réinitialiser la pagination
+                self.page = 0
+                self.all_files = []
+                
+                # Arrêter et redémarrer le watcher pour le nouveau dossier
+                if hasattr(self, 'watcher_thread'):
+                    self.watcher_thread.stop()
+                self.watcher_thread = DirectoryWatcherThread(self)
+                self.watcher_thread.start()
+                
+                # Charger les images du nouveau dossier
+                self.load_images_async()
+        except Exception as e:
+            print(f"[ERROR][select_directory] {type(e).__name__}: {e}")
+            messagebox.showerror("Error", f"Error selecting directory: {str(e)}")
+    
+    def display_images(self):
+        """Affiche les images chargées dans l'interface graphique"""
+        try:
+            # Vider le conteneur d'images existant
+            for widget in self.scrollable_frame.winfo_children():
+                widget.destroy()
+            
+            # Initialiser les variables de positionnement
+            row, col = 0, 0
+            max_cols = 3  # Nombre maximum de colonnes
+            
+            # Aucune image à afficher
+            if not self.image_files:
+                no_image_label = ttk.Label(self.scrollable_frame, text="No images to display", font=("Arial", 14))
+                no_image_label.grid(row=0, column=0, padx=20, pady=20)
+                return
+            
+            # Afficher chaque image
+            for i, image_path in enumerate(self.image_files):
+                try:
+                    # Vérifier si le fichier existe toujours
+                    if not os.path.exists(image_path):
+                        continue
+                        
+                    # Créer un cadre pour chaque image
+                    image_frame = ttk.Frame(self.scrollable_frame)
+                    image_frame.grid(row=row, column=col, padx=10, pady=10, sticky="nsew")
+                    image_frame.image_path = image_path  # Référence pour masquage
+                    
+                    # Charger l'image avec PIL
+                    with Image.open(image_path) as img:
+                        # Redimensionner pour l'affichage
+                        img.thumbnail((300, 300), Image.LANCZOS)
+                        photo = ImageTk.PhotoImage(img)
+                    
+                    # Créer un label pour l'image
+                    image_label = ttk.Label(image_frame, image=photo)
+                    image_label.image = photo  # Garder une référence
+                    image_label.pack(padx=5, pady=5)
+                    
+                    # Ajouter un événement de clic pour zoomer
+                    image_label.bind("<Button-1>", lambda e, path=image_path, label=image_label: self.toggle_image_zoom(label, path))
+                    
+                    # Créer un label pour le nom du fichier
+                    file_label = ttk.Label(image_frame, text=os.path.basename(image_path))
+                    file_label.pack(pady=2)
+                    
+                    # Ajouter des boutons d'action
+                    btn_frame = ttk.Frame(image_frame)
+                    btn_frame.pack(pady=5)
+                    
+                    # Bouton "Mark as Viewed"
+                    view_btn = ttk.Button(
+                        btn_frame, 
+                        text="Mark as Viewed", 
+                        command=lambda path=image_path: self.mark_action_1(path)
+                    )
+                    view_btn.pack(side="left", padx=2)
+                    
+                    # Bouton "Mark for Deletion"
+                    delete_btn = ttk.Button(
+                        btn_frame, 
+                        text="Mark for Deletion", 
+                        command=lambda path=image_path: self.mark_action_2(path)
+                    )
+                    delete_btn.pack(side="left", padx=2)
+                    
+                    # Stocker le widget pour référence future
+                    self.image_widgets.append(image_frame)
+                    
+                    # Passer à la prochaine position
+                    col += 1
+                    if col >= max_cols:
+                        col = 0
+                        row += 1
+                        
+                except Exception as e:
+                    print(f"Error loading image {image_path}: {str(e)}")
+            
+            # Ajouter le bouton "Afficher plus" si besoin
+            if (self.page + 1) * self.page_size < len(self.all_files):
+                if hasattr(self, 'show_more_btn') and self.show_more_btn:
+                    self.show_more_btn.destroy()
+                
+                self.show_more_btn = tk.Button(
+                    self.scrollable_frame,
+                    text="Afficher plus",
+                    command=self.show_more_images,
+                    bg="purple",
+                    fg="white",
+                    font=("Arial", 10, "bold")
+                )
+                self.show_more_btn.grid(row=row+1, column=0, columnspan=max_cols, pady=20)
+            
+            # Mettre à jour la région de défilement du canvas
+            self.check_and_update_canvas()
+        
+        except Exception as e:
+            print(f"[ERROR][display_images] {type(e).__name__}: {e}")
+            messagebox.showerror("Error", f"Error displaying images: {str(e)}")
+    
+    def check_and_update_canvas(self):
+        """Mettre à jour en toute sécurité la région de défilement du canvas s'il existe encore"""
+        try:
+            if hasattr(self, 'canvas') and self.canvas.winfo_exists():
+                self.canvas.configure(scrollregion=self.canvas.bbox("all"))
+        except Exception as e:
+            print(f"[INFO] Erreur de mise à jour du canvas: {str(e)}")
+    
+    def show_more_images(self):
+        """Affiche une page supplémentaire d'images"""
+        try:
+            self.page += 1
+            self.load_images_async()
+        except Exception as e:
+            print(f"[ERROR][show_more_images] {type(e).__name__}: {e}")
+            messagebox.showerror("Error", f"Error loading more images: {str(e)}")
+    
     def toggle_image_zoom(self, image_label, image_path):
         """Basculer entre la taille normale et la taille agrandie d'une image"""
         try:
+            # Vérifier si l'image est déjà zoomée
             if image_path in self.zoomed_images:
-                # Image est zoomée, revenir à la taille normale
-                with Image.open(image_path) as img:
-                    img.thumbnail((300, 300), Image.Resampling.LANCZOS)
-                    photo = ImageTk.PhotoImage(img)
-                
-                image_label.config(image=photo)
-                image_label.image = photo
+                # Restaurer l'image normale
+                image_label.config(image=self.zoomed_images[image_path]['normal'])
                 del self.zoomed_images[image_path]
-                
             else:
-                # Image est en taille normale, zoomer
-                with Image.open(image_path) as img:
-                    # Calculer la nouvelle taille (max 800x800 pour éviter que ce soit trop grand)
-                    original_size = img.size
-                    max_size = 800
-                    
-                    if original_size[0] > max_size or original_size[1] > max_size:
-                        img.thumbnail((max_size, max_size), Image.Resampling.LANCZOS)
-                    
-                    photo = ImageTk.PhotoImage(img)
+                # Sauvegarder l'image normale
+                normal_image = image_label.image
                 
-                image_label.config(image=photo)
-                image_label.image = photo
-                self.zoomed_images[image_path] = True
+                # Charger l'image agrandie
+                with Image.open(image_path) as img:
+                    # Agrandir l'image pour une meilleure vue
+                    img.thumbnail((800, 800), Image.LANCZOS)
+                    zoomed_photo = ImageTk.PhotoImage(img)
+                
+                # Mettre à jour l'affichage
+                image_label.config(image=zoomed_photo)
+                
+                # Stocker les références
+                self.zoomed_images[image_path] = {
+                    'normal': normal_image,
+                    'zoomed': zoomed_photo
+                }
             
-            # Mettre à jour la région de scroll après le changement de taille
-            self.root.after(100, lambda: self.canvas.configure(scrollregion=self.canvas.bbox("all")))
-            
+            # Mettre à jour la région de défilement
+            self.check_and_update_canvas()
         except Exception as e:
-            print(f"Error zooming image {image_path}: {str(e)}")
-
-    def display_images(self):
-        row = 0
-        col = 0
-        max_cols = 3
-        
-        # Réinitialiser le dictionnaire des images zoomées
-        self.zoomed_images.clear()
-        
-        if not self.image_files:
-            # Afficher un message selon le mode
-            message = "No images to display in the current directory."
-            no_images_label = ttk.Label(
-                self.scrollable_frame, 
-                text=message,
-                font=("Arial", 14)
-            )
-            no_images_label.grid(row=0, column=0, columnspan=3, pady=50)
-            self.image_widgets.append(no_images_label)
-            return
-        
-        for image_path in self.image_files:
-            try:
-                # Vérifier si le fichier existe toujours
-                if not os.path.exists(image_path):
-                    continue
-                    
-                # Create frame for each image
-                image_frame = ttk.Frame(self.scrollable_frame)
-                image_frame.grid(row=row, column=col, padx=10, pady=10, sticky="nsew")
-                image_frame.image_path = image_path  # Référence pour masquage
-                
-                # Load and resize image
-                with Image.open(image_path) as img:
-                    # Resize image to fit display (max 300x300)
-                    img.thumbnail((300, 300), Image.Resampling.LANCZOS)
-                    photo = ImageTk.PhotoImage(img)
-                
-                # Create label for image
-                image_label = ttk.Label(image_frame, image=photo)
-                image_label.image = photo  # Keep a reference
-                image_label.pack()
-                
-                # Bind double-click to zoom function
-                image_label.bind(
-                    "<Double-Button-1>", 
-                    lambda event, label=image_label, path=image_path: self.toggle_image_zoom(label, path)
-                )
-                
-                # Changer le curseur pour indiquer que l'image est cliquable
-                image_label.config(cursor="hand2")
-                
-                # Frame for buttons
-                button_frame = ttk.Frame(image_frame)
-                button_frame.pack(pady=5)
-                
-                if self.current_directory == self.default_directory:
-                    # Boutons pour les nouvelles images
-                    # Create OK button (viewed)
-                    action_1_btn = tk.Button(
-                        button_frame, 
-                        text="✓ OK", 
-                        bg="green", 
-                        fg="white", 
-                        font=("Arial", 10, "bold"),
-                        width=6,
-                        height=1,
-                        command=lambda path=image_path: self.mark_action_1(path)
-                    )
-                    action_1_btn.pack(side="left", padx=2)
-                    
-                    # Create delete button (X)
-                    action_2_btn = tk.Button(
-                        button_frame, 
-                        text="✕ Delete", 
-                        bg="red", 
-                        fg="white", 
-                        font=("Arial", 10, "bold"),
-                        width=8,
-                        height=1,
-                        command=lambda path=image_path: self.mark_action_2(path)
-                    )
-                    action_2_btn.pack(side="left", padx=2)
-                    
-                    self.image_widgets.extend([action_1_btn, action_2_btn])
-                
-                elif self.current_directory == self.cible_directory:
-                    # Boutons pour les images dans le répertoire cible
-                    # Create New button (unmark)
-                    action_1_btn = tk.Button(
-                        button_frame, 
-                        text="New", 
-                        bg="orange", 
-                        fg="white", 
-                        font=("Arial", 10, "bold"),
-                        width=6,
-                        height=1,
-                        command=lambda path=image_path: self.unmark_action_1(path)
-                    )
-                    action_1_btn.pack(side="left", padx=2)
-                    
-                    # Create Move Back button
-                    action_2_btn = tk.Button(
-                        button_frame, 
-                        text="Move Back", 
-                        bg="blue", 
-                        fg="white", 
-                        font=("Arial", 10, "bold"),
-                        width=10,
-                        height=1,
-                        command=lambda path=image_path: self.unmark_action_2(path)
-                    )
-                    action_2_btn.pack(side="left", padx=2)
-                    
-                    self.image_widgets.extend([action_1_btn, action_2_btn])
-                
-                # Add filename label
-                filename = os.path.basename(image_path)
-                filename_label = ttk.Label(image_frame, text=filename, wraplength=280)
-                filename_label.pack()
-                
-                # Add zoom instruction label
-                zoom_instruction = ttk.Label(
-                    image_frame, 
-                    text="Double-click to zoom", 
-                    font=("Arial", 8), 
-                    foreground="gray"
-                )
-                zoom_instruction.pack()
-                
-                # Bind mousewheel to image widgets also
-                for widget in [image_frame, image_label, button_frame]:
-                    widget.bind("<MouseWheel>", self._on_mousewheel)
-                
-                self.image_widgets.extend([image_frame, image_label, button_frame, filename_label, zoom_instruction])
-                
-                col += 1
-                if col >= max_cols:
-                    col = 0
-                    row += 1
-                    
-            except Exception as e:
-                print(f"Error loading image {image_path}: {str(e)}")
-                
-        # Update scroll region
-        self.root.after(100, lambda: self.canvas.configure(scrollregion=self.canvas.bbox("all")))
-
-    def unmark_action_2(self, image_path):
-        """Déplacer une image du répertoire cible vers le répertoire par défaut"""
-        result = messagebox.askyesno(
-            "Confirm Move",
-            f"Move this image back to the default directory:\n{os.path.basename(image_path)}?"
-        )
-        
-        if result:
-            try:
-                # Construire le chemin de destination dans le répertoire par défaut
-                dest_path = os.path.join(self.default_directory, os.path.basename(image_path))
-                
-                # Vérifier si le fichier existe déjà dans le répertoire par défaut
-                if os.path.exists(dest_path):
-                    messagebox.showerror(
-                        "Error",
-                        f"The file already exists in the default directory:\n{dest_path}"
-                    )
-                    return
-                
-                # Déplacer le fichier
-                shutil.move(image_path, dest_path)
-                
-                # Retirer l'image de la base de données si elle était marquée pour suppression
-                self.cursor.execute(
-                    "DELETE FROM viewed_images WHERE image_path = ?",
-                    (image_path,)
-                )
-                self.conn.commit()
-                
-                # Recharger les images
-                self.load_images()
-                
-                messagebox.showinfo("Success", "Image moved back to the default directory!")
-            
-            except Exception as e:
-                messagebox.showerror("Error", f"Error moving image: {str(e)}")
-
-    def __del__(self):
-        """Fermer la connexion à la base de données et arrêter le watcher"""
-        if hasattr(self, 'conn'):
-            self.conn.close()
-        if hasattr(self, 'watcher_thread'):
-            self.watcher_thread.stop()
-
+            print(f"[ERROR][toggle_image_zoom] {type(e).__name__}: {e}")
+            messagebox.showerror("Error", f"Error zooming image: {str(e)}")
+    
     def add_new_image(self, image_path):
-        """Ajouter une nouvelle image à l'interface"""
+        """Ajoute une nouvelle image détectée au dossier à l'affichage"""
         try:
             image_path = os.path.normpath(image_path)
             if image_path not in self.image_files:
                 self.image_files.append(image_path)
                 print(f"[INFO] Adding new image to display: {image_path}")
-                self.display_images()
+                # Uniquement recharger si en mode "all" ou si l'image est nouvelle
+                if self.view_mode == "all" or not self.is_image_viewed(image_path):
+                    self.load_images_async()
         except Exception as e:
-            print(f"[ERROR] Error adding new image: {str(e)}")
-
-    def toggle_directory(self):
-        """Basculer entre le répertoire par défaut et le répertoire cible"""
-        if self.current_directory == self.default_directory:
-            self.current_directory = self.cible_directory
-            self.dir_label.config(text=f"Directory: {self.cible_directory}")
-        else:
-            self.current_directory = self.default_directory
-            self.dir_label.config(text=f"Directory: {self.default_directory}")
-        
-        # Recharger les images du nouveau répertoire
-        self.load_images()
-
-def normalize_path(path):
-    return os.path.normpath(path)
-
-def load_config(config_file="config.json"):
-    """Charger la configuration depuis un fichier JSON"""
-    default_config = {
-        "db_path_dir": r"H:/Entreprendre/Actions-15-Images/I003/",
-        "db_filename": "I003_images_.db",
-        "default_directory": r"E:/Comfyui_G11/ComfyUI/output",
-        "cible_directory": r"E:/Comfyui_G11/ComfyUI/trash",
-        "title": "Image Explorer"
-    }
+            print(f"[ERROR][add_new_image] {type(e).__name__}: {e}")
     
-    try:
-        # Essayer de charger la configuration depuis le fichier JSON
-        with open(config_file, 'r') as f:
-            config = json.load(f)
-            
-        # Vérifier que tous les paramètres requis sont présents
-        for key in default_config:
-            if key not in config:
-                config[key] = default_config[key]
-                print(f"[WARNING] Missing key '{key}' in config file, using default value")
-        
-        return config
-    
-    except FileNotFoundError:
-        # Si le fichier n'existe pas, le créer avec la configuration par défaut
-        print(f"[INFO] Config file '{config_file}' not found, creating with default values")
+    def _on_mousewheel(self, event):
+        """Gère le défilement avec la molette de souris"""
         try:
-            with open(config_file, 'w') as f:
-                json.dump(default_config, f, indent=4)
+            # Ajouter un log pour voir si l'événement est détecté
+            print(f"[DEBUG] Mousewheel event detected: {event}")
+            
+            # Détection adaptée à Windows
+            if hasattr(event, "delta"):  # Windows
+                self.canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
+            # Détection pour Linux/Unix
+            elif hasattr(event, "num"):  # Linux
+                if event.num == 4:
+                    self.canvas.yview_scroll(-3, "units")
+                elif event.num == 5:
+                    self.canvas.yview_scroll(3, "units")
         except Exception as e:
-            print(f"[ERROR] Failed to create config file: {str(e)}")
-        
-        return default_config
-    
-    except Exception as e:
-        # En cas d'erreur, utiliser la configuration par défaut
-        print(f"[ERROR] Failed to load config file: {str(e)}")
-        return default_config
+            print(f"[ERROR][_on_mousewheel] {type(e).__name__}: {e}")
 
-def process_default():
-    """Fonction principale qui initialise l'application avec la configuration chargée"""
-    # Charger la configuration
-    config = load_config()
-    
-    # Initialiser l'application
-    root = tk.Tk()
-    
-    # Construire le chemin complet de la base de données
-    db_path_dir = os.path.normpath(config["db_path_dir"])
-    db_path_full = os.path.normpath(os.path.join(db_path_dir, config["db_filename"]))
-    
-    # Normaliser les chemins des répertoires
-    default_directory = os.path.normpath(config["default_directory"])
-    cible_directory = os.path.normpath(config["cible_directory"])
-    
-    # Récupérer le titre de l'application
-    title = config.get("title", "Image Explorer")
-    
-    # Créer l'application
-    app = image_process(root, db_path_full, default_directory, cible_directory, title)
-    
-    # Lancer la boucle principale
-    root.mainloop()
 
-if __name__ == "__main__":
-    process_default()
+

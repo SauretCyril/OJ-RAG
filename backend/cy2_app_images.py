@@ -4,7 +4,7 @@ import tkinter as tk
 from tkinter import ttk, messagebox, filedialog
 import sqlite3
 import importlib
-
+from cy2_image_factory import create_image_processor
 # Importer les modules nécessaires
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from backend.cy2_image_process import image_process
@@ -75,6 +75,7 @@ class FunctionDatabase:
             self.conn = sqlite3.connect(self.db_path)
             self.cursor = self.conn.cursor()
         except sqlite3.Error as e:
+            print(f"Error-01 connecting to database: {str(e)}")
             messagebox.showerror("Database Error", f"Could not connect to database: {str(e)}")
             raise
     
@@ -88,41 +89,58 @@ class FunctionDatabase:
                     default_directory TEXT NOT NULL,
                     cible_directory TEXT NOT NULL,
                     db_path TEXT NOT NULL,
-                    type TEXT DEFAULT "default"
+                    change_value_2 TEXT DEFAULT "none",  
+                    processor_type TEXT DEFAULT "standard"
                 )
             ''')
+            
+            # Vérifier si la colonne processor_type existe déjà
+            try:
+                self.cursor.execute("PRAGMA table_info(functions)")
+                columns = [column[1] for column in self.cursor.fetchall()]
+                
+                if "processor_type" not in columns:
+                    self.cursor.execute('ALTER TABLE functions ADD COLUMN processor_type TEXT DEFAULT "standard"')
+                    print("Added processor_type column to functions table")
+            except sqlite3.Error as e:
+                print(f"Error checking columns: {str(e)}")
+            
             self.conn.commit()
         except sqlite3.Error as e:
+            print(f"Error-02 creating table: {str(e)}")
             messagebox.showerror("Database Error", f"Could not create table: {str(e)}")
             raise
     
     def get_all_functions(self):
         """Récupérer toutes les fonctions de la table"""
         try:
-            self.cursor.execute("SELECT id, name, default_directory, cible_directory, db_path, type FROM functions")
+            # Modifier cette ligne pour utiliser change_value_2 au lieu de changed_value
+            self.cursor.execute("SELECT id, name, default_directory, cible_directory, db_path, change_value_2, processor_type FROM functions")
             return self.cursor.fetchall()
         except sqlite3.Error as e:
+            print(f"Error-03 retrieving functions: {str(e)}")
             messagebox.showerror("Database Error", f"Could not retrieve functions: {str(e)}")
             return []
     
     def get_function_by_id(self, function_id):
         """Récupérer une fonction par son ID"""
         try:
+            # Modifier cette ligne pour utiliser change_value_2 au lieu de changed_value
             self.cursor.execute(
-                "SELECT id, name, default_directory, cible_directory, db_path, type FROM functions WHERE id = ?",
+                "SELECT id, name, default_directory, cible_directory, db_path, change_value_2, processor_type FROM functions WHERE id = ?",
                 (function_id,)
             )
             return self.cursor.fetchone()
         except sqlite3.Error as e:
             messagebox.showerror("Database Error", f"Could not retrieve function: {str(e)}")
             return None
-    
-    def add_function(self, name, default_directory, cible_directory, db_path, ChangeValue="default"):
+
+    def add_function(self, name, default_directory, cible_directory, db_path, changed_value="none", processor_type="standard"):
         """Ajouter une nouvelle fonction à la table"""
         try:
             self.cursor.execute(
-                "INSERT INTO functions (name, default_directory, cible_directory, db_path, type) VALUES (?, ?, ?, ?, ?)",
-                (name, default_directory, cible_directory, db_path, ChangeValue)
+                "INSERT INTO functions (name, default_directory, cible_directory, db_path, change_value_2, processor_type) VALUES (?, ?, ?, ?, ?, ?)",
+                (name, default_directory, cible_directory, db_path, changed_value, processor_type)  # Correction ici: changed_value_2 → changed_value
             )
             self.conn.commit()
             return self.cursor.lastrowid
@@ -130,18 +148,19 @@ class FunctionDatabase:
             messagebox.showerror("Error", f"A function with the name '{name}' already exists.")
             return None
         except sqlite3.Error as e:
+            print(f"Error-06 adding function: {str(e)}")
             messagebox.showerror("Database Error", f"Could not add function: {str(e)}")
             return None
-    
-    def update_function(self, function_id, name, default_directory, cible_directory, db_path, ChangeValue):
+
+    def update_function(self, function_id, name, default_directory, cible_directory, db_path, changed_value, processor_type="standard"):
         """Mettre à jour une fonction existante"""
         try:
             self.cursor.execute(
-                """UPDATE functions SET 
-                   name = ?, default_directory = ?, cible_directory = ?, 
-                   db_path = ?, type = ? 
+                """UPDATE functions SET
+                   name = ?, default_directory = ?, cible_directory = ?,
+                   db_path = ?, change_value_2 = ?, processor_type = ?
                    WHERE id = ?""",
-                (name, default_directory, cible_directory, db_path, ChangeValue, function_id)
+                (name, default_directory, cible_directory, db_path, changed_value, processor_type, function_id)  # Correction ici: changed_value
             )
             self.conn.commit()
             return self.cursor.rowcount > 0
@@ -149,6 +168,7 @@ class FunctionDatabase:
             messagebox.showerror("Error", f"A function with the name '{name}' already exists.")
             return False
         except sqlite3.Error as e:
+            print(f"Error-08 updating function: {str(e)}")
             messagebox.showerror("Database Error", f"Could not update function: {str(e)}")
             return False
     
@@ -159,6 +179,7 @@ class FunctionDatabase:
             self.conn.commit()
             return self.cursor.rowcount > 0
         except sqlite3.Error as e:
+            print(f"Error-09 deleting function: {str(e)}")
             messagebox.showerror("Database Error", f"Could not delete function: {str(e)}")
             return False
     
@@ -176,6 +197,7 @@ class FunctionForm(tk.Toplevel):
         self.parent = parent
         self.db = db
         self.function_id = function_id
+        self.function_data = None  # Initialiser function_data à None
         
         self.title("Function Details" if function_id else "Add New Function")
         self.geometry("500x350")
@@ -197,166 +219,162 @@ class FunctionForm(tk.Toplevel):
     
     def create_widgets(self):
         """Créer les widgets du formulaire"""
-        # Frame principal
-        main_frame = ttk.Frame(self, padding="10")
-        main_frame.pack(fill="both", expand=True)
+        main_frame = ttk.Frame(self)
+        main_frame.pack(padx=20, pady=20, fill="both", expand=True)
         
-        # Champs du formulaire
-        ttk.Label(main_frame, text="Name:").grid(row=0, column=0, sticky="w", pady=5)
-        self.name_entry = ttk.Entry(main_frame, width=40)
-        self.name_entry.grid(row=0, column=1, sticky="ew", pady=5)
+        # Champ Nom
+        name_frame = ttk.Frame(main_frame)
+        name_frame.grid(row=0, column=0, columnspan=2, sticky="ew", pady=5)
+        ttk.Label(name_frame, text="Name:", width=15).pack(side="left")
+        self.name_entry = ttk.Entry(name_frame, width=50)
+        self.name_entry.pack(side="left", fill="x", expand=True)
         
-        ttk.Label(main_frame, text="Default Directory:").grid(row=1, column=0, sticky="w", pady=5)
+        # Champ Répertoire par défaut
         self.default_dir_frame = ttk.Frame(main_frame)
-        self.default_dir_frame.grid(row=1, column=1, sticky="ew", pady=5)
-        self.default_dir_entry = ttk.Entry(self.default_dir_frame, width=30)
+        self.default_dir_frame.grid(row=1, column=0, columnspan=2, sticky="ew", pady=5)
+        ttk.Label(self.default_dir_frame, text="Default Directory:", width=15).pack(side="left")
+        self.default_dir_entry = ttk.Entry(self.default_dir_frame, width=50)
         self.default_dir_entry.pack(side="left", fill="x", expand=True)
-        ttk.Button(self.default_dir_frame, text="Browse", command=lambda: self.browse_directory(self.default_dir_entry)).pack(side="right", padx=5)
+        ttk.Button(self.default_dir_frame, text="Browse", command=self.browse_default_dir).pack(side="left", padx=5)
         
-        ttk.Label(main_frame, text="Cible Directory:").grid(row=2, column=0, sticky="w", pady=5)
+        # Champ Répertoire cible
         self.cible_dir_frame = ttk.Frame(main_frame)
-        self.cible_dir_frame.grid(row=2, column=1, sticky="ew", pady=5)
-        self.cible_dir_entry = ttk.Entry(self.cible_dir_frame, width=30)
+        self.cible_dir_frame.grid(row=2, column=0, columnspan=2, sticky="ew", pady=5)
+        ttk.Label(self.cible_dir_frame, text="Target Directory:", width=15).pack(side="left")
+        self.cible_dir_entry = ttk.Entry(self.cible_dir_frame, width=50)
         self.cible_dir_entry.pack(side="left", fill="x", expand=True)
-        ttk.Button(self.cible_dir_frame, text="Browse", command=lambda: self.browse_directory(self.cible_dir_entry)).pack(side="right", padx=5)
+        ttk.Button(self.cible_dir_frame, text="Browse", command=self.browse_cible_dir).pack(side="left", padx=5)
         
-        ttk.Label(main_frame, text="Database Path:").grid(row=3, column=0, sticky="w", pady=5)
+        # Champ Chemin de la base de données
         self.db_path_frame = ttk.Frame(main_frame)
-        self.db_path_frame.grid(row=3, column=1, sticky="ew", pady=5)
-        self.db_path_entry = ttk.Entry(self.db_path_frame, width=30)
+        self.db_path_frame.grid(row=3, column=0, columnspan=2, sticky="ew", pady=5)
+        ttk.Label(self.db_path_frame, text="Database Path:", width=15).pack(side="left")
+        self.db_path_entry = ttk.Entry(self.db_path_frame, width=50)
         self.db_path_entry.pack(side="left", fill="x", expand=True)
-        ttk.Button(self.db_path_frame, text="Browse", command=lambda: self.browse_file(self.db_path_entry)).pack(side="right", padx=5)
+        ttk.Button(self.db_path_frame, text="Browse", command=self.browse_db_path).pack(side="left", padx=5)
         
-        # Remplacer l'entrée de type par un ComboBox
-        ttk.Label(main_frame, text="Type:").grid(row=4, column=0, sticky="w", pady=5)
+        # Champ ChangeValue
+        self.change_value_frame = ttk.Frame(main_frame)
+        self.change_value_frame.grid(row=4, column=0, columnspan=2, sticky="ew", pady=5)
+        ttk.Label(self.change_value_frame, text="Action Type:", width=15).pack(side="left")
+        self.change_value_var = tk.StringVar(value="delete")
+        actions = ["delete", "viewed", "favorite", "other"]
+        self.change_value_combobox = ttk.Combobox(self.change_value_frame, textvariable=self.change_value_var, values=actions)
+        self.change_value_combobox.pack(side="left", fill="x", expand=True)
         
-        # Liste des types disponibles
-        self.ChangeValues = ["none", "delete", "canva"]
+        # NOUVEAU - Champ Processor Type
+        self.processor_type_frame = ttk.Frame(main_frame)
+        self.processor_type_frame.grid(row=5, column=0, columnspan=2, sticky="ew", pady=5)
+        ttk.Label(self.processor_type_frame, text="Processor Type:", width=15).pack(side="left")
+        self.processor_type_var = tk.StringVar(value="standard")
+        processor_types = ["standard", "explorer", "collecter"]
+        self.processor_type_combobox = ttk.Combobox(self.processor_type_frame, textvariable=self.processor_type_var, values=processor_types)
+        self.processor_type_combobox.pack(side="left", fill="x", expand=True)
         
-        # Créer le ComboBox
-        self.type_combo = ttk.Combobox(main_frame, width=38, values=self.ChangeValues)
-        self.type_combo.grid(row=4, column=1, sticky="ew", pady=5)
-        self.type_combo.set("none")  # Valeur par défaut
+        # Boutons de sauvegarde et d'annulation
+        btn_frame = ttk.Frame(main_frame)
+        btn_frame.grid(row=6, column=0, columnspan=2, pady=10)
+        ttk.Button(btn_frame, text="Save", command=self.save).pack(side="left", padx=5)
+        ttk.Button(btn_frame, text="Cancel", command=self.destroy).pack(side="left", padx=5)
+        
+        # Pré-remplir les champs si nécessaire
+        if self.function_data:
+            self.name_entry.insert(0, self.function_data[1])
+            self.default_dir_entry.insert(0, self.function_data[2])
+            self.cible_dir_entry.insert(0, self.function_data[3])
+            self.db_path_entry.insert(0, self.function_data[4])
+            self.change_value_var.set(self.function_data[5])
+            
+            # Initialiser le champ processor_type s'il existe
+            if len(self.function_data) > 6:
+                self.processor_type_var.set(self.function_data[6])
 
-        # Description du type (optionnel)
-        self.type_desc_label = ttk.Label(main_frame, text="", font=("Arial", 8), foreground="gray")
-        self.type_desc_label.grid(row=5, column=1, sticky="w", pady=(0, 5))
-        
-        # Lier l'événement de changement pour mettre à jour la description
-        self.type_combo.bind("<<ComboboxSelected>>", self.update_type_description)
-        
-        # Boutons d'action
-        button_frame = ttk.Frame(main_frame)
-        button_frame.grid(row=6, column=0, columnspan=2, pady=20)
-        
-        ttk.Button(button_frame, text="Save", command=self.save_function).pack(side="left", padx=10)
-        ttk.Button(button_frame, text="Cancel", command=self.destroy).pack(side="left", padx=10)
-        
-        # Configurer le redimensionnement
-        main_frame.columnconfigure(1, weight=1)
-        
-        # Initialiser la description du type
-        self.update_type_description()
-    
-    def update_type_description(self, event=None):
-        """Mettre à jour la description en fonction du type sélectionné"""
-        selected_type = self.type_combo.get()
-        
-        descriptions = {
-            "none": "pas de changement de statue",
-            "delete": "L'image doit être supprimée",
-            "canva": "L'image peut être rattrapée grace à canva"
-        }
-        
-        description = descriptions.get(selected_type, "")
-        self.type_desc_label.config(text=description)
-    
-    def browse_directory(self, entry_widget):
-        """Ouvrir un dialogue pour sélectionner un répertoire"""
+    def browse_default_dir(self):
+        """Ouvrir un dialogue pour sélectionner le répertoire par défaut"""
         directory = filedialog.askdirectory()
         if directory:
-            entry_widget.delete(0, tk.END)
-            entry_widget.insert(0, os.path.normpath(directory))
-    
-    def browse_file(self, entry_widget):
-        """Ouvrir un dialogue pour sélectionner un fichier"""
-        file_path = filedialog.askopenfilename()
-        if file_path:
-            entry_widget.delete(0, tk.END)
-            entry_widget.insert(0, os.path.normpath(file_path))
-    
+            self.default_dir_entry.delete(0, tk.END)
+            self.default_dir_entry.insert(0, directory)
+
+    def browse_cible_dir(self):
+        """Ouvrir un dialogue pour sélectionner le répertoire cible"""
+        directory = filedialog.askdirectory()
+        if directory:
+            self.cible_dir_entry.delete(0, tk.END)
+            self.cible_dir_entry.insert(0, directory)
+
+    def browse_db_path(self):
+        """Ouvrir un dialogue pour sélectionner le chemin de la base de données"""
+        # Proposer par défaut un fichier .db
+        initialdir = os.path.dirname(self.db_path_entry.get()) if self.db_path_entry.get() else os.path.expanduser("~")
+        db_file = filedialog.asksaveasfilename(
+            initialdir=initialdir,
+            title="Select Database File",
+            filetypes=(("SQLite Database", "*.db"), ("All Files", "*.*")),
+            defaultextension=".db"
+        )
+        if db_file:
+            self.db_path_entry.delete(0, tk.END)
+            self.db_path_entry.insert(0, db_file)
+
     def load_function_data(self):
-        """Charger les données d'une fonction existante dans le formulaire"""
-        function_data = self.db.get_function_by_id(self.function_id)
-        if function_data:
-            self.name_entry.insert(0, function_data[1])
-            self.default_dir_entry.insert(0, function_data[2])
-            self.cible_dir_entry.insert(0, function_data[3])
-            self.db_path_entry.insert(0, function_data[4])
+        """Charger les données d'une fonction existante"""
+        self.function_data = self.db.get_function_by_id(self.function_id)
+        if self.function_data:
+            self.name_entry.delete(0, tk.END)
+            self.name_entry.insert(0, self.function_data[1])
             
-            # Définir le type dans le ComboBox
-            ChangeValue = function_data[5]
-            if ChangeValue in self.ChangeValues:
-                self.type_combo.set(ChangeValue)
-            else:
-                # Si le type n'est pas dans la liste prédéfinie, l'ajouter
-                self.ChangeValues.append(ChangeValue)
-                self.type_combo.config(values=self.ChangeValues)
-                self.type_combo.set(ChangeValue)
+            self.default_dir_entry.delete(0, tk.END)
+            self.default_dir_entry.insert(0, self.function_data[2])
             
-            # Mettre à jour la description du type
-            self.update_type_description()
-    
-    def validate_form(self):
-        """Valider les champs du formulaire"""
-        errors = []
-        
+            self.cible_dir_entry.delete(0, tk.END)
+            self.cible_dir_entry.insert(0, self.function_data[3])
+            
+            self.db_path_entry.delete(0, tk.END)
+            self.db_path_entry.insert(0, self.function_data[4])
+            
+            self.change_value_var.set(self.function_data[5])
+            
+            # Initialiser le champ processor_type s'il existe
+            if len(self.function_data) > 6:
+                self.processor_type_var.set(self.function_data[6])
+
+    def save(self):
+        """Sauvegarder les données du formulaire"""
         name = self.name_entry.get().strip()
-        if not name:
-            errors.append("Name is required")
-        
         default_dir = self.default_dir_entry.get().strip()
-        if not default_dir:
-            errors.append("Default directory is required")
-        
         cible_dir = self.cible_dir_entry.get().strip()
-        if not cible_dir:
-            errors.append("Cible directory is required")
-        
         db_path = self.db_path_entry.get().strip()
-        if not db_path:
-            errors.append("Database path is required")
+        change_value = self.change_value_var.get()
+        processor_type = self.processor_type_var.get()
         
-        ChangeValue = self.type_combo.get()
-        if not ChangeValue:
-            errors.append("Type is required")
-        
-        return errors, name, default_dir, cible_dir, db_path, ChangeValue
-    
-    def save_function(self):
-        """Sauvegarder la fonction (ajouter ou mettre à jour)"""
-        errors, name, default_dir, cible_dir, db_path, ChangeValue = self.validate_form()
-        
-        if errors:
-            messagebox.showerror("Validation Error", "\n".join(errors))
+        # Vérifier que tous les champs obligatoires sont remplis
+        if not all([name, default_dir, cible_dir, db_path]):
+            messagebox.showerror("Error", "All fields are required.")
             return
         
-        if self.function_id:
-            # Mettre à jour une fonction existante
-            success = self.db.update_function(
-                self.function_id, name, default_dir, cible_dir, db_path, ChangeValue
-            )
+        # Sauvegarder les données
+        try:
+            if self.function_id:
+                success = self.db.update_function(
+                    self.function_id, name, default_dir, cible_dir, db_path, 
+                    change_value, processor_type
+                )
+            else:
+                success = self.db.add_function(
+                    name, default_dir, cible_dir, db_path, 
+                    change_value, processor_type
+                )
+            
             if success:
-                messagebox.showinfo("Success", "Function updated successfully")
+                messagebox.showinfo("Success", "Function saved successfully")
                 self.parent.refresh_function_list()
                 self.destroy()
-        else:
-            # Ajouter une nouvelle fonction
-            function_id = self.db.add_function(name, default_dir, cible_dir, db_path, ChangeValue)
-            if function_id:
-                messagebox.showinfo("Success", "Function added successfully")
-                self.parent.refresh_function_list()
-                self.destroy()
+            else:
+                messagebox.showerror("Error", "Failed to save function.")
+        except Exception as e:
+            print(f"Error saving function: {str(e)}")
+            messagebox.showerror("Error", f"Error saving function: {str(e)}")
 
 
 class SplitApplication(tk.Tk):
@@ -517,12 +535,16 @@ class SplitApplication(tk.Tk):
         cible_dir = function_data[3]
         db_path = function_data[4]
         changed_value = function_data[5]
+        processor_type = function_data[6] if len(function_data) > 6 else 'standard'
+        
         # Vérifier que les chemins existent
         if not os.path.exists(default_dir):
+            print(f"Error-11 validating directories: Default directory does not exist: {default_dir}")
             messagebox.showerror("Error", f"Default directory does not exist: {default_dir}")
             return
         
         if not os.path.exists(os.path.dirname(db_path)):
+            print(f"Error-12 validating directories: Database directory does not exist: {os.path.dirname(db_path)}")    
             messagebox.showerror("Error", f"Database directory does not exist: {os.path.dirname(db_path)}")
             return
         
@@ -530,18 +552,23 @@ class SplitApplication(tk.Tk):
         for widget in self.right_frame.winfo_children():
             widget.destroy()
         
-        # Initialiser l'explorateur d'images
+        # Créer un dictionnaire de configuration
+        config = {
+            'title': name,
+            'default_directory': default_dir,
+            'cible_directory': cible_dir,
+            'db_path': db_path,
+            'changed_value': changed_value,  # Suppression des espaces après changed_value
+            'processor_type': processor_type
+        }
+        
+        # Utiliser la factory pour créer l'instance appropriée
         try:
-            self.active_image_process = image_process(
-                self.right_frame, 
-                db_path, 
-                default_dir, 
-                cible_dir,
-                name,
-                changed_value
-            )
+            
+            self.active_image_process = create_image_processor(self.right_frame, config)
         except Exception as e:
-            messagebox.showerror("Error", f"Error loading image explorer: {str(e)}")
+            print(f"Error-13 loading image_processor: {str(e)}")
+            messagebox.showerror("Error", f"Error loading image_processor: {str(e)}")
             self.setup_initial_message(self.right_frame)
     
     def add_function(self):
