@@ -141,8 +141,8 @@ class image_process:
         conn = sqlite3.connect(self.db_path)
         return conn, conn.cursor()
 
-    """  def is_image_viewed(self, image_path, cursor=None):
-        """Vérifier si une image a été vue, en utilisant un curseur spécifié ou celui par défaut"""
+    def is_image_viewed(self, image_path, cursor=None):
+       #Vérifier si une image a été vue, en utilisant un curseur spécifié ou celui par défaut
         try:
             image_path = os.path.normpath(image_path)
             use_local_connection = cursor is None
@@ -164,9 +164,9 @@ class image_process:
         except Exception as e:
             print(f"[ERROR][is_image_viewed] {type(e).__name__}: {e}")
             return False
-    
+    """
     def mark_action_1(self, image_path):
-        """Marquer une image comme vue (en attente de sauvegarde)"""
+        #Marquer une image comme vue (en attente de sauvegarde)
         if image_path not in [change[1] for change in self.pending_changes if change[0] == 'viewed']:
             self.pending_changes.append(('viewed', image_path))
             # Masquer visuellement l'image immédiatement
@@ -175,7 +175,7 @@ class image_process:
             self.save_btn.config(state="normal", text=f"Save Changes ({len(self.pending_changes)})")
     
     def mark_action_2(self, image_path):
-        """Marquer une image pour suppression (en attente de sauvegarde)"""
+        #Marquer une image pour suppression (en attente de sauvegarde)
         result = messagebox.askyesno(
             "Confirm Delete", 
             f"Mark for deletion:\n{os.path.basename(image_path)}?\n\nClick 'Save Changes' to apply."
@@ -190,19 +190,19 @@ class image_process:
                 self.save_btn.config(state="normal", text=f"Save Changes ({len(self.pending_changes)})")
     
     def hide_image_widget(self, image_path):
-        """Masquer visuellement une image sans la supprimer de l'interface"""
+        #Masquer visuellement une image sans la supprimer de l'interface
         for widget in self.image_widgets:
             if hasattr(widget, 'image_path') and widget.image_path == image_path:
-                widget.grid_remove()  # Masquer mais ne pas détruire """
+                widget.grid_remove()  # Masquer mais ne pas détruire 
     
     def save_changes(self):
-        """Sauvegarder tous les changements en attente"""
+        #Sauvegarder tous les changements en attente
         if not self.pending_changes:
             return
             
         import threading
         import time  # Ajoute cet import en haut du fichier
-
+    """
 
        
     
