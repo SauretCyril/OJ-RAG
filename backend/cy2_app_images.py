@@ -89,7 +89,6 @@ class FunctionDatabase:
                     default_directory TEXT NOT NULL,
                     cible_directory TEXT NOT NULL,
                     db_path TEXT NOT NULL,
-                    change_value_2 TEXT DEFAULT "none",  
                     processor_type TEXT DEFAULT "standard"
                 )
             ''')
@@ -115,7 +114,7 @@ class FunctionDatabase:
         """Récupérer toutes les fonctions de la table"""
         try:
             # Modifier cette ligne pour utiliser change_value_2 au lieu de changed_value
-            self.cursor.execute("SELECT id, name, default_directory, cible_directory, db_path, change_value_2, processor_type FROM functions")
+            self.cursor.execute("SELECT id, name, default_directory, cible_directory, db_path, processor_type FROM functions")
             return self.cursor.fetchall()
         except sqlite3.Error as e:
             print(f"Error-03 retrieving functions: {str(e)}")
@@ -127,7 +126,7 @@ class FunctionDatabase:
         try:
             # Modifier cette ligne pour utiliser change_value_2 au lieu de changed_value
             self.cursor.execute(
-                "SELECT id, name, default_directory, cible_directory, db_path, change_value_2, processor_type FROM functions WHERE id = ?",
+                "SELECT id, name, default_directory, cible_directory, db_path, processor_type FROM functions WHERE id = ?",
                 (function_id,)
             )
             return self.cursor.fetchone()
@@ -135,12 +134,12 @@ class FunctionDatabase:
             messagebox.showerror("Database Error", f"Could not retrieve function: {str(e)}")
             return None
 
-    def add_function(self, name, default_directory, cible_directory, db_path, changed_value="none", processor_type="standard"):
+    def add_function(self, name, default_directory, cible_directory, db_path, processor_type="standard"):
         """Ajouter une nouvelle fonction à la table"""
         try:
             self.cursor.execute(
-                "INSERT INTO functions (name, default_directory, cible_directory, db_path, change_value_2, processor_type) VALUES (?, ?, ?, ?, ?, ?)",
-                (name, default_directory, cible_directory, db_path, changed_value, processor_type)  # Correction ici: changed_value_2 → changed_value
+                "INSERT INTO functions (name, default_directory, cible_directory, db_path, processor_type) VALUES (?, ?, ?, ?, ?)",
+                (name, default_directory, cible_directory, db_path, processor_type)
             )
             self.conn.commit()
             return self.cursor.lastrowid
@@ -152,15 +151,15 @@ class FunctionDatabase:
             messagebox.showerror("Database Error", f"Could not add function: {str(e)}")
             return None
 
-    def update_function(self, function_id, name, default_directory, cible_directory, db_path, changed_value, processor_type="standard"):
+    def update_function(self, function_id, name, default_directory, cible_directory, db_path, processor_type="standard"):
         """Mettre à jour une fonction existante"""
         try:
             self.cursor.execute(
                 """UPDATE functions SET
                    name = ?, default_directory = ?, cible_directory = ?,
-                   db_path = ?, change_value_2 = ?, processor_type = ?
+                   db_path = ?, processor_type = ?
                    WHERE id = ?""",
-                (name, default_directory, cible_directory, db_path, changed_value, processor_type, function_id)  # Correction ici: changed_value
+                (name, default_directory, cible_directory, db_path, processor_type, function_id)
             )
             self.conn.commit()
             return self.cursor.rowcount > 0
@@ -253,18 +252,9 @@ class FunctionForm(tk.Toplevel):
         self.db_path_entry.pack(side="left", fill="x", expand=True)
         ttk.Button(self.db_path_frame, text="Browse", command=self.browse_db_path).pack(side="left", padx=5)
         
-        # Champ ChangeValue
-        self.change_value_frame = ttk.Frame(main_frame)
-        self.change_value_frame.grid(row=4, column=0, columnspan=2, sticky="ew", pady=5)
-        ttk.Label(self.change_value_frame, text="Action Type:", width=15).pack(side="left")
-        self.change_value_var = tk.StringVar(value="delete")
-        actions = ["delete", "viewed", "favorite", "other"]
-        self.change_value_combobox = ttk.Combobox(self.change_value_frame, textvariable=self.change_value_var, values=actions)
-        self.change_value_combobox.pack(side="left", fill="x", expand=True)
-        
         # NOUVEAU - Champ Processor Type
         self.processor_type_frame = ttk.Frame(main_frame)
-        self.processor_type_frame.grid(row=5, column=0, columnspan=2, sticky="ew", pady=5)
+        self.processor_type_frame.grid(row=4, column=0, columnspan=2, sticky="ew", pady=5)
         ttk.Label(self.processor_type_frame, text="Processor Type:", width=15).pack(side="left")
         self.processor_type_var = tk.StringVar(value="standard")
         processor_types = ["standard", "explorer", "collecter"]
@@ -283,7 +273,6 @@ class FunctionForm(tk.Toplevel):
             self.default_dir_entry.insert(0, self.function_data[2])
             self.cible_dir_entry.insert(0, self.function_data[3])
             self.db_path_entry.insert(0, self.function_data[4])
-            self.change_value_var.set(self.function_data[5])
             
             # Initialiser le champ processor_type s'il existe
             if len(self.function_data) > 6:
@@ -333,8 +322,6 @@ class FunctionForm(tk.Toplevel):
             self.db_path_entry.delete(0, tk.END)
             self.db_path_entry.insert(0, self.function_data[4])
             
-            self.change_value_var.set(self.function_data[5])
-            
             # Initialiser le champ processor_type s'il existe
             if len(self.function_data) > 6:
                 self.processor_type_var.set(self.function_data[6])
@@ -345,7 +332,6 @@ class FunctionForm(tk.Toplevel):
         default_dir = self.default_dir_entry.get().strip()
         cible_dir = self.cible_dir_entry.get().strip()
         db_path = self.db_path_entry.get().strip()
-        change_value = self.change_value_var.get()
         processor_type = self.processor_type_var.get()
         
         # Vérifier que tous les champs obligatoires sont remplis
@@ -357,13 +343,11 @@ class FunctionForm(tk.Toplevel):
         try:
             if self.function_id:
                 success = self.db.update_function(
-                    self.function_id, name, default_dir, cible_dir, db_path, 
-                    change_value, processor_type
+                    self.function_id, name, default_dir, cible_dir, db_path, processor_type
                 )
             else:
                 success = self.db.add_function(
-                    name, default_dir, cible_dir, db_path, 
-                    change_value, processor_type
+                    name, default_dir, cible_dir, db_path, processor_type
                 )
             
             if success:
@@ -393,7 +377,7 @@ class SplitApplication(tk.Tk):
             "data", 
             "functions.db"
         ))
-        
+         
         # Créer le répertoire parent si nécessaire
         os.makedirs(os.path.dirname(self.db_path), exist_ok=True)
         
@@ -534,8 +518,7 @@ class SplitApplication(tk.Tk):
         default_dir = function_data[2]
         cible_dir = function_data[3]
         db_path = function_data[4]
-        changed_value = function_data[5]
-        processor_type = function_data[6] if len(function_data) > 6 else 'standard'
+        processor_type = function_data[5] if len(function_data) > 5 else 'standard'
         
         # Vérifier que les chemins existent
         if not os.path.exists(default_dir):
@@ -558,7 +541,6 @@ class SplitApplication(tk.Tk):
             'default_directory': default_dir,
             'cible_directory': cible_dir,
             'db_path': db_path,
-            'changed_value': changed_value,  # Suppression des espaces après changed_value
             'processor_type': processor_type
         }
         
