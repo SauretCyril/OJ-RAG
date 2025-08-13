@@ -372,8 +372,13 @@ class FunctionForm(tk.Toplevel):
             self.db_path_entry.insert(0, self.function_data[4])
             
             # Initialiser le champ processor_type s'il existe
+            if len(self.function_data) > 5:  # Changé de 6 à 5
+                self.processor_type_var.set(self.function_data[5])  # Changé de 6 à 5
+
+            # Initialiser le champ status_options s'il existe
             if len(self.function_data) > 6:
-                self.processor_type_var.set(self.function_data[6])
+                self.status_options_entry.delete(0, tk.END)
+                self.status_options_entry.insert(0, self.function_data[6])
 
     def save(self):
         """Sauvegarder les données du formulaire"""
