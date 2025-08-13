@@ -141,7 +141,7 @@ class image_process:
         conn = sqlite3.connect(self.db_path)
         return conn, conn.cursor()
 
-    def is_image_viewed(self, image_path, cursor=None):
+    """  def is_image_viewed(self, image_path, cursor=None):
         """Vérifier si une image a été vue, en utilisant un curseur spécifié ou celui par défaut"""
         try:
             image_path = os.path.normpath(image_path)
@@ -193,7 +193,7 @@ class image_process:
         """Masquer visuellement une image sans la supprimer de l'interface"""
         for widget in self.image_widgets:
             if hasattr(widget, 'image_path') and widget.image_path == image_path:
-                widget.grid_remove()  # Masquer mais ne pas détruire
+                widget.grid_remove()  # Masquer mais ne pas détruire """
     
     def save_changes(self):
         """Sauvegarder tous les changements en attente"""
@@ -221,16 +221,16 @@ class image_process:
         self.dir_label.pack(side="left", padx=(10, 0))
 
         # Bouton pour sauvegarder les changements
-        self.save_btn = tk.Button(
-            top_frame, 
-            text="Save Changes", 
-            command=self.save_changes,
-            bg="orange",
-            fg="white",
-            font=("Arial", 10, "bold"),
-            state="disabled"
-        )
-        self.save_btn.pack(side="right", padx=(5, 0))
+        # self.save_btn = tk.Button(
+        #     top_frame, 
+        #     text="Save Changes", 
+        #     command=self.save_changes,
+        #     bg="orange",
+        #     fg="white",
+        #     font=("Arial", 10, "bold"),
+        #     state="disabled"
+        # )
+        # self.save_btn.pack(side="right", padx=(5, 0))
 
         # Frame principal pour les images
         main_frame = ttk.Frame(self.root)
@@ -401,7 +401,7 @@ class image_process:
                     btn_frame = ttk.Frame(image_frame)
                     btn_frame.pack(pady=5)
                     
-                    # Bouton "Mark as Viewed"
+                    """  # Bouton "Mark as Viewed"
                     view_btn = ttk.Button(
                         btn_frame, 
                         text="Mark as Viewed", 
@@ -415,7 +415,7 @@ class image_process:
                         text="Mark for Deletion", 
                         command=lambda path=image_path: self.mark_action_2(path)
                     )
-                    delete_btn.pack(side="left", padx=2)
+                    delete_btn.pack(side="left", padx=2) """
                     
                     # Stocker le widget pour référence future
                     self.image_widgets.append(image_frame)
