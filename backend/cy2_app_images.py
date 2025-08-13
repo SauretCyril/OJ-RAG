@@ -93,7 +93,7 @@ class FunctionDatabase:
                 )
             ''')
             
-            # Vérifier si la colonne processor_type existe déjà
+            # Vérifier si les colonnes nécessaires existent et les ajouter si besoin
             try:
                 self.cursor.execute("PRAGMA table_info(functions)")
                 columns = [column[1] for column in self.cursor.fetchall()]
@@ -101,6 +101,10 @@ class FunctionDatabase:
                 if "processor_type" not in columns:
                     self.cursor.execute('ALTER TABLE functions ADD COLUMN processor_type TEXT DEFAULT "standard"')
                     print("Added processor_type column to functions table")
+                    
+                if "status_options" not in columns:
+                    self.cursor.execute('ALTER TABLE functions ADD COLUMN status_options TEXT DEFAULT "new,viewed,approved,rejected,favorite"')
+                    print("Added status_options column to functions table")
             except sqlite3.Error as e:
                 print(f"Error checking columns: {str(e)}")
             
@@ -113,8 +117,28 @@ class FunctionDatabase:
     def get_all_functions(self):
         """Récupérer toutes les fonctions de la table"""
         try:
-            # Modifier cette ligne pour utiliser change_value_2 au lieu de changed_value
-            self.cursor.execute("SELECT id, name, default_directory, cible_directory, db_path, processor_type FROM functions")
+            # Vérifier d'abord quelles colonnes sont disponibles
+            self.cursor.execute("PRAGMA table_info(functions)")
+            columns = [column[1] for column in self.cursor.fetchall()]
+            
+            # Construire la requête en fonction des colonnes existantes
+            query = "SELECT id, name, default_directory, cible_directory, db_path"
+            
+            # Ajouter processor_type s'il existe
+            if "processor_type" in columns:
+                query += ", processor_type"
+            else:
+                query += ", 'standard' AS processor_type"
+                
+            # Ajouter status_options s'il existe
+            if "status_options" in columns:
+                query += ", status_options"
+            else:
+                query += ", 'new,viewed,approved,rejected,favorite' AS status_options"
+                
+            query += " FROM functions"
+            
+            self.cursor.execute(query)
             return self.cursor.fetchall()
         except sqlite3.Error as e:
             print(f"Error-03 retrieving functions: {str(e)}")
@@ -124,22 +148,40 @@ class FunctionDatabase:
     def get_function_by_id(self, function_id):
         """Récupérer une fonction par son ID"""
         try:
-            # Modifier cette ligne pour utiliser change_value_2 au lieu de changed_value
-            self.cursor.execute(
-                "SELECT id, name, default_directory, cible_directory, db_path, processor_type FROM functions WHERE id = ?",
-                (function_id,)
-            )
+            # Vérifier d'abord quelles colonnes sont disponibles
+            self.cursor.execute("PRAGMA table_info(functions)")
+            columns = [column[1] for column in self.cursor.fetchall()]
+            
+            # Construire la requête en fonction des colonnes existantes
+            query = "SELECT id, name, default_directory, cible_directory, db_path"
+            
+            # Ajouter processor_type s'il existe
+            if "processor_type" in columns:
+                query += ", processor_type"
+            else:
+                query += ", 'standard' AS processor_type"
+                
+            # Ajouter status_options s'il existe
+            if "status_options" in columns:
+                query += ", status_options"
+            else:
+                query += ", 'new,viewed,approved,rejected,favorite' AS status_options"
+                
+            query += " FROM functions WHERE id = ?"
+            
+            self.cursor.execute(query, (function_id,))
             return self.cursor.fetchone()
         except sqlite3.Error as e:
+            print(f"Error retrieving function: {str(e)}")
             messagebox.showerror("Database Error", f"Could not retrieve function: {str(e)}")
             return None
 
-    def add_function(self, name, default_directory, cible_directory, db_path, processor_type="standard"):
+    def add_function(self, name, default_directory, cible_directory, db_path, processor_type="standard", status_options="new,viewed,approved,rejected,favorite"):
         """Ajouter une nouvelle fonction à la table"""
         try:
             self.cursor.execute(
-                "INSERT INTO functions (name, default_directory, cible_directory, db_path, processor_type) VALUES (?, ?, ?, ?, ?)",
-                (name, default_directory, cible_directory, db_path, processor_type)
+                "INSERT INTO functions (name, default_directory, cible_directory, db_path, processor_type, status_options) VALUES (?, ?, ?, ?, ?, ?)",
+                (name, default_directory, cible_directory, db_path, processor_type, status_options)
             )
             self.conn.commit()
             return self.cursor.lastrowid
@@ -151,15 +193,15 @@ class FunctionDatabase:
             messagebox.showerror("Database Error", f"Could not add function: {str(e)}")
             return None
 
-    def update_function(self, function_id, name, default_directory, cible_directory, db_path, processor_type="standard"):
+    def update_function(self, function_id, name, default_directory, cible_directory, db_path, processor_type="standard", status_options="new,viewed,approved,rejected,favorite"):
         """Mettre à jour une fonction existante"""
         try:
             self.cursor.execute(
                 """UPDATE functions SET
                    name = ?, default_directory = ?, cible_directory = ?,
-                   db_path = ?, processor_type = ?
+                   db_path = ?, processor_type = ?, status_options = ?
                    WHERE id = ?""",
-                (name, default_directory, cible_directory, db_path, processor_type, function_id)
+                (name, default_directory, cible_directory, db_path, processor_type, status_options, function_id)
             )
             self.conn.commit()
             return self.cursor.rowcount > 0
@@ -261,6 +303,13 @@ class FunctionForm(tk.Toplevel):
         self.processor_type_combobox = ttk.Combobox(self.processor_type_frame, textvariable=self.processor_type_var, values=processor_types)
         self.processor_type_combobox.pack(side="left", fill="x", expand=True)
         
+        # NOUVEAU - Champ Status Options (caché par défaut)
+        self.status_options_frame = ttk.Frame(main_frame)
+        self.status_options_frame.grid(row=5, column=0, columnspan=2, sticky="ew", pady=5)
+        ttk.Label(self.status_options_frame, text="Status Options:", width=15).pack(side="left")
+        self.status_options_entry = ttk.Entry(self.status_options_frame, width=50)
+        self.status_options_entry.pack(side="left", fill="x", expand=True)
+        
         # Boutons de sauvegarde et d'annulation
         btn_frame = ttk.Frame(main_frame)
         btn_frame.grid(row=6, column=0, columnspan=2, pady=10)
@@ -334,6 +383,13 @@ class FunctionForm(tk.Toplevel):
         db_path = self.db_path_entry.get().strip()
         processor_type = self.processor_type_var.get()
         
+        # Récupérer les options de statut uniquement si processor_type est "workflow"
+        status_options = "new,viewed,approved,rejected,favorite"  # Valeur par défaut
+        if processor_type == "workflow":
+            user_status = self.status_options_entry.get().strip()
+            if user_status:
+                status_options = user_status
+    
         # Vérifier que tous les champs obligatoires sont remplis
         if not all([name, default_dir, cible_dir, db_path]):
             messagebox.showerror("Error", "All fields are required.")
@@ -343,11 +399,13 @@ class FunctionForm(tk.Toplevel):
         try:
             if self.function_id:
                 success = self.db.update_function(
-                    self.function_id, name, default_dir, cible_dir, db_path, processor_type
+                    self.function_id, name, default_dir, cible_dir, db_path, 
+                    processor_type, status_options
                 )
             else:
                 success = self.db.add_function(
-                    name, default_dir, cible_dir, db_path, processor_type
+                    name, default_dir, cible_dir, db_path, 
+                    processor_type, status_options
                 )
             
             if success:
@@ -519,19 +577,21 @@ class SplitApplication(tk.Tk):
         cible_dir = function_data[3]
         db_path = function_data[4]
         processor_type = function_data[5] if len(function_data) > 5 else 'standard'
+        status_options = function_data[6] if len(function_data) > 6 else 'new,viewed,approved,rejected,favorite'
         
-        # Vérifier que les chemins existent
-        if not os.path.exists(default_dir):
-            print(f"Error-11 validating directories: Default directory does not exist: {default_dir}")
-            messagebox.showerror("Error", f"Default directory does not exist: {default_dir}")
-            return
+        # IMPORTANT: Nettoyer l'instance précédente et tous les widgets
+        if self.active_image_process:
+            # Appeler __del__ pour fermer proprement les ressources
+            if hasattr(self.active_image_process, '__del__'):
+                try:
+                    self.active_image_process.__del__()
+                except Exception as e:
+                    print(f"Error cleaning up previous image process: {e}")
+            
+            # Mettre à None pour libérer la référence
+            self.active_image_process = None
         
-        if not os.path.exists(os.path.dirname(db_path)):
-            print(f"Error-12 validating directories: Database directory does not exist: {os.path.dirname(db_path)}")    
-            messagebox.showerror("Error", f"Database directory does not exist: {os.path.dirname(db_path)}")
-            return
-        
-        # Nettoyer la frame droite
+        # Supprimer tous les widgets existants dans la partie droite
         for widget in self.right_frame.winfo_children():
             widget.destroy()
         
@@ -541,12 +601,12 @@ class SplitApplication(tk.Tk):
             'default_directory': default_dir,
             'cible_directory': cible_dir,
             'db_path': db_path,
-            'processor_type': processor_type
+            'processor_type': processor_type,
+            'status_options': status_options
         }
         
         # Utiliser la factory pour créer l'instance appropriée
         try:
-            
             self.active_image_process = create_image_processor(self.right_frame, config)
         except Exception as e:
             print(f"Error-13 loading image_processor: {str(e)}")
@@ -624,3 +684,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+

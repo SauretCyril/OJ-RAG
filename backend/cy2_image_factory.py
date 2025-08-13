@@ -1,20 +1,24 @@
 import tkinter as tk
 
+# Correction des importations
 from cy2_image_process import image_process
+from cy2_images_workflow import images_workflow
 
 def create_image_processor(root, config):
     """
     Factory function that creates the appropriate image processor based on the specified type
     """
-    processor_type = config.get('processor_type', 'explorer')
-    # Import here to avoid circular imports
-    return image_process(root, config)
-    # if processor_type == 'explorer':
-    #     # Import only when needed
-    #     return explorer_process(root, config)
-    # elif processor_type == 'collecter':
-    #     return image_process(root, config)
-    # else:
-    #     # Default to explorer image processor if type is unknown
-    #     print(f"[WARNING] Unknown processor type: {processor_type}, using explorer")
-    #     return explorer_process(root, config)
+    processor_type = config.get('processor_type', 'standard')
+    
+    # Retourner le processeur adapté au type demandé
+    if processor_type == 'workflow':
+        print(f"[INFO] Creating workflow image processor")
+        processor = images_workflow(root, config)
+    else:
+        print(f"[INFO] Creating standard image processor (type: {processor_type})")
+        processor = image_process(root, config)
+    
+    # IMPORTANT: Initialiser l'objet après sa création
+    processor.initialize()
+    
+    return processor

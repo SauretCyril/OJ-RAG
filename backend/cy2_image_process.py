@@ -45,57 +45,50 @@ class DirectoryWatcherThread:
 
 class image_process:
     def __init__(self, root, config):
+        """Initialiser l'interface graphique principale"""
         self.root = root
-        self.root.title(config.get('title', 'Image Explorer'))
-        self.root.geometry("1200x800")
-        
-        # Extract configuration parameters with defaults
-        self.default_directory = os.path.normpath(config.get('default_directory', ''))
-        self.cible_directory = os.path.normpath(config.get('cible_directory', ''))
-        self.current_directory = self.default_directory  # Répertoire actif
-        self.changed_value = config.get('changed_value', 'none')
         self.title = config.get('title', 'Image Explorer')
-        self.processor_type = config.get('processor_type', 'standard')
-
-        # Database path
-        self.db_path = os.path.normpath(config.get('db_path', ''))
+        self.default_directory = config.get('default_directory', '')
+        self.cible_directory = config.get('cible_directory', '')
+        self.db_path = config.get('db_path', 'images.db')
+        self.view_mode = "all"  # Mode d'affichage: "all" ou "new"
         
-        # Initialize collections
+        # Initialiser les variables
+        self.current_directory = self.default_directory
         self.image_files = []
-        self.image_widgets = []
-        self.pending_changes = []
-        self.view_mode = "new"
-        self.zoomed_images = {}
-        self.page = 0
-        self.page_size = 100
         self.all_files = []
-        self.show_more_btn = None
-        
-        # Threading attributes
-        self.loading_lock = threading.Lock()
+        self.image_widgets = []
         self.loading = False
+        self.loading_lock = threading.Lock()
+        self.page = 0
+        self.page_size = 9
         
-        # Initialize database
+        # Initialiser la base de données
         self.init_database()
         
-        # Set up UI
+        # Configurer l'interface utilisateur
         self.setup_ui()
         
-        # Load images
-        if os.path.exists(self.current_directory):
-            self.dir_label.config(text=f"Directory: {self.current_directory}")
-            self.load_images_async()
+        # NE PAS charger les images automatiquement ici
+        # self.load_images_async()  # Cette ligne est la source du problème
+    
+        # À la place, créer une méthode d'initialisation séparée
+    
+    def initialize(self):
+        """Initialisation finale après la construction complète"""
+        # Logs pour debug
+        print(f"[DEBUG] Initializing with directory: {self.default_directory}")
+        print(f"[DEBUG] Directory exists: {os.path.exists(self.default_directory)}")
+    
+        # Surveiller le répertoire pour les nouveaux fichiers
+        if os.path.exists(self.default_directory):
+            self.setup_directory_watcher()
         else:
-            self.dir_label.config(text="No directory selected")
-            messagebox.showwarning(
-                "Invalid Directory",
-                f"The default directory does not exist:\n{self.current_directory}\n\nPlease select a valid directory."
-            )
-            self.select_directory()
-        
-        # Start directory watcher
-        self.watcher_thread = DirectoryWatcherThread(self)
-        self.watcher_thread.start()
+            print(f"[WARNING] Directory does not exist: {self.default_directory}")
+            messagebox.showwarning("Warning", f"Directory does not exist: {self.default_directory}")
+    
+        # Maintenant on peut charger les images en toute sécurité
+        self.load_images_async()
 
     def __del__(self):
         """Nettoyage des ressources lors de la destruction de l'objet"""
@@ -273,16 +266,14 @@ class image_process:
         threading.Thread(target=self.load_images, daemon=True).start()
 
     def load_images(self):
-        """Charge les images du dossier courant avec pagination"""
+        """Charge les images depuis le répertoire courant"""
         try:
             with self.loading_lock:
                 # Créer une connexion spécifique à ce thread
                 thread_conn, thread_cursor = self.get_db_connection()
                 
                 # Nettoyer les widgets existants
-                for widget in self.image_widgets:
-                    widget.destroy()
-                self.image_widgets.clear()
+                self._prepare_image_loading()
 
                 # Obtenir les fichiers images
                 image_extensions = ('.png', '.jpg', '.jpeg', '.gif', '.bmp', '.tiff', '.webp')
@@ -299,28 +290,19 @@ class image_process:
                 total = len(files)
                 for idx, filename in enumerate(files):
                     image_path = os.path.normpath(os.path.join(self.current_directory, filename))
-                    if self.view_mode == "new":
-                        if not self.is_image_viewed(image_path, thread_cursor):
-                            self.image_files.append(image_path)
-                    else:
+                    
+                    # Appliquer les filtres (méthode qui peut être surchargée par les classes enfants)
+                    include_image = self._filter_image(image_path, thread_cursor)
+                    
+                    if include_image:
                         self.image_files.append(image_path)
+                    
                     # Mise à jour de la barre de progression
-                    if hasattr(self, 'progressbar') and self.progressbar:
-                        value = int((idx + 1) / total * 100)
-                        self.root.after(0, lambda v=value: self.progressbar.config(value=v))
-                        self.root.update_idletasks()
+                    self._update_progress(idx, total)
 
-                # Fermer la connexion du thread
-                thread_conn.close()
-                
-                # Détruire la barre de progression
-                if hasattr(self, 'progressbar') and self.progressbar:
-                    self.root.after(0, self.progressbar.destroy)
-                    self.progressbar = None
-
-                # Afficher les images
-                self.root.after(0, self.display_images)
-                self.loading = False
+                # Fermer la connexion et finaliser
+                self._finish_image_loading(thread_conn)
+            
         except Exception as e:
             print(f"[ERROR][load_images] {type(e).__name__}: {e}")
             messagebox.showerror("Error", f"Error loading images: {str(e)}")
@@ -531,6 +513,47 @@ class image_process:
                     self.canvas.yview_scroll(3, "units")
         except Exception as e:
             print(f"[ERROR][_on_mousewheel] {type(e).__name__}: {e}")
+    
+    def _prepare_image_loading(self):
+        """Prépare le chargement des images (peut être surchargé)"""
+        for widget in self.image_widgets:
+            widget.destroy()
+        self.image_widgets.clear()
+
+    def _filter_image(self, image_path, cursor):
+        """Filtre les images (méthode à surcharger dans les classes dérivées)"""
+        # Filtre de base: uniquement les images non vues en mode "new"
+        if self.view_mode == "new" and self.is_image_viewed(image_path, cursor):
+            return False
+        return True
+
+    def _update_progress(self, idx, total):
+        """Met à jour la barre de progression"""
+        if hasattr(self, 'progressbar') and self.progressbar:
+            value = int((idx + 1) / total * 100)
+            self.root.after(0, lambda v=value: self.progressbar.config(value=v))
+            self.root.update_idletasks()
+
+    def _finish_image_loading(self, conn):
+        """Finalise le chargement des images"""
+        conn.close()
+        
+        # Détruire la barre de progression
+        if hasattr(self, 'progressbar') and self.progressbar:
+            self.root.after(0, self.progressbar.destroy)
+            self.progressbar = None
+
+        # Afficher les images
+        self.root.after(0, self.display_images)
+        self.loading = False
+
+    def setup_directory_watcher(self):
+        """Configure le watcher pour le dossier courant"""
+        try:
+            self.watcher_thread = DirectoryWatcherThread(self)
+            self.watcher_thread.start()
+        except Exception as e:
+            print(f"[ERROR][setup_directory_watcher] {type(e).__name__}: {e}")
 
 
 
