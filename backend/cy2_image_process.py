@@ -181,7 +181,7 @@ class image_process:
                 self.hide_image_widget(image_path)
                 # Activer le bouton de sauvegarde
                 self.save_btn.config(state="normal", text=f"Save Changes ({len(self.pending_changes)})")
-    
+    """
     def hide_image_widget(self, image_path):
         #Masquer visuellement une image sans la supprimer de l'interface
         for widget in self.image_widgets:
@@ -195,7 +195,7 @@ class image_process:
             
         import threading
         import time  # Ajoute cet import en haut du fichier
-    """
+    
 
        
     
