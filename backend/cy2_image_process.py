@@ -236,6 +236,13 @@ class image_process:
 
         self.scrollbar.pack(side="right", fill="y")
         self.canvas.pack(side="left", fill="both", expand=True)
+        # Label du dossier courant
+        self.dir_label = ttk.Label(top_frame, text=f"Directory: {self.current_directory}")
+        self.dir_label.pack(side="left", padx=(10, 0))
+    
+        # AJOUT: Label pour afficher les statistiques de filtrage
+        self.filter_stats_label = ttk.Label(top_frame, text="")
+        self.filter_stats_label.pack(side="left", padx=(20, 0))
 
         # Frame interne pour placer les widgets d'image
         self.scrollable_frame = ttk.Frame(self.canvas)
@@ -281,6 +288,10 @@ class image_process:
                     self.all_files = [f for f in os.listdir(self.current_directory) if f.lower().endswith(image_extensions)]
                     self.all_files.sort()
 
+                # Compteurs pour les statistiques
+                total_images = len(self.all_files)
+                filtered_images = 0
+            
                 # Pagination
                 start = self.page * self.page_size
                 end = start + self.page_size
@@ -288,21 +299,32 @@ class image_process:
 
                 self.image_files = []
                 total = len(files)
-                for idx, filename in enumerate(files):
-                    image_path = os.path.normpath(os.path.join(self.current_directory, filename))
-                    
-                    # Appliquer les filtres (méthode qui peut être surchargée par les classes enfants)
-                    include_image = self._filter_image(image_path, thread_cursor)
-                    
-                    if include_image:
-                        self.image_files.append(image_path)
-                    
-                    # Mise à jour de la barre de progression
-                    self._update_progress(idx, total)
-
-                # Fermer la connexion et finaliser
-                self._finish_image_loading(thread_conn)
             
+                # Premier passage pour compter toutes les images filtrées
+                for filename in self.all_files:
+                    image_path = os.path.normpath(os.path.join(self.current_directory, filename))
+                    if self._filter_image(image_path, thread_cursor):
+                        filtered_images += 1
+            
+            # Mettre à jour les statistiques de filtrage
+            self.root.after(0, lambda: self._update_filter_stats(filtered_images, total_images))
+            
+            # Deuxième passage pour charger la page actuelle
+            for idx, filename in enumerate(files):
+                image_path = os.path.normpath(os.path.join(self.current_directory, filename))
+                
+                # Appliquer les filtres (méthode qui peut être surchargée par les classes enfants)
+                include_image = self._filter_image(image_path, thread_cursor)
+                
+                if include_image:
+                    self.image_files.append(image_path)
+                
+                # Mise à jour de la barre de progression
+                self._update_progress(idx, total)
+
+            # Fermer la connexion et finaliser
+            self._finish_image_loading(thread_conn)
+        
         except Exception as e:
             print(f"[ERROR][load_images] {type(e).__name__}: {e}")
             messagebox.showerror("Error", f"Error loading images: {str(e)}")
@@ -554,6 +576,150 @@ class image_process:
             self.watcher_thread.start()
         except Exception as e:
             print(f"[ERROR][setup_directory_watcher] {type(e).__name__}: {e}")
+    
+    def status_function_factory(self, status_option):
+        """
+        Factory qui crée des fonctions spécifiques pour chaque type de statut
+        Chaque statut peut avoir un comportement personnalisé
+        """
+        
+        def standard_status_change(image_path, btn_frame=None):
+            """Comportement standard pour les statuts génériques"""
+            self.change_image_status(image_path, status_option, btn_frame)
+        
+        # def approved_status_change(image_path, btn_frame=None):
+        #     """Action spéciale pour le statut 'approved'"""
+        #     self.change_image_status(image_path, status_option, btn_frame)
+        #     # Comportement supplémentaire pour les images approuvées
+        #     # Par exemple: déplacer immédiatement l'image
+        #     if os.path.exists(image_path) and self.cible_directory:
+        #         basename = os.path.basename(image_path)
+        #         target_path = os.path.join(self.cible_directory, basename)
+        #         os.makedirs(self.cible_directory, exist_ok=True)
+        #         shutil.copy(image_path, target_path)  # Copier plutôt que déplacer
+        #         print(f"[INFO] Copied approved image to target directory: {target_path}")
+        
+        # def rejected_status_change(image_path, btn_frame=None):
+        #     """Action spéciale pour le statut 'rejected'"""
+        #     # Demander confirmation avant de rejeter
+        #     result = messagebox.askyesno("Confirm Rejection", 
+        #                                  f"Are you sure you want to reject {os.path.basename(image_path)}?")
+        #     if result:
+        #         self.change_image_status(image_path, status_option, btn_frame)
+        
+        def deleted_status_change(image_path, btn_frame=None):
+            """Action spéciale pour le statut 'deleted'"""
+            # Demander confirmation avant de supprimer
+            result = messagebox.askyesno("Confirm Deletion", 
+                                        f"Are you sure you want to mark {os.path.basename(image_path)} for deletion?")
+            if result:
+                self.change_image_status(image_path, status_option, btn_frame)
+                # Ajouter à une liste pour suppression ultérieure
+                self.pending_changes.append(('delete_file', image_path))
+                self.save_btn.config(state="normal", text=f"Save Changes ({len(self.pending_changes)})")
+    
+        # Retourner la fonction appropriée selon le statut
+        if status_option == "approved":
+            return approved_status_change
+        elif status_option == "rejected":
+            return rejected_status_change
+        elif status_option == "deleted":
+            return deleted_status_change
+        else:
+            return standard_status_change
+    
+    def create_status_buttons(self, image_path, status_options, current_status, btn_frame):
+        """
+        Crée des boutons pour chaque statut possible d'une image
+        :param image_path: Chemin de l'image
+        :param status_options: Liste des options de statut possibles
+        :param current_status: Statut actuel de l'image
+        :param btn_frame: Cadre dans lequel les boutons doivent être placés
+        """
+        status_buttons = {}
+        
+        # Créer un style compact pour tous les boutons
+        style = ttk.Style()
+        style.configure('Small.TButton', 
+                        padding=(2, 0),         # Padding horizontal et vertical réduit
+                        font=('Arial', 7))      # Police plus petite
+        
+        # Style pour le bouton actif
+        style.configure('SmallActive.TButton',
+                        padding=(2, 0),
+                        background='#005500',
+                        foreground='white',
+                        font=('Arial', 7, 'bold'))
+        
+        for status_option in status_options:
+            # Créer un style différent pour le statut actuel
+            is_current = current_status == status_option
+            
+            # Obtenir la fonction spécifique pour ce statut via la factory
+            status_function = self.status_function_factory(status_option)
+            
+            # Créer le bouton avec un style différent selon le statut
+            status_btn = ttk.Button(
+                btn_frame,
+                text=status_option.capitalize(),
+                style='SmallActive.TButton' if is_current else 'Small.TButton',
+                command=lambda path=image_path, func=status_function, frame=btn_frame: 
+                    func(path, frame)
+            )
+            
+            status_btn.pack(side="left", padx=1)  # Réduit l'espace entre les boutons
+            status_buttons[status_option] = status_btn
+        
+        return status_buttons
+
+    def _update_filter_stats(self, filtered_count, total_count):
+        """Met à jour l'affichage des statistiques de filtrage"""
+        try:
+            if hasattr(self, 'filter_stats_label') and self.filter_stats_label.winfo_exists():
+                # Déterminer le texte du filtre actuel
+                filter_text = "all"
+                if hasattr(self, 'current_filter'):
+                    filter_text = self.current_filter
+                elif hasattr(self, 'view_mode') and self.view_mode == "new":
+                    filter_text = "new"
+                
+                # Mettre à jour le label
+                stats_text = f"Filter [{filter_text}]: {filtered_count}/{total_count} images"
+                self.filter_stats_label.config(text=stats_text)
+        except Exception as e:
+            print(f"[ERROR][_update_filter_stats] {type(e).__name__}: {e}")
+    
+    def apply_filter(self):
+        """Applique un filtre pour n'afficher que les images avec un statut spécifique"""
+        try:
+            filter_value = self.filter_var.get()
+            self.current_filter = filter_value
+            
+            # Réinitialiser la pagination
+            self.page = 0
+            
+            # On garde self.all_files pour conserver la liste complète des fichiers
+            # self.all_files = [] - Cette ligne est supprimée pour conserver le comptage total
+            
+            # Mettre à jour le label de statistiques (avant le rechargement)
+            if hasattr(self, 'all_files') and self.all_files:
+                # Compter les images qui correspondent au nouveau filtre
+                thread_conn, thread_cursor = self.get_db_connection()
+                filtered_count = 0
+                for filename in self.all_files:
+                    image_path = os.path.normpath(os.path.join(self.current_directory, filename))
+                    if self._filter_image(image_path, thread_cursor):
+                        filtered_count += 1
+                thread_conn.close()
+                
+                # Mettre à jour l'affichage
+                self._update_filter_stats(filtered_count, len(self.all_files))
+            
+            # Recharger les images avec le filtre
+            self.load_images_async()
+        except Exception as e:
+            print(f"[ERROR][apply_filter] {type(e).__name__}: {e}")
+            messagebox.showerror("Error", f"Error applying filter: {str(e)}")
 
 
 
