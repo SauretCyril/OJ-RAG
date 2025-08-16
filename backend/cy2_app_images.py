@@ -495,6 +495,15 @@ class SplitApplication(tk.Tk):
         delete_btn = ttk.Button(button_frame, text="Delete", command=self.delete_function, width=5)
         delete_btn.pack(side="left", padx=2)
         
+        # NOUVEAU: Ajout du bouton Afficher
+        display_btn = ttk.Button(
+            button_frame, 
+            text="Afficher", 
+            command=self.display_selected_function, 
+            width=7
+        )
+        display_btn.pack(side="left", padx=2)
+        
         # Liste des fonctions
         list_frame = ttk.Frame(parent_frame)
         list_frame.pack(fill="both", expand=True, padx=5, pady=5)
@@ -571,7 +580,7 @@ class SplitApplication(tk.Tk):
         self.edit_function(function_id)
     
     def load_function(self, function_id):
-        """Charger l'explorateur d'images pour la fonction sélectionnée"""
+        """Charger l'explorateur d'images pour la fonction sélectionnée (sans initialiser)"""
         function_data = self.db.get_function_by_id(function_id)
         if not function_data:
             return
@@ -610,13 +619,33 @@ class SplitApplication(tk.Tk):
             'status_options': status_options
         }
         
-        # Utiliser la factory pour créer l'instance appropriée
-        try:
-            self.active_image_process = create_image_processor(self.right_frame, config)
-        except Exception as e:
-            print(f"Error-13 loading image_processor: {str(e)}")
-            messagebox.showerror("Error", f"Error loading image_processor: {str(e)}")
-            self.setup_initial_message(self.right_frame)
+        # Stocker l'ID de la fonction active
+        self.active_function_id = function_id
+        
+        # Afficher un message d'attente
+        waiting_frame = ttk.Frame(self.right_frame)
+        waiting_frame.pack(expand=True, fill="both")
+        
+        message = ttk.Label(
+            waiting_frame, 
+            text=f"Fonction '{name}' prête.\nCliquez sur 'Afficher' pour charger les images.", 
+            font=("Arial", 14),
+            justify="center"
+        )
+        message.pack(expand=True, pady=50)
+        
+        # Ajouter un grand bouton pour lancer le chargement
+        display_btn = tk.Button(
+            waiting_frame,
+            text="Afficher les images",
+            command=lambda: self.display_function(function_id),
+            bg="#4CAF50",
+            fg="white",
+            font=("Arial", 14, "bold"),
+            padx=20,
+            pady=10
+        )
+        display_btn.pack(pady=20)
     
     def add_function(self):
         """Ouvrir le formulaire pour ajouter une nouvelle fonction"""
@@ -679,14 +708,60 @@ class SplitApplication(tk.Tk):
                 self.active_image_process.__del__()
         
         self.destroy()
+    
+    
+    
+    def display_function(self, function_id):
+        """Créer et initialiser l'explorateur d'images pour la fonction sélectionnée"""
+        function_data = self.db.get_function_by_id(function_id)
+        if not function_data:
+            return
+        
+        # Récupérer les paramètres
+        name = function_data[1]
+        default_dir = function_data[2]
+        cible_dir = function_data[3]
+        db_path = function_data[4]
+        processor_type = function_data[5] if len(function_data) > 5 else 'standard'
+        status_options = function_data[6] if len(function_data) > 6 else 'new,viewed,approved,rejected,favorite'
+        
+        # Supprimer tous les widgets existants dans la partie droite
+        for widget in self.right_frame.winfo_children():
+            widget.destroy()
+        
+        # Créer un dictionnaire de configuration
+        config = {
+            'title': name,
+            'default_directory': default_dir,
+            'cible_directory': cible_dir,
+            'db_path': db_path,
+            'processor_type': processor_type,
+            'status_options': status_options
+        }
+        
+        # Utiliser la factory pour créer l'instance appropriée
+        try:
+            self.active_image_process = create_image_processor(self.right_frame, config)
+            # Maintenant, initialiser l'objet pour charger les images
+            self.active_image_process.initialize()
+        except Exception as e:
+            print(f"Error-13 loading image_processor: {str(e)}")
+            messagebox.showerror("Error", f"Error loading image_processor: {str(e)}")
+            self.setup_initial_message(self.right_frame)
+    
+    def display_selected_function(self):
+        """Afficher les images pour la fonction sélectionnée"""
+        selection = self.function_list.curselection()
+        if not selection:
+            messagebox.showinfo("Info", "Veuillez sélectionner une fonction à afficher")
+            return
+        
+        index = selection[0]
+        function_id = self.function_ids[index]
+        self.display_function(function_id)
 
-
-def main():
-    """Fonction principale pour démarrer l'application"""
+# Main program entry point
+if __name__ == "__main__":
     app = SplitApplication()
     app.mainloop()
-
-
-if __name__ == "__main__":
-    main()
 

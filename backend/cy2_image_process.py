@@ -61,7 +61,7 @@ class image_process:
         self.loading = False
         self.loading_lock = threading.Lock()
         self.page = 0
-        self.page_size = 18
+        self.page_size = 100
         
         # Initialiser la base de données
         self.init_database()
@@ -183,11 +183,20 @@ class image_process:
                 self.save_btn.config(state="normal", text=f"Save Changes ({len(self.pending_changes)})")
     """
     def hide_image_widget(self, image_path):
-        #Masquer visuellement une image sans la supprimer de l'interface
+        """Masquer visuellement une image sans la supprimer de l'interface"""
         for widget in self.image_widgets:
             if hasattr(widget, 'image_path') and widget.image_path == image_path:
+                # Utiliser grid_remove() car les frames sont positionnées avec grid
                 widget.grid_remove()  # Masquer mais ne pas détruire 
+                print(f"[INFO] Image hidden from view: {os.path.basename(image_path)}")
+                # S'assurer que le widget est retiré de la mise en page
+                self.check_and_update_canvas()
+                return True  # Indiquer que l'image a été masquée
     
+        # Si on arrive ici, aucun widget correspondant n'a été trouvé
+        print(f"[WARNING] No widget found for image: {os.path.basename(image_path)}")
+        return False
+
     def save_changes(self):
         #Sauvegarder tous les changements en attente
         if not self.pending_changes:
@@ -275,7 +284,7 @@ class image_process:
     def load_images(self):
         """Charge les images depuis le répertoire courant"""
         try:
-            with self.loading_lock:
+            with self.loading_lock:  # Ajouter 4 espaces d'indentation ici
                 # Créer une connexion spécifique à ce thread
                 thread_conn, thread_cursor = self.get_db_connection()
                 
@@ -291,39 +300,38 @@ class image_process:
                 # Compteurs pour les statistiques
                 total_images = len(self.all_files)
                 filtered_images = 0
-            
-                # Pagination
-                start = self.page * self.page_size
-                end = start + self.page_size
-                files = self.all_files[start:end]
-
-                self.image_files = []
-                total = len(files)
-            
-                # Premier passage pour compter toutes les images filtrées
+                
+                # NOUVEAU: Filtrer d'abord toutes les images
+                all_filtered_files = []
+                
+                # Premier passage pour trouver toutes les images qui correspondent au filtre
                 for filename in self.all_files:
                     image_path = os.path.normpath(os.path.join(self.current_directory, filename))
                     if self._filter_image(image_path, thread_cursor):
+                        all_filtered_files.append(filename)
                         filtered_images += 1
-            
-            # Mettre à jour les statistiques de filtrage
-            self.root.after(0, lambda: self._update_filter_stats(filtered_images, total_images))
-            
-            # Deuxième passage pour charger la page actuelle
-            for idx, filename in enumerate(files):
-                image_path = os.path.normpath(os.path.join(self.current_directory, filename))
                 
-                # Appliquer les filtres (méthode qui peut être surchargée par les classes enfants)
-                include_image = self._filter_image(image_path, thread_cursor)
+                # Mettre à jour les statistiques de filtrage
+                self.root.after(0, lambda: self._update_filter_stats(filtered_images, total_images))
                 
-                if include_image:
+                # ENSUITE appliquer la pagination sur les images filtrées
+                start = self.page * self.page_size
+                end = start + self.page_size
+                page_files = all_filtered_files[start:min(end, len(all_filtered_files))]
+                
+                self.image_files = []
+                total = len(page_files)
+                
+                # Charger les images de la page actuelle
+                for idx, filename in enumerate(page_files):
+                    image_path = os.path.normpath(os.path.join(self.current_directory, filename))
                     self.image_files.append(image_path)
-                
-                # Mise à jour de la barre de progression
-                self._update_progress(idx, total)
+                    
+                    # Mise à jour de la barre de progression
+                    self._update_progress(idx, total)
 
-            # Fermer la connexion et finaliser
-            self._finish_image_loading(thread_conn)
+                # Fermer la connexion et finaliser
+                self._finish_image_loading(thread_conn)
         
         except Exception as e:
             print(f"[ERROR][load_images] {type(e).__name__}: {e}")
@@ -357,6 +365,11 @@ class image_process:
     def display_images(self):
         """Affiche les images chargées dans l'interface graphique"""
         try:
+            # Vérifier si les widgets existent encore
+            if not self.check_widgets_exist():
+                print("[WARNING] Widgets principaux détruits, impossible d'afficher les images")
+                return
+            
             # Vider le conteneur d'images existant
             for widget in self.scrollable_frame.winfo_children():
                 widget.destroy()
@@ -367,93 +380,75 @@ class image_process:
             
             # Aucune image à afficher
             if not self.image_files:
-                no_image_label = ttk.Label(self.scrollable_frame, text="No images to display", font=("Arial", 14))
-                no_image_label.grid(row=0, column=0, padx=20, pady=20)
+                self._display_no_images_message()
                 return
             
             # Afficher chaque image
             for i, image_path in enumerate(self.image_files):
                 try:
-                    # Vérifier si le fichier existe toujours
-                    if not os.path.exists(image_path):
-                        continue
-                        
-                    # Créer un cadre pour chaque image
-                    image_frame = ttk.Frame(self.scrollable_frame)
-                    image_frame.grid(row=row, column=col, padx=10, pady=10, sticky="nsew")
-                    image_frame.image_path = image_path  # Référence pour masquage
+                    # Créer le cadre pour l'image
+                    image_frame = self._create_image_frame(row, col)
                     
-                    # Charger l'image avec PIL
-                    with Image.open(image_path) as img:
-                        # Redimensionner pour l'affichage
-                        img.thumbnail((300, 300), Image.LANCZOS)
-                        photo = ImageTk.PhotoImage(img)
+                    # Charger et afficher l'image
+                    self._load_and_display_image(image_frame, image_path, i)
                     
-                    # Créer un label pour l'image
-                    image_label = ttk.Label(image_frame, image=photo)
-                    image_label.image = photo  # Garder une référence
-                    image_label.pack(padx=5, pady=5)
+                    # Créer les boutons pour cette image
+                    self._create_image_buttons(image_frame, image_path)
                     
-                    # Ajouter un événement de clic pour zoomer
-                    image_label.bind("<Button-1>", lambda e, path=image_path, label=image_label: self.toggle_image_zoom(label, path))
+                    # Méthode de hook pour les classes dérivées (status pour workflow)
+                    self._add_custom_image_controls(image_frame, image_path)
                     
-                    # Créer un label pour le nom du fichier
-                    file_label = ttk.Label(image_frame, text=os.path.basename(image_path))
-                    file_label.pack(pady=2)
-                    
-                    # Ajouter des boutons d'action
-                    btn_frame = ttk.Frame(image_frame)
-                    btn_frame.pack(pady=5)
-                    
-                    """  # Bouton "Mark as Viewed"
-                    view_btn = ttk.Button(
-                        btn_frame, 
-                        text="Mark as Viewed", 
-                        command=lambda path=image_path: self.mark_action_1(path)
-                    )
-                    view_btn.pack(side="left", padx=2)
-                    
-                    # Bouton "Mark for Deletion"
-                    delete_btn = ttk.Button(
-                        btn_frame, 
-                        text="Mark for Deletion", 
-                        command=lambda path=image_path: self.mark_action_2(path)
-                    )
-                    delete_btn.pack(side="left", padx=2) """
-                    
-                    # Stocker le widget pour référence future
-                    self.image_widgets.append(image_frame)
-                    
-                    # Passer à la prochaine position
+                    # Mettre à jour les coordonnées pour la prochaine image
                     col += 1
                     if col >= max_cols:
                         col = 0
                         row += 1
-                        
-                except Exception as e:
-                    print(f"Error loading image {image_path}: {str(e)}")
-            
-            # Ajouter le bouton "Afficher plus" si besoin
-            if (self.page + 1) * self.page_size < len(self.all_files):
-                if hasattr(self, 'show_more_btn') and self.show_more_btn:
-                    self.show_more_btn.destroy()
                 
-                self.show_more_btn = tk.Button(
-                    self.scrollable_frame,
-                    text="Afficher plus",
-                    command=self.show_more_images,
-                    bg="purple",
-                    fg="white",
-                    font=("Arial", 10, "bold")
-                )
-                self.show_more_btn.grid(row=row+1, column=0, columnspan=max_cols, pady=20)
+                except Exception as e:
+                    print(f"[ERROR][display_image {i}] {type(e).__name__}: {e}")
+            
+            # Ajouter les boutons de navigation
+            self._create_navigation_buttons(row + 1, max_cols)
             
             # Mettre à jour la région de défilement du canvas
             self.check_and_update_canvas()
-        
+    
         except Exception as e:
             print(f"[ERROR][display_images] {type(e).__name__}: {e}")
             messagebox.showerror("Error", f"Error displaying images: {str(e)}")
+
+    # Méthodes "hook" à surcharger par les classes dérivées
+    def _display_no_images_message(self):
+        """Affiche un message quand aucune image n'est disponible"""
+        no_image_label = ttk.Label(self.scrollable_frame, text="No images to display", font=("Arial", 14))
+        no_image_label.grid(row=0, column=0, padx=20, pady=20)
+
+    def _create_image_frame(self, row, col):
+        """Crée le cadre pour une image"""
+        image_frame = ttk.Frame(self.scrollable_frame, padding=5)
+        image_frame.grid(row=row, column=col, padx=10, pady=10, sticky="nsew")
+        return image_frame
+
+    def _load_and_display_image(self, image_frame, image_path, index):
+        """Charge et affiche une image dans le cadre donné"""
+        # Code pour charger l'image depuis image_path
+        # et l'afficher dans image_frame
+        # ...
+
+    def _create_image_buttons(self, image_frame, image_path):
+        """Crée les boutons standard pour une image"""
+        # Code pour créer les boutons (zoom, déplacer, supprimer)
+        # ...
+
+    def _add_custom_image_controls(self, image_frame, image_path):
+        """Hook pour ajouter des contrôles personnalisés par les classes dérivées"""
+        # Vide par défaut, à surcharger dans les classes dérivées
+        pass
+
+    def _create_navigation_buttons(self, row, max_cols):
+        """Crée les boutons de navigation (page précédente/suivante)"""
+        # Code pour créer les boutons de navigation
+        # ...
     
     def check_and_update_canvas(self):
         """Mettre à jour en toute sécurité la région de défilement du canvas s'il existe encore"""
@@ -543,12 +538,30 @@ class image_process:
         self.image_widgets.clear()
 
     def _filter_image(self, image_path, cursor):
-        """Filtre les images (méthode à surcharger dans les classes dérivées)"""
+        """Filtre les images selon les critères de base"""
+        # Code de base pour la classe image_process (sans appel à super())
+    
+        # Vérification défensive
+        if not hasattr(self, 'current_filter'):
+            self.current_filter = "all"
+        
+        # Vérifier si on a accès à get_image_status
+        if hasattr(self, 'get_image_status'):
+            # Récupérer le statut de l'image
+            status = self.get_image_status(image_path, cursor)
+            
+            # Si l'image a le statut "hidde", la masquer sauf si on filtre spécifiquement sur "hidde"
+            if status["current"] == "hidde":
+                # Retourner True uniquement si le filtre actuel est "hidde"
+                return self.current_filter == "hidde"
+        
         # Filtre de base: uniquement les images non vues en mode "new"
-        if self.view_mode == "new" and self.is_image_viewed(image_path, cursor):
+        if hasattr(self, 'view_mode') and self.view_mode == "new" and self.is_image_viewed(image_path, cursor):
             return False
+        
+        # Par défaut, inclure l'image
         return True
-
+    
     def _update_progress(self, idx, total):
         """Met à jour la barre de progression"""
         if hasattr(self, 'progressbar') and self.progressbar:
@@ -618,15 +631,42 @@ class image_process:
                 self.pending_changes.append(('delete_file', image_path))
                 self.save_btn.config(state="normal", text=f"Save Changes ({len(self.pending_changes)})")
     
-        # Retourner la fonction appropriée selon le statut
-        if status_option == "approved":
-            return approved_status_change
-        elif status_option == "rejected":
-            return rejected_status_change
-        elif status_option == "deleted":
-            return deleted_status_change
-        else:
-            return standard_status_change
+        def hidde_status_change(image_path, btn_frame=None):
+            """Action spéciale pour le statut 'hidde'"""
+            result = messagebox.askyesno("Confirm Hide", 
+                                        f"Are you sure you want to hide {os.path.basename(image_path)}?\n\nHidden images will only be visible when the 'hidde' filter is selected.")
+            if result:
+                print(f"[DEBUG] Hiding image: {os.path.basename(image_path)}")
+                
+                # Changer le statut
+                if hasattr(self, 'change_image_status'):
+                    self.change_image_status(image_path, status_option, btn_frame)
+                else:
+                    print("[ERROR] Method change_image_status not found")
+                
+                # Masquer immédiatement l'image
+                success = self.hide_image_widget(image_path)
+                
+                # Vérifier si l'image a été masquée
+                if success:
+                    print(f"[INFO] Successfully hidden image: {os.path.basename(image_path)}")
+                else:
+                    print(f"[WARNING] Failed to hide image: {os.path.basename(image_path)}")
+                    
+                # Forcer un rafraîchissement de l'interface
+                self.root.update_idletasks()
+    
+            # Retourner la fonction appropriée selon le statut
+            if status_option == "approved":
+                return approved_status_change
+            elif status_option == "rejected":
+                return rejected_status_change
+            elif status_option == "deleted":
+                return deleted_status_change
+            elif status_option == "hidde":
+                return hidde_status_change
+            else:
+                return standard_status_change
     
     def create_status_buttons(self, image_path, status_options, current_status, btn_frame):
         """

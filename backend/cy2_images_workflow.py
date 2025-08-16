@@ -434,3 +434,26 @@ class images_workflow(image_process):
                 include_image = False
         
         return include_image
+    
+    def _add_custom_image_controls(self, image_frame, image_path):
+        """Ajoute les contrôles spécifiques au workflow (statuts)"""
+        try:
+            # Récupérer le statut de l'image
+            status = self.get_image_status(image_path)
+            
+            # Ajouter un label pour le statut
+            status_text = f"Previous: {status['previous']} | Current: {status['current']}"
+            status_label = ttk.Label(image_frame, text=status_text, font=("Arial", 8))
+            status_label.pack(pady=(3, 5))
+            
+            # Créer le cadre pour les boutons de statut
+            btn_frame = ttk.Frame(image_frame)
+            btn_frame.pack(pady=3)
+            
+            # Ajouter les boutons de statut
+            status_buttons = self.create_status_buttons(image_path, self.status_options, status["current"], btn_frame)
+            
+            # Stocker les boutons avec le widget pour les mettre à jour
+            image_frame.status_buttons = status_buttons
+        except Exception as e:
+            print(f"[ERROR][_add_custom_image_controls] {type(e).__name__}: {e}")
