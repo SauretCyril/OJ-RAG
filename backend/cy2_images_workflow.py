@@ -20,13 +20,23 @@ class images_workflow(image_process):
         super().__init__(root, config)
         
         # Initialiser les attributs nécessaires
-        self.current_filter = "all"  # Attribut manquant qui causait l'erreur
-        self.pending_changes = []    # Pour suivre les changements en attente
-        
+        self.current_filter = "all"  
+        self.pending_changes = []    
+        self.zoomed_images = {}      # Ajouter cette ligne pour corriger l'erreur
+    
         # Extraire les options de statut de la configuration
-        status_options_str = config.get('status_options', "new,viewed,approved,rejected,favorite")
+        status_options_str = config.get('status_options', "")
         self.status_options = [s.strip() for s in status_options_str.split(',')]
         print(f"[INFO] Using status options: {self.status_options}")
+        
+        # Créer un style plus contrasté pour les boutons actifs
+        self.style = ttk.Style()
+        self.style.configure('Active.TButton', 
+                             background='#005500',     # Vert foncé au lieu de #4CAF50
+                             foreground='#FFFFFF',     # Blanc pur
+                             font=('Arial', 9, 'bold'),
+                             relief="raised",          # Bouton en relief
+                             borderwidth=2)            # Bordure plus visible
         
         # Initialiser la table de statuts dans la base de données
         self.init_status_table()
@@ -81,14 +91,14 @@ class images_workflow(image_process):
             bg="orange",
             fg="white",
             font=("Arial", 10, "bold"),
-            state="disabled"
+            state="disabled"  # Correction ici: enlever les espaces
         )
         self.save_btn.pack(side="right", padx=(5, 0))
     
     def display_images(self):
         """Surcharge de la méthode display_images pour inclure les statuts"""
         try:
-            # Vider le conteneur d'images existant
+            # Vider le  conteneur d'images existant
             for widget in self.scrollable_frame.winfo_children():
                 widget.destroy()
             
@@ -149,13 +159,30 @@ class images_workflow(image_process):
                     status_btn_frame = ttk.Frame(btn_frame)
                     status_btn_frame.pack(pady=3)
                     
+                    # Garder une référence aux boutons pour les mettre à jour
+                    status_buttons = {}
+                    
                     for status_option in self.status_options:
+                        # Créer un style différent pour le statut actuel
+                        is_current = status["current"] == status_option
+                        
+                        # Créer le bouton avec un style différent selon le statut
                         status_btn = ttk.Button(
                             status_btn_frame,
                             text=status_option.capitalize(),
-                            command=lambda path=image_path, s=status_option: self.change_image_status(path, s)
+                            command=lambda path=image_path, s=status_option, btn_frame=status_btn_frame: 
+                                   self.change_image_status(path, s, btn_frame)
                         )
+                        
+                        # Appliquer un style différent au bouton actif
+                        if is_current:
+                            status_btn.configure(style='Active.TButton')
+                        
                         status_btn.pack(side="left", padx=2)
+                        status_buttons[status_option] = status_btn
+                    
+                    # Stocker les boutons avec le widget pour les mettre à jour
+                    image_frame.status_buttons = status_buttons
                     
                     # Stocker le widget pour référence future
                     self.image_widgets.append(image_frame)
@@ -218,9 +245,18 @@ class images_workflow(image_process):
             print(f"[ERROR][get_image_status] {type(e).__name__}: {e}")
             return {"previous": "error", "current": "error"}
     
-    def change_image_status(self, image_path, new_status):
+    def change_image_status(self, image_path, new_status, btn_frame=None):
         """Change le statut d'une image et met à jour l'affichage"""
         try:
+            # Récupérer le statut actuel
+            current_status = self.get_image_status(image_path)
+            
+            # Éviter les mises à jour inutiles
+            if current_status["current"] == new_status:
+                print(f"[INFO] Image already has status: {new_status}")
+                return
+            
+            # Mettre à jour le statut
             if self.update_image_status(image_path, new_status):
                 # Ajouter aux changements en attente
                 self.pending_changes.append(('status_change', image_path, new_status))
@@ -229,13 +265,25 @@ class images_workflow(image_process):
                 # Mettre à jour l'affichage pour refléter le changement
                 for widget in self.image_widgets:
                     if hasattr(widget, 'image_path') and widget.image_path == image_path:
-                        # Chercher l'étiquette de statut dans les enfants du widget
+                        # Mettre à jour l'étiquette de statut
                         for child in widget.winfo_children():
                             if isinstance(child, ttk.Label) and "Previous:" in child.cget("text"):
                                 status = self.get_image_status(image_path)
                                 status_text = f"Previous: {status['previous']} | Current: {status['current']}"
                                 child.config(text=status_text)
+                                
+                                # Changer le style des boutons si possible
+                                if hasattr(widget, 'status_buttons'):
+                                    for status_name, btn in widget.status_buttons.items():
+                                        if status_name == new_status:
+                                            btn.configure(style='Active.TButton')
+                                        else:
+                                            btn.configure(style='TButton')
+                                
                                 break
+                
+                # Notification visuelle
+                #essagebox.showinfo("Status Updated", f"Image status changed: {current_status['current']} → {new_status}")
         except Exception as e:
             print(f"[ERROR][change_image_status] {type(e).__name__}: {e}")
             messagebox.showerror("Error", f"Error changing image status: {str(e)}")
@@ -247,6 +295,10 @@ class images_workflow(image_process):
             
             # Récupérer le statut actuel
             current = self.get_image_status(image_path)
+            
+            # Éviter les mises à jour inutiles
+            if current["current"] == new_status:
+                return True
             
             # Mettre à jour : le statut actuel devient le statut précédent
             thread_conn, cursor = self.get_db_connection()
@@ -264,6 +316,7 @@ class images_workflow(image_process):
             thread_conn.commit()
             thread_conn.close()
             
+            print(f"[INFO] Status updated for {os.path.basename(image_path)}: {current['current']} → {new_status}")
             return True
         except Exception as e:
             print(f"[ERROR][update_image_status] {type(e).__name__}: {e}")
@@ -320,7 +373,7 @@ class images_workflow(image_process):
             
             # Réinitialiser les changements en attente
             self.pending_changes = []
-            self.save_btn.config(state="disabled", text="Save Changes")
+            self.save_btn.config(state=tk.DISABLED, text="Save Changes")  # Assurez-vous qu'il n'y a pas d'espaces ici
             
             # Fermer la connexion
             thread_conn.close()

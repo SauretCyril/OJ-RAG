@@ -61,7 +61,7 @@ class image_process:
         self.loading = False
         self.loading_lock = threading.Lock()
         self.page = 0
-        self.page_size = 9
+        self.page_size = 18
         
         # Initialiser la base de données
         self.init_database()
