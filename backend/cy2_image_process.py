@@ -9,6 +9,8 @@ from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
 import threading
 import time
+import hashlib
+from PIL.ExifTags import TAGS
 
 # class DirectoryWatcher(FileSystemEventHandler):
 #     def __init__(self, image_explorer):
@@ -93,16 +95,33 @@ class image_process:
             self.conn = sqlite3.connect(self.db_path, check_same_thread=False)
             self.cursor = self.conn.cursor()
             
-            # Supprimer l'ancienne table si elle existe
-            #self.cursor.execute("DROP TABLE IF EXISTS viewed_images")
-            
-            # Créer la nouvelle table avec function_name
+            # Créer la table des images vues
             self.cursor.execute('''
-                CREATE TABLE viewed_images (
+                CREATE TABLE IF NOT EXISTS viewed_images (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     function_name TEXT NOT NULL,
                     image_path TEXT NOT NULL,
                     viewed_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    UNIQUE(function_name, image_path)
+                )
+            ''')
+            
+            # Créer la table des métadonnées
+            self.cursor.execute('''
+                CREATE TABLE IF NOT EXISTS image_metadata (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    function_name TEXT NOT NULL,
+                    image_path TEXT NOT NULL,
+                    file_size INTEGER,
+                    width INTEGER,
+                    height INTEGER,
+                    format TEXT,
+                    mode TEXT,
+                    file_hash TEXT,
+                    creation_date TIMESTAMP,
+                    modified_date TIMESTAMP,
+                    exif_data TEXT,
+                    extracted_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     UNIQUE(function_name, image_path)
                 )
             ''')
@@ -175,6 +194,10 @@ class image_process:
         
         clear_btn = ttk.Button(info_frame, text="Clear Viewed", command=self.clear_function_viewed_images)
         clear_btn.pack(side="right", padx=(0, 5))
+
+        # Bouton metadata
+        metadata_btn = ttk.Button(info_frame, text="Extract Metadata", command=self.extract_all_metadata)
+        metadata_btn.pack(side="right", padx=(0, 5))
 
         # Deuxième ligne - Contrôles principaux
         control_frame = ttk.Frame(top_frame)
@@ -381,6 +404,9 @@ class image_process:
                 self.image_widgets.append(no_images_label)
                 return
 
+            # Extraire les métadonnées pour les nouvelles images
+            self.root.after(100, lambda: self.extract_and_store_metadata_batch(self.image_files))
+
             # Afficher les images en grille
             cols = 4  # Nombre de colonnes
             for idx, image_path in enumerate(self.image_files):
@@ -394,6 +420,9 @@ class image_process:
                     
                     # Vérifier si l'image a été vue
                     is_viewed = self.is_image_viewed(image_path)
+                    
+                    # Récupérer les métadonnées
+                    metadata = self.get_image_metadata(image_path)
                     
                     # Charger et redimensionner l'image
                     with Image.open(image_path) as img:
@@ -419,7 +448,17 @@ class image_process:
                     filename = os.path.basename(image_path)
                     if is_viewed:
                         filename = f"✓ {filename}"  # Ajouter une coche
-                    name_label = ttk.Label(image_frame, text=filename, wraplength=180)
+                    
+                    # Ajouter les informations de métadonnées si disponibles
+                    if metadata:
+                        info_text = f"{filename}\n{metadata['width']}x{metadata['height']} - {metadata['format']}"
+                        if metadata['file_size']:
+                            size_mb = metadata['file_size'] / (1024 * 1024)
+                            info_text += f"\n{size_mb:.1f} MB"
+                    else:
+                        info_text = filename
+                    
+                    name_label = ttk.Label(image_frame, text=info_text, wraplength=180)
                     name_label.pack()
                     
                     # Boutons d'action
@@ -433,6 +472,11 @@ class image_process:
                         viewed_btn = ttk.Button(btn_frame, text="Mark Viewed", 
                                               command=lambda path=image_path: self.mark_action_viewed(path))
                     viewed_btn.pack(side="left", padx=2)
+
+                    # Bouton "Info" pour afficher les métadonnées complètes
+                    info_btn = ttk.Button(btn_frame, text="Info", 
+                                    command=lambda path=image_path: self.show_image_metadata(path))
+                    info_btn.pack(side="left", padx=2)
 
                     if self.processor_type == "move":
                         # Bouton "Move" - toujours actif
@@ -450,10 +494,10 @@ class image_process:
                 except Exception as e:
                     print(f"[ERROR] Error displaying image {image_path}: {e}")
                     continue
-            
+        
             # Mettre à jour les boutons de navigation
             self.update_navigation_buttons()
-            
+        
         except Exception as e:
             print(f"[ERROR] Error in display_images: {e}")
 
@@ -636,13 +680,13 @@ class image_process:
             progress_pct = (viewed_count/total_images*100) if total_images > 0 else 0
             
             stats_text = f"""Function: {self.title}
-Directory: {self.current_directory}
+            Directory: {self.current_directory}
 
-Total images: {total_images}
-Viewed images: {viewed_count}
-New images: {new_images}
+            Total images: {total_images}
+            Viewed images: {viewed_count}
+            New images: {new_images}
 
-Progress: {progress_pct:.1f}% completed"""
+            Progress: {progress_pct:.1f}% completed"""
             
             messagebox.showinfo("Function Statistics", stats_text)
             
@@ -693,3 +737,241 @@ Progress: {progress_pct:.1f}% completed"""
         except Exception as e:
             print(f"[ERROR] Error clearing function viewed images: {e}")
             messagebox.showerror("Error", f"Failed to clear viewed images: {e}")
+
+    def extract_image_metadata(self, image_path):
+        """Extraire les métadonnées d'une image"""
+        try:
+            # Informations du fichier
+            file_stats = os.stat(image_path)
+            file_size = file_stats.st_size
+            creation_date = file_stats.st_ctime
+            modified_date = file_stats.st_mtime
+            
+            # Hash du fichier pour détecter les doublons
+            file_hash = self.calculate_file_hash(image_path)
+            
+            # Métadonnées de l'image avec PIL
+            with Image.open(image_path) as img:
+                width, height = img.size
+                format_type = img.format
+                mode = img.mode
+                
+                # Extraire les données EXIF
+                exif_data = {}
+                if hasattr(img, '_getexif'):
+                    exif = img._getexif()
+                    if exif is not None:
+                        for tag, value in exif.items():
+                            tag_name = TAGS.get(tag, tag)
+                            exif_data[tag_name] = str(value)
+            
+            metadata = {
+                'file_size': file_size,
+                'width': width,
+                'height': height,
+                'format': format_type,
+                'mode': mode,
+                'file_hash': file_hash,
+                'creation_date': creation_date,
+                'modified_date': modified_date,
+                'exif_data': json.dumps(exif_data) if exif_data else None
+            }
+            
+            return metadata
+            
+        except Exception as e:
+            print(f"[ERROR] Error extracting metadata for {image_path}: {e}")
+            return None
+
+    def calculate_file_hash(self, image_path):
+        """Calculer le hash SHA256 d'un fichier"""
+        try:
+            hash_sha256 = hashlib.sha256()
+            with open(image_path, "rb") as f:
+                for chunk in iter(lambda: f.read(4096), b""):
+                    hash_sha256.update(chunk)
+            return hash_sha256.hexdigest()
+        except Exception as e:
+            print(f"[ERROR] Error calculating hash for {image_path}: {e}")
+            return None
+
+    def store_image_metadata(self, image_path, metadata):
+        """Stocker les métadonnées d'une image en base"""
+        try:
+            if not metadata:
+                return False
+                
+            image_path = os.path.normpath(image_path)
+            conn, cursor = self.get_db_connection()
+            
+            cursor.execute('''
+                INSERT OR REPLACE INTO image_metadata 
+                (function_name, image_path, file_size, width, height, format, mode, 
+                 file_hash, creation_date, modified_date, exif_data)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ''', (
+                self.title,
+                image_path,
+                metadata['file_size'],
+                metadata['width'],
+                metadata['height'],
+                metadata['format'],
+                metadata['mode'],
+                metadata['file_hash'],
+                metadata['creation_date'],
+                metadata['modified_date'],
+                metadata['exif_data']
+            ))
+            
+            conn.commit()
+            conn.close()
+            return True
+            
+        except Exception as e:
+            print(f"[ERROR] Error storing metadata: {e}")
+            return False
+
+    def get_image_metadata(self, image_path):
+        """Récupérer les métadonnées d'une image depuis la base"""
+        try:
+            image_path = os.path.normpath(image_path)
+            conn, cursor = self.get_db_connection()
+            
+            cursor.execute('''
+                SELECT file_size, width, height, format, mode, file_hash, 
+                       creation_date, modified_date, exif_data, extracted_date
+                FROM image_metadata 
+                WHERE function_name = ? AND image_path = ?
+            ''', (self.title, image_path))
+            
+            result = cursor.fetchone()
+            conn.close()
+            
+            if result:
+                return {
+                    'file_size': result[0],
+                    'width': result[1],
+                    'height': result[2],
+                    'format': result[3],
+                    'mode': result[4],
+                    'file_hash': result[5],
+                    'creation_date': result[6],
+                    'modified_date': result[7],
+                    'exif_data': json.loads(result[8]) if result[8] else None,
+                    'extracted_date': result[9]
+                }
+            return None
+            
+        except Exception as e:
+            print(f"[ERROR] Error getting metadata: {e}")
+            return None
+
+    def extract_and_store_metadata_batch(self, image_paths):
+        """Extraire et stocker les métadonnées pour plusieurs images"""
+        try:
+            processed = 0
+            total = len(image_paths)
+            
+            for image_path in image_paths:
+                # Vérifier si les métadonnées existent déjà
+                existing_metadata = self.get_image_metadata(image_path)
+                if existing_metadata:
+                    continue  # Skip si déjà traité
+                
+                # Extraire les métadonnées
+                metadata = self.extract_image_metadata(image_path)
+                if metadata:
+                    if self.store_image_metadata(image_path, metadata):
+                        processed += 1
+                
+                # Progress feedback
+                if processed % 10 == 0:
+                    print(f"[INFO] Processed metadata for {processed}/{total} images")
+            
+            print(f"[INFO] Metadata extraction complete: {processed} new entries")
+            return processed
+            
+        except Exception as e:
+            print(f"[ERROR] Error in batch metadata extraction: {e}")
+            return 0
+
+    def show_image_metadata(self, image_path):
+        """Afficher les métadonnées complètes d'une image"""
+        try:
+            metadata = self.get_image_metadata(image_path)
+            if not metadata:
+                # Extraire les métadonnées si pas encore fait
+                meta = self.extract_image_metadata(image_path)
+                if meta:
+                    self.store_image_metadata(image_path, meta)
+                    metadata = meta
+        
+            if metadata:
+                filename = os.path.basename(image_path)
+                
+                # Formatage des dates
+                import datetime
+                creation_date = datetime.datetime.fromtimestamp(metadata['creation_date']).strftime('%Y-%m-%d %H:%M:%S')
+                modified_date = datetime.datetime.fromtimestamp(metadata['modified_date']).strftime('%Y-%m-%d %H:%M:%S')
+                
+                # Formatage de la taille
+                size_mb = metadata['file_size'] / (1024 * 1024)
+                
+                info_text = f"""Image: {filename}
+            
+                Dimensions: {metadata['width']} x {metadata['height']} pixels
+                Format: {metadata['format']}
+                Mode: {metadata['mode']}
+                File Size: {size_mb:.2f} MB
+                Hash: {metadata['file_hash'][:16]}...
+
+                Created: {creation_date}
+                Modified: {modified_date}
+
+                Function: {self.title}"""
+
+                # Ajouter les données EXIF si disponibles
+                if metadata['exif_data']:
+                    exif_data = metadata['exif_data']
+                    if isinstance(exif_data, str):
+                        exif_data = json.loads(exif_data)
+                    
+                    exif_text = "\n\nEXIF Data:\n"
+                    for key, value in list(exif_data.items())[:10]:  # Limiter à 10 entrées
+                        exif_text += f"{key}: {value}\n"
+                    info_text += exif_text
+                
+                messagebox.showinfo("Image Metadata", info_text)
+            else:
+                messagebox.showwarning("Warning", "No metadata available for this image")
+                
+        except Exception as e:
+            print(f"[ERROR] Error showing metadata: {e}")
+            messagebox.showerror("Error", f"Failed to get metadata: {e}")
+
+    def extract_all_metadata(self):
+        """Extraire les métadonnées pour toutes les images du répertoire"""
+        try:
+            result = messagebox.askyesno(
+                "Extract Metadata", 
+                f"Extract metadata for all images in '{self.title}'?\nThis may take some time."
+            )
+            
+            if result:
+                def extract_thread():
+                    # Obtenir toutes les images du répertoire
+                    image_extensions = ('.png', '.jpg', '.jpeg', '.gif', '.bmp', '.tiff', '.webp')
+                    all_images = []
+                    for file in os.listdir(self.current_directory):
+                        if file.lower().endswith(image_extensions):
+                            full_path = os.path.join(self.current_directory, file)
+                            all_images.append(full_path)
+                    
+                    processed = self.extract_and_store_metadata_batch(all_images)
+                    self.root.after(0, lambda: messagebox.showinfo("Complete", f"Metadata extracted for {processed} images"))
+                
+                threading.Thread(target=extract_thread, daemon=True).start()
+                
+        except Exception as e:
+            print(f"[ERROR] Error extracting all metadata: {e}")
+            messagebox.showerror("Error", f"Failed to extract metadata: {e}")
