@@ -88,64 +88,69 @@ class image_process:
             messagebox.showwarning("Warning", f"Directory does not exist: {self.default_directory}")
 
     def init_database(self):
-        """Initialise la base de données SQLite pour stocker les images vues"""
+        """Initialise la base de données SQLite pour stocker les images vues par fonction"""
         try:
             self.conn = sqlite3.connect(self.db_path, check_same_thread=False)
             self.cursor = self.conn.cursor()
             
-            # Créer la table si elle n'existe pas
+            # Supprimer l'ancienne table si elle existe
+            #self.cursor.execute("DROP TABLE IF EXISTS viewed_images")
+            
+            # Créer la nouvelle table avec function_name
             self.cursor.execute('''
-                CREATE TABLE IF NOT EXISTS viewed_images (
+                CREATE TABLE viewed_images (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    image_path TEXT UNIQUE,
-                    viewed_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    function_name TEXT NOT NULL,
+                    image_path TEXT NOT NULL,
+                    viewed_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    UNIQUE(function_name, image_path)
                 )
             ''')
             
             self.conn.commit()
-            print(f"[INFO] Database initialized: {self.db_path}")
+            print(f"[INFO] Database initialized with function support: {self.db_path}")
         except Exception as e:
             print(f"[ERROR] Database initialization failed: {e}")
-            
+
     def get_db_connection(self):
         """Créer une nouvelle connexion à la base de données pour le thread actuel"""
         conn = sqlite3.connect(self.db_path, check_same_thread=False)
         return conn, conn.cursor()
 
     def is_image_viewed(self, image_path):
-        """Vérifier si une image a été vue"""
+        """Vérifier si une image a été vue pour cette fonction spécifique"""
         try:
             image_path = os.path.normpath(image_path)
             conn, cursor = self.get_db_connection()
             
             cursor.execute(
-                "SELECT COUNT(*) FROM viewed_images WHERE image_path = ?",
-                (image_path,)
+                "SELECT COUNT(*) FROM viewed_images WHERE function_name = ? AND image_path = ?",
+                (self.title, image_path)
             )
             result = cursor.fetchone()[0] > 0
             conn.close()
+            
+            # Debug pour voir ce qui se passe
+            #print(f"[DEBUG] Image {os.path.basename(image_path)} viewed for '{self.title}': {result}")
+            
             return result
         except Exception as e:
             print(f"[ERROR] Error checking if image viewed: {e}")
             return False
 
     def mark_image_viewed(self, image_path):
-        """Marquer une image comme vue dans la base de données"""
+        """Marquer une image comme vue pour cette fonction spécifique"""
         try:
             image_path = os.path.normpath(image_path)
             conn, cursor = self.get_db_connection()
             
             cursor.execute(
-                "INSERT OR IGNORE INTO viewed_images (image_path) VALUES (?)",
-                (image_path,)
+                "INSERT OR IGNORE INTO viewed_images (function_name, image_path) VALUES (?, ?)",
+                (self.title, image_path)
             )
             conn.commit()
             conn.close()
-            print(f"[INFO] Image marked as viewed: {os.path.basename(image_path)}")
-            
-            # Si en mode "new", masquer l'image immédiatement
-            if self.view_mode == "new":
-                self.hide_image_widget(image_path)
+            print(f"[INFO] Image marked as viewed for '{self.title}': {os.path.basename(image_path)}")
             
             return True
         except Exception as e:
@@ -158,73 +163,106 @@ class image_process:
         top_frame = ttk.Frame(self.root)
         top_frame.pack(fill="x", padx=10, pady=5)
 
+        # Première ligne - Info fonction
+        info_frame = ttk.Frame(top_frame)
+        info_frame.pack(fill="x", pady=(0, 5))
+        
+        function_label = ttk.Label(info_frame, text=f"Function: {self.title}", font=("Arial", 10, "bold"))
+        function_label.pack(side="left")
+        
+        stats_btn = ttk.Button(info_frame, text="Stats", command=self.show_function_stats)
+        stats_btn.pack(side="right", padx=(0, 5))
+        
+        clear_btn = ttk.Button(info_frame, text="Clear Viewed", command=self.clear_function_viewed_images)
+        clear_btn.pack(side="right", padx=(0, 5))
+
+        # Deuxième ligne - Contrôles principaux
+        control_frame = ttk.Frame(top_frame)
+        control_frame.pack(fill="x", pady=(0, 5))
+
         # Bouton pour sélectionner le dossier
-        select_btn = ttk.Button(top_frame, text="Select Directory", command=self.select_directory)
+        select_btn = ttk.Button(control_frame, text="Select Directory", command=self.select_directory)
         select_btn.pack(side="left")
 
         # Label du dossier courant
-        self.dir_label = ttk.Label(top_frame, text=f"Directory: {self.current_directory}")
+        self.dir_label = ttk.Label(control_frame, text=f"Directory: {self.current_directory}")
         self.dir_label.pack(side="left", padx=(10, 0))
 
+        # Troisième ligne - Actions
+        action_frame = ttk.Frame(top_frame)
+        action_frame.pack(fill="x", pady=(0, 5))
+
         # Bouton de rechargement
-        refresh_btn = ttk.Button(top_frame, text="Refresh", command=self.refresh_images)
-        refresh_btn.pack(side="left", padx=(10, 0))
+        refresh_btn = ttk.Button(action_frame, text="Refresh", command=self.refresh_images)
+        refresh_btn.pack(side="left")
 
         # Bouton pour basculer le mode de vue
-        self.view_mode_btn = ttk.Button(top_frame, text="Show All", command=self.toggle_view_mode)
+        self.view_mode_btn = ttk.Button(action_frame, text="Show All", command=self.toggle_view_mode)
         self.view_mode_btn.pack(side="left", padx=(10, 0))
         self.update_view_mode_button()
 
         # Bouton pour marquer toutes les images de la page comme vues
-        mark_all_btn = ttk.Button(top_frame, text="Mark All as Viewed", command=self.mark_all_as_viewed)
+        mark_all_btn = ttk.Button(action_frame, text="Mark All as Viewed", command=self.mark_all_as_viewed)
         mark_all_btn.pack(side="left", padx=(10, 0))
 
-        # Frame pour la barre de progression
-        progress_frame = ttk.Frame(self.root)
-        progress_frame.pack(fill="x", padx=10, pady=5)
-
-        self.progress_bar = ttk.Progressbar(progress_frame, mode='indeterminate')
-        self.progress_bar.pack(fill="x")
-
-        # Frame pour la navigation par pages
-        nav_frame = ttk.Frame(self.root)
-        nav_frame.pack(fill="x", padx=10, pady=5)
-
-        self.prev_btn = ttk.Button(nav_frame, text="Previous", command=self.prev_page, state="disabled")
+        # Quatrième ligne - Navigation et barre de progression
+        nav_frame = ttk.Frame(top_frame)
+        nav_frame.pack(fill="x", pady=(0, 5))
+        
+        # Boutons de navigation
+        self.prev_btn = ttk.Button(nav_frame, text="< Previous", command=self.prev_page)
         self.prev_btn.pack(side="left")
+        
+        self.page_label = ttk.Label(nav_frame, text="Page 1 of 1")
+        self.page_label.pack(side="left", padx=(10, 10))
+        
+        self.next_btn = ttk.Button(nav_frame, text="Next >", command=self.next_page)
+        self.next_btn.pack(side="left")
+        
+        # Barre de progression
+        self.progress_bar = ttk.Progressbar(nav_frame, mode='indeterminate')
+        self.progress_bar.pack(side="right", padx=(10, 0))
 
-        self.next_btn = ttk.Button(nav_frame, text="Next", command=self.next_page, state="disabled")
-        self.next_btn.pack(side="left", padx=(10, 0))
-
-        self.page_label = ttk.Label(nav_frame, text="Page 1")
-        self.page_label.pack(side="left", padx=(10, 0))
-
-        # Frame principal avec scrollbar
+        # Frame principal pour les images
         main_frame = ttk.Frame(self.root)
         main_frame.pack(fill="both", expand=True, padx=10, pady=5)
 
-        # Canvas avec scrollbar
-        self.canvas = tk.Canvas(main_frame, bg="white")
-        scrollbar = ttk.Scrollbar(main_frame, orient="vertical", command=self.canvas.yview)
-        self.scrollable_frame = ttk.Frame(self.canvas)
+        # Canvas scrollable pour les images
+        self.canvas = tk.Canvas(main_frame, borderwidth=0)
+        self.scrollbar = ttk.Scrollbar(main_frame, orient="vertical", command=self.canvas.yview)
+        self.canvas.configure(yscrollcommand=self.scrollbar.set)
 
+        self.scrollbar.pack(side="right", fill="y")
+        self.canvas.pack(side="left", fill="both", expand=True)
+
+        # Frame interne pour placer les widgets d'image
+        self.scrollable_frame = ttk.Frame(self.canvas)
         self.scrollable_frame.bind(
             "<Configure>",
             lambda e: self.canvas.configure(scrollregion=self.canvas.bbox("all"))
         )
 
         self.canvas.create_window((0, 0), window=self.scrollable_frame, anchor="nw")
-        self.canvas.configure(yscrollcommand=scrollbar.set)
-
-        self.canvas.pack(side="left", fill="both", expand=True)
-        scrollbar.pack(side="right", fill="y")
-
-        # Bind mouse wheel
-        self.canvas.bind("<MouseWheel>", self._on_mousewheel)
+        
+        # Lier les événements à tous les widgets (y compris les enfants)
+        self.root.bind_all("<MouseWheel>", self._on_mousewheel)
+        self.root.bind_all("<Button-4>", self._on_mousewheel)
+        self.root.bind_all("<Button-5>", self._on_mousewheel)
 
     def _on_mousewheel(self, event):
         """Gérer le défilement avec la molette"""
-        self.canvas.yview_scroll(int(-1*(event.delta/120)), "units")
+        try:
+            if event.delta:
+                # Windows
+                self.canvas.yview_scroll(int(-1*(event.delta/120)), "units")
+            elif event.num == 4:
+                # Linux - scroll up
+                self.canvas.yview_scroll(-1, "units")
+            elif event.num == 5:
+                # Linux - scroll down
+                self.canvas.yview_scroll(1, "units")
+        except Exception as e:
+            print(f"[ERROR] Error in mousewheel: {e}")
 
     def select_directory(self):
         """Sélectionner un nouveau dossier d'images"""
@@ -255,7 +293,9 @@ class image_process:
         def load_thread():
             with self.loading_lock:
                 self.loading = True
-                self.root.after(0, lambda: self.progress_bar.start())
+                # Vérifier que progress_bar existe avant de l'utiliser
+                if hasattr(self, 'progress_bar'):
+                    self.root.after(0, lambda: self.progress_bar.start())
                 
                 try:
                     self.load_images()
@@ -263,7 +303,8 @@ class image_process:
                     print(f"[ERROR] Error loading images: {e}")
                 finally:
                     self.loading = False
-                    self.root.after(0, lambda: self.progress_bar.stop())
+                    if hasattr(self, 'progress_bar'):
+                        self.root.after(0, lambda: self.progress_bar.stop())
 
         threading.Thread(target=load_thread, daemon=True).start()
 
@@ -289,16 +330,22 @@ class image_process:
             
             # Filtrer selon le mode de vue
             if self.view_mode == "new":
-                # Filtrer pour ne montrer que les images non vues
+                # Filtrer pour ne montrer que les images non vues pour cette fonction
                 filtered_files = []
+                print(f"[DEBUG] Filtering {len(all_files)} images for function '{self.title}'")
+                
                 for image_path in all_files:
                     if not self.is_image_viewed(image_path):
                         filtered_files.append(image_path)
+                    else:
+                        print(f"[DEBUG] Excluding viewed image: {os.path.basename(image_path)}")
+                
                 filtered_files_to_use = filtered_files
+                print(f"[DEBUG] After filtering: {len(filtered_files_to_use)} new images")
             else:
                 # Montrer toutes les images
                 filtered_files_to_use = all_files
-            
+    
             # Stocker les fichiers filtrés pour la pagination
             self.all_files = filtered_files_to_use
             
@@ -307,10 +354,12 @@ class image_process:
             end_idx = start_idx + self.page_size
             self.image_files = filtered_files_to_use[start_idx:end_idx]
             
+            total_pages = max(1, ((len(filtered_files_to_use) - 1) // self.page_size) + 1)
+            
             if self.view_mode == "new":
-                print(f"[INFO] Found {len(all_files)} images total, {len(filtered_files_to_use)} new (not viewed), showing {len(self.image_files)} on page {self.page + 1} of {((len(filtered_files_to_use) - 1) // self.page_size) + 1}")
+                print(f"[INFO] Function '{self.title}': {len(all_files)} total, {len(filtered_files_to_use)} new, showing {len(self.image_files)} on page {self.page + 1}/{total_pages}")
             else:
-                print(f"[INFO] Found {len(all_files)} images, showing {len(self.image_files)} on page {self.page + 1} of {((len(filtered_files_to_use) - 1) // self.page_size) + 1}")
+                print(f"[INFO] Function '{self.title}': {len(all_files)} images, showing {len(self.image_files)} on page {self.page + 1}/{total_pages}")
             
             # Afficher les images dans l'interface
             self.root.after(0, self.display_images)
@@ -411,9 +460,9 @@ class image_process:
         """Marquer une image comme vue"""
         try:
             if self.mark_image_viewed(image_path):
-                #messagebox.showinfo("Success", f"Image marked as viewed: {os.path.basename(image_path)}")
-                # Optionnellement, masquer l'image de la vue
-                self.hide_image_widget(image_path)
+                # En mode "new", recharger l'affichage pour masquer l'image
+                if self.view_mode == "new":
+                    self.refresh_images()
         except Exception as e:
             print(f"[ERROR] Error marking image as viewed: {e}")
             messagebox.showerror("Error", f"Failed to mark image as viewed: {e}")
@@ -440,13 +489,11 @@ class image_process:
             messagebox.showerror("Error", f"Failed to move image: {e}")
 
     def hide_image_widget(self, image_path):
-        """Masquer une image de l'interface"""
-        for widget in self.image_widgets:
-            if hasattr(widget, 'image_path') and widget.image_path == image_path:
-                widget.grid_remove()
-                print(f"[INFO] Image hidden: {os.path.basename(image_path)}")
-                return True
-        return False
+        """Masquer une image de l'interface (méthode simplifiée)"""
+        # Cette méthode n'est plus vraiment utilisée car on recharge l'affichage complet
+        # Mais on la garde pour compatibilité
+        print(f"[INFO] Triggering refresh to hide image: {os.path.basename(image_path)}")
+        return True
 
     def open_image(self, image_path):
         """Ouvrir une image dans l'application par défaut"""
@@ -505,14 +552,23 @@ class image_process:
             if result:
                 marked_count = 0
                 for image_path in self.image_files:
-                    if self.mark_image_viewed(image_path):
-                        marked_count += 1
+                    # Marquer sans masquer individuellement pour éviter les conflits
+                    image_path_norm = os.path.normpath(image_path)
+                    conn, cursor = self.get_db_connection()
+                    
+                    cursor.execute(
+                        "INSERT OR IGNORE INTO viewed_images (function_name, image_path) VALUES (?, ?)",
+                        (self.title, image_path_norm)
+                    )
+                    conn.commit()
+                    conn.close()
+                    marked_count += 1
                 
+                print(f"[INFO] {marked_count} images marked as viewed for '{self.title}'")
                 messagebox.showinfo("Success", f"{marked_count} images marked as viewed")
                 
-                # Si en mode "new", recharger pour masquer les images vues
-                if self.view_mode == "new":
-                    self.refresh_images()
+                # TOUJOURS recharger l'affichage après marquage en lot
+                self.refresh_images()
                     
         except Exception as e:
             print(f"[ERROR] Error marking all images as viewed: {e}")
@@ -562,12 +618,77 @@ class image_process:
         except Exception as e:
             print(f"[ERROR] Error updating canvas: {e}")
 
-    def __del__(self):
-        """Nettoyage des ressources"""
+    def show_function_stats(self):
+        """Afficher les statistiques pour cette fonction"""
         try:
-            if hasattr(self, 'watcher_thread') and self.watcher_thread:
-                self.watcher_thread.stop()
-            if hasattr(self, 'conn') and self.conn:
-                self.conn.close()
+            viewed_count = self.get_function_stats()
+            
+            # Compter le total d'images dans le répertoire
+            if os.path.exists(self.current_directory):
+                image_extensions = ('.png', '.jpg', '.jpeg', '.gif', '.bmp', '.tiff', '.webp')
+                total_images = len([f for f in os.listdir(self.current_directory) 
+                                  if f.lower().endswith(image_extensions)])
+            else:
+                total_images = 0
+            
+            new_images = total_images - viewed_count
+            progress_pct = (viewed_count/total_images*100) if total_images > 0 else 0
+            
+            stats_text = f"""Function: {self.title}
+Directory: {self.current_directory}
+
+Total images: {total_images}
+Viewed images: {viewed_count}
+New images: {new_images}
+
+Progress: {progress_pct:.1f}% completed"""
+            
+            messagebox.showinfo("Function Statistics", stats_text)
+            
         except Exception as e:
-            print(f"[ERROR] Error in cleanup: {e}")
+            print(f"[ERROR] Error showing function stats: {e}")
+            messagebox.showerror("Error", f"Failed to get statistics: {e}")
+
+    def get_function_stats(self):
+        """Obtenir les statistiques pour cette fonction"""
+        try:
+            conn, cursor = self.get_db_connection()
+            
+            # Compter les images vues pour cette fonction
+            cursor.execute(
+                "SELECT COUNT(*) FROM viewed_images WHERE function_name = ?",
+                (self.title,)
+            )
+            viewed_count = cursor.fetchone()[0]
+            
+            conn.close()
+            return viewed_count
+        except Exception as e:
+            print(f"[ERROR] Error getting function stats: {e}")
+            return 0
+
+    def clear_function_viewed_images(self):
+        """Effacer toutes les images vues pour cette fonction"""
+        try:
+            result = messagebox.askyesno(
+                "Confirm Clear", 
+                f"Clear all viewed images for function '{self.title}'?\nThis cannot be undone."
+            )
+            
+            if result:
+                conn, cursor = self.get_db_connection()
+                
+                cursor.execute(
+                    "DELETE FROM viewed_images WHERE function_name = ?",
+                    (self.title,)
+                )
+                deleted_count = cursor.rowcount
+                conn.commit()
+                conn.close()
+                
+                messagebox.showinfo("Success", f"Cleared {deleted_count} viewed images for '{self.title}'")
+                self.refresh_images()
+                
+        except Exception as e:
+            print(f"[ERROR] Error clearing function viewed images: {e}")
+            messagebox.showerror("Error", f"Failed to clear viewed images: {e}")
