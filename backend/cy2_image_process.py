@@ -47,7 +47,7 @@ class image_process:
         self.default_directory = config.get('default_directory', '')
         self.cible_directory = config.get('cible_directory', '')
         self.db_path = config.get('db_path', 'image_explorer.db')
-        
+        self.processor_type = config.get('processor_type', 'standard')
         # Variables d'état
         self.current_directory = self.default_directory
         self.image_files = []
@@ -433,12 +433,13 @@ class image_process:
                         viewed_btn = ttk.Button(btn_frame, text="Mark Viewed", 
                                               command=lambda path=image_path: self.mark_action_viewed(path))
                     viewed_btn.pack(side="left", padx=2)
-                    
-                    # Bouton "Move" - toujours actif
-                    move_btn = ttk.Button(btn_frame, text="Move", 
-                                        command=lambda path=image_path: self.mark_action_move(path))
-                    move_btn.pack(side="left", padx=2)
-                    
+
+                    if self.processor_type == "move":
+                        # Bouton "Move" - toujours actif
+                        move_btn = ttk.Button(btn_frame, text="Move",
+                                              command=lambda path=image_path: self.mark_action_move(path))
+                        move_btn.pack(side="left", padx=2)
+
                     # Clic sur l'image pour l'ouvrir
                     img_label.bind("<Button-1>", lambda e, path=image_path: self.open_image(path))
                     
