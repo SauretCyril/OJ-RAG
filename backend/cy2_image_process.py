@@ -106,9 +106,11 @@ class image_process:
                 )
             ''')
             
-            # Créer la table des métadonnées
+            # Supprimer et recréer la table des métadonnées avec tous les champs ComfyUI
+            self.cursor.execute("DROP TABLE IF EXISTS image_metadata")
+            
             self.cursor.execute('''
-                CREATE TABLE IF NOT EXISTS image_metadata (
+                CREATE TABLE image_metadata (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     function_name TEXT NOT NULL,
                     image_path TEXT NOT NULL,
@@ -121,13 +123,23 @@ class image_process:
                     creation_date TIMESTAMP,
                     modified_date TIMESTAMP,
                     exif_data TEXT,
+                    positive_prompt TEXT,
+                    negative_prompt TEXT,
+                    workflow_data TEXT,
+                    model_checkpoint TEXT,
+                    model_vae TEXT,
+                    generation_steps INTEGER,
+                    cfg_scale REAL,
+                    sampler_name TEXT,
+                    scheduler TEXT,
+                    seed INTEGER,
                     extracted_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     UNIQUE(function_name, image_path)
                 )
             ''')
             
             self.conn.commit()
-            print(f"[INFO] Database initialized with function support: {self.db_path}")
+            print(f"[INFO] Database initialized with complete ComfyUI support: {self.db_path}")
         except Exception as e:
             print(f"[ERROR] Database initialization failed: {e}")
 
@@ -196,7 +208,8 @@ class image_process:
         clear_btn.pack(side="right", padx=(0, 5))
 
         # Bouton metadata
-        metadata_btn = ttk.Button(info_frame, text="Extract Metadata", command=self.extract_all_metadata)
+        metadata_btn = ttk.Button(info_frame, text="Extract ComfyUI Data", 
+                         command=self.extract_all_metadata_with_progress)
         metadata_btn.pack(side="right", padx=(0, 5))
 
         # Deuxième ligne - Contrôles principaux
@@ -747,7 +760,7 @@ class image_process:
             creation_date = file_stats.st_ctime
             modified_date = file_stats.st_mtime
             
-            # Hash du fichier pour détecter les doublons
+            # Hash du fichier
             file_hash = self.calculate_file_hash(image_path)
             
             # Métadonnées de l'image avec PIL
@@ -764,6 +777,9 @@ class image_process:
                         for tag, value in exif.items():
                             tag_name = TAGS.get(tag, tag)
                             exif_data[tag_name] = str(value)
+        
+        # Extraire les métadonnées ComfyUI
+            comfyui_metadata = self.extract_comfyui_metadata(image_path)
             
             metadata = {
                 'file_size': file_size,
@@ -774,11 +790,24 @@ class image_process:
                 'file_hash': file_hash,
                 'creation_date': creation_date,
                 'modified_date': modified_date,
-                'exif_data': json.dumps(exif_data) if exif_data else None
+                'exif_data': json.dumps(exif_data) if exif_data else None,
+                'positive_prompt': '',
+                'negative_prompt': '',
+                'workflow_data': '',
+                'model_info': {}
             }
             
-            return metadata
+            # Ajouter les données ComfyUI si trouvées
+            if comfyui_metadata:
+                metadata.update({
+                    'positive_prompt': comfyui_metadata.get('positive_prompt', ''),
+                    'negative_prompt': comfyui_metadata.get('negative_prompt', ''),
+                    'workflow_data': comfyui_metadata.get('workflow_data', ''),
+                    'model_info': comfyui_metadata.get('model_info', {})
+                })
             
+            return metadata
+        
         except Exception as e:
             print(f"[ERROR] Error extracting metadata for {image_path}: {e}")
             return None
@@ -804,23 +833,43 @@ class image_process:
             image_path = os.path.normpath(image_path)
             conn, cursor = self.get_db_connection()
             
+            model_info = metadata.get('model_info', {})
+            
+            # Convertir les valeurs pour éviter les erreurs de type
+            positive_prompt = str(metadata.get('positive_prompt', '')) if metadata.get('positive_prompt') else ''
+            negative_prompt = str(metadata.get('negative_prompt', '')) if metadata.get('negative_prompt') else ''
+            workflow_data = str(metadata.get('workflow_data', '')) if metadata.get('workflow_data') else ''
+            
             cursor.execute('''
                 INSERT OR REPLACE INTO image_metadata 
                 (function_name, image_path, file_size, width, height, format, mode, 
-                 file_hash, creation_date, modified_date, exif_data)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                 file_hash, creation_date, modified_date, exif_data,
+                 positive_prompt, negative_prompt, workflow_data,
+                 model_checkpoint, model_vae, generation_steps, cfg_scale,
+                 sampler_name, scheduler, seed)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ''', (
-                self.title,
-                image_path,
-                metadata['file_size'],
-                metadata['width'],
-                metadata['height'],
-                metadata['format'],
-                metadata['mode'],
+                self.title, 
+                image_path, 
+                metadata['file_size'], 
+                metadata['width'], 
+                metadata['height'], 
+                metadata['format'], 
+                metadata['mode'], 
                 metadata['file_hash'],
-                metadata['creation_date'],
-                metadata['modified_date'],
-                metadata['exif_data']
+                metadata['creation_date'], 
+                metadata['modified_date'], 
+                metadata['exif_data'],
+                positive_prompt,
+                negative_prompt,
+                workflow_data,
+                str(model_info.get('checkpoint', '')) if model_info.get('checkpoint') else '',
+                str(model_info.get('vae', '')) if model_info.get('vae') else '',
+                model_info.get('steps') if model_info.get('steps') is not None else None,
+                model_info.get('cfg') if model_info.get('cfg') is not None else None,
+                str(model_info.get('sampler_name', '')) if model_info.get('sampler_name') else '',
+                str(model_info.get('scheduler', '')) if model_info.get('scheduler') else '',
+                model_info.get('seed') if model_info.get('seed') is not None else None
             ))
             
             conn.commit()
@@ -839,7 +888,10 @@ class image_process:
             
             cursor.execute('''
                 SELECT file_size, width, height, format, mode, file_hash, 
-                       creation_date, modified_date, exif_data, extracted_date
+                       creation_date, modified_date, exif_data, extracted_date,
+                       positive_prompt, negative_prompt, workflow_data,
+                       model_checkpoint, model_vae, generation_steps, cfg_scale,
+                       sampler_name, scheduler, seed
                 FROM image_metadata 
                 WHERE function_name = ? AND image_path = ?
             ''', (self.title, image_path))
@@ -858,10 +910,20 @@ class image_process:
                     'creation_date': result[6],
                     'modified_date': result[7],
                     'exif_data': json.loads(result[8]) if result[8] else None,
-                    'extracted_date': result[9]
+                    'extracted_date': result[9],
+                    'positive_prompt': result[10] or '',
+                    'negative_prompt': result[11] or '',
+                    'workflow_data': result[12] or '',
+                    'model_checkpoint': result[13] or '',
+                    'model_vae': result[14] or '',
+                    'generation_steps': result[15],
+                    'cfg_scale': result[16],
+                    'sampler_name': result[17] or '',
+                    'scheduler': result[18] or '',
+                    'seed': result[19]
                 }
             return None
-            
+        
         except Exception as e:
             print(f"[ERROR] Error getting metadata: {e}")
             return None
@@ -905,7 +967,7 @@ class image_process:
                 if meta:
                     self.store_image_metadata(image_path, meta)
                     metadata = meta
-        
+    
             if metadata:
                 filename = os.path.basename(image_path)
                 
@@ -918,33 +980,55 @@ class image_process:
                 size_mb = metadata['file_size'] / (1024 * 1024)
                 
                 info_text = f"""Image: {filename}
-            
-                Dimensions: {metadata['width']} x {metadata['height']} pixels
-                Format: {metadata['format']}
-                Mode: {metadata['mode']}
-                File Size: {size_mb:.2f} MB
-                Hash: {metadata['file_hash'][:16]}...
 
-                Created: {creation_date}
-                Modified: {modified_date}
+Dimensions: {metadata['width']} x {metadata['height']} pixels
+Format: {metadata['format']} | Mode: {metadata['mode']}
+File Size: {size_mb:.2f} MB
 
-                Function: {self.title}"""
+Created: {creation_date}
+Modified: {modified_date}
+
+Function: {self.title}"""
+
+                # Ajouter les informations ComfyUI si disponibles
+                if metadata.get('positive_prompt'):
+                    info_text += f"\n\n=== COMFYUI GENERATION ===\n"
+                    info_text += f"Positive Prompt:\n{metadata['positive_prompt']}\n"
+                
+                    if metadata.get('negative_prompt'):
+                        info_text += f"\nNegative Prompt:\n{metadata['negative_prompt']}\n"
+                    
+                    if metadata.get('model_checkpoint'):
+                        info_text += f"\nModel: {metadata['model_checkpoint']}"
+                    if metadata.get('generation_steps'):
+                        info_text += f"\nSteps: {metadata['generation_steps']}"
+                    if metadata.get('cfg_scale'):
+                        info_text += f" | CFG: {metadata['cfg_scale']}"
+                    if metadata.get('sampler_name'):
+                        info_text += f"\nSampler: {metadata['sampler_name']}"
+                    if metadata.get('scheduler'):
+                        info_text += f" | Scheduler: {metadata['scheduler']}"
+                    if metadata.get('seed'):
+                        info_text += f"\nSeed: {metadata['seed']}"
 
                 # Ajouter les données EXIF si disponibles
-                if metadata['exif_data']:
-                    exif_data = metadata['exif_data']
-                    if isinstance(exif_data, str):
-                        exif_data = json.loads(exif_data)
-                    
-                    exif_text = "\n\nEXIF Data:\n"
-                    for key, value in list(exif_data.items())[:10]:  # Limiter à 10 entrées
-                        exif_text += f"{key}: {value}\n"
-                    info_text += exif_text
+                if metadata.get('exif_data'):
+                    try:
+                        exif_data = metadata['exif_data']
+                        if isinstance(exif_data, str):
+                            exif_data = json.loads(exif_data)
+                        
+                        exif_text = "\n\n=== EXIF DATA ===\n"
+                        for key, value in list(exif_data.items())[:5]:  # Limiter à 5 entrées
+                            exif_text += f"{key}: {value}\n"
+                        info_text += exif_text
+                    except:
+                        pass
                 
                 messagebox.showinfo("Image Metadata", info_text)
             else:
                 messagebox.showwarning("Warning", "No metadata available for this image")
-                
+            
         except Exception as e:
             print(f"[ERROR] Error showing metadata: {e}")
             messagebox.showerror("Error", f"Failed to get metadata: {e}")
@@ -975,3 +1059,455 @@ class image_process:
         except Exception as e:
             print(f"[ERROR] Error extracting all metadata: {e}")
             messagebox.showerror("Error", f"Failed to extract metadata: {e}")
+
+    def extract_all_metadata_with_progress(self):
+        """Extraire les métadonnées avec barre de progression"""
+        try:
+            # Obtenir toutes les images
+            image_extensions = ('.png', '.jpg', '.jpeg', '.gif', '.bmp', '.tiff', '.webp')
+            all_images = []
+            for file in os.listdir(self.current_directory):
+                if file.lower().endswith(image_extensions):
+                    full_path = os.path.join(self.current_directory, file)
+                    all_images.append(full_path)
+            
+            if not all_images:
+                messagebox.showinfo("Info", "No images found in directory")
+                return
+            
+            # Créer la fenêtre de progression
+            progress_window = tk.Toplevel(self.root)
+            progress_window.title("Extracting Metadata")
+            progress_window.geometry("500x200")
+            progress_window.resizable(False, False)
+            
+            # Centrer la fenêtre
+            progress_window.transient(self.root)
+            progress_window.grab_set()
+            
+            main_frame = ttk.Frame(progress_window, padding=20)
+            main_frame.pack(fill="both", expand=True)
+            
+            title_label = ttk.Label(main_frame, text="Extracting ComfyUI Metadata", font=("Arial", 12, "bold"))
+            title_label.pack(pady=(0, 10))
+            
+            self.progress_var = tk.DoubleVar()
+            self.progress_label = ttk.Label(main_frame, text="Preparing...")
+            self.progress_label.pack(pady=(0, 5))
+            
+            progress_bar = ttk.Progressbar(main_frame, variable=self.progress_var, maximum=100)
+            progress_bar.pack(fill="x", pady=(0, 10))
+            
+            self.status_label = ttk.Label(main_frame, text="")
+            self.status_label.pack()
+            
+            # Bouton d'annulation
+            self.cancel_extraction = False
+            cancel_btn = ttk.Button(main_frame, text="Cancel", 
+                               command=lambda: setattr(self, 'cancel_extraction', True))
+            cancel_btn.pack(pady=(10, 0))
+            
+            # Lancer l'extraction en thread
+            def extraction_thread():
+                results = self.extract_metadata_batch_with_progress(all_images, progress_window)
+                self.root.after(0, lambda: self.show_extraction_results(results, progress_window))
+            
+            threading.Thread(target=extraction_thread, daemon=True).start()
+            
+        except Exception as e:
+            print(f"[ERROR] Error starting metadata extraction: {e}")
+            messagebox.showerror("Error", f"Failed to start extraction: {e}")
+
+    def extract_metadata_batch_with_progress(self, image_paths, progress_window):
+        """Extraire les métadonnées avec mise à jour de la progression"""
+        try:
+            total = len(image_paths)
+            processed = 0
+            skipped = 0
+            errors = 0
+            comfyui_found = 0
+            results = []
+            
+            for i, image_path in enumerate(image_paths):
+                if self.cancel_extraction:
+                    break
+                    
+                try:
+                    filename = os.path.basename(image_path)
+                    
+                    # Mise à jour de l'interface
+                    progress = (i / total) * 100
+                    self.root.after(0, lambda p=progress, f=filename: self.update_progress(p, f"Processing: {f}"))
+                    
+                    # Vérifier si déjà traité
+                    existing_metadata = self.get_image_metadata(image_path)
+                    if existing_metadata and existing_metadata.get('positive_prompt') is not None:
+                        skipped += 1
+                        results.append({
+                            'file': filename,
+                            'status': 'Skipped',
+                            'reason': 'Already processed',
+                            'has_comfyui': bool(existing_metadata.get('positive_prompt'))
+                        })
+                        continue
+                    
+                    # Extraire les métadonnées
+                    metadata = self.extract_image_metadata(image_path)
+                    if metadata:
+                        if self.store_image_metadata(image_path, metadata):
+                            processed += 1
+                            has_comfyui = bool(metadata.get('positive_prompt'))
+                            if has_comfyui:
+                                comfyui_found += 1
+                        
+                            results.append({
+                                'file': filename,
+                                'status': 'Processed',
+                                'width': metadata.get('width'),
+                                'height': metadata.get('height'),
+                                'format': metadata.get('format'),
+                                'file_size': metadata.get('file_size'),
+                                'has_comfyui': has_comfyui,
+                                'positive_prompt': metadata.get('positive_prompt', '')[:100] + '...' if len(metadata.get('positive_prompt', '')) > 100 else metadata.get('positive_prompt', ''),
+                                'model': metadata.get('model_info', {}).get('checkpoint', '')
+                            })
+                        else:
+                            errors += 1
+                            results.append({
+                                'file': filename,
+                                'status': 'Error',
+                                'reason': 'Failed to store'
+                            })
+                    else:
+                        errors += 1
+                        results.append({
+                            'file': filename,
+                            'status': 'Error',
+                            'reason': 'Failed to extract'
+                        })
+                    
+                    # Petit délai pour permettre l'annulation
+                    time.sleep(0.01)
+                    
+                except Exception as e:
+                    errors += 1
+                    results.append({
+                        'file': os.path.basename(image_path),
+                        'status': 'Error',
+                        'reason': str(e)
+                    })
+            
+            # Résumé final
+            summary = {
+                'total': total,
+                'processed': processed,
+                'skipped': skipped,
+                'errors': errors,
+                'comfyui_found': comfyui_found,
+                'cancelled': self.cancel_extraction
+            }
+            
+            return {'summary': summary, 'details': results}
+            
+        except Exception as e:
+            print(f"[ERROR] Error in batch extraction: {e}")
+            return {'summary': {'total': 0, 'processed': 0, 'errors': 1}, 'details': []}
+
+    def update_progress(self, progress, status):
+        """Mettre à jour la barre de progression"""
+        try:
+            self.progress_var.set(progress)
+            self.progress_label.config(text=f"Progress: {progress:.1f}%")
+            self.status_label.config(text=status)
+        except:
+            pass
+
+    def extract_comfyui_metadata(self, image_path):
+        """Extraire les métadonnées spécifiques à ComfyUI"""
+        try:
+            prompts_data = {}
+            
+            with Image.open(image_path) as img:
+                # ComfyUI stocke ses données dans les métadonnées PNG
+                if hasattr(img, 'text') and img.text:
+                    # Chercher les clés spécifiques à ComfyUI
+                    if 'workflow' in img.text:
+                        try:
+                            workflow_data = json.loads(img.text['workflow'])
+                            prompts_data['workflow'] = workflow_data
+                        except json.JSONDecodeError:
+                            pass
+                    
+                    if 'prompt' in img.text:
+                        try:
+                            prompt_data = json.loads(img.text['prompt'])
+                            prompts_data['prompt'] = prompt_data
+                        except json.JSONDecodeError:
+                            pass
+                    
+                    # Extraire les prompts des nœuds
+                    positive_prompt, negative_prompt = self.parse_comfyui_prompts(prompts_data)
+                    model_info = self.extract_model_info(prompts_data)
+                    
+                    if positive_prompt or negative_prompt:
+                        return {
+                            'positive_prompt': positive_prompt,
+                            'negative_prompt': negative_prompt,
+                            'workflow_data': json.dumps(prompts_data) if prompts_data else None,
+                            'model_info': model_info
+                        }
+                
+                # Alternative : chercher dans les métadonnées info
+                if hasattr(img, 'info') and img.info:
+                    for key, value in img.info.items():
+                        if any(keyword in key.lower() for keyword in ['comfy', 'workflow', 'prompt']):
+                            try:
+                                data = json.loads(value) if isinstance(value, str) else value
+                                positive_prompt, negative_prompt = self.parse_comfyui_prompts({'info': data})
+                                if positive_prompt or negative_prompt:
+                                    return {
+                                        'positive_prompt': positive_prompt,
+                                        'negative_prompt': negative_prompt,
+                                        'workflow_data': value if isinstance(value, str) else json.dumps(value),
+                                        'model_info': self.extract_model_info({'info': data})
+                                    }
+                            except:
+                                continue
+            
+            return None
+            
+        except Exception as e:
+            print(f"[ERROR] Error extracting ComfyUI metadata for {image_path}: {e}")
+            return None
+
+    def parse_comfyui_prompts(self, comfyui_data):
+        """Parser les prompts positifs et négatifs depuis les données ComfyUI"""
+        try:
+            positive_prompt = ""
+            negative_prompt = ""
+            
+            for data_key, data_value in comfyui_data.items():
+                if isinstance(data_value, dict):
+                    for node_id, node_data in data_value.items():
+                        if isinstance(node_data, dict) and 'inputs' in node_data:
+                            inputs = node_data['inputs']
+                            class_type = node_data.get('class_type', '').lower()
+                            
+                            # Patterns pour Flux-Schnell
+                            if 'text' in inputs:
+                                text_content = inputs['text']
+                                
+                                if 'positive' in class_type or ('clip' in class_type and 'negative' not in class_type):
+                                    positive_prompt = text_content
+                                elif 'negative' in class_type:
+                                    negative_prompt = text_content
+                                elif not positive_prompt:  # Premier prompt trouvé
+                                    positive_prompt = text_content
+                        
+                            # Autres patterns - MAINTENANT CORRECTEMENT INDENTÉS
+                            if 'positive' in inputs:
+                                positive_prompt = inputs['positive']
+                            if 'negative' in inputs:
+                                negative_prompt = inputs['negative']
+        
+            return positive_prompt, negative_prompt
+        
+        except Exception as e:
+            print(f"[ERROR] Error parsing ComfyUI prompts: {e}")
+            return "", ""
+
+    def extract_model_info(self, comfyui_data):
+        """Extraire les informations du modèle utilisé"""
+        try:
+            model_info = {}
+            
+            for data_key, data_value in comfyui_data.items():
+                if isinstance(data_value, dict):
+                    for node_id, node_data in data_value.items():
+                        if isinstance(node_data, dict):
+                            class_type = node_data.get('class_type', '').lower()
+                            inputs = node_data.get('inputs', {})
+                            
+                            # Modèles
+                            if any(keyword in class_type for keyword in ['checkpoint', 'model', 'flux']):
+                                if 'ckpt_name' in inputs:
+                                    model_info['checkpoint'] = inputs['ckpt_name']
+                                if 'model_name' in inputs:
+                                    model_info['model'] = inputs['model_name']
+                                if 'vae_name' in inputs:
+                                    model_info['vae'] = inputs['vae_name']
+                            
+                            # Paramètres de génération
+                            if any(keyword in class_type for keyword in ['sampler', 'scheduler']):
+                                model_info.update({
+                                    'steps': inputs.get('steps'),
+                                    'cfg': inputs.get('cfg'),
+                                    'sampler_name': inputs.get('sampler_name'),
+                                    'scheduler': inputs.get('scheduler'),
+                                    'seed': inputs.get('seed')
+                                })
+        
+            return model_info
+            
+        except Exception as e:
+            print(f"[ERROR] Error extracting model info: {e}")
+            return {}
+
+    def show_extraction_results(self, results, progress_window):
+        """Afficher les résultats de l'extraction dans un formulaire"""
+        try:
+            progress_window.destroy()
+            
+            summary = results['summary']
+            details = results['details']
+            
+            # Créer la fenêtre de résultats
+            results_window = tk.Toplevel(self.root)
+            results_window.title("ComfyUI Metadata Extraction Results")
+            results_window.geometry("1000x700")
+            results_window.resizable(True, True)
+            
+            main_frame = ttk.Frame(results_window, padding=10)
+            main_frame.pack(fill="both", expand=True)
+            
+            # Titre
+            title_label = ttk.Label(main_frame, text="ComfyUI Metadata Extraction Results", 
+                               font=("Arial", 14, "bold"))
+            title_label.pack(pady=(0, 10))
+            
+            # Résumé
+            summary_frame = ttk.LabelFrame(main_frame, text="Summary", padding=10)
+            summary_frame.pack(fill="x", pady=(0, 10))
+            
+            summary_text = f"""Total images: {summary['total']}
+Successfully processed: {summary['processed']}
+Already processed (skipped): {summary['skipped']}
+Errors: {summary['errors']}
+Images with ComfyUI prompts: {summary['comfyui_found']}
+Success rate: {(summary['processed']/(summary['total']-summary['skipped'])*100):.1f}% (of new images)"""
+
+            if summary.get('cancelled'):
+                summary_text += "\n⚠️ Extraction was cancelled"
+            
+            summary_label = ttk.Label(summary_frame, text=summary_text, justify="left")
+            summary_label.pack()
+            
+            # Liste détaillée
+            list_frame = ttk.LabelFrame(main_frame, text="Detailed Results", padding=10)
+            list_frame.pack(fill="both", expand=True, pady=(0, 10))
+            
+            # Treeview avec scrollbar
+            tree_frame = ttk.Frame(list_frame)
+            tree_frame.pack(fill="both", expand=True)
+            
+            columns = ("File", "Status", "Dimensions", "Format", "ComfyUI", "Prompt Preview", "Model")
+            tree = ttk.Treeview(tree_frame, columns=columns, show="headings", height=15)
+            
+            # Configuration des colonnes
+            tree.heading("File", text="File Name")
+            tree.heading("Status", text="Status")
+            tree.heading("Dimensions", text="Dimensions")
+            tree.heading("Format", text="Format")
+            tree.heading("ComfyUI", text="ComfyUI Data")
+            tree.heading("Prompt Preview", text="Prompt Preview")
+            tree.heading("Model", text="Model")
+            
+            tree.column("File", width=200)
+            tree.column("Status", width=80)
+            tree.column("Dimensions", width=100)
+            tree.column("Format", width=60)
+            tree.column("ComfyUI", width=80)
+            tree.column("Prompt Preview", width=300)
+            tree.column("Model", width=150)
+            
+            # Scrollbars
+            v_scrollbar = ttk.Scrollbar(tree_frame, orient="vertical", command=tree.yview)
+            h_scrollbar = ttk.Scrollbar(tree_frame, orient="horizontal", command=tree.xview)
+            tree.configure(yscrollcommand=v_scrollbar.set, xscrollcommand=h_scrollbar.set)
+            
+            # Placement
+            tree.grid(row=0, column=0, sticky="nsew")
+            v_scrollbar.grid(row=0, column=1, sticky="ns")
+            h_scrollbar.grid(row=1, column=0, sticky="ew")
+            
+            tree_frame.grid_rowconfigure(0, weight=1)
+            tree_frame.grid_columnconfigure(0, weight=1)
+            
+            # Remplir les données
+            for result in details:
+                file_name = result['file']
+                status = result['status']
+                
+                if status == 'Processed':
+                    dimensions = f"{result.get('width', '?')}x{result.get('height', '?')}"
+                    format_type = result.get('format', '?')
+                    comfyui_status = "✓ Yes" if result.get('has_comfyui') else "✗ No"
+                    prompt_preview = result.get('positive_prompt', 'No prompt')
+                    model = result.get('model', 'Unknown')
+                    
+                    tags = ('success',) if result.get('has_comfyui') else ('no_comfyui',)
+                elif status == 'Skipped':
+                    dimensions = "-"
+                    format_type = "-"
+                    comfyui_status = "✓ Yes" if result.get('has_comfyui') else "?"
+                    prompt_preview = result.get('reason', 'Already processed')
+                    model = "-"
+                    tags = ('skipped',)
+                else:  # Error
+                    dimensions = "-"
+                    format_type = "-"
+                    comfyui_status = "✗ Error"
+                    prompt_preview = result.get('reason', 'Unknown error')
+                    model = "-"
+                    tags = ('error',)
+            
+                tree.insert("", "end", values=(file_name, status, dimensions, format_type, 
+                                             comfyui_status, prompt_preview, model), tags=tags)
+            
+            # Configuration des couleurs
+            tree.tag_configure('success', background='#d4edda')
+            tree.tag_configure('no_comfyui', background='#fff3cd')
+            tree.tag_configure('skipped', background='#e2e3e5')
+            tree.tag_configure('error', background='#f8d7da')
+            
+            # Boutons
+            button_frame = ttk.Frame(main_frame)
+            button_frame.pack(fill="x", pady=(10, 0))
+            
+            close_btn = ttk.Button(button_frame, text="Close", command=results_window.destroy)
+            close_btn.pack(side="right", padx=(5, 0))
+            
+            export_btn = ttk.Button(button_frame, text="Export CSV", 
+                                 command=lambda: self.export_extraction_results(details))
+            export_btn.pack(side="right", padx=(5, 0))
+            
+        except Exception as e:
+            print(f"[ERROR] Error showing results: {e}")
+            messagebox.showerror("Error", f"Failed to show results: {e}")
+
+    def export_extraction_results(self, details):
+        """Exporter les résultats vers un fichier CSV"""
+        try:
+            from tkinter import filedialog
+            import csv
+            
+            file_path = filedialog.asksaveasfilename(
+                defaultextension=".csv",
+                filetypes=[("CSV files", "*.csv"), ("All files", "*.*")],
+                title="Save extraction results"
+            )
+            
+            if file_path:
+                with open(file_path, 'w', newline='', encoding='utf-8') as csvfile:
+                    fieldnames = ['file', 'status', 'width', 'height', 'format', 'has_comfyui', 'positive_prompt', 'model']
+                    writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+                    
+                    writer.writeheader()
+                    for result in details:
+                        writer.writerow(result)
+                
+                messagebox.showinfo("Export Complete", f"Results exported to {file_path}")
+        
+        except Exception as e:
+            print(f"[ERROR] Error exporting results: {e}")
+            messagebox.showerror("Error", f"Failed to export results: {e}")
