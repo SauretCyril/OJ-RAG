@@ -286,7 +286,6 @@ class image_process:
             
             # Trier par nom
             all_files.sort()
-            self.all_files = all_files
             
             # Filtrer selon le mode de vue
             if self.view_mode == "new":
@@ -300,15 +299,18 @@ class image_process:
                 # Montrer toutes les images
                 filtered_files_to_use = all_files
             
+            # Stocker les fichiers filtrés pour la pagination
+            self.all_files = filtered_files_to_use
+            
             # Calculer la pagination sur les images filtrées
             start_idx = self.page * self.page_size
             end_idx = start_idx + self.page_size
             self.image_files = filtered_files_to_use[start_idx:end_idx]
             
             if self.view_mode == "new":
-                print(f"[INFO] Found {len(all_files)} images total, {len(filtered_files_to_use)} new (not viewed), showing {len(self.image_files)} on page {self.page + 1}")
+                print(f"[INFO] Found {len(all_files)} images total, {len(filtered_files_to_use)} new (not viewed), showing {len(self.image_files)} on page {self.page + 1} of {((len(filtered_files_to_use) - 1) // self.page_size) + 1}")
             else:
-                print(f"[INFO] Found {len(all_files)} images, showing {len(self.image_files)} on page {self.page + 1}")
+                print(f"[INFO] Found {len(all_files)} images, showing {len(self.image_files)} on page {self.page + 1} of {((len(filtered_files_to_use) - 1) // self.page_size) + 1}")
             
             # Afficher les images dans l'interface
             self.root.after(0, self.display_images)
