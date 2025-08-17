@@ -196,20 +196,8 @@ class images_workflow(image_process):
                 except Exception as e:
                     print(f"Error loading image {image_path}: {str(e)}")
             
-            # Ajouter le bouton "Afficher plus" si besoin
-            if (self.page + 1) * self.page_size < len(self.all_files):
-                if hasattr(self, 'show_more_btn') and self.show_more_btn:
-                    self.show_more_btn.destroy()
-                
-                self.show_more_btn = tk.Button(
-                    self.scrollable_frame,
-                    text="Afficher plus",
-                    command=self.show_more_images,
-                    bg="purple",
-                    fg="white",
-                    font=("Arial", 10, "bold")
-                )
-                self.show_more_btn.grid(row=row+1, column=0, columnspan=max_cols, pady=20)
+            # Utiliser la navigation par pages standard de la classe parent
+            # Pas besoin de bouton "Afficher plus", les boutons Next/Previous gèrent la navigation
             
             # Mettre à jour la région de défilement du canvas
             self.check_and_update_canvas()
