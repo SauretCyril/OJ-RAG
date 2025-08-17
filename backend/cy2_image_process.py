@@ -10,34 +10,34 @@ from watchdog.events import FileSystemEventHandler
 import threading
 import time
 
-class DirectoryWatcher(FileSystemEventHandler):
-    def __init__(self, image_explorer):
-        super().__init__()
-        self.image_explorer = image_explorer
+# class DirectoryWatcher(FileSystemEventHandler):
+#     def __init__(self, image_explorer):
+#         super().__init__()
+#         self.image_explorer = image_explorer
    
-    def on_created(self, event):
-        """Appelé lorsqu'un fichier est créé dans le répertoire surveillé"""
-        if not event.is_directory:
-            # Vérifier si le fichier est une image
-            image_extensions = ('.png', '.jpg', '.jpeg', '.gif', '.bmp', '.tiff', '.webp')
-            if event.src_path.lower().endswith(image_extensions):
-                print(f"[INFO] New image detected: {event.src_path}")
-                self.image_explorer.add_new_image(event.src_path)
+#     def on_created(self, event):
+#         """Appelé lorsqu'un fichier est créé dans le répertoire surveillé"""
+#         if not event.is_directory:
+#             # Vérifier si le fichier est une image
+#             image_extensions = ('.png', '.jpg', '.jpeg', '.gif', '.bmp', '.tiff', '.webp')
+#             if event.src_path.lower().endswith(image_extensions):
+#                 print(f"[INFO] New image detected: {event.src_path}")
+#                 self.image_explorer.add_new_image(event.src_path)
 
-class DirectoryWatcherThread:
-    def __init__(self, image_explorer):
-        self.image_explorer = image_explorer
-        self.observer = Observer()
+# class DirectoryWatcherThread:
+#     def __init__(self, image_explorer):
+#         self.image_explorer = image_explorer
+#         self.observer = Observer()
 
-    def start(self):
-        event_handler = DirectoryWatcher(self.image_explorer)
-        self.observer.schedule(event_handler, self.image_explorer.current_directory, recursive=False)
-        self.observer.start()
-        print(f"[INFO] Started watching directory: {self.image_explorer.current_directory}")
+#     def start(self):
+#         event_handler = DirectoryWatcher(self.image_explorer)
+#         self.observer.schedule(event_handler, self.image_explorer.current_directory, recursive=False)
+#         self.observer.start()
+#         print(f"[INFO] Started watching directory: {self.image_explorer.current_directory}")
 
-    def stop(self):
-        self.observer.stop()
-        self.observer.join()
+#     def stop(self):
+#         self.observer.stop()
+#         self.observer.join()
 
 class image_process:
     def __init__(self, root, config):
@@ -175,6 +175,10 @@ class image_process:
         self.view_mode_btn.pack(side="left", padx=(10, 0))
         self.update_view_mode_button()
 
+        # Bouton pour marquer toutes les images de la page comme vues
+        mark_all_btn = ttk.Button(top_frame, text="Mark All as Viewed", command=self.mark_all_as_viewed)
+        mark_all_btn.pack(side="left", padx=(10, 0))
+
         # Frame pour la barre de progression
         progress_frame = ttk.Frame(self.root)
         progress_frame.pack(fill="x", padx=10, pady=5)
@@ -234,14 +238,14 @@ class image_process:
 
     def setup_directory_watcher(self):
         """Configurer la surveillance du répertoire"""
-        try:
-            if self.watcher_thread:
-                self.watcher_thread.stop()
+        # try:
+        #     # if self.watcher_thread:
+        #     #     self.watcher_thread.stop()
             
-            self.watcher_thread = DirectoryWatcherThread(self)
-            self.watcher_thread.start()
-        except Exception as e:
-            print(f"[ERROR] Could not setup directory watcher: {e}")
+        #     # self.watcher_thread = DirectoryWatcherThread(self)
+        #     # self.watcher_thread.start()
+        # except Exception as e:
+        #     print(f"[ERROR] Could not setup directory watcher: {e}")
 
     def load_images_async(self):
         """Charger les images de manière asynchrone"""
@@ -337,31 +341,49 @@ class image_process:
                     image_frame = ttk.Frame(self.scrollable_frame)
                     image_frame.grid(row=row, column=col, padx=5, pady=5, sticky="nsew")
                     
+                    # Vérifier si l'image a été vue
+                    is_viewed = self.is_image_viewed(image_path)
+                    
                     # Charger et redimensionner l'image
                     with Image.open(image_path) as img:
                         # Redimensionner en gardant les proportions
                         img.thumbnail((200, 200), Image.Resampling.LANCZOS)
+                        
+                        # Si l'image a été vue, réduire l'opacité
+                        if is_viewed:
+                            # Convertir en RGBA pour la transparence
+                            img = img.convert("RGBA")
+                            # Réduire l'opacité à 50%
+                            img.putalpha(128)
+                        
                         photo = ImageTk.PhotoImage(img)
                     
-                    # Label pour l'image
-                    img_label = tk.Label(image_frame, image=photo, cursor="hand2")
+                    # Label pour l'image avec couleur de fond différente si vue
+                    bg_color = "#f0f0f0" if is_viewed else "white"
+                    img_label = tk.Label(image_frame, image=photo, cursor="hand2", bg=bg_color)
                     img_label.image = photo  # Garder une référence
                     img_label.pack()
                     
-                    # Label pour le nom du fichier
-                    name_label = ttk.Label(image_frame, text=os.path.basename(image_path), wraplength=180)
+                    # Label pour le nom du fichier avec indication si vue
+                    filename = os.path.basename(image_path)
+                    if is_viewed:
+                        filename = f"✓ {filename}"  # Ajouter une coche
+                    name_label = ttk.Label(image_frame, text=filename, wraplength=180)
                     name_label.pack()
                     
                     # Boutons d'action
                     btn_frame = ttk.Frame(image_frame)
                     btn_frame.pack(fill="x", pady=2)
                     
-                    # Bouton "Viewed"
-                    viewed_btn = ttk.Button(btn_frame, text="Mark Viewed", 
-                                          command=lambda path=image_path: self.mark_action_viewed(path))
+                    # Bouton "Viewed" - texte différent selon l'état
+                    if is_viewed:
+                        viewed_btn = ttk.Button(btn_frame, text="Viewed ✓", state="disabled")
+                    else:
+                        viewed_btn = ttk.Button(btn_frame, text="Mark Viewed", 
+                                              command=lambda path=image_path: self.mark_action_viewed(path))
                     viewed_btn.pack(side="left", padx=2)
                     
-                    # Bouton "Move"
+                    # Bouton "Move" - toujours actif
                     move_btn = ttk.Button(btn_frame, text="Move", 
                                         command=lambda path=image_path: self.mark_action_move(path))
                     move_btn.pack(side="left", padx=2)
@@ -387,7 +409,7 @@ class image_process:
         """Marquer une image comme vue"""
         try:
             if self.mark_image_viewed(image_path):
-                messagebox.showinfo("Success", f"Image marked as viewed: {os.path.basename(image_path)}")
+                #messagebox.showinfo("Success", f"Image marked as viewed: {os.path.basename(image_path)}")
                 # Optionnellement, masquer l'image de la vue
                 self.hide_image_widget(image_path)
         except Exception as e:
@@ -464,6 +486,35 @@ class image_process:
             self.view_mode_btn.config(text="Show All")
         else:
             self.view_mode_btn.config(text="Hide Viewed")
+
+    def mark_all_as_viewed(self):
+        """Marquer toutes les images de la page actuelle comme vues"""
+        try:
+            if not self.image_files:
+                messagebox.showinfo("Info", "No images to mark on current page")
+                return
+            
+            # Demander confirmation
+            result = messagebox.askyesno(
+                "Confirm Mark All", 
+                f"Mark all {len(self.image_files)} images on this page as viewed?"
+            )
+            
+            if result:
+                marked_count = 0
+                for image_path in self.image_files:
+                    if self.mark_image_viewed(image_path):
+                        marked_count += 1
+                
+                messagebox.showinfo("Success", f"{marked_count} images marked as viewed")
+                
+                # Si en mode "new", recharger pour masquer les images vues
+                if self.view_mode == "new":
+                    self.refresh_images()
+                    
+        except Exception as e:
+            print(f"[ERROR] Error marking all images as viewed: {e}")
+            messagebox.showerror("Error", f"Failed to mark all images as viewed: {e}")
 
     def prev_page(self):
         """Page précédente"""
