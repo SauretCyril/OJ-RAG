@@ -62,6 +62,9 @@ class image_process:
         # Variables pour la gestion des actions
         self.pending_changes = []
         
+        # Mode de filtrage : "all" pour tout voir, "new" pour masquer les vues
+        self.view_mode = "new"  # Par défaut, masquer les images vues
+        
         # Configuration de la fenêtre
         self.root.title(self.title)
         self.root.geometry("1200x800")
@@ -139,6 +142,11 @@ class image_process:
             conn.commit()
             conn.close()
             print(f"[INFO] Image marked as viewed: {os.path.basename(image_path)}")
+            
+            # Si en mode "new", masquer l'image immédiatement
+            if self.view_mode == "new":
+                self.hide_image_widget(image_path)
+            
             return True
         except Exception as e:
             print(f"[ERROR] Error marking image as viewed: {e}")
@@ -161,6 +169,11 @@ class image_process:
         # Bouton de rechargement
         refresh_btn = ttk.Button(top_frame, text="Refresh", command=self.refresh_images)
         refresh_btn.pack(side="left", padx=(10, 0))
+
+        # Bouton pour basculer le mode de vue
+        self.view_mode_btn = ttk.Button(top_frame, text="Show All", command=self.toggle_view_mode)
+        self.view_mode_btn.pack(side="left", padx=(10, 0))
+        self.update_view_mode_button()
 
         # Frame pour la barre de progression
         progress_frame = ttk.Frame(self.root)
@@ -271,12 +284,27 @@ class image_process:
             all_files.sort()
             self.all_files = all_files
             
-            # Calculer la pagination
+            # Filtrer selon le mode de vue
+            if self.view_mode == "new":
+                # Filtrer pour ne montrer que les images non vues
+                filtered_files = []
+                for image_path in all_files:
+                    if not self.is_image_viewed(image_path):
+                        filtered_files.append(image_path)
+                filtered_files_to_use = filtered_files
+            else:
+                # Montrer toutes les images
+                filtered_files_to_use = all_files
+            
+            # Calculer la pagination sur les images filtrées
             start_idx = self.page * self.page_size
             end_idx = start_idx + self.page_size
-            self.image_files = all_files[start_idx:end_idx]
+            self.image_files = filtered_files_to_use[start_idx:end_idx]
             
-            print(f"[INFO] Found {len(all_files)} images, showing {len(self.image_files)} on page {self.page + 1}")
+            if self.view_mode == "new":
+                print(f"[INFO] Found {len(all_files)} images total, {len(filtered_files_to_use)} new (not viewed), showing {len(self.image_files)} on page {self.page + 1}")
+            else:
+                print(f"[INFO] Found {len(all_files)} images, showing {len(self.image_files)} on page {self.page + 1}")
             
             # Afficher les images dans l'interface
             self.root.after(0, self.display_images)
@@ -416,7 +444,26 @@ class image_process:
 
     def refresh_images(self):
         """Actualiser l'affichage des images"""
+        self.page = 0  # Remettre à la première page lors du refresh
         self.load_images_async()
+
+    def toggle_view_mode(self):
+        """Basculer entre montrer toutes les images et masquer les vues"""
+        if self.view_mode == "new":
+            self.view_mode = "all"
+        else:
+            self.view_mode = "new"
+        
+        self.update_view_mode_button()
+        self.refresh_images()
+        print(f"[INFO] View mode changed to: {self.view_mode}")
+
+    def update_view_mode_button(self):
+        """Mettre à jour le texte du bouton selon le mode actuel"""
+        if self.view_mode == "new":
+            self.view_mode_btn.config(text="Show All")
+        else:
+            self.view_mode_btn.config(text="Hide Viewed")
 
     def prev_page(self):
         """Page précédente"""
