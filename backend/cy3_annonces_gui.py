@@ -491,14 +491,14 @@ class AnnouncementGUI:
         self.tree.heading("Statut", text="Statut")
         
         # Largeur des colonnes
-        self.tree.column("ID", width=50, anchor="center")
-        self.tree.column("Dossier", width=100, anchor="center")
-        self.tree.column("URL", width=200)
-        self.tree.column("Contenu", width=250)
-        self.tree.column("Création", width=120, anchor="center")
-        self.tree.column("Modification", width=120, anchor="center")
-        self.tree.column("Statut", width=80, anchor="center")
-        
+        self.tree.column("ID", width=50, minwidth=50, anchor="center")
+        self.tree.column("Dossier", width=100, minwidth=100,anchor="center")
+        self.tree.column("URL", width=0, minwidth=0, stretch=False)
+        self.tree.column("Contenu", width=0, minwidth=0, stretch=False)
+        self.tree.column("Création", width=0, minwidth=0, stretch=False)
+        self.tree.column("Modification", width=0, minwidth=0, stretch=False)
+        self.tree.column("Statut", width=80, minwidth=80,anchor="center", stretch=False)
+
         # Scrollbars
         v_scrollbar = ttk.Scrollbar(tree_container, orient=tk.VERTICAL, command=self.tree.yview)
         h_scrollbar = ttk.Scrollbar(tree_container, orient=tk.HORIZONTAL, command=self.tree.xview)
