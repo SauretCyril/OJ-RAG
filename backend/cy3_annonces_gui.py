@@ -722,15 +722,19 @@ class AnnouncementGUI:
         # Boutons du formulaire
         form_buttons = ttk.Frame(form_frame)
         form_buttons.pack(fill=tk.X, padx=10, pady=10)
-        
+
         ttk.Button(form_buttons, text="Sauvegarder", 
                   command=self.save_announcement).pack(side=tk.LEFT, padx=(0, 5))
-        
+
         ttk.Button(form_buttons, text="Annuler", 
                   command=self.cancel_edit).pack(side=tk.LEFT, padx=5)
-        
+
         ttk.Button(form_buttons, text="Nouveau", 
                   command=self.new_announcement).pack(side=tk.LEFT, padx=5)
+
+        # --- Nouveau bouton pour créer le dossier via l'API ---
+        ttk.Button(form_buttons, text="Créer Dossier Serveur", 
+                  command=self.create_dossier_on_server).pack(side=tk.LEFT, padx=5)
     
     def open_current_url(self):
         """Ouvrir l'URL saisie dans le formulaire"""
@@ -1059,6 +1063,35 @@ class AnnouncementGUI:
             self.dossier_management_frame.pack(fill=tk.X, pady=(0, 10))
             self.toggle_dossier_btn.config(text="Cacher N°")
             self.dossier_frame_visible = True
+
+    def create_dossier_on_server(self):
+        """Créer le dossier sur le serveur via l'API Flask"""
+        num_dossier = self.num_dossier_var.get().strip()
+        url = self.url_var.get().strip()
+        contenu = self.contenu_text.get(1.0, tk.END).strip()
+        sufix = "_annonce_"
+
+        if not num_dossier or not url or not contenu:
+            messagebox.showerror("Erreur", "Veuillez remplir le numéro de dossier, l'URL et le contenu.")
+            return
+
+        params = {
+            "contentNum": num_dossier,
+            "content": contenu,
+            "url": url,
+            "sufix": sufix
+        }
+
+        try:
+            response = requests.get("http://localhost:5000/save_announcement", params=params)
+            response.raise_for_status()
+            data = response.json() if response.headers.get("Content-Type", "").startswith("application/json") else {}
+            if response.status_code == 200:
+                messagebox.showinfo("Succès", f"Dossier créé sur le serveur.\nRéponse : {data if data else response.text}")
+            else:
+                messagebox.showerror("Erreur", f"Erreur serveur : {data if data else response.text}")
+        except Exception as e:
+            messagebox.showerror("Erreur", f"Erreur lors de la création du dossier sur le serveur : {str(e)}")
 
 
 def main():

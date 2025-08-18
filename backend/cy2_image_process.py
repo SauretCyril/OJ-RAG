@@ -551,27 +551,19 @@ class image_process:
             target_path = os.path.join(self.cible_directory, filename)
             
             # Confirmer l'action
-            result = messagebox.askyesno("Confirm Move", f"Move {filename} to {self.cible_directory}?")
+            #result = messagebox.askyesno("Confirm Move", f"Move {filename} to {self.cible_directory}?")
+            result=True
             if result:
                 # Déplacer le fichier
                 shutil.move(image_path, target_path)
                 
-                # Supprimer l'image de la liste des fichiers actuels
-                if image_path in self.image_files:
-                    self.image_files.remove(image_path)
-                if image_path in self.all_files:
-                    self.all_files.remove(image_path)
-                
                 # Supprimer les métadonnées de la base de données
                 self.remove_image_metadata(image_path)
                 
-                # Masquer physiquement le widget de l'image
-                self.hide_image_widget_immediately(image_path)
+                # Recharge la page pour tout réafficher proprement
+                self.refresh_images()
                 
-                # Mettre à jour la navigation après suppression
-                self.update_navigation_buttons()
-                
-                messagebox.showinfo("Success", f"Image moved: {filename}")
+                #messagebox.showinfo("Success", f"Image moved: {filename}")
                 
         except Exception as e:
             print(f"[ERROR] Error moving image: {e}")
