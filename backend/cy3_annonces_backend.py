@@ -57,9 +57,9 @@ class AnnouncementManager:
                 CREATE INDEX IF NOT EXISTS idx_num_dossier ON announcements(num_dossier)
             ''')
             
-            self.cursor.execute('''
-                ALTER TABLE announcements ADD COLUMN nature TEXT DEFAULT '';
-            ''')
+            # self.cursor.execute('''
+            #     ALTER TABLE announcements ADD COLUMN nature TEXT DEFAULT '';
+            # ''')
 
             # Index pour améliorer les performances de recherche
             self.cursor.execute('''
