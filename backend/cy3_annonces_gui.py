@@ -90,13 +90,24 @@ class AnnouncementGUI:
                                font=("Arial", 16, "bold"))
         title_label.pack(pady=(10, 20))
         
-        # Frame pour la gestion des numéros de dossier
-        self.create_dossier_management_frame(main_frame)
-        
-        # Frame pour les contrôles (recherche, filtres, boutons)
+        # Frame pour les contrôles (recherche, filtres, boutons, gestion numéro)
         control_frame = ttk.Frame(main_frame)
         control_frame.pack(fill=tk.X, pady=(0, 10))
         
+        # --- Ligne de boutons toggle côte à côte ---
+        toggle_btns_frame = ttk.Frame(control_frame)
+        toggle_btns_frame.pack(fill=tk.X, pady=(0, 5))
+        self.dossier_frame_visible = True
+        self.toggle_dossier_btn = ttk.Button(toggle_btns_frame, text="Cacher N°", command=self.toggle_dossier_frame)
+        self.toggle_dossier_btn.pack(side=tk.LEFT, padx=(0, 2))
+        self.search_frame_visible = True
+        self.toggle_search_btn = ttk.Button(toggle_btns_frame, text="Cacher 🔍", command=self.toggle_search_frame)
+        self.toggle_search_btn.pack(side=tk.LEFT, padx=(2, 0))
+        # --- Fin ligne de boutons ---
+        
+        # Frame pour la gestion des numéros de dossier
+        self.create_dossier_management_frame(control_frame)
+        # Frame pour la recherche
         self.create_search_frame(control_frame)
         self.create_button_frame(control_frame)
         
@@ -248,11 +259,11 @@ class AnnouncementGUI:
     
     def create_dossier_management_frame(self, parent):
         """Créer la zone de gestion des numéros de dossier"""
-        dossier_frame = ttk.LabelFrame(parent, text="Gestion des Numéros de Dossier")
-        dossier_frame.pack(fill=tk.X, pady=(0, 10))
+        self.dossier_management_frame = ttk.LabelFrame(parent, text="Gestion des Numéros de Dossier")
+        self.dossier_management_frame.pack(fill=tk.X, pady=(0, 10))
         
         # Frame principal pour l'organisation
-        main_row = ttk.Frame(dossier_frame)
+        main_row = ttk.Frame(self.dossier_management_frame)
         main_row.pack(fill=tk.X, padx=10, pady=5)
         
         # Colonne 1: Configuration du préfixe et compteur
@@ -394,11 +405,11 @@ class AnnouncementGUI:
     
     def create_search_frame(self, parent):
         """Créer la zone de recherche et filtres"""
-        search_frame = ttk.LabelFrame(parent, text="Recherche et Filtres")
-        search_frame.pack(fill=tk.X, pady=(0, 10))
+        self.search_frame = ttk.LabelFrame(parent, text="Recherche et Filtres")
+        self.search_frame.pack(fill=tk.X, pady=(0, 10))
         
         # Ligne 1: Recherche
-        search_row = ttk.Frame(search_frame)
+        search_row = ttk.Frame(self.search_frame)
         search_row.pack(fill=tk.X, padx=10, pady=5)
         
         ttk.Label(search_row, text="Rechercher:").pack(side=tk.LEFT)
@@ -416,7 +427,7 @@ class AnnouncementGUI:
         search_field_combo.bind('<<ComboboxSelected>>', self.on_search_change)
         
         # Ligne 2: Filtres
-        filter_row = ttk.Frame(search_frame)
+        filter_row = ttk.Frame(self.search_frame)
         filter_row.pack(fill=tk.X, padx=10, pady=5)
         
         ttk.Label(filter_row, text="Statut:").pack(side=tk.LEFT)
@@ -524,8 +535,8 @@ class AnnouncementGUI:
         # Identifier la région cliquée
         region = self.tree.identify_region(event.x, event.y)
         if region == "cell":
-            # Identifier la colonne cliquée
-            column = self.tree.identify_column(event.x, event.y)
+            # Identifier la colonne cliquée (corrigé)
+            column = self.tree.identify_column(event.x)
             
             # Si c'est la colonne URL (colonne #3)
             if column == "#3":
@@ -1024,6 +1035,28 @@ class AnnouncementGUI:
         except:
             pass
         self.root.destroy()
+    
+    def toggle_search_frame(self):
+        """Afficher ou cacher la zone de recherche"""
+        if self.search_frame_visible:
+            self.search_frame.pack_forget()
+            self.toggle_search_btn.config(text="Afficher 🔍")
+            self.search_frame_visible = False
+        else:
+            self.search_frame.pack(fill=tk.X, pady=(0, 10))
+            self.toggle_search_btn.config(text="Cacher 🔍")
+            self.search_frame_visible = True
+    
+    def toggle_dossier_frame(self):
+        """Afficher ou cacher la zone de gestion du numéro auto"""
+        if self.dossier_frame_visible:
+            self.dossier_management_frame.pack_forget()
+            self.toggle_dossier_btn.config(text="Afficher N°")
+            self.dossier_frame_visible = False
+        else:
+            self.dossier_management_frame.pack(fill=tk.X, pady=(0, 10))
+            self.toggle_dossier_btn.config(text="Cacher N°")
+            self.dossier_frame_visible = True
 
 
 def main():
