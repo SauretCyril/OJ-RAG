@@ -472,32 +472,30 @@ class AnnouncementGUI:
         table_frame = ttk.LabelFrame(parent, text="Liste des Annonces")
         table_frame.pack(fill=tk.BOTH, expand=True, padx=(0, 5))
         
-        # Créer le Treeview avec scrollbars
         tree_container = ttk.Frame(table_frame)
         tree_container.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
         
-        # Colonnes du tableau (complètes)
-        columns = ("ID", "Dossier", "URL", "Contenu", "Création", "Modification", "Statut")
-        
+        # Ajout de la colonne "Nature"
+        columns = ("ID", "Dossier", "Nature", "URL", "Contenu", "Création", "Modification", "Statut")
         self.tree = ttk.Treeview(tree_container, columns=columns, show="headings", height=15)
         
-        # Configuration des colonnes
         self.tree.heading("ID", text="ID")
         self.tree.heading("Dossier", text="N° Dossier")
+        self.tree.heading("Nature", text="Nature")
         self.tree.heading("URL", text="URL (Clic pour ouvrir)")
         self.tree.heading("Contenu", text="Contenu")
         self.tree.heading("Création", text="Créé le")
         self.tree.heading("Modification", text="Modifié le")
         self.tree.heading("Statut", text="Statut")
         
-        # Largeur des colonnes
-        self.tree.column("ID", width=50, minwidth=50, anchor="center")
-        self.tree.column("Dossier", width=100, minwidth=100,anchor="center")
+        self.tree.column("ID", width=50, anchor="center")
+        self.tree.column("Dossier", width=100, anchor="center")
+        self.tree.column("Nature", width=100, anchor="center")
         self.tree.column("URL", width=0, minwidth=0, stretch=False)
         self.tree.column("Contenu", width=0, minwidth=0, stretch=False)
         self.tree.column("Création", width=0, minwidth=0, stretch=False)
         self.tree.column("Modification", width=0, minwidth=0, stretch=False)
-        self.tree.column("Statut", width=80, minwidth=80,anchor="center", stretch=False)
+        self.tree.column("Statut", width=80, anchor="center", stretch=False)
 
         # Scrollbars
         v_scrollbar = ttk.Scrollbar(tree_container, orient=tk.VERTICAL, command=self.tree.yview)
@@ -568,24 +566,23 @@ class AnnouncementGUI:
         if selection:
             item = self.tree.item(selection[0])
             announcement_id = item['values'][0]
-            
             try:
                 announcement = self.manager.get_announcement_by_id(announcement_id)
                 if announcement:
-                    url = announcement[2]
+                    url = announcement.get("url", "")
                     self.root.clipboard_clear()
                     self.root.clipboard_append(url)
-                    self.root.update()  # Maintenant la sélection existe
+                    self.root.update()
                     messagebox.showinfo("Info", f"URL copiée dans le presse-papiers:\n{url}")
             except Exception as e:
                 messagebox.showerror("Erreur", f"Erreur lors de la copie: {str(e)}")
-    
+
     def open_url_by_id(self, announcement_id):
         """Ouvrir l'URL d'une annonce par son ID"""
         try:
             announcement = self.manager.get_announcement_by_id(announcement_id)
             if announcement:
-                url = announcement[2]
+                url = announcement.get("url", "")
                 self.open_url(url)
         except Exception as e:
             messagebox.showerror("Erreur", f"Erreur lors de l'ouverture de l'URL: {str(e)}")
@@ -667,6 +664,7 @@ class AnnouncementGUI:
         self.url_var = tk.StringVar()
         self.contenu_var = tk.StringVar()
         self.statut_var = tk.StringVar(value="actif")
+        self.nature_var = tk.StringVar()
         
         # Frame pour les champs
         fields_frame = ttk.Frame(form_frame)
@@ -697,17 +695,25 @@ class AnnouncementGUI:
         ttk.Button(url_row, text="Ouvrir", width=8,
                   command=self.open_current_url).pack(side=tk.LEFT, padx=2)
         
+        # Champ Nature
+        nature_row = ttk.Frame(fields_frame)
+        nature_row.grid(row=2, column=0, columnspan=2, sticky="ew", pady=5)
+        
+        ttk.Label(nature_row, text="Nature:").pack(side=tk.LEFT)
+        nature_entry = ttk.Entry(nature_row, textvariable=self.nature_var, width=25)
+        nature_entry.pack(side=tk.LEFT, padx=(10, 5), fill=tk.X, expand=True)
+        
         # Champ Contenu (ScrolledText)
-        ttk.Label(fields_frame, text="Contenu:").grid(row=2, column=0, sticky="nw", pady=5)
+        ttk.Label(fields_frame, text="Contenu:").grid(row=3, column=0, sticky="nw", pady=5)
         self.contenu_text = ScrolledText(fields_frame, width=30, height=10, wrap=tk.WORD)
-        self.contenu_text.grid(row=2, column=1, sticky="nsew", padx=(10, 0), pady=5)
+        self.contenu_text.grid(row=3, column=1, sticky="nsew", padx=(10, 0), pady=5)
         
         # Champ Statut
-        ttk.Label(fields_frame, text="Statut:").grid(row=3, column=0, sticky="w", pady=5)
+        ttk.Label(fields_frame, text="Statut:").grid(row=4, column=0, sticky="w", pady=5)
         statut_combo = ttk.Combobox(fields_frame, textvariable=self.statut_var,
                                    values=["actif", "inactif", "archive"],
                                    state="readonly", width=27)
-        statut_combo.grid(row=3, column=1, sticky="ew", padx=(10, 0), pady=5)
+        statut_combo.grid(row=4, column=1, sticky="ew", padx=(10, 0), pady=5)
         
         # Configuration de la grille
         fields_frame.grid_columnconfigure(1, weight=1)
@@ -749,7 +755,7 @@ class AnnouncementGUI:
         # Effacer le tableau
         for item in self.tree.get_children():
             self.tree.delete(item)
-        
+    
         # Récupérer les annonces selon les filtres
         try:
             search_term = self.search_var.get().strip()
@@ -759,35 +765,32 @@ class AnnouncementGUI:
             if search_term:
                 announcements = self.manager.search_announcements(search_term, search_field)
                 if status_filter != "all":
-                    announcements = [a for a in announcements if a[6] == status_filter]
+                    announcements = [a for a in announcements if a.get("statut", "") == status_filter]
             else:
                 status = None if status_filter == "all" else status_filter
                 announcements = self.manager.get_all_announcements(status)
             
             # Remplir le tableau
             for announcement in announcements:
-                # Formater les dates
-                date_creation = self.format_date(announcement[4])
-                date_modification = self.format_date(announcement[5])
-                
-                # Tronquer le contenu pour l'affichage
-                contenu_display = announcement[3][:50] + "..." if len(announcement[3]) > 50 else announcement[3]
-                
+                date_creation = self.format_date(announcement.get("date_creation", ""))
+                date_modification = self.format_date(announcement.get("date_modification", ""))
+                contenu = announcement.get("contenu", "")
+                contenu_display = contenu[:50] + "..." if len(contenu) > 50 else contenu
                 values = (
-                    announcement[0],  # ID
-                    announcement[1],  # num_dossier
-                    announcement[2],  # url
-                    contenu_display,  # contenu (tronqué)
-                    date_creation,    # date_creation
-                    date_modification, # date_modification
-                    announcement[6]   # statut
+                    announcement.get("id", ""),
+                    announcement.get("num_dossier", ""),
+                    announcement.get("nature", ""),
+                    announcement.get("url", ""),
+                    contenu_display,
+                    date_creation,
+                    date_modification,
+                    announcement.get("statut", "")
                 )
-                
                 self.tree.insert("", tk.END, values=values)
-        
+    
         except Exception as e:
             messagebox.showerror("Erreur", f"Erreur lors du rafraîchissement: {str(e)}")
-        
+    
         self.update_statistics()
     
     def format_date(self, date_str):
@@ -819,16 +822,12 @@ class AnnouncementGUI:
             announcement = self.manager.get_announcement_by_id(announcement_id)
             if announcement:
                 self.current_announcement_id = announcement_id
-                
-                self.num_dossier_var.set(announcement[1])
-                self.url_var.set(announcement[2])
-                
-                # Contenu dans ScrolledText
+                self.num_dossier_var.set(announcement.get("num_dossier", ""))
+                self.url_var.set(announcement.get("url", ""))
+                self.nature_var.set(announcement.get("nature", ""))
                 self.contenu_text.delete(1.0, tk.END)
-                self.contenu_text.insert(1.0, announcement[3])
-                
-                self.statut_var.set(announcement[6])
-        
+                self.contenu_text.insert(1.0, announcement.get("contenu", ""))
+                self.statut_var.set(announcement.get("statut", ""))
         except Exception as e:
             messagebox.showerror("Erreur", f"Erreur lors du chargement: {str(e)}")
     
@@ -841,6 +840,7 @@ class AnnouncementGUI:
         """Vider le formulaire"""
         self.num_dossier_var.set("")
         self.url_var.set("")
+        self.nature_var.set("")
         self.contenu_text.delete(1.0, tk.END)
         self.statut_var.set("actif")
     
@@ -851,22 +851,22 @@ class AnnouncementGUI:
         url = self.url_var.get().strip()
         contenu = self.contenu_text.get(1.0, tk.END).strip()
         statut = self.statut_var.get()
+        nature = self.nature_var.get().strip()
         
         # Validation
         if not all([num_dossier, url, contenu]):
             messagebox.showerror("Erreur", "Tous les champs sont obligatoires.")
             return
-        
         try:
             if self.current_announcement_id:
                 # Modification
                 success = self.manager.update_announcement(
-                    self.current_announcement_id, num_dossier, url, contenu, statut
+                    self.current_announcement_id, num_dossier, url, contenu, nature, statut
                 )
                 message = "Annonce modifiée avec succès"
             else:
                 # Nouvelle annonce
-                success = self.manager.add_announcement(num_dossier, url, contenu, statut)
+                success = self.manager.add_announcement(num_dossier, url, contenu, nature, statut)
                 message = "Nouvelle annonce ajoutée avec succès"
             
             if success:
@@ -926,16 +926,17 @@ class AnnouncementGUI:
         try:
             original = self.manager.get_announcement_by_id(announcement_id)
             if original:
-                # Créer une copie avec le prochain numéro automatique
                 new_num_dossier = self.get_next_dossier_number()
                 success = self.manager.add_announcement(
-                    new_num_dossier, original[2], original[3], original[6]
+                    new_num_dossier,
+                    original.get("url", ""),
+                    original.get("contenu", ""),
+                    original.get("nature", ""),
+                    original.get("statut", "")
                 )
-                
                 if success:
                     messagebox.showinfo("Succès", f"Annonce dupliquée avec le numéro {new_num_dossier}.")
                     self.refresh_table()
-        
         except Exception as e:
             messagebox.showerror("Erreur", f"Erreur lors de la duplication: {str(e)}")
     
@@ -1001,30 +1002,31 @@ class AnnouncementGUI:
         """Exporter les données vers un fichier CSV"""
         try:
             import csv
-
-            
             filename = filedialog.asksaveasfilename(
                 defaultextension=".csv",
                 filetypes=[("CSV files", "*.csv"), ("All files", "*.*")],
                 title="Exporter les annonces"
             )
-            
             if filename:
                 announcements = self.manager.get_all_announcements()
-                
                 with open(filename, 'w', newline='', encoding='utf-8') as csvfile:
                     writer = csv.writer(csvfile, delimiter=';')
-                    
                     # En-têtes
-                    writer.writerow(['ID', 'Numéro Dossier', 'URL', 'Contenu', 
-                                   'Date Création', 'Date Modification', 'Statut'])
-                    
+                    writer.writerow(['ID', 'Numéro Dossier', 'Nature', 'URL', 'Contenu', 
+                                     'Date Création', 'Date Modification', 'Statut'])
                     # Données
-                    for announcement in announcements:
-                        writer.writerow(announcement)
-                
+                    for a in announcements:
+                        writer.writerow([
+                            a.get("id", ""),
+                            a.get("num_dossier", ""),
+                            a.get("nature", ""),
+                            a.get("url", ""),
+                            a.get("contenu", ""),
+                            a.get("date_creation", ""),
+                            a.get("date_modification", ""),
+                            a.get("statut", "")
+                        ])
                 messagebox.showinfo("Succès", f"Données exportées vers {filename}")
-        
         except Exception as e:
             messagebox.showerror("Erreur", f"Erreur lors de l'export: {str(e)}")
     

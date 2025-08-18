@@ -45,6 +45,7 @@ class AnnouncementManager:
                     num_dossier TEXT NOT NULL,
                     url TEXT NOT NULL,
                     contenu TEXT NOT NULL,
+                    nature TEXT DEFAULT '',
                     date_creation TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     date_modification TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     statut TEXT DEFAULT 'actif' CHECK (statut IN ('actif', 'inactif', 'archive')),
@@ -52,6 +53,14 @@ class AnnouncementManager:
                 )
             ''')
             
+            self.cursor.execute('''
+                CREATE INDEX IF NOT EXISTS idx_num_dossier ON announcements(num_dossier)
+            ''')
+            
+            self.cursor.execute('''
+                ALTER TABLE announcements ADD COLUMN nature TEXT DEFAULT '';
+            ''')
+
             # Index pour améliorer les performances de recherche
             self.cursor.execute('''
                 CREATE INDEX IF NOT EXISTS idx_num_dossier ON announcements(num_dossier)
@@ -72,7 +81,7 @@ class AnnouncementManager:
             messagebox.showerror("Erreur Base de Données", f"Impossible de créer la table: {str(e)}")
             raise
     
-    def add_announcement(self, num_dossier: str, url: str, contenu: str, statut: str = 'actif') -> Optional[int]:
+    def add_announcement(self, num_dossier: str, url: str, contenu: str, nature: str = '', statut: str = 'actif') -> Optional[int]:
         """
         Ajouter une nouvelle annonce
         
@@ -80,6 +89,7 @@ class AnnouncementManager:
             num_dossier (str): Numéro de dossier
             url (str): URL de l'annonce
             contenu (str): Contenu de l'annonce
+            nature (str): Nature de l'annonce
             statut (str): Statut de l'annonce ('actif', 'inactif', 'archive')
             
         Returns:
@@ -87,9 +97,9 @@ class AnnouncementManager:
         """
         try:
             self.cursor.execute('''
-                INSERT INTO announcements (num_dossier, url, contenu, statut)
-                VALUES (?, ?, ?, ?)
-            ''', (num_dossier.strip(), url.strip(), contenu.strip(), statut))
+                INSERT INTO announcements (num_dossier, url, contenu, nature, statut)
+                VALUES (?, ?, ?, ?, ?)
+            ''', (num_dossier.strip(), url.strip(), contenu.strip(), nature.strip(), statut))
             
             self.conn.commit()
             return self.cursor.lastrowid
@@ -102,24 +112,19 @@ class AnnouncementManager:
             messagebox.showerror("Erreur Base de Données", f"Impossible d'ajouter l'annonce: {str(e)}")
             return None
     
-    def get_announcement_by_id(self, announcement_id: int) -> Optional[Tuple]:
+    def get_announcement_by_id(self, announcement_id: int) -> Optional[dict]:
         """
-        Récupérer une annonce par son ID
-        
-        Args:
-            announcement_id (int): ID de l'annonce
-            
-        Returns:
-            tuple: (id, num_dossier, url, contenu, date_creation, date_modification, statut) ou None
+        Récupérer une annonce par son ID, retourne un dict {colonne: valeur}
         """
         try:
-            self.cursor.execute('''
-                SELECT id, num_dossier, url, contenu, date_creation, date_modification, statut
-                FROM announcements WHERE id = ?
+            columns = self.get_columns()
+            self.cursor.execute(f'''
+                SELECT * FROM announcements WHERE id = ?
             ''', (announcement_id,))
-            
-            return self.cursor.fetchone()
-            
+            row = self.cursor.fetchone()
+            if row:
+                return dict(zip(columns, row))
+            return None
         except sqlite3.Error as e:
             print(f"Erreur lors de la récupération de l'annonce: {str(e)}")
             messagebox.showerror("Erreur Base de Données", f"Impossible de récupérer l'annonce: {str(e)}")
@@ -137,7 +142,7 @@ class AnnouncementManager:
         """
         try:
             self.cursor.execute('''
-                SELECT id, num_dossier, url, contenu, date_creation, date_modification, statut
+                SELECT id, num_dossier, url, contenu, nature, date_creation, date_modification, statut
                 FROM announcements WHERE num_dossier = ?
                 ORDER BY date_creation DESC
             ''', (num_dossier,))
@@ -149,38 +154,30 @@ class AnnouncementManager:
             messagebox.showerror("Erreur Base de Données", f"Impossible de récupérer les annonces: {str(e)}")
             return []
     
-    def get_all_announcements(self, statut: Optional[str] = None) -> List[Tuple]:
+    def get_all_announcements(self, statut: Optional[str] = None) -> list:
         """
-        Récupérer toutes les annonces
-        
-        Args:
-            statut (str, optional): Filtrer par statut ('actif', 'inactif', 'archive')
-            
-        Returns:
-            list: Liste de toutes les annonces
+        Récupérer toutes les annonces sous forme de liste de dicts
         """
         try:
+            columns = self.get_columns()
             if statut:
-                self.cursor.execute('''
-                    SELECT id, num_dossier, url, contenu, date_creation, date_modification, statut
-                    FROM announcements WHERE statut = ?
+                self.cursor.execute(f'''
+                    SELECT * FROM announcements WHERE statut = ?
                     ORDER BY date_creation DESC
                 ''', (statut,))
             else:
-                self.cursor.execute('''
-                    SELECT id, num_dossier, url, contenu, date_creation, date_modification, statut
-                    FROM announcements
+                self.cursor.execute(f'''
+                    SELECT * FROM announcements
                     ORDER BY date_creation DESC
                 ''')
-            
-            return self.cursor.fetchall()
-            
+            rows = self.cursor.fetchall()
+            return [dict(zip(columns, row)) for row in rows]
         except sqlite3.Error as e:
             print(f"Erreur lors de la récupération des annonces: {str(e)}")
             messagebox.showerror("Erreur Base de Données", f"Impossible de récupérer les annonces: {str(e)}")
             return []
     
-    def update_announcement(self, announcement_id: int, num_dossier: str, url: str, contenu: str, statut: str = 'actif') -> bool:
+    def update_announcement(self, announcement_id: int, num_dossier: str, url: str, contenu: str, nature: str = '', statut: str = 'actif') -> bool:
         """
         Mettre à jour une annonce existante
         
@@ -197,10 +194,10 @@ class AnnouncementManager:
         try:
             self.cursor.execute('''
                 UPDATE announcements SET
-                    num_dossier = ?, url = ?, contenu = ?, statut = ?,
+                    num_dossier = ?, url = ?, contenu = ?, nature = ?, statut = ?,
                     date_modification = CURRENT_TIMESTAMP
                 WHERE id = ?
-            ''', (num_dossier.strip(), url.strip(), contenu.strip(), statut, announcement_id))
+            ''', (num_dossier.strip(), url.strip(), contenu.strip(), nature.strip(), statut, announcement_id))
             
             self.conn.commit()
             return self.cursor.rowcount > 0
@@ -268,14 +265,21 @@ class AnnouncementManager:
                     ORDER BY date_creation DESC
                 '''
                 self.cursor.execute(query, (search_term,))
-            else:  # search_in == 'all'
+            elif search_in == 'nature':
                 query = '''
-                    SELECT id, num_dossier, url, contenu, date_creation, date_modification, statut
-                    FROM announcements 
-                    WHERE num_dossier LIKE ? OR url LIKE ? OR contenu LIKE ?
+                    SELECT id, num_dossier, url, contenu, nature, date_creation, date_modification, statut
+                    FROM announcements WHERE nature LIKE ?
                     ORDER BY date_creation DESC
                 '''
-                self.cursor.execute(query, (search_term, search_term, search_term))
+                self.cursor.execute(query, (search_term,))
+            else:  # search_in == 'all'
+                query = '''
+                    SELECT id, num_dossier, url, contenu, nature, date_creation, date_modification, statut
+                    FROM announcements 
+                    WHERE num_dossier LIKE ? OR url LIKE ? OR contenu LIKE ? OR nature LIKE ?
+                    ORDER BY date_creation DESC
+                '''
+                self.cursor.execute(query, (search_term, search_term, search_term, search_term))
             
             return self.cursor.fetchall()
             
@@ -322,6 +326,15 @@ class AnnouncementManager:
     def __del__(self):
         """Destructeur pour fermer automatiquement la connexion"""
         self.close()
+
+    def get_columns(self) -> list:
+        """Retourne la liste des noms de colonnes de la table announcements"""
+        try:
+            self.cursor.execute("PRAGMA table_info(announcements)")
+            return [row[1] for row in self.cursor.fetchall()]
+        except Exception as e:
+            print(f"Erreur lors de la récupération des colonnes: {str(e)}")
+            return []
 
 
 # Exemple d'utilisation
