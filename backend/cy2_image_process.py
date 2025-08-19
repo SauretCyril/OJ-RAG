@@ -322,25 +322,21 @@ class image_process:
         #     print(f"[ERROR] Could not setup directory watcher: {e}")
 
     def load_images_async(self):
-        """Charger les images de manière asynchrone"""
+        """Charger les images de manière asynchrone avec une fenêtre modale"""
         if self.loading:
             return
-        
+
         def load_thread():
             with self.loading_lock:
                 self.loading = True
-                # Vérifier que progress_bar existe avant de l'utiliser
-                if hasattr(self, 'progress_bar'):
-                    self.root.after(0, lambda: self.progress_bar.start())
-                
+                self.root.after(0, self.show_loading_modal)
                 try:
                     self.load_images()
                 except Exception as e:
                     print(f"[ERROR] Error loading images: {e}")
                 finally:
                     self.loading = False
-                    if hasattr(self, 'progress_bar'):
-                        self.root.after(0, lambda: self.progress_bar.stop())
+                    self.root.after(0, self.close_loading_modal)
 
         threading.Thread(target=load_thread, daemon=True).start()
 
@@ -476,14 +472,14 @@ class image_process:
                     # Ajouter les informations de métadonnées si disponibles
                     if metadata:
                         info_text = f"{filename}\n{metadata['width']}x{metadata['height']} - {metadata['format']}"
-                        if metadata['file_size']:
-                            size_mb = metadata['file_size'] / (1024 * 1024)
-                            info_text += f"\n{size_mb:.1f} MB"
+                        # if metadata['file_size']:
+                        #     size_mb = metadata['file_size'] / (1024 * 1024)
+                        #     info_text += f"\n{size_mb:.1f} MB"
                     
-                        # Ajouter un aperçu du prompt si disponible
-                        if metadata.get('positive_prompt'):
-                            prompt_preview = metadata['positive_prompt'][:30] + "..." if len(metadata['positive_prompt']) > 30 else metadata['positive_prompt']
-                            info_text += f"\n📝 {prompt_preview}"
+                        # # Ajouter un aperçu du prompt si disponible
+                        # if metadata.get('positive_prompt'):
+                        #     prompt_preview = metadata['positive_prompt'][:30] + "..." if len(metadata['positive_prompt']) > 30 else metadata['positive_prompt']
+                        #     info_text += f"\n📝 {prompt_preview}"
                     else:
                         info_text = filename
                     
@@ -569,41 +565,41 @@ class image_process:
             print(f"[ERROR] Error moving image: {e}")
             messagebox.showerror("Error", f"Failed to move image: {e}")
 
-    def hide_image_widget_immediately(self, image_path):
-        """Masquer immédiatement le widget d'une image spécifique"""
-        try:
-            for widget in self.image_widgets[:]:  # Copie de la liste pour éviter les modifications pendant l'itération
-                if hasattr(widget, 'image_path') and widget.image_path == image_path:
-                    # Détruire le widget
-                    widget.destroy()
-                    # Retirer de la liste des widgets
-                    self.image_widgets.remove(widget)
-                    print(f"[INFO] Image widget removed: {os.path.basename(image_path)}")
+    # def hide_image_widget_immediately(self, image_path):
+    #     """Masquer immédiatement le widget d'une image spécifique"""
+    #     try:
+    #         for widget in self.image_widgets[:]:  # Copie de la liste pour éviter les modifications pendant l'itération
+    #             if hasattr(widget, 'image_path') and widget.image_path == image_path:
+    #                 # Détruire le widget
+    #                 widget.destroy()
+    #                 # Retirer de la liste des widgets
+    #                 self.image_widgets.remove(widget)
+    #                 print(f"[INFO] Image widget removed: {os.path.basename(image_path)}")
                     
-                    # Réorganiser les widgets restants
-                    self.reorganize_image_grid()
-                    break
+    #                 # Réorganiser les widgets restants
+    #                 self.reorganize_image_grid()
+    #                 break
                     
-        except Exception as e:
-            print(f"[ERROR] Error hiding image widget: {e}")
+    #     except Exception as e:
+    #         print(f"[ERROR] Error hiding image widget: {e}")
 
-    def reorganize_image_grid(self):
-        """Réorganiser la grille d'images après suppression d'un élément"""
-        try:
-            cols = 4  # Nombre de colonnes
+    # def reorganize_image_grid(self):
+    #     """Réorganiser la grille d'images après suppression d'un élément"""
+    #     try:
+    #         cols = 4  # Nombre de colonnes
             
-            # Repositionner tous les widgets restants
-            for idx, widget in enumerate(self.image_widgets):
-                if widget.winfo_exists():  # Vérifier que le widget existe encore
-                    row = idx // cols
-                    col = idx % cols
-                    widget.grid(row=row, column=col, padx=5, pady=5, sticky="nsew")
+    #         # Repositionner tous les widgets restants
+    #         for idx, widget in enumerate(self.image_widgets):
+    #             if widget.winfo_exists():  # Vérifier que le widget existe encore
+    #                 row = idx // cols
+    #                 col = idx % cols
+    #                 widget.grid(row=row, column=col, padx=5, pady=5, sticky="nsew")
             
-            # Mettre à jour la région de défilement
-            self.root.after(10, self.check_and_update_canvas)
+    #         # Mettre à jour la région de défilement
+    #         self.root.after(10, self.check_and_update_canvas)
             
-        except Exception as e:
-            print(f"[ERROR] Error reorganizing grid: {e}")
+    #     except Exception as e:
+    #         print(f"[ERROR] Error reorganizing grid: {e}")
 
     def remove_image_metadata(self, image_path):
         """Supprimer les métadonnées d'une image de la base de données"""
@@ -904,7 +900,7 @@ Progress: {(viewed_count/total_count*100):.1f}% completed"""
             
             for data_key, data_value in comfyui_data.items():
                 if isinstance(data_value, dict):
-                    for node_id, node_data in data_value.items():
+                    for node_id, node_data in data_value.items():  # <-- Correction ici
                         if isinstance(node_data, dict) and 'inputs' in node_data:
                             inputs = node_data['inputs']
                             class_type = node_data.get('class_type', '').lower()
@@ -939,7 +935,7 @@ Progress: {(viewed_count/total_count*100):.1f}% completed"""
             
             for data_key, data_value in comfyui_data.items():
                 if isinstance(data_value, dict):
-                    for node_id, node_data in data_value.items():
+                    for node_id, node_data in data_value.items():  # <-- Correction ici
                         if isinstance(node_data, dict):
                             class_type = node_data.get('class_type', '').lower()
                             inputs = node_data.get('inputs', {})
@@ -1469,6 +1465,33 @@ Success rate: {success_rate:.1f}% (of new images)"""
         except Exception as e:
             print(f"[ERROR] Error copying to clipboard: {e}")
             messagebox.showerror("Error", "Failed to copy to clipboard")
+
+    def show_loading_modal(self, message="Chargement des images..."):
+        """Affiche une fenêtre modale avec une barre de progression indéterminée"""
+        self.loading_modal = tk.Toplevel(self.root)
+        self.loading_modal.title("Chargement")
+        self.loading_modal.geometry("350x120")
+        self.loading_modal.resizable(False, False)
+        self.loading_modal.transient(self.root)
+        self.loading_modal.grab_set()
+        self.loading_modal.protocol("WM_DELETE_WINDOW", lambda: None)  # Désactive la fermeture
+
+        frame = ttk.Frame(self.loading_modal, padding=20)
+        frame.pack(fill="both", expand=True)
+
+        label = ttk.Label(frame, text=message, font=("Arial", 12))
+        label.pack(pady=(0, 10))
+
+        self.loading_modal_bar = ttk.Progressbar(frame, mode='indeterminate', length=300)
+        self.loading_modal_bar.pack(pady=(0, 10))
+        self.loading_modal_bar.start(10)
+
+    def close_loading_modal(self):
+        """Ferme la fenêtre modale de chargement si elle existe"""
+        if hasattr(self, 'loading_modal') and self.loading_modal.winfo_exists():
+            self.loading_modal_bar.stop()
+            self.loading_modal.destroy()
+            del self.loading_modal
 
 
 def main(config):
