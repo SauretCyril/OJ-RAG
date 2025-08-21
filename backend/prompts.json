@@ -1,0 +1,38 @@
+[
+  {
+    "fr": "Un décor grunge avec une dominatrice debout dans un entrepôt abandonné, faiblement éclairé. Ses jambes sont parées de bas-resilles qui remontent jusqu’à une minijupe en cuir noir, révélant ses cuisses massives et puissantes. Sa présence est très imposante.",
+    "en": "A grunge setting with a dominatrix standing in a dimly lit, abandoned warehouse. Her legs are adorned with fishnet stockings that extend to a black leather miniskirt, revealing her massive, powerful thighs. Her presence is very imposing.",
+    "type": "Prompt",
+    "checked": false
+  },
+  {
+    "fr": "Un entrepôt abandonné au style grunge.",
+    "en": "",
+    "type": "**lieux**"
+  },
+  {
+    "fr": "Une dominatrice, imposante par sa présence.",
+    "en": "",
+    "type": "**personnage**"
+  },
+  {
+    "fr": "Bas-resille couvrant ses jambes, minijupe en cuir noir.",
+    "en": "",
+    "type": "**habits**"
+  },
+  {
+    "fr": "Faiblement éclairé.",
+    "en": "",
+    "type": "**lumière**"
+  },
+  {
+    "fr": "Oppressante, dominée par une aura de contrôle.",
+    "en": "",
+    "type": "**atmosphère**"
+  },
+  {
+    "fr": "Jambes musclées et puissantes, cuisses massives partiellement dévoilées.",
+    "en": "",
+    "type": "**autres**"
+  }
+]

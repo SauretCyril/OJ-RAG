@@ -12,13 +12,14 @@ TYPES = ["Prompt", "personnage", "habits", "lumières", "lieux", 'lumière', "Qu
 cy_analyse_prompt = Blueprint('cy_analyse_prompt', __name__)
 
 class cls_local_PromptTable(tk.Tk):
-    def __init__(self, file_path="prompts.json", isDependOn=False, num_dossier="", chemin="", nom_fichier="", descriptif=""):
+    def __init__(self, file_path="prompts.json", isDependOn=False, num_dossier="", chemin="", nom_fichier="", descriptif="", prompt_text=None):
         super().__init__()
         self.isDependOn = isDependOn
         self.num_dossier = num_dossier
         self.chemin = chemin
         self.nom_fichier = nom_fichier
         self.descriptif = descriptif
+        self.prompt_text = prompt_text  # <-- Ajout
 
         if self.isDependOn:
             root_dir = GetRoot()
@@ -88,7 +89,13 @@ class cls_local_PromptTable(tk.Tk):
         self.tree.tag_configure("prompt_row", background="#e0e0e0")
         self.tree.tag_configure("type_font", font=("Arial", 12, "bold"))
 
-        self.load_json()
+        # Si prompt_text est fourni, on l'utilise directement
+        if self.prompt_text:
+            self.load_prompt_from_text(self.prompt_text)
+        else:
+            self.load_prompt_from_file()
+
+        self.mode = "text" if self.prompt_text else "file"
 
     def apply_filter(self):
         type_ = self.filter_type.get()
@@ -299,11 +306,12 @@ class cls_local_PromptTable(tk.Tk):
                 self.apply_filter()
 
     def save_json(self):
-        
-        with open(self.file_path, "w", encoding="utf-8") as f:
-            json.dump(self.prompts, f, ensure_ascii=False, indent=2)
-        
-        messagebox.showinfo("Sauvegarde", "Fichier JSON sauvegardé.")
+        if getattr(self, "mode", "file") == "file":
+            with open(self.file_path, "w", encoding="utf-8") as f:
+                json.dump(self.prompts, f, ensure_ascii=False, indent=2)
+            messagebox.showinfo("Sauvegarde", "Fichier JSON sauvegardé.")
+        else:
+            messagebox.showinfo("Info", "Aucune sauvegarde effectuée (mode texte, pas de fichier associé).")
 
     def load_json(self):
         
@@ -359,7 +367,20 @@ class cls_local_PromptTable(tk.Tk):
         self.apply_filter()
         messagebox.showinfo("Reconstruit", "Le prompt a été reconstruit et mis à jour.")
 
+    def load_prompt_from_text(self, text):
+        """Charge le prompt directement depuis une chaîne de caractères"""
+        # Ici, tu peux découper le texte, remplir les champs, etc.
+        self.prompts = self.analyse_prompt_text(text)
+        self.filtered_prompts = self.prompts.copy()
+        self.refresh_table()
 
+    def analyse_prompt_text(self, text):
+        """
+        Découpe le texte du prompt en éléments pour remplir le tableau.
+        Ici, chaque ligne non vide devient une entrée de type "Prompt".
+        Tu peux adapter la logique selon tes besoins.
+        """
+        return [{"fr": line.strip(), "en": "", "type": "Prompt"} for line in text.splitlines() if line.strip()]
 
 
 """ if __name__ == "__main__":

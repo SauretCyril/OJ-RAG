@@ -11,6 +11,7 @@ import threading
 import time
 import hashlib
 from PIL.ExifTags import TAGS
+from cls_local_analyse_prompt import cls_local_PromptTable
 
 # class DirectoryWatcher(FileSystemEventHandler):
 #     def __init__(self, image_explorer):
@@ -211,6 +212,10 @@ class image_process:
         metadata_btn = ttk.Button(info_frame, text="Extract ComfyUI Data", 
                          command=self.extract_all_metadata_with_progress)
         metadata_btn.pack(side="right", padx=(0, 5))
+
+        # Bouton options
+        options_btn = ttk.Button(info_frame, text="Options", command=self.open_options_dialog)
+        options_btn.pack(side="right", padx=(0, 5))
 
         # Deuxième ligne - Contrôles principaux
         control_frame = ttk.Frame(top_frame)
@@ -447,7 +452,9 @@ class image_process:
                     # Charger et redimensionner l'image
                     with Image.open(image_path) as img:
                         # Redimensionner en gardant les proportions
-                        img.thumbnail((200, 200), Image.Resampling.LANCZOS)
+                        # Utiliser la taille de thumbnail configurable
+                        thumb_size = getattr(self, 'thumbnail_size', (300, 300))
+                        img.thumbnail(thumb_size, Image.Resampling.LANCZOS)
                         
                         # Si l'image a été vue, réduire l'opacité
                         if is_viewed:
@@ -900,27 +907,29 @@ Progress: {(viewed_count/total_count*100):.1f}% completed"""
             
             for data_key, data_value in comfyui_data.items():
                 if isinstance(data_value, dict):
-                    for node_id, node_data in data_value.items():  # <-- Correction ici
+                    for node_id, node_data in data_value.items():
                         if isinstance(node_data, dict) and 'inputs' in node_data:
                             inputs = node_data['inputs']
                             class_type = node_data.get('class_type', '').lower()
                             
-                            # Patterns pour Flux-Schnell
+                            # Champs explicites
+                            if not positive_prompt and 'positive' in inputs:
+                                positive_prompt = inputs['positive']
+                            if not negative_prompt and 'negative' in inputs:
+                                negative_prompt = inputs['negative']
+
+                            # Champs text selon le type
                             if 'text' in inputs:
                                 text_content = inputs['text']
-                                
-                                if 'positive' in class_type or ('clip' in class_type and 'negative' not in class_type):
+                                if not positive_prompt and (
+                                    'positive' in class_type or 
+                                    ('clip' in class_type and 'negative' not in class_type)
+                                ):
                                     positive_prompt = text_content
-                                elif 'negative' in class_type:
+                                elif not negative_prompt and 'negative' in class_type:
                                     negative_prompt = text_content
                                 elif not positive_prompt:
                                     positive_prompt = text_content
-                            
-                            # Autres patterns
-                            if 'positive' in inputs:
-                                positive_prompt = inputs['positive']
-                            if 'negative' in inputs:
-                                negative_prompt = inputs['negative']
             
             return positive_prompt, negative_prompt
             
@@ -935,7 +944,7 @@ Progress: {(viewed_count/total_count*100):.1f}% completed"""
             
             for data_key, data_value in comfyui_data.items():
                 if isinstance(data_value, dict):
-                    for node_id, node_data in data_value.items():  # <-- Correction ici
+                    for node_id, node_data in data_value.items():
                         if isinstance(node_data, dict):
                             class_type = node_data.get('class_type', '').lower()
                             inputs = node_data.get('inputs', {})
@@ -1367,6 +1376,19 @@ Success rate: {success_rate:.1f}% (of new images)"""
                                              command=lambda: self.copy_to_clipboard(metadata.get('positive_prompt', '')))
                     copy_pos_btn.pack(side="left")
                     
+                    # Bouton pour éditer le prompt positif
+                    edit_prompt_btn = ttk.Button(pos_btn_frame, text="Éditer le prompt positif",
+    command=lambda: cls_local_PromptTable(
+        isDependOn=False,
+        num_dossier="",
+        chemin="",
+        nom_fichier="",
+        descriptif=metadata.get('positive_prompt',  ''),
+        prompt_text=metadata.get('positive_prompt', '')  # <-- passage du texte
+    )
+)
+                    edit_prompt_btn.pack(side="left", padx=(10, 0))
+                    
                     # Negative Prompt
                     neg_label = ttk.Label(prompts_frame, text="Negative Prompt:", 
                                          font=("Arial", 10, "bold"))
@@ -1493,6 +1515,77 @@ Success rate: {success_rate:.1f}% (of new images)"""
             self.loading_modal.destroy()
             del self.loading_modal
 
+    def open_options_dialog(self):
+        """Ouvre une fenêtre d'options pour configurer la taille des thumbnails"""
+        options_win = tk.Toplevel(self.root)
+        options_win.title("Options")
+        options_win.geometry("300x180")
+        options_win.resizable(False, False)
+        options_win.transient(self.root)
+        options_win.grab_set()
+
+        frame = ttk.Frame(options_win, padding=20)
+        frame.pack(fill="both", expand=True)
+
+        # Taille du thumbnail
+        ttk.Label(frame, text="Thumbnail width:").grid(row=0, column=0, sticky="w")
+        width_var = tk.IntVar(value=getattr(self, "thumbnail_size", (300, 300))[0])
+        width_entry = ttk.Entry(frame, textvariable=width_var, width=8)
+        width_entry.grid(row=0, column=1, sticky="w")
+
+        ttk.Label(frame, text="Thumbnail height:").grid(row=1, column=0, sticky="w")
+        height_var = tk.IntVar(value=getattr(self, "thumbnail_size", (300, 300))[1])
+        height_entry = ttk.Entry(frame, textvariable=height_var, width=8)
+        height_entry.grid(row=1, column=1, sticky="w")
+
+        def save_options():
+            w = max(32, width_var.get())
+            h = max(32, height_var.get())
+            self.thumbnail_size = (w, h)
+            self.save_options()  # <-- Ajoute ceci
+            options_win.destroy()
+            self.refresh_images()
+
+        save_btn = ttk.Button(frame, text="Save", command=save_options)
+        save_btn.grid(row=2, column=0, columnspan=2, pady=(20, 0))
+
+        close_btn = ttk.Button(frame, text="Cancel", command=options_win.destroy)
+        close_btn.grid(row=3, column=0, columnspan=2, pady=(5, 0))
+
+    def get_options_path(self):
+        """Chemin du fichier d'options (à côté de la base de données)"""
+        db_dir = os.path.dirname(self.db_path)
+        return os.path.join(db_dir, "options.json")
+
+    def load_options(self):
+        """Charger les options depuis le fichier options.json"""
+        try:
+            options_path = self.get_options_path()
+            if os.path.exists(options_path):
+                with open(options_path, "r", encoding="utf-8") as f:
+                    options = json.load(f)
+                # Appliquer les options connues
+                if "thumbnail_size" in options:
+                    self.thumbnail_size = tuple(options["thumbnail_size"])
+            else:
+                # Valeur par défaut si pas de fichier
+                self.thumbnail_size = (300, 300)
+        except Exception as e:
+            print(f"[ERROR] Error loading options: {e}")
+            self.thumbnail_size = (300, 300)
+
+    def save_options(self):
+        """Sauvegarder les options dans le fichier options.json"""
+        try:
+            options_path = self.get_options_path()
+            options = {
+                "thumbnail_size": list(getattr(self, "thumbnail_size", (300, 300))),
+            }
+            with open(options_path, "w", encoding="utf-8") as f:
+                json.dump(options, f, indent=2)
+        except Exception as e:
+            print(f"[ERROR] Error saving options: {e}")
+
 
 def main(config):
     """Fonction principale pour créer et lancer l'interface"""
@@ -1517,3 +1610,8 @@ if __name__ == "__main__":
     }
     
     main(test_config)
+
+def on_close():
+    app.save_options()
+    root.destroy()
+    root.protocol("WM_DELETE_WINDOW", on_close)
