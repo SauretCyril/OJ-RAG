@@ -11,36 +11,9 @@ import threading
 import time
 import hashlib
 from PIL.ExifTags import TAGS
-from cls_local_analyse_prompt import cls_local_PromptTable
+from cy2_analyse_prompt import cls_local_PromptTable
 
-# class DirectoryWatcher(FileSystemEventHandler):
-#     def __init__(self, image_explorer):
-#         super().__init__()
-#         self.image_explorer = image_explorer
-   
-#     def on_created(self, event):
-#         """Appelé lorsqu'un fichier est créé dans le répertoire surveillé"""
-#         if not event.is_directory:
-#             # Vérifier si le fichier est une image
-#             image_extensions = ('.png', '.jpg', '.jpeg', '.gif', '.bmp', '.tiff', '.webp')
-#             if event.src_path.lower().endswith(image_extensions):
-#                 print(f"[INFO] New image detected: {event.src_path}")
-#                 self.image_explorer.add_new_image(event.src_path)
 
-# class DirectoryWatcherThread:
-#     def __init__(self, image_explorer):
-#         self.image_explorer = image_explorer
-#         self.observer = Observer()
-
-#     def start(self):
-#         event_handler = DirectoryWatcher(self.image_explorer)
-#         self.observer.schedule(event_handler, self.image_explorer.current_directory, recursive=False)
-#         self.observer.start()
-#         print(f"[INFO] Started watching directory: {self.image_explorer.current_directory}")
-
-#     def stop(self):
-#         self.observer.stop()
-#         self.observer.join()
 
 class image_process:
     def __init__(self, root, config):
@@ -1316,7 +1289,7 @@ Success rate: {success_rate:.1f}% (of new images)"""
         """Afficher les métadonnées complètes d'une image dans un formulaire avec onglets"""
         try:
             metadata = self.get_image_metadata(image_path)
-            if not metadata:
+            if not metadata:  
                 # Extraire les métadonnées si pas encore fait
                 meta = self.extract_image_metadata(image_path)
                 if meta:
@@ -1551,6 +1524,8 @@ Success rate: {success_rate:.1f}% (of new images)"""
 
         close_btn = ttk.Button(frame, text="Cancel", command=options_win.destroy)
         close_btn.grid(row=3, column=0, columnspan=2, pady=(5, 0))
+    
+   
 
     def get_options_path(self):
         """Chemin du fichier d'options (à côté de la base de données)"""
