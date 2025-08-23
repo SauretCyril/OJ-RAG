@@ -11,6 +11,7 @@ import threading
 import time
 import hashlib
 from PIL.ExifTags import TAGS
+from cy2_analyse_prompt import cy2_analyse_prompt
 #from cy2_analyse_prompt import cls_local_PromptTable
 
 
@@ -480,7 +481,8 @@ class image_process:
 
                     # Bouton "Info" pour afficher les métadonnées complètes
                     info_btn = ttk.Button(btn_frame, text="Info", 
-                                    command=lambda path=image_path: self.show_image_metadata(path))
+                                    #command=lambda path=image_path: self.show_image_metadata(path))
+                                    command=lambda path=image_path: self.show_edit_prompt(path))
                     info_btn.pack(side="left", padx=2)
 
                     if self.processor_type == "move":
@@ -504,7 +506,17 @@ class image_process:
             self.update_navigation_buttons()
         except Exception as e:
             print(f"[ERROR] Error in display_images: {e}")
-    
+    def show_edit_prompt(self, image_path):
+        """Afficher le prompt d'édition pour une image"""
+        try:
+            metadata = self.get_image_metadata(image_path)
+            if metadata:
+                text =metadata.get("positive_prompt")
+            app = cy2_analyse_prompt(text)
+            app.mainloop()
+        except Exception as e:
+            print(f"[ERROR] Error showing edit prompt: {e}")
+
     def mark_action_viewed(self, image_path):
         """Marquer une image comme vue"""
         try:
