@@ -3,13 +3,16 @@ from tkinter import ttk, messagebox
 import json
 import os
 from flask import request, Blueprint
-from cy_paths import GetRoot  # Assurez-vous que cette fonction est définie dans cy_paths.py
-
-from cy_mistral import get_mistral_answer  # en haut du fichier
-import requests  # Ajoutez cet import en haut du fichier si ce n'est pas déjà fait
+from cy_paths import GetRoot
+from cy_mistral import get_mistral_answer
+import requests
+import time
 
 TYPES = ["Prompt", "personnage", "habits", "lumières", "lieux", 'lumière', "Qualité", 'Atmosphere', 'Age',"Negative", "Autre"]
-#cy_analyse_prompt = Blueprint('cy_analyse_prompt', __name__)
+
+def wrap_text(text, width=60):
+    import textwrap
+    return "\n".join(textwrap.wrap(text, width=width))
 
 class cy2_analyse_prompt(tk.Tk):
     def __init__(self, descriptif="", prompt_text=None):
@@ -26,7 +29,7 @@ class cy2_analyse_prompt(tk.Tk):
         title_label = ttk.Label(self, text=f"{self.descriptif}", font=("Arial", 14, "bold"))
         title_label.pack(side="top", fill="x", padx=5, pady=5)
 
-        # Zone de saisie du prompt positif - À placer ici
+        # Zone de saisie du prompt positif
         prompt_frame = ttk.Frame(self)
         prompt_frame.pack(side="top", fill="x", padx=5, pady=5)
 
@@ -38,50 +41,17 @@ class cy2_analyse_prompt(tk.Tk):
         # Boutons de traduction
         btns_frame = ttk.Frame(prompt_frame)
         btns_frame.pack(side="left", padx=5)
-
-        def translate_fr2en():
-            fr = self.prompt_textbox_fr.get("1.0", tk.END).strip()
-            if fr:
-                en = self.mistral_translate(fr, src_lang="fr", tgt_lang="en")
-                self.prompt_textbox_en.delete("1.0", tk.END)
-                self.prompt_textbox_en.insert("1.0", en)
-
-        def translate_en2fr():
-            en = self.prompt_textbox_en.get("1.0", tk.END).strip()
-            if en:
-                fr = self.mistral_translate(en, src_lang="en", tgt_lang="fr")
-                self.prompt_textbox_fr.delete("1.0", tk.END)
-                self.prompt_textbox_fr.insert("1.0", fr)
-
-        ttk.Button(btns_frame, text="fr→en", width=8, command=translate_fr2en).pack(pady=2)
-        ttk.Button(btns_frame, text="en→fr", width=8, command=translate_en2fr).pack(pady=2)
+        ttk.Button(btns_frame, text="fr→en", width=8, command=self.translate_fr2en).pack(pady=2)
+        ttk.Button(btns_frame, text="en→fr", width=8, command=self.translate_en2fr).pack(pady=2)
 
         # Zone Positive Prompt (français)
         ttk.Label(prompt_frame, text="Prompt positif (fr)").pack(side="left", padx=(0, 5))
         self.prompt_textbox_fr = tk.Text(prompt_frame, height=22, width=60)
         self.prompt_textbox_fr.pack(side="left", fill="x", expand=True)
 
-        # Préremplissage si prompt_text fourni (tu peux adapter selon la langue)
+        # Préremplissage si prompt_text fourni
         if self.prompt_text:
-            #self.prompt_textbox_en.insert("1.0", self.prompt_text)
             self.prompt_textbox_fr.insert("1.0", self.prompt_text)
-
-        # # Ajoute ces bindings après la création des zones de texte
-        # def on_fr_change(event):
-        #     fr = self.prompt_textbox_fr.get("1.0", tk.END).strip()
-        #     if fr:
-        #         en = self.mistral_translate(fr, src_lang="fr", tgt_lang="en")
-        #         self.prompt_textbox_en.delete("1.0", tk.END)
-        #         self.prompt_textbox_en.insert("1.0", en)
-
-        # def on_en_change(event):
-        #     en = self.prompt_textbox_en.get("1.0", tk.END).strip()
-        #     if en:
-        #         fr = self.mistral_translate(en, src_lang="en", tgt_lang="fr")
-        #         self.prompt_textbox_fr.delete("1.0", tk.END)
-        #         self.prompt_textbox_fr.insert("1.0", fr)
-
-        
 
         # Zone de filtre
         filter_frame = ttk.Frame(self)
@@ -92,36 +62,25 @@ class cy2_analyse_prompt(tk.Tk):
         self.filter_type.set("")
         ttk.Button(filter_frame, text="Filtrer", command=self.apply_filter).pack(side="left", padx=5)
         ttk.Button(filter_frame, text="Réinitialiser", command=self.reset_filter).pack(side="left", padx=5)
-
-        def decompose_prompt_fr():
-            texte = self.prompt_textbox_fr.get("1.0", tk.END).strip()
-            self.decompose_text(texte)
-
-        decompose_btn = ttk.Button(filter_frame, text="Décomposer", command=decompose_prompt_fr)
-        decompose_btn.pack(side="left", padx=5)
-
-        # AJOUTE ICI :
-        rebuild_btn = ttk.Button(filter_frame, text="Reconstruire", command=self.rebuild_prompt)
-        rebuild_btn.pack(side="left", padx=5)
+        ttk.Button(filter_frame, text="Décomposer", command=self.decompose_prompt_fr).pack(side="left", padx=5)
+        ttk.Button(filter_frame, text="Reconstruire", command=self.rebuild_prompt).pack(side="left", padx=5)
 
         # Tableau
         table_frame = ttk.Frame(self)
         table_frame.pack(side="top", fill="both", expand=True, padx=5, pady=5)
-        columns = ("fr", "type", "en", "delete")
+        columns = ("type", "fr", "delete")  # 'type' en premier, 'en' supprimé
         self.tree = ttk.Treeview(table_frame, columns=columns, show="headings", selectmode="browse")
-        self.tree.heading("fr", text="Texte français")
         self.tree.heading("type", text="Type")
-        self.tree.heading("en", text="")
+        self.tree.heading("fr", text="Texte français")
         self.tree.heading("delete", text="")
-        self.tree.column("type", width=120)
-        self.tree.column("fr", width=300)
-        self.tree.column("en", minwidth=0, width=0, stretch=False)
+        self.tree.column("type", width=100)  # largeur réduite
+        self.tree.column("fr", width=500)
         self.tree.column("delete", width=40, anchor="center")
         self.tree.pack(side="left", fill="both", expand=True)
 
         # Style pour agrandir la police de la colonne Type
         style = ttk.Style(self)
-        style.configure("Treeview", rowheight=40)  # Hauteur de ligne plus grande
+        style.configure("Treeview", rowheight=40)
         style.configure("Treeview.TypeColumn", font=("Arial", 14, "bold"))
 
         # Scrollbar
@@ -136,8 +95,6 @@ class cy2_analyse_prompt(tk.Tk):
         ttk.Button(btn_frame, text="Modifier", command=self.edit_prompt).pack(side="left", padx=5)
         ttk.Button(btn_frame, text="Supprimer", command=self.delete_prompt).pack(side="left", padx=5)
 
-       
-       
         self.tree.tag_configure("prompt_row", background="#e0e0e0")
         self.tree.tag_configure("type_font", font=("Arial", 12, "bold"))
 
@@ -151,54 +108,64 @@ class cy2_analyse_prompt(tk.Tk):
 
         self.mode = "text" if self.prompt_text else "file"
 
-        # ... après la création de self.prompt_textbox_fr ...
-        def decompose_prompt_fr():
-            texte = self.prompt_textbox_fr.get("1.0", tk.END).strip()
-            decompose_text(texte)
+        self.tree.bind("<Double-1>", self.edit_fr_cell)
+        self.tree.bind("<Button-1>", self.on_tree_click)
 
-        decompose_btn = ttk.Button(prompt_frame, text="Décomposer dans le tableau", command=decompose_prompt_fr)
-        decompose_btn.pack(side="left", padx=10)
+    # --- Méthodes de la classe ---
 
-        def edit_fr_cell(event):
-            item = self.tree.identify_row(event.y)
-            column = self.tree.identify_column(event.x)
-            if not item or column != "#1":  # "#1" = première colonne ("fr")
-                return
-            idx = int(item)
-            prompt = self.filtered_prompts[idx]
-            x, y, width, height = self.tree.bbox(item, column)
-            entry = tk.Text(self.tree, height=4, width=40)
-            entry.insert("1.0", prompt["fr"])
-            entry.place(x=x, y=y, width=width, height=height*2)
-            entry.focus_set()
+    def translate_fr2en(self):
+        fr = self.prompt_textbox_fr.get("1.0", tk.END).strip()
+        if fr:
+            en = self.mistral_translate(fr, src_lang="fr", tgt_lang="en")
+            self.prompt_textbox_en.delete("1.0", tk.END)
+            self.prompt_textbox_en.insert("1.0", en)
 
-            def save_edit(event=None):
-                new_text = entry.get("1.0", tk.END).strip()
-                prompt["fr"] = new_text
-                self.refresh_table()
-                entry.destroy()
+    def translate_en2fr(self):
+        en = self.prompt_textbox_en.get("1.0", tk.END).strip()
+        if en:
+            fr = self.mistral_translate(en, src_lang="en", tgt_lang="fr")
+            self.prompt_textbox_fr.delete("1.0", tk.END)
+            self.prompt_textbox_fr.insert("1.0", fr)
 
-            entry.bind("<FocusOut>", save_edit)
-            entry.bind("<Return>", lambda e: save_edit())
+    def decompose_prompt_fr(self):
+        texte = self.prompt_textbox_fr.get("1.0", tk.END).strip()
+        self.decompose_text(texte)
 
-        self.tree.bind("<Double-1>", edit_fr_cell)
-        self.tree.bind("<Button-1>", on_tree_click)
+    def edit_fr_cell(self, event):
+        item = self.tree.identify_row(event.y)
+        column = self.tree.identify_column(event.x)
+        if not item or column != "#2":  # "#2" = deuxième colonne ("fr")
+            return
+        idx = int(item)
+        prompt = self.filtered_prompts[idx]
+        x, y, width, height = self.tree.bbox(item, column)
+        entry = tk.Text(self.tree, height=4, width=40)
+        entry.insert("1.0", prompt["fr"])
+        entry.place(x=x, y=y, width=width, height=height*2)
+        entry.focus_set()
 
-        def on_tree_click(event):
-            item = self.tree.identify_row(event.y)
-            column = self.tree.identify_column(event.x)
-            # Colonne "delete" = dernière colonne, donc "#4"
-            if not item or column != "#4":
-                return
-            idx = int(item)
-            prompt = self.filtered_prompts[idx]
-            if prompt["type"].lower() == "prompt":
-                return  # On ne supprime pas la ligne principale
-            if messagebox.askyesno("Confirmation", "Voulez-vous supprimer la ligne ?"):
-                self.prompts.remove(prompt)
-                self.apply_filter()
+        def save_edit(event=None):
+            new_text = entry.get("1.0", tk.END).strip()
+            prompt["fr"] = new_text
+            self.refresh_table()
+            entry.destroy()
 
-        self.tree.bind("<Button-1>", on_tree_click)
+        entry.bind("<FocusOut>", save_edit)
+        entry.bind("<Return>", lambda e: save_edit())
+
+    def on_tree_click(self, event):
+        item = self.tree.identify_row(event.y)
+        column = self.tree.identify_column(event.x)
+        # Colonne "delete" = dernière colonne, donc "#4"
+        if not item or column != "#4":
+            return
+        idx = int(item)
+        prompt = self.filtered_prompts[idx]
+        if prompt["type"].lower() == "prompt":
+            return  # On ne supprime pas la ligne principale
+        if messagebox.askyesno("Confirmation", "Voulez-vous supprimer la ligne ?"):
+            self.prompts.remove(prompt)
+            self.apply_filter()
 
     def apply_filter(self):
         type_ = self.filter_type.get()
@@ -209,24 +176,22 @@ class cy2_analyse_prompt(tk.Tk):
         self.refresh_table()
 
     def reset_filter(self):
-        # Supprime cette ligne :
-        # self.filter_name.delete(0, tk.END)
         self.filter_type.set("")
-        self.filtered_prompts =   self.prompts.copy()
+        self.filtered_prompts = self.prompts.copy()
         self.refresh_table()
 
     def refresh_table(self):
         self.tree.delete(*self.tree.get_children())
         for idx, prompt in enumerate(self.filtered_prompts):
             fr_text = wrap_text(prompt["fr"], width=60)
-            # Exemple : tag spécial pour la ligne de type "Prompt"
             tags = ()
             if prompt["type"].lower() == "prompt":
                 tags = ("prompt_row",)
             self.tree.insert(
                 "", "end", iid=idx,
                 values=(
-                    fr_text, prompt["type"], prompt["en"],
+                    prompt["type"],  # type en premier
+                    fr_text,
                     "❌" if prompt["type"].lower() != "prompt" else ""
                 ),
                 tags=tags + ("type_font",)
@@ -252,12 +217,12 @@ class cy2_analyse_prompt(tk.Tk):
         prompt = self.filtered_prompts[idx]
         self.prompts.remove(prompt)
         self.apply_filter()
+
     def decompose_text(self, texte):
         if not texte:
             messagebox.showwarning("Avertissement", "Le texte français est obligatoire.")
             return
 
-        # Demande à Mistral la décomposition
         question = (
             "Décompose le texte suivant en lignes thématiques :\n"
             "- personnage : description du personnage\n"
@@ -275,21 +240,6 @@ class cy2_analyse_prompt(tk.Tk):
         role = "Tu es un assistant qui extrait et classe les informations d'une description d'image."
         result = self.mistral_translate(question, src_lang="fr", tgt_lang="fr")
 
-        # # Supprime toutes les lignes sauf 'Prompt' et 'Negative'
-        # self.prompts = [
-        #     p for p in self.prompts
-        #     if p["type"] in ("Prompt", "Negative")
-        # ]
-
-        # # Ajoute la ligne originelle si elle n'existe pas déjà
-        # if not any(p["type"] == "Prompt" for p in self.prompts):
-        #     self.prompts.append({
-        #         "fr": texte,
-        #         "en": "",
-        #         "type": "Prompt"
-        #     })
-
-        # Ajoute chaque ligne extraite comme une nouvelle ligne
         for line in result.splitlines():
             if ':' not in line:
                 continue
@@ -311,10 +261,23 @@ class cy2_analyse_prompt(tk.Tk):
         question = f"Traduis le texte suivant du {src_lang} vers le {tgt_lang} :"
         role = "Tu es un traducteur professionnel. Réponds uniquement par la traduction, sans explication."
         content = text
-        return get_mistral_answer(question, role, content)
+        try:
+            self.config(cursor="watch")  # Curseur "attente"
+            self.update_idletasks()
+            result = get_mistral_answer(question, role, content)
+            time.sleep(1)
+            return result
+        except requests.exceptions.HTTPError as e:
+            if e.response.status_code == 429:
+                messagebox.showerror("Limite atteinte", "Trop de requêtes envoyées à Mistral. Merci de patienter quelques secondes avant de réessayer.")
+            else:
+                messagebox.showerror("Erreur API Mistral", f"Erreur lors de l'appel à l'API Mistral: {e}")
+            return ""
+        finally:
+            self.config(cursor="")  # Restaure le curseur normal
+            self.update_idletasks()
 
     def rebuild_prompt(self):
-        # Récupère toutes les lignes sauf 'Prompt' et 'Negative'
         lignes = [p for p in self.prompts if p["type"].lower() not in ("prompt", "negative")]
         if not lignes:
             messagebox.showinfo("Info", "Aucune ligne à concaténer pour ce prompt.")
@@ -330,12 +293,10 @@ class cy2_analyse_prompt(tk.Tk):
             f"{texte_concat}"
         )
         prompt_fr = self.mistral_translate(question, src_lang="fr", tgt_lang="fr")
-        # Supprime toutes les lignes sauf 'Prompt' et 'Negative'
         self.prompts = [
             p for p in self.prompts
             if p["type"].lower() in ("prompt", "negative")
         ]
-        # Met à jour ou ajoute la ligne 'Prompt'
         ligne_prompt = next((p for p in self.prompts if p["type"].lower() == "prompt"), None)
         if ligne_prompt is None:
             ligne_prompt = {
@@ -347,28 +308,21 @@ class cy2_analyse_prompt(tk.Tk):
         ligne_prompt["fr"] = prompt_fr
         prompt_en = self.mistral_translate(prompt_fr, src_lang="fr", tgt_lang="en")
         ligne_prompt["en"] = prompt_en
+
+        # Ajout : mettre le texte français dans la zone de saisie
+        self.prompt_textbox_fr.delete("1.0", tk.END)
+        self.prompt_textbox_fr.insert("1.0", prompt_fr)
+
         self.apply_filter()
         messagebox.showinfo("Reconstruit", "Le prompt a été reconstruit et mis à jour.")
 
     def load_prompt_from_text(self, text):
-        """Charge le prompt directement depuis une chaîne de caractères"""
-        # Ici, tu peux découper le texte, remplir les champs, etc.
         self.prompts = self.analyse_prompt_text(text)
         self.filtered_prompts = self.prompts.copy()
         self.refresh_table()
 
     def analyse_prompt_text(self, text):
-        """
-        Découpe le texte du prompt en éléments pour remplir le tableau.
-        Ici, chaque ligne non vide devient une entrée de type "Prompt".
-        Tu peux adapter la logique selon tes besoins.
-        """
         return [{"fr": line.strip(), "en": "", "type": "Prompt"} for line in text.splitlines() if line.strip()]
-
-def wrap_text(text, width=60):
-    import textwrap
-    return "\n".join(textwrap.wrap(text, width=width))
-
 
 if __name__ == "__main__":
     app = cy2_analyse_prompt()

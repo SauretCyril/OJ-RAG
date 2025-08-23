@@ -11,7 +11,7 @@ import threading
 import time
 import hashlib
 from PIL.ExifTags import TAGS
-from cy2_analyse_prompt import cls_local_PromptTable
+#from cy2_analyse_prompt import cls_local_PromptTable
 
 
 
@@ -1349,18 +1349,18 @@ Success rate: {success_rate:.1f}% (of new images)"""
                                              command=lambda: self.copy_to_clipboard(metadata.get('positive_prompt', '')))
                     copy_pos_btn.pack(side="left")
                     
-                    # Bouton pour éditer le prompt positif
-                    edit_prompt_btn = ttk.Button(pos_btn_frame, text="Éditer le prompt positif",
-    command=lambda: cls_local_PromptTable(
-        isDependOn=False,
-        num_dossier="",
-        chemin="",
-        nom_fichier="",
-        descriptif=metadata.get('positive_prompt',  ''),
-        prompt_text=metadata.get('positive_prompt', '')  # <-- passage du texte
-    )
-)
-                    edit_prompt_btn.pack(side="left", padx=(10, 0))
+                    #                 # Bouton pour éditer le prompt positif
+                    #                 edit_prompt_btn = ttk.Button(pos_btn_frame, text="Éditer le prompt positif",
+                    # command=lambda: cls_local_PromptTable(
+                    #     isDependOn=False,
+                    #     num_dossier="",
+                    #     chemin="",
+                    #     nom_fichier="",
+                    #     descriptif=metadata.get('positive_prompt',  ''),
+                    #     prompt_text=metadata.get('positive_prompt', '')  # <-- passage du texte
+                    # )
+                    #)
+                    #edit_prompt_btn.pack(side="left", padx=(10, 0))
                     
                     # Negative Prompt
                     neg_label = ttk.Label(prompts_frame, text="Negative Prompt:", 
