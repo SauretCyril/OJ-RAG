@@ -482,3 +482,5 @@ def save_text_pdf():
         print("Erreur lors de la sauvegarde du PDF :", e)
         traceback.print_exc()
         return jsonify({'error': str(e)}), 500
+
+

@@ -216,6 +216,7 @@ class cy2_analyse_prompt(tk.Tk):
         question = (
             "Décompose le texte suivant en lignes thématiques :\n"
             "- personnage : description du personnage\n"
+            "- position : description extêmement détaillée de la position du ou des sujets\n"
             "- habits : description des vêtements (ou nu)\n"
             "- poitrine : description de la poitrine\n"
             "- age : âge ou apparence d'âge\n"
@@ -285,7 +286,8 @@ class cy2_analyse_prompt(tk.Tk):
             return
         question = (
             "À partir des éléments suivants, écris un prompt cohérent, fluide et naturel pour décrire une image. "
-            "Utilise toutes les informations, mais sans répéter les thèmes. "
+            "Utilise toutes les informations, mais sans répéter les thèmes. Controle les éléments sur la poitrine en reformulant tout en respectant la tournure"
+            "pour que la poitrine soit petite et trés naturel"
             "Texte à fusionner :\n"
             f"{texte_concat}"
         )

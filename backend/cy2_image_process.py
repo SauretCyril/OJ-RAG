@@ -12,6 +12,7 @@ import time
 import hashlib
 from PIL.ExifTags import TAGS
 from cy2_analyse_prompt import cy2_analyse_prompt
+from cy_mistral import get_nsfw_score
 #from cy2_analyse_prompt import cls_local_PromptTable
 
 
@@ -69,49 +70,63 @@ class image_process:
         try:
             self.conn = sqlite3.connect(self.db_path, check_same_thread=False)
             self.cursor = self.conn.cursor()
-            
-            # Créer la table des images vues
-            self.cursor.execute('''
-                CREATE TABLE IF NOT EXISTS viewed_images (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    function_name TEXT NOT NULL,
-                    image_path TEXT NOT NULL,
-                    viewed_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    UNIQUE(function_name, image_path)
-                )
-            ''')
-            
+
+            # Vérifier si la table existe déjà
+            self.cursor.execute("""
+                SELECT name FROM sqlite_master WHERE type='table' AND name='viewed_images'
+            """)
+            table_exists = self.cursor.fetchone()
+
+            if not table_exists:
+                self.cursor.execute('''
+                    CREATE TABLE viewed_images (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        function_name TEXT NOT NULL,
+                        image_path TEXT NOT NULL,
+                        viewed_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        UNIQUE(function_name, image_path)
+                    )
+                ''')
+
             # Supprimer et recréer la table des métadonnées avec tous les champs ComfyUI
-            self.cursor.execute("DROP TABLE IF EXISTS image_metadata")
+            #self.cursor.execute("DROP TABLE IF EXISTS image_metadata")
             
-            self.cursor.execute('''
-                CREATE TABLE image_metadata (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    function_name TEXT NOT NULL,
-                    image_path TEXT NOT NULL,
-                    file_size INTEGER,
-                    width INTEGER,
-                    height INTEGER,
-                    format TEXT,
-                    mode TEXT,
-                    file_hash TEXT,
-                    creation_date TIMESTAMP,
-                    modified_date TIMESTAMP,
-                    exif_data TEXT,
-                    positive_prompt TEXT,
-                    negative_prompt TEXT,
-                    workflow_data TEXT,
-                    model_checkpoint TEXT,
-                    model_vae TEXT,
-                    generation_steps INTEGER,
-                    cfg_scale REAL,
-                    sampler_name TEXT,
-                    scheduler TEXT,
-                    seed INTEGER,
-                    extracted_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    UNIQUE(function_name, image_path)
-                )
-            ''')
+            # Vérifier si la table image_metadata existe déjà
+            self.cursor.execute("""
+                SELECT name FROM sqlite_master WHERE type='table' AND name='image_metadata'
+            """)
+            table_exists = self.cursor.fetchone()
+
+            if not table_exists:
+                self.cursor.execute('''
+                    CREATE TABLE image_metadata (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        function_name TEXT NOT NULL,
+                        image_path TEXT NOT NULL,
+                        file_size INTEGER,
+                        width INTEGER,
+                        height INTEGER,
+                        format TEXT,
+                        mode TEXT,
+                        file_hash TEXT,
+                        creation_date TIMESTAMP,
+                        modified_date TIMESTAMP,
+                        exif_data TEXT,
+                        nsfw_score REAL DEFAULT 0,
+                        positive_prompt TEXT,
+                        negative_prompt TEXT,
+                        workflow_data TEXT,
+                        model_checkpoint TEXT,
+                        model_vae TEXT,
+                        generation_steps INTEGER,
+                        cfg_scale REAL,
+                        sampler_name TEXT,
+                        scheduler TEXT,
+                        seed INTEGER,
+                        extracted_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        UNIQUE(function_name, image_path)
+                    )
+                ''')
             
             self.conn.commit()
             print(f"[INFO] Database initialized with complete ComfyUI support: {self.db_path}")
@@ -148,20 +163,20 @@ class image_process:
         """Marquer une image comme vue pour cette fonction spécifique"""
         try:
             image_path = os.path.normpath(image_path)
-            conn, cursor = self.get_db_connection()
             
+            conn, cursor = self.get_db_connection()
             cursor.execute(
-                "INSERT OR IGNORE INTO viewed_images (function_name, image_path) VALUES (?, ?)",
+                "INSERT OR IGNORE INTO viewed_images (function_name, image_path) VALUES (?, ?)",  # <-- Changement ici
                 (self.title, image_path)
             )
             conn.commit()
             conn.close()
-            print(f"[INFO] Image marked as viewed for '{self.title}': {os.path.basename(image_path)}")
             
             return True
         except Exception as e:
             print(f"[ERROR] Error marking image as viewed: {e}")
             return False
+    
 
     def setup_ui(self):
         """Initialise l'interface graphique principale"""
@@ -183,11 +198,6 @@ class image_process:
         clear_btn.pack(side="right", padx=(0, 5))
 
         # Bouton metadata
-        metadata_btn = ttk.Button(info_frame, text="Extract ComfyUI Data", 
-                         command=self.extract_all_metadata_with_progress)
-        metadata_btn.pack(side="right", padx=(0, 5))
-
-        # Bouton options
         options_btn = ttk.Button(info_frame, text="Options", command=self.open_options_dialog)
         options_btn.pack(side="right", padx=(0, 5))
 
@@ -219,6 +229,9 @@ class image_process:
         # Bouton pour marquer toutes les images de la page comme vues
         mark_all_btn = ttk.Button(action_frame, text="Mark All as Viewed", command=self.mark_all_as_viewed)
         mark_all_btn.pack(side="left", padx=(10, 0))
+
+        load_meta_btn = ttk.Button(action_frame, text="Charger toutes les métadonnées", command=self.Extract_all_metadata)
+        load_meta_btn.pack(side="left", padx=(10, 0))
 
         # Quatrième ligne - Navigation et barre de progression
         nav_frame = ttk.Frame(top_frame)
@@ -337,7 +350,7 @@ class image_process:
                     all_files.append(full_path)
             
             # Trier par nom
-            all_files.sort()
+            all_files.sort(key=lambda x: x[1], reverse=True)
             
             # Filtrer selon le mode de vue
             if self.view_mode == "new":
@@ -346,6 +359,8 @@ class image_process:
                 print(f"[DEBUG] Filtering {len(all_files)} images for function '{self.title}'")
                 
                 for image_path in all_files:
+                   
+
                     if not self.is_image_viewed(image_path):
                         filtered_files.append(image_path)
                     else:
@@ -393,18 +408,18 @@ class image_process:
                 return
 
             # Vérifier quelles images n'ont pas encore de métadonnées
-            images_needing_metadata = []
-            for image_path in self.image_files:
-                existing_metadata = self.get_image_metadata(image_path)
-                if not existing_metadata:
-                    images_needing_metadata.append(image_path)
+            # images_needing_metadata = []
+            # for image_path in self.image_files:
+            #     existing_metadata = self.get_image_metadata(image_path)
+            #     if not existing_metadata:
+            #         images_needing_metadata.append(image_path)
     
-            # Extraire les métadonnées SEULEMENT pour les nouvelles images
-            if images_needing_metadata:
-                print(f"[INFO] Extracting metadata for {len(images_needing_metadata)} new images")
-                self.root.after(100, lambda: self.extract_and_store_metadata_batch(images_needing_metadata))
-            else:
-                print(f"[INFO] All displayed images already have metadata")
+            # # Extraire les métadonnées SEULEMENT pour les nouvelles images
+            # if images_needing_metadata:
+            #     print(f"[INFO] Extracting metadata for {len(images_needing_metadata)} new images")
+            #     self.root.after(100, lambda: self.extract_and_store_metadata_batch(images_needing_metadata))
+            # else:
+            #     print(f"[INFO] All displayed images already have metadata")
 
             # Afficher les images en grille
             cols = 4  # Nombre de colonnes
@@ -422,6 +437,9 @@ class image_process:
                     
                     # Récupérer les métadonnées
                     metadata = self.get_image_metadata(image_path)
+                    nsfw_score = None
+                    if metadata and 'nsfw_score' in metadata:
+                        nsfw_score = metadata['nsfw_score']
                     
                     # Charger et redimensionner l'image
                     with Image.open(image_path) as img:
@@ -444,7 +462,11 @@ class image_process:
                     img_label = tk.Label(image_frame, image=photo, cursor="hand2", bg=bg_color)
                     img_label.image = photo  # Garder une référence
                     img_label.pack()
-                    
+                    if nsfw_score is not None:
+                        pastille = tk.Canvas(image_frame, width=40, height=24, bg='white', highlightthickness=0)
+                        pastille.place(relx=1.0, y=2, anchor="ne")
+                        pastille.create_oval(0, 0, 40, 24, fill="white", outline="gray")
+                        pastille.create_text(20, 12, text=f"{nsfw_score:.2f}", fill="black", font=("Arial", 10, "bold"))
                     # Label pour le nom du fichier avec indication si vue
                     filename = os.path.basename(image_path)
                     if is_viewed:
@@ -771,36 +793,40 @@ Progress: {(viewed_count/total_count*100):.1f}% completed"""
             print(f"[ERROR] Error clearing viewed images: {e}")
             messagebox.showerror("Error", f"Failed to clear viewed images: {e}")
 
-    def calculate_file_hash(self, file_path):
-        """Calculer le hash SHA256 d'un fichier"""
-        try:
-            hash_sha256 = hashlib.sha256()
-            with open(file_path, "rb") as f:
-                for chunk in iter(lambda: f.read(4096), b""):
-                    hash_sha256.update(chunk)
-            return hash_sha256.hexdigest()
-        except Exception as e:
-            print(f"[ERROR] Error calculating hash for {file_path}: {e}")
-            return None
+    # def calculate_file_hash(self, file_path):
+    #     """Calculer le hash SHA256 d'un fichier"""
+    #     try:
+    #         hash_sha256 = hashlib.sha256()
+    #         with open(file_path, "rb") as f:
+    #             for chunk in iter(lambda: f.read(4096), b""):
+    #                 hash_sha256.update(chunk)
+    #         return hash_sha256.hexdigest()
+    #     except Exception as e:
+    #         print(f"[ERROR] Error calculating hash for {file_path}: {e}")
+    #         return None
 
     def extract_image_metadata(self, image_path):
-        """Extraire les métadonnées d'une image"""
+        """Extraire les métadonnées d'une image et calculer le hash en une seule ouverture"""
         try:
             # Informations du fichier
             file_stats = os.stat(image_path)
             file_size = file_stats.st_size
             creation_date = file_stats.st_ctime
             modified_date = file_stats.st_mtime
-            
-            # Hash du fichier
-            file_hash = self.calculate_file_hash(image_path)
-            
+
+            # Calculer le hash SHA256 en une seule lecture
+            hash_sha256 = hashlib.sha256()
+            with open(image_path, "rb") as f:
+                for chunk in iter(lambda: f.read(4096), b""):
+                    hash_sha256.update(chunk)
+            file_hash = hash_sha256.hexdigest()
+
             # Métadonnées de l'image avec PIL
             with Image.open(image_path) as img:
                 width, height = img.size
                 format_type = img.format
                 mode = img.mode
-                
+
                 # Extraire les données EXIF
                 exif_data = {}
                 if hasattr(img, '_getexif'):
@@ -809,7 +835,7 @@ Progress: {(viewed_count/total_count*100):.1f}% completed"""
                         for tag, value in exif.items():
                             tag_name = TAGS.get(tag, tag)
                             exif_data[tag_name] = str(value)
-            
+
             # Extraire les métadonnées ComfyUI
             comfyui_metadata = self.extract_comfyui_metadata(image_path)
             
@@ -1020,20 +1046,17 @@ Progress: {(viewed_count/total_count*100):.1f}% completed"""
         try:
             image_path = os.path.normpath(image_path)
             conn, cursor = self.get_db_connection()
-            
             cursor.execute('''
                 SELECT file_size, width, height, format, mode, file_hash, 
                        creation_date, modified_date, exif_data, extracted_date,
                        positive_prompt, negative_prompt, workflow_data,
                        model_checkpoint, model_vae, generation_steps, cfg_scale,
-                       sampler_name, scheduler, seed
+                       sampler_name, scheduler, seed, nsfw_score
                 FROM image_metadata 
                 WHERE function_name = ? AND image_path = ?
             ''', (self.title, image_path))
-            
             result = cursor.fetchone()
             conn.close()
-            
             if result:
                 return {
                     'file_size': result[0],
@@ -1055,7 +1078,8 @@ Progress: {(viewed_count/total_count*100):.1f}% completed"""
                     'cfg_scale': result[16],
                     'sampler_name': result[17] or '',
                     'scheduler': result[18] or '',
-                    'seed': result[19]
+                    'seed': result[19],
+                    'nsfw_score': result[20]  # <-- AJOUT ICI
                 }
             return None
             
@@ -1063,415 +1087,22 @@ Progress: {(viewed_count/total_count*100):.1f}% completed"""
             print(f"[ERROR] Error getting metadata: {e}")
             return None
 
-    def extract_and_store_metadata_batch(self, image_paths):
-        """Extraire et stocker les métadonnées pour un lot d'images"""
-        try:
-            for image_path in image_paths:
-                # Vérifier si les métadonnées existent déjà
-                existing_metadata = self.get_image_metadata(image_path)
-                if existing_metadata:
-                    continue  # Skip si déjà traité
+    # def extract_and_store_metadata_batch(self, image_paths):
+    #     """Extraire et stocker les métadonnées pour un lot d'images"""
+    #     try:
+    #         for image_path in image_paths:
+    #             # Vérifier si les métadonnées existent déjà
+    #             existing_metadata = self.get_image_metadata(image_path)
+    #             if existing_metadata:
+    #                 continue  # Skip si déjà traité
                 
-                # Extraire et stocker les métadonnées
-                metadata = self.extract_image_metadata(image_path)
-                if metadata:
-                    self.store_image_metadata(image_path, metadata)
+    #             # Extraire et stocker les métadonnées
+    #             metadata = self.extract_image_metadata(image_path)
+    #             if metadata:
+    #                 self.store_image_metadata(image_path, metadata)
                     
-        except Exception as e:
-            print(f"[ERROR] Error in batch metadata extraction: {e}")
-
-    def extract_all_metadata_with_progress(self):
-        """Extraire les métadonnées avec barre de progression"""
-        try:
-            # Obtenir toutes les images
-            image_extensions = ('.png', '.jpg', '.jpeg', '.gif', '.bmp', '.tiff', '.webp')
-            all_images = []
-            for file in os.listdir(self.current_directory):
-                if file.lower().endswith(image_extensions):
-                    full_path = os.path.join(self.current_directory, file)
-                    all_images.append(full_path)
-            
-            if not all_images:
-                messagebox.showinfo("Info", "No images found in directory")
-                return
-            
-            # Créer la fenêtre de progression
-            progress_window = tk.Toplevel(self.root)
-            progress_window.title("Extracting Metadata")
-            progress_window.geometry("500x200")
-            progress_window.resizable(False, False)
-            
-            # Centrer la fenêtre
-            progress_window.transient(self.root)
-            progress_window.grab_set()
-            
-            main_frame = ttk.Frame(progress_window, padding=20)
-            main_frame.pack(fill="both", expand=True)
-            
-            title_label = ttk.Label(main_frame, text="Extracting ComfyUI Metadata", font=("Arial", 12, "bold"))
-            title_label.pack(pady=(0, 10))
-            
-            self.progress_var = tk.DoubleVar()
-            self.progress_label = ttk.Label(main_frame, text="Preparing...")
-            self.progress_label.pack(pady=(0, 5))
-            
-            progress_bar = ttk.Progressbar(main_frame, variable=self.progress_var, maximum=100)
-            progress_bar.pack(fill="x", pady=(0, 10))
-            
-            self.status_label = ttk.Label(main_frame, text="")
-            self.status_label.pack()
-            
-            # Bouton d'annulation
-            self.cancel_extraction = False
-            cancel_btn = ttk.Button(main_frame, text="Cancel", 
-                                   command=lambda: setattr(self, 'cancel_extraction', True))
-            cancel_btn.pack(pady=(10, 0))
-            
-            # Lancer l'extraction en thread
-            def extraction_thread():
-                results = self.extract_metadata_batch_with_progress(all_images, progress_window)
-                self.root.after(0, lambda: self.show_extraction_results(results, progress_window))
-            
-            threading.Thread(target=extraction_thread, daemon=True).start()
-            
-        except Exception as e:
-            print(f"[ERROR] Error starting metadata extraction: {e}")
-            messagebox.showerror("Error", f"Failed to start extraction: {e}")
-
-    def extract_metadata_batch_with_progress(self, image_paths, progress_window):
-        """Extraire les métadonnées avec mise à jour de la progression"""
-        try:
-            total = len(image_paths)
-            processed = 0
-            skipped = 0
-            errors = 0
-            comfyui_found = 0
-            results = []
-            
-            for i, image_path in enumerate(image_paths):
-                if getattr(self, 'cancel_extraction', False):
-                    break
-                    
-                try:
-                    filename = os.path.basename(image_path)
-                    
-                    # Mise à jour de l'interface
-                    progress = (i / total) * 100
-                    self.root.after(0, lambda p=progress, f=filename: self.update_progress(p, f"Processing: {f}"))
-                    
-                    # Vérifier si déjà traité
-                    existing_metadata = self.get_image_metadata(image_path)
-                    if existing_metadata and existing_metadata.get('positive_prompt') is not None:
-                        skipped += 1
-                        results.append({
-                            'file': filename,
-                            'status': 'Skipped',
-                            'reason': 'Already processed',
-                            'has_comfyui': bool(existing_metadata.get('positive_prompt'))
-                        })
-                        continue
-                    
-                    # Extraire les métadonnées
-                    metadata = self.extract_image_metadata(image_path)
-                    if metadata:
-                        if self.store_image_metadata(image_path, metadata):
-                            processed += 1
-                            has_comfyui = bool(metadata.get('positive_prompt'))
-                            if has_comfyui:
-                                comfyui_found += 1
-                            
-                            results.append({
-                                'file': filename,
-                                'status': 'Processed',
-                                'width': metadata.get('width'),
-                                'height': metadata.get('height'),
-                                'format': metadata.get('format'),
-                                'file_size': metadata.get('file_size'),
-                                'has_comfyui': has_comfyui,
-                                'positive_prompt': metadata.get('positive_prompt', '')[:100] + '...' if len(metadata.get('positive_prompt', '')) > 100 else metadata.get('positive_prompt', ''),
-                                'model': metadata.get('model_info', {}).get('checkpoint', '')
-                            })
-                        else:
-                            errors += 1
-                            results.append({
-                                'file': filename,
-                                'status': 'Error',
-                                'reason': 'Failed to store'
-                            })
-                    else:
-                        errors += 1
-                        results.append({
-                            'file': filename,
-                            'status': 'Error',
-                            'reason': 'Failed to extract'
-                        })
-                    
-                    # Petit délai pour permettre l'annulation
-                    time.sleep(0.01)
-                    
-                except Exception as e:
-                    errors += 1
-                    results.append({
-                        'file': os.path.basename(image_path),
-                        'status': 'Error',
-                        'reason': str(e)
-                    })
-            
-            # Résumé final
-            summary = {
-                'total': total,
-                'processed': processed,
-                'skipped': skipped,
-                'errors': errors,
-                'comfyui_found': comfyui_found,
-                'cancelled': getattr(self, 'cancel_extraction', False)
-            }
-            
-            return {'summary': summary, 'details': results}
-            
-        except Exception as e:
-            print(f"[ERROR] Error in batch extraction: {e}")
-            return {'summary': {'total': 0, 'processed': 0, 'errors': 1}, 'details': []}
-
-    def update_progress(self, progress, status):
-        """Mettre à jour la barre de progression"""
-        try:
-            if hasattr(self, 'progress_var'):
-                self.progress_var.set(progress)
-            if hasattr(self, 'progress_label'):
-                self.progress_label.config(text=f"Progress: {progress:.1f}%")
-            if hasattr(self, 'status_label'):
-                self.status_label.config(text=status)
-        except:
-            pass
-
-    def show_extraction_results(self, results, progress_window):
-        """Afficher les résultats de l'extraction dans un formulaire"""
-        try:
-            progress_window.destroy()
-            
-            summary = results['summary']
-            
-            # Créer la fenêtre de résultats
-            results_window = tk.Toplevel(self.root)
-            results_window.title("ComfyUI Metadata Extraction Results")
-            results_window.geometry("600x400")
-            results_window.resizable(True, True)
-            
-            main_frame = ttk.Frame(results_window, padding=10)
-            main_frame.pack(fill="both", expand=True)
-            
-            # Titre
-            title_label = ttk.Label(main_frame, text="ComfyUI Metadata Extraction Results", 
-                                   font=("Arial", 14, "bold"))
-            title_label.pack(pady=(0, 10))
-            
-            # Résumé
-            summary_frame = ttk.LabelFrame(main_frame, text="Summary", padding=10)
-            summary_frame.pack(fill="x", pady=(0, 10))
-            
-            total_new = summary['total'] - summary['skipped']
-            success_rate = (summary['processed'] / total_new * 100) if total_new > 0 else 0
-            
-            summary_text = f"""Total images: {summary['total']}
-Successfully processed: {summary['processed']}
-Already processed (skipped): {summary['skipped']}
-Errors: {summary['errors']}
-Images with ComfyUI prompts: {summary['comfyui_found']}
-Success rate: {success_rate:.1f}% (of new images)"""
-
-            if summary.get('cancelled'):
-                summary_text += "\n⚠️ Extraction was cancelled"
-            
-            summary_label = ttk.Label(summary_frame, text=summary_text, justify="left")
-            summary_label.pack()
-            
-            # Boutons
-            button_frame = ttk.Frame(main_frame)
-            button_frame.pack(fill="x", pady=(10, 0))
-            
-            close_btn = ttk.Button(button_frame, text="Close", command=results_window.destroy)
-            close_btn.pack(side="right", padx=(5, 0))
-            
-        except Exception as e:
-            print(f"[ERROR] Error showing results: {e}")
-            messagebox.showerror("Error", f"Failed to show results: {e}")
-
-    def show_image_metadata(self, image_path):
-        """Afficher les métadonnées complètes d'une image dans un formulaire avec onglets"""
-        try:
-            metadata = self.get_image_metadata(image_path)
-            if not metadata:  
-                # Extraire les métadonnées si pas encore fait
-                meta = self.extract_image_metadata(image_path)
-                if meta:
-                    self.store_image_metadata(image_path, meta)
-                    metadata = meta
-
-            if metadata:
-                filename = os.path.basename(image_path)
-                
-                # Créer la fenêtre principale
-                metadata_window = tk.Toplevel(self.root)
-                metadata_window.title(f"Image Metadata - {filename}")
-                metadata_window.geometry("800x600")
-                metadata_window.resizable(True, True)
-                
-                # Frame principal
-                main_frame = ttk.Frame(metadata_window, padding=10)
-                main_frame.pack(fill="both", expand=True)
-                
-                # Titre avec nom du fichier
-                title_label = ttk.Label(main_frame, text=f"Metadata: {filename}", 
-                                       font=("Arial", 14, "bold"))
-                title_label.pack(pady=(0, 10))
-                
-                # Créer le notebook pour les onglets
-                notebook = ttk.Notebook(main_frame)
-                notebook.pack(fill="both", expand=True, pady=(0, 10))
-                
-                # ONGLET 1: ComfyUI Prompts
-                prompts_frame = ttk.Frame(notebook, padding=10)
-                notebook.add(prompts_frame, text="ComfyUI Prompts")
-                
-                if metadata.get('positive_prompt') or metadata.get('negative_prompt'):
-                    # Positive Prompt
-                    pos_label = ttk.Label(prompts_frame, text="Positive Prompt:", 
-                                         font=("Arial", 10, "bold"))
-                    pos_label.pack(anchor="w", pady=(0, 5))
-                    
-                    pos_frame = ttk.Frame(prompts_frame)
-                    pos_frame.pack(fill="both", expand=True, pady=(0, 10))
-                    
-                    pos_text = tk.Text(pos_frame, height=8, wrap=tk.WORD)
-                    pos_text.insert("1.0", metadata.get('positive_prompt', 'No positive prompt'))
-                    pos_text.config(state=tk.DISABLED)
-                    
-                    pos_scrollbar = ttk.Scrollbar(pos_frame, orient="vertical", command=pos_text.yview)
-                    pos_text.configure(yscrollcommand=pos_scrollbar.set)
-                    
-                    pos_text.pack(side="left", fill="both", expand=True)
-                    pos_scrollbar.pack(side="right", fill="y")
-                    
-                    # Bouton pour copier le prompt positif
-                    pos_btn_frame = ttk.Frame(prompts_frame)
-                    pos_btn_frame.pack(fill="x", pady=(0, 10))
-                    
-                    copy_pos_btn = ttk.Button(pos_btn_frame, text="Copy Positive Prompt", 
-                                             command=lambda: self.copy_to_clipboard(metadata.get('positive_prompt', '')))
-                    copy_pos_btn.pack(side="left")
-                    
-                    #                 # Bouton pour éditer le prompt positif
-                    #                 edit_prompt_btn = ttk.Button(pos_btn_frame, text="Éditer le prompt positif",
-                    # command=lambda: cls_local_PromptTable(
-                    #     isDependOn=False,
-                    #     num_dossier="",
-                    #     chemin="",
-                    #     nom_fichier="",
-                    #     descriptif=metadata.get('positive_prompt',  ''),
-                    #     prompt_text=metadata.get('positive_prompt', '')  # <-- passage du texte
-                    # )
-                    #)
-                    #edit_prompt_btn.pack(side="left", padx=(10, 0))
-                    
-                    # Negative Prompt
-                    neg_label = ttk.Label(prompts_frame, text="Negative Prompt:", 
-                                         font=("Arial", 10, "bold"))
-                    neg_label.pack(anchor="w", pady=(0, 5))
-                    
-                    neg_frame = ttk.Frame(prompts_frame)
-                    neg_frame.pack(fill="both", expand=True)
-                    
-                    neg_text = tk.Text(neg_frame, height=6, wrap=tk.WORD)
-                    neg_text.insert("1.0", metadata.get('negative_prompt', 'No negative prompt'))
-                    neg_text.config(state=tk.DISABLED)
-                    
-                    neg_scrollbar = ttk.Scrollbar(neg_frame, orient="vertical", command=neg_text.yview)
-                    neg_text.configure(yscrollcommand=neg_scrollbar.set)
-                    
-                    neg_text.pack(side="left", fill="both", expand=True)
-                    neg_scrollbar.pack(side="right", fill="y")
-                    
-                    # Bouton pour copier le prompt négatif
-                    neg_btn_frame = ttk.Frame(prompts_frame)
-                    neg_btn_frame.pack(fill="x", pady=(10, 0))
-                    
-                    copy_neg_btn = ttk.Button(neg_btn_frame, text="Copy Negative Prompt", 
-                                             command=lambda: self.copy_to_clipboard(metadata.get('negative_prompt', '')))
-                    copy_neg_btn.pack(side="left")
-                    
-                else:
-                    no_prompts_label = ttk.Label(prompts_frame, text="No ComfyUI prompts found in this image", 
-                                               font=("Arial", 12))
-                    no_prompts_label.pack(expand=True)
-                
-                # ONGLET 2: Generation Parameters
-                params_frame = ttk.Frame(notebook, padding=10)
-                notebook.add(params_frame, text="Generation Parameters")
-                
-                if metadata.get('model_checkpoint') or metadata.get('generation_steps'):
-                    # Paramètres de génération
-                    params_data = [
-                        ("Model Checkpoint", metadata.get('model_checkpoint', 'Unknown')),
-                        ("VAE", metadata.get('model_vae', 'Unknown')),
-                        ("Steps", metadata.get('generation_steps', 'Unknown')),
-                        ("CFG Scale", metadata.get('cfg_scale', 'Unknown')),
-                        ("Sampler", metadata.get('sampler_name', 'Unknown')),
-                        ("Scheduler", metadata.get('scheduler', 'Unknown')),
-                        ("Seed", metadata.get('seed', 'Unknown'))
-                    ]
-                    
-                    for i, (label, value) in enumerate(params_data):
-                        param_frame = ttk.Frame(params_frame)
-                        param_frame.pack(fill="x", pady=2)
-                        
-                        param_label = ttk.Label(param_frame, text=f"{label}:", 
-                                               font=("Arial", 9, "bold"), width=15)
-                        param_label.pack(side="left", anchor="w")
-                        
-                        param_value = ttk.Label(param_frame, text=str(value))
-                        param_value.pack(side="left", anchor="w", padx=(10, 0))
-                    
-                else:
-                    no_params_label = ttk.Label(params_frame, text="No generation parameters found", 
-                                              font=("Arial", 12))
-                    no_params_label.pack(expand=True)
-                
-                # Frame pour les boutons en bas
-                button_frame = ttk.Frame(main_frame)
-                button_frame.pack(fill="x", pady=(10, 0))
-                
-                # Bouton pour fermer
-                close_btn = ttk.Button(button_frame, text="Close", command=metadata_window.destroy)
-                close_btn.pack(side="right", padx=(5, 0))
-                
-                # Bouton pour ouvrir l'image
-                open_btn = ttk.Button(button_frame, text="Open Image", 
-                                     command=lambda: self.open_image(image_path))
-                open_btn.pack(side="right", padx=(5, 0))
-                
-                # Bouton pour copier le chemin
-                copy_path_btn = ttk.Button(button_frame, text="Copy Path", 
-                                          command=lambda: self.copy_to_clipboard(image_path))
-                copy_path_btn.pack(side="right", padx=(5, 0))
-                
-            else:
-                messagebox.showwarning("Warning", "No metadata available for this image")
-            
-        except Exception as e:
-            print(f"[ERROR] Error showing metadata: {e}")
-            messagebox.showerror("Error", f"Failed to get metadata: {e}")
-
-    def copy_to_clipboard(self, text):
-        """Copier du texte dans le presse-papiers"""
-        try:
-            self.root.clipboard_clear()
-            self.root.clipboard_append(text)
-            self.root.update()  # Maintenir le presse-papiers
-            messagebox.showinfo("Copied", "Text copied to clipboard")
-        except Exception as e:
-            print(f"[ERROR] Error copying to clipboard: {e}")
-            messagebox.showerror("Error", "Failed to copy to clipboard")
+    #     except Exception as e:
+    #         print(f"[ERROR] Error in batch metadata extraction: {e}")
 
     def show_loading_modal(self, message="Chargement des images..."):
         """Affiche une fenêtre modale avec une barre de progression indéterminée"""
@@ -1572,6 +1203,58 @@ Success rate: {success_rate:.1f}% (of new images)"""
                 json.dump(options, f, indent=2)
         except Exception as e:
             print(f"[ERROR] Error saving options: {e}")
+
+    def Extract_all_metadata(self):
+        """Charger les métadonnées pour tous les fichiers présents dans la table viewed_images avec une barre de progression"""
+        try:
+            conn, cursor = self.get_db_connection()
+            cursor.execute(
+                "SELECT image_path FROM viewed_images WHERE function_name = ?",
+                (self.title,)
+            )
+            image_paths = [row[0] for row in cursor.fetchall()]
+            conn.close()
+
+            # Vérifier quelles images n'ont pas encore de métadonnées
+            images_needing_metadata = []
+            for image_path in image_paths:
+                existing_metadata = self.get_image_metadata(image_path)
+                if not existing_metadata:
+                    images_needing_metadata.append(image_path)
+
+            total = len(images_needing_metadata)
+            if total == 0:
+                messagebox.showinfo("Info", "Toutes les images ont déjà des métadonnées.")
+                return
+
+            # Créer une fenêtre de progression
+            progress_win = tk.Toplevel(self.root)
+            progress_win.title("Extraction des métadonnées")
+            progress_win.geometry("400x120")
+            progress_win.resizable(False, False)
+            progress_label = ttk.Label(progress_win, text="Extraction des métadonnées...")
+            progress_label.pack(pady=(20, 10))
+            progress_bar = ttk.Progressbar(progress_win, length=350, mode="determinate", maximum=total)
+            progress_bar.pack(pady=(0, 10))
+            percent_label = ttk.Label(progress_win, text="0%")
+            percent_label.pack()
+
+            self.root.update_idletasks()
+
+            for idx, image_path in enumerate(images_needing_metadata, 1):
+                metadata = self.extract_image_metadata(image_path)
+                if metadata:
+                    self.store_image_metadata(image_path, metadata)
+                progress_bar["value"] = idx
+                percent_label.config(text=f"{int(idx/total*100)}%")
+                progress_win.update_idletasks()
+
+            progress_win.destroy()
+            messagebox.showinfo("Terminé", f"Métadonnées extraites pour {total} images.")
+
+        except Exception as e:
+            print(f"[ERROR] Erreur lors du chargement des métadonnées : {e}")
+            messagebox.showerror("Erreur", f"Erreur lors du chargement des métadonnées : {e}")
 
 
 def main(config):
