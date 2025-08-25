@@ -60,7 +60,7 @@ class image_process:
         print(f"[DEBUG] Directory exists: {os.path.exists(self.default_directory)}")
         
         if os.path.exists(self.default_directory):
-            self.setup_directory_watcher()
+          
             self.load_images_async()
         else:
             print(f"[WARNING] Directory does not exist: {self.default_directory}")
@@ -300,19 +300,9 @@ class image_process:
             self.dir_label.config(text=f"Directory: {self.current_directory}")
             self.page = 0
             self.load_images_async()
-            self.setup_directory_watcher()
+          
 
-    def setup_directory_watcher(self):
-        """Configurer la surveillance du répertoire"""
-        # try:
-        #     # if self.watcher_thread:
-        #     #     self.watcher_thread.stop()
-            
-        #     # self.watcher_thread = DirectoryWatcherThread(self)
-        #     # self.watcher_thread.start()
-        # except Exception as e:
-        #     print(f"[ERROR] Could not setup directory watcher: {e}")
-
+   
     def load_images_async(self):
         """Charger les images de manière asynchrone avec une fenêtre modale"""
         if self.loading:
@@ -359,12 +349,10 @@ class image_process:
                 print(f"[DEBUG] Filtering {len(all_files)} images for function '{self.title}'")
                 
                 for image_path in all_files:
-                   
-
                     if not self.is_image_viewed(image_path):
                         filtered_files.append(image_path)
-                    else:
-                        print(f"[DEBUG] Excluding viewed image: {os.path.basename(image_path)}")
+                    #else:
+                        #print(f"[DEBUG] Excluding viewed image: {os.path.basename(image_path)}")
                 
                 filtered_files_to_use = filtered_files
                 print(f"[DEBUG] After filtering: {len(filtered_files_to_use)} new images")
@@ -459,8 +447,8 @@ class image_process:
                         filename = f"✓ {filename}"  # Ajouter une coche
                     
                     # Ajouter les informations de métadonnées si disponibles
-                    if metadata:
-                        info_text = f"{filename}\n{metadata['width']}x{metadata['height']} - {metadata['format']}"
+                    #if metadata:
+                        #info_text = f"{filename}\n{metadata['width']}x{metadata['height']} - {metadata['format']}"
                         # if metadata['file_size']:
                         #     size_mb = metadata['file_size'] / (1024 * 1024)
                         #     info_text += f"\n{size_mb:.1f} MB"
@@ -469,11 +457,11 @@ class image_process:
                         # if metadata.get('positive_prompt'):
                         #     prompt_preview = metadata['positive_prompt'][:30] + "..." if len(metadata['positive_prompt']) > 30 else metadata['positive_prompt']
                         #     info_text += f"\n📝 {prompt_preview}"
-                    else:
-                        info_text = filename
+                    #else:
+                        #info_text = filename
                     
-                    name_label = ttk.Label(image_frame, text=info_text, wraplength=180)
-                    name_label.pack()
+                    #name_label = ttk.Label(image_frame, text=info_text, wraplength=180)
+                    #name_label.pack()
                     
                     # Boutons d'action
                     btn_frame = ttk.Frame(image_frame)
@@ -518,7 +506,8 @@ class image_process:
     def show_edit_prompt(self, image_path):
         """Afficher le prompt d'édition pour une image"""
         try:
-            metadata = get_image_metadata(image_path)
+            metadata = extract_comfyui_metadata(image_path)
+            
             text = ""
             if metadata:
                 text = metadata.get("positive_prompt", "")
@@ -583,7 +572,9 @@ class image_process:
             import os
             import platform
             import subprocess
-            
+
+            print(f"[DEBUG] open_image: {image_path}")  # Ajoute ceci pour debug
+
             system = platform.system()
             if system == "Windows":
                 os.startfile(image_path)
@@ -591,7 +582,7 @@ class image_process:
                 subprocess.run(["open", image_path])
             else:  # Linux et autres
                 subprocess.run(["xdg-open", image_path])
-                
+
         except Exception as e:
             print(f"[ERROR] Error opening image: {e}")
             messagebox.showerror("Error", f"Failed to open image: {e}")

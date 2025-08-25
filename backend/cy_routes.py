@@ -4,6 +4,7 @@ import json
 import platform
 import csv
 import subprocess
+import time
 from werkzeug.utils import secure_filename
 from datetime import datetime
 # Import de la configuration centralisée
@@ -105,7 +106,7 @@ def calculate_delay(data):
 
 
 @cy_routes.route("/read_annonces_json", methods=["POST"])
-async def read_annonces_json():
+def read_annonces_json():
     try:
         print("DBG-4658.0: Début de la fonction read_annonces_json")
         isDetectNew = "O"
@@ -291,101 +292,50 @@ async def read_annonces_json():
                                 thecategorie = match.group(1).strip()
                             # data["Categorie"] = parsed_json.get("#categorie#", "N/A")
                             infos = texte
-                            the_request = await load_Instruction_classement()
+                            the_request =  load_Instruction_classement()
                             print(
-                                 f"{parent_dir}NEW-4658c- la question pour le classement",
+                                 f"{parent_dir}NEW-4958c- la question pour le classement",
                                  the_request,
                             )
                             if not the_request or the_request.strip() == "":
                                 print(
-                                    f"{parent_dir}ERR-4658d: the_request is invalid or empty."
+                                    f"{parent_dir}ERR-4958d: the_request is invalid or empty."
                                 )
                                 # return jsonify({"status": "error", "message": "Invalid instruction request"}), 400
                                 infos = texte
                             else:
-                                role = "analyse le texte suivant et réponds à cette question, peux tu renvoyer les informations sous forme de données json, les champs son définie dans la question entre [ et ]"
+                                role = "analyse le texte suivant et réponds à cette question, peux tu renvoyer les informations sous forme de données json, les champs sont définie dans la question entre [ et ]"
                                 print(
-                                    f"{parent_dir}ERR-4658e : le rôle pour le classement",
+                                    f"{parent_dir}dbg-4958e : le rôle pour le classement",
                                     role,
                                 )
-                                infos = get_mistral_answer(the_request, role, texte)
-                                print(f"{parent_dir}NEW-4658f answer mistral = ", infos)
+                                infos =  get_mistral_answer(the_request, role, texte)
+                                time.sleep(1)
+
+                                print(f"{parent_dir}NEW-4958f answer mistral = ", infos)
                                 
                             if infos:
                                 try:
-                                    print(f"{parent_dir}NEW-4658d")    
-                                    # Tenter de parser comme JSON
-                                    parsed_json = json.loads(infos)
-                                    data["url"] = parsed_json.get("url", "N/A")
-                                    data["Date"] = parsed_json.get("Date", "N/A")
-                                    data["entreprise"] = parsed_json.get(
-                                        "entreprise", "N/A"
-                                    )
-                                    data["description"] = parsed_json.get(
-                                        "poste", "N/A"
-                                    )
-                                    data["Lieu"] = parsed_json.get("lieu", "N/A")
                                     
-                                 
+                                    json_match = re.search(r"```json\s*(\{.*?\})\s*```", infos, re.DOTALL)
+                                   
+                                    if json_match:
+                                        
+                                        extracted_json = json.loads(json_match.group(1))
+                                        data["url"] = extracted_json.get("url", "N/A")
+                                        data["Date"] = extracted_json.get("Date", "N/A")
+                                        data["description"] = extracted_json.get("poste", "N/A")
+                                        data["Lieu"] = extracted_json.get("lieu", "N/A")
+                                        data["entreprise"] = extracted_json.get("entreprise", "N/A")
+                             
                                 except json.JSONDecodeError:
-                                    # La réponse n'est pas du JSON valide
-                                    print(
-                                        f"{parent_dir}-ERR-4658f : Réponse non JSON, tentative d'extraction des infos du texte"
-                                    )
-                                    # Extraction basique (peut être améliorée)
-                                    try:
-                                        # Tenter de trouver des données structurées dans la réponse texte
-                                       
-                                        # Chercher un objet JSON dans la réponse
-                                        json_match = re.search(
-                                            r"(\{.*\})", infos, re.DOTALL
-                                        )
-                                        if json_match:
-                                            try:
-                                                extracted_json = json.loads(
-                                                    json_match.group(1)
-                                                )
-                                                data["url"] = extracted_json.get(
-                                                    "url", "N/A"
-                                                )
-                                                data["Date"] = extracted_json.get(
-                                                    "Date", "N/A"
-                                                )
-                                                if data["description"] == "":
-                                                    data["description"] = (
-                                                        extracted_json.get("poste", "N/A")
-                                                    )
-                                                data["Lieu"] = extracted_json.get(
-                                                    "lieu", "N/A"
-                                                )
-                                            except:
-                                                # Utiliser le texte brut
-                                                data["url"] = "N/A"
-                                                data["Date"] = "N/A"
-                                                 
-                                                if data["description"] == "":
-                                                    data["entreprise"] = "N/A"
-                                                data["description"] = "Pas d'infos"
-                                                data["Lieu"] = "N/A"
-                                        else:
-                                            # Utiliser le texte brut
-                                            data["url"] = "N/A"
-                                            data["Date"] = "N/A"
-                                            if data["description"] == "":
-                                                data["entreprise"] = "Pas d'infos"
-                                            
-                                            data["Lieu"] = "N/A"
-                                    except Exception as extraction_error:
-                                        print(
-                                            f"{parent_dir}-ERR-4658g : Erreur lors de l'extraction: {str(extraction_error)}"
-                                        )
-                                        # Fallback en cas d'échec total
-                                        data["url"] = "N/A"
-                                        data["Date"] = "N/A"
-                                        data["description"] = (
-                                            "Erreur lors du traitement"
-                                        )
-                                        data["Lieu"] = "N/A"
+                                    print(f"{parent_dir}NEW-4958g lors de l'analyse du JSON extrait.")
+                                    data["description"]="infos not find"
+                                    data["url"] = "N/A"
+                                    data["Date"] = "N/A"
+                                    data["Lieu"] = "N/A"
+                            print(f"{parent_dir}NEW-4958h : data['url']", data["url"])
+                            print(f"{parent_dir}NEW-4958h : data['description']", data["description"])
 
                             # Préparation des données
                             data["dossier"] = parent_dir
@@ -397,19 +347,15 @@ async def read_annonces_json():
                             data["BA"] = isBAdocx
                             data["BApdf"] = isBAinpdf
                             # block info piece
-                            data["etat"] = "New"
-                            
-                            if  data["description"] != "":
-                                data["description"] = thedescription
-                            if data["categorie"] != "":
-                                data["categorie"] = thecategorie
+                            data["etat"] = "new"
+                            data["date"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
                             # Créer l'objet de données pour ajouter à la liste
                             file_path_nodata = os.path.join(root, ".data.json")
                             file_path_nodata = file_path_nodata.replace("\\", "/")
                             jData = {file_path_nodata: data}
                             uscase="_annonce_"
-                            print(f"{parent_dir}NEW-4658e")    
+                            
                             try:
                                 # Vérifier si le répertoire parent existe
                                 parent_dir_path = os.path.dirname(file_path_nodata)
@@ -472,7 +418,7 @@ async def read_annonces_json():
                         print(
                             f"{parent_dir} ERR-4658f : Erreur lors de la création d'un nouvel enregistrement: {str(e)}"
                         )
-                print(uscase + f" - {parent_dir} - NEW-4658-m : Nombre de dossiers traités: {len(dossier_list)}")
+                #print(uscase + f" - {parent_dir} - NEW-4658-m : Nombre de dossiers traités: {len(dossier_list)}")
                         
 
         #print(f"NEW-4658j: Nombre de dossiers traités: {len(dossier_list)}")
@@ -481,6 +427,7 @@ async def read_annonces_json():
     except Exception as e:
         print(f"ERR-4658k : Erreur dans read_annonces_json: {str(e)}")
         import traceback
+
 
         traceback.print_exc()
         # En cas d'erreur, retourner un tableau vide plutôt qu'une erreur 500
@@ -1070,7 +1017,7 @@ def load_conf_tabs():
         return jsonify({"error": error_msg}), 500
 
 
-async def load_Instruction_classement():
+def load_Instruction_classement():
     try:
         text = ""
         file_name_txt = ".clas"
@@ -1476,3 +1423,5 @@ def serve_local_file():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+  
+    

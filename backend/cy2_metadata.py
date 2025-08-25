@@ -1,9 +1,12 @@
-def extract_comfyui_metadata(self, image_path):
+from PIL import Image
+import json
+
+def extract_comfyui_metadata(image_path):
     """Extraire les métadonnées spécifiques à ComfyUI"""
     try:
         prompts_data = {}
 
-        with Image.open(image_path) as img:
+        with Image.open(image_path) as img: 
             # ComfyUI stocke ses données dans les métadonnées PNG
             if hasattr(img, 'text') and img.text:
                 # Chercher les clés spécifiques à ComfyUI
@@ -22,8 +25,8 @@ def extract_comfyui_metadata(self, image_path):
                         pass
 
                 # Extraire les prompts des nœuds
-                positive_prompt, negative_prompt = self.parse_comfyui_prompts(prompts_data)
-                model_info = self.extract_model_info(prompts_data)
+                positive_prompt, negative_prompt = parse_comfyui_prompts(prompts_data)
+                model_info = extract_model_info(prompts_data)
 
                 if positive_prompt or negative_prompt:
                     return {
@@ -35,7 +38,7 @@ def extract_comfyui_metadata(self, image_path):
         return None
 
     except Exception as e:
-        print(f"[ERROR] Error extracting ComfyUI metadata for {image_path}: {e}")
+        print(f"[ERROR-1254] Error extracting ComfyUI metadata for {image_path}: {e}")
         return None
 
 def parse_comfyui_prompts(comfyui_data):
@@ -193,7 +196,7 @@ def Extract_all_metadata(self):
         messagebox.showerror("Erreur", f"Erreur lors du chargement des métadonnées : {e}")
 
 
-def store_image_metadata(self, image_path, metadata):
+def store_image_metadata( image_path, metadata):
     """Stocker les métadonnées d'une image en base"""
     try:
         if not metadata:

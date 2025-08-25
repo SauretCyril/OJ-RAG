@@ -1092,7 +1092,7 @@ class AnnouncementGUI:
                 messagebox.showerror("Erreur", f"Erreur serveur : {data if data else response.text}")
         except Exception as e:
             messagebox.showerror("Erreur", f"Erreur lors de la création du dossier sur le serveur : {str(e)}")
-
+        
 
 def main():
     """Fonction principale pour lancer l'application"""

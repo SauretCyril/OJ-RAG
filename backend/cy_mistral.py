@@ -4,7 +4,7 @@ import json
 from flask import Flask, jsonify, Blueprint
 
 import logging
-
+import httpx
 
 import requests
 from dotenv import load_dotenv
@@ -13,6 +13,7 @@ import pandas as pd
 from datetime import datetime
 import os
 import base64
+import time
 
 # Charger les variables d'environnement
 load_dotenv()
@@ -56,20 +57,30 @@ def get_mistral_answer(question, role, texte):
             "model": "mistral-medium",
             "messages": messages,
             "temperature": 0.7,
-            "max_tokens": 8000  # Augmenter cette valeur (était 5000)
+            "max_tokens": 9000  # Augmenter cette valeur (était 5000)
         }
         
         # Appel à l'API Mistral
+        time.sleep(10)
         response = requests.post(url, headers=headers, json=data)
-        if response.status_code == 429:
-            return '{"error": "Trop de requêtes envoyées à l\'API Mistral. Merci de patienter avant de réessayer."}'
-        response.raise_for_status()
-        return response.text
+        response.raise_for_status()  # Ajoute cette ligne
+        response_json = response.json()
+        if "choices" in response_json and response_json["choices"]:
+            content = response_json["choices"][0]["message"]["content"]
+            print(f"dbg-678 : Réponse de l'API Mistral: {content}")
+            return content
+        else:
+            # Retourner le message d'erreur de l'API si présent
+            error_msg = response_json.get("error", "Réponse inattendue de l'API Mistral")
+            return f'{{"error": "{error_msg}"}}'
     except requests.exceptions.HTTPError as e:
         if e.response is not None and e.response.status_code == 429:
+            print(f"dbg-678 : Trop de requêtes envoyées à l'API Mistral: {e}")
             return '{"error": "Trop de requêtes envoyées à l\'API Mistral. Merci de patienter avant de réessayer."}'
+            print(f"dbg-678 : Erreur de l'API Mistral: {e}")
         return f'{{"error": "Erreur lors de l\'appel à l\'API Mistral: {str(e)}"}}'
     except Exception as e:
+        print(f"dbg-678 : Erreur inattendue: {e}")
         return f'{{"error": "Erreur lors de l\'appel à l\'API Mistral: {str(e)}"}}'
 
 def create_excel_report(results, output_file_name):
@@ -183,7 +194,7 @@ def analyser_documents(directory,subject,type_doc_source,question,role):
                         "answer": "N/A : texte vide"
                         })
                         continue
-                    answer = get_mistral_answer(question, role, text)
+                    answer =  get_mistral_answer(question, role, text)
                     answer = answer.replace('\n', ' ').replace('\\', '').replace("\"", '"')
                     #print(f"dbg_638a : answer = {answer}")
                     results.append({
@@ -244,7 +255,7 @@ def get_mistral_translate(text, src_lang="fr", tgt_lang="en"):
     question = f"Traduis le texte suivant du {src_lang} vers le {tgt_lang} :"
     role = "Tu es un traducteur professionnel. Réponds uniquement par la traduction, sans explication."
     content = text
-    return get_mistral_answer(question, role, content)
+    return  get_mistral_answer(question, role, content)
 
 def get_nsfw_score(image_path):
     """

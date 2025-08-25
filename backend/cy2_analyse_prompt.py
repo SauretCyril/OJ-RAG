@@ -215,20 +215,23 @@ class cy2_analyse_prompt(tk.Tk):
 
         question = (
             "Décompose le texte suivant en lignes thématiques :\n"
-            "- personnage : description du personnage\n"
-            "- position : description extêmement détaillée de la position du ou des sujets\n"
-            "- habits : description des vêtements (ou nu)\n"
-            "- poitrine : description de la poitrine\n"
-            "- age : âge ou apparence d'âge\n"
-            "- lieux : description du lieu\n"
-            "- lumière : description de la lumière\n"
-            "- atmosphere : ambiance générale\n"
-            "- autres : tout autre élément pertinent\n"
-            "Pour chaque ligne, commence par le nom du thème suivi de ':' puis la description extraite ou 'N/A' si non présent.\n"
-            "Texte :\n"
+            "- <personnage> : description du personnage\n"
+            "- <position> : description extêmement détaillée de la position du ou des sujets\n"
+            "- <habits> : description des vêtements (ou nu)\n"
+            "- <poitrine> : description de la poitrine\n"
+            "- <age> : âge ou apparence d'âge\n"
+            "- <lieux> : description du lieu\n"
+            "- <lumière> : description de la lumière\n"
+            "- <atmosphere> : ambiance générale\n"
+            "- <autres> : tout autre élément pertinent\n"
+            "le résultat doit être sous forme de liste 'key : value', "
+            "la clé est la valeur encadré par des < >  et la value est la réponse à la question qui se trouve apres les ':' .\n"
+           
             f"{texte}"
         )
-        role = "Tu es un assistant qui extrait et classe les informations d'une description d'image."
+        role = "Tu es un assistant avec une expertise de photographe qui extrait et classe les informations d'une description d'image."
+
+        #result = get_mistral_answer(question, role, texte)
         result = self.mistral_translate(question, src_lang="fr", tgt_lang="fr")
 
         if not result or not result.strip():
@@ -276,44 +279,28 @@ class cy2_analyse_prompt(tk.Tk):
             self.update_idletasks()
 
     def rebuild_prompt(self):
-        lignes = [p for p in self.prompts if p["type"].lower() not in ("prompt", "negative")]
+        # Concaténer toutes les lignes (hors "prompt" et "negative") avec une virgule
+        lignes = [p["fr"].strip() for p in self.prompts if p["type"].lower() not in ("prompt", "negative") and p["fr"].strip()]
         if not lignes:
             messagebox.showinfo("Info", "Aucune ligne à concaténer pour ce prompt.")
             return
-        texte_concat = "\n".join(p["fr"] for p in lignes if p["fr"].strip())
-        if not texte_concat:
-            messagebox.showinfo("Info", "Aucun texte à concaténer pour ce prompt.")
-            return
+        texte_concat = ", ".join(lignes)
         question = (
-            "À partir des éléments suivants, écris un prompt cohérent, fluide et naturel pour décrire une image. "
-            "Utilise toutes les informations, mais sans répéter les thèmes. Controle les éléments sur la poitrine en reformulant tout en respectant la tournure"
-            "pour que la poitrine soit petite et trés naturel"
-            "Texte à fusionner :\n"
+            "Réécris le texte suivant en un prompt cohérent, fluide et naturel pour décrire une image. "
+            "Utilise toutes les informations, sans répétition. "
+            "Texte à reformuler :\n"
             f"{texte_concat}"
         )
+        
         prompt_fr = self.mistral_translate(question, src_lang="fr", tgt_lang="fr")
-        self.prompts = [
-            p for p in self.prompts
-            if p["type"].lower() in ("prompt", "negative")
-        ]
-        ligne_prompt = next((p for p in self.prompts if p["type"].lower() == "prompt"), None)
-        if ligne_prompt is None:
-            ligne_prompt = {
-                "fr": "",
-                "en": "",
-                "type": "Prompt"
-            }
-            self.prompts.append(ligne_prompt)
-        ligne_prompt["fr"] = prompt_fr
-        prompt_en = self.mistral_translate(prompt_fr, src_lang="fr", tgt_lang="en")
-        ligne_prompt["en"] = prompt_en
 
-        # Ajout : mettre le texte français dans la zone de saisie
+      
+        # Afficher dans la zone de texte française
         self.prompt_textbox_fr.delete("1.0", tk.END)
         self.prompt_textbox_fr.insert("1.0", prompt_fr)
 
         self.refresh_table()
-        messagebox.showinfo("Reconstruit", "Le prompt a été reconstruit et mis à jour.")
+        #messagebox.showinfo("Reconstruit", "Le prompt a été reconstruit et mis à jour.")
 
     def load_prompt_from_text(self, text):
         self.prompts = self.analyse_prompt_text(text)
