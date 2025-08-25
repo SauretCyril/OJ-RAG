@@ -13,6 +13,7 @@ import hashlib
 from PIL.ExifTags import TAGS
 from cy2_analyse_prompt import cy2_analyse_prompt
 from cy_mistral import get_nsfw_score
+from cy2_metadata import *
 #from cy2_analyse_prompt import cls_local_PromptTable
 
 
@@ -230,8 +231,7 @@ class image_process:
         mark_all_btn = ttk.Button(action_frame, text="Mark All as Viewed", command=self.mark_all_as_viewed)
         mark_all_btn.pack(side="left", padx=(10, 0))
 
-        load_meta_btn = ttk.Button(action_frame, text="Charger toutes les métadonnées", command=self.Extract_all_metadata)
-        load_meta_btn.pack(side="left", padx=(10, 0))
+        
 
         # Quatrième ligne - Navigation et barre de progression
         nav_frame = ttk.Frame(top_frame)
@@ -350,7 +350,7 @@ class image_process:
                     all_files.append(full_path)
             
             # Trier par nom
-            all_files.sort(key=lambda x: x[1], reverse=True)
+            all_files.sort(key=lambda x: os.path.getmtime(x), reverse=True)
             
             # Filtrer selon le mode de vue
             if self.view_mode == "new":
@@ -407,21 +407,7 @@ class image_process:
                 self.image_widgets.append(no_images_label)
                 return
 
-            # Vérifier quelles images n'ont pas encore de métadonnées
-            # images_needing_metadata = []
-            # for image_path in self.image_files:
-            #     existing_metadata = self.get_image_metadata(image_path)
-            #     if not existing_metadata:
-            #         images_needing_metadata.append(image_path)
-    
-            # # Extraire les métadonnées SEULEMENT pour les nouvelles images
-            # if images_needing_metadata:
-            #     print(f"[INFO] Extracting metadata for {len(images_needing_metadata)} new images")
-            #     self.root.after(100, lambda: self.extract_and_store_metadata_batch(images_needing_metadata))
-            # else:
-            #     print(f"[INFO] All displayed images already have metadata")
-
-            # Afficher les images en grille
+            
             cols = 4  # Nombre de colonnes
             for idx, image_path in enumerate(self.image_files):
                 try:
@@ -436,10 +422,10 @@ class image_process:
                     is_viewed = self.is_image_viewed(image_path)
                     
                     # Récupérer les métadonnées
-                    metadata = self.get_image_metadata(image_path)
-                    nsfw_score = None
-                    if metadata and 'nsfw_score' in metadata:
-                        nsfw_score = metadata['nsfw_score']
+                    # metadata = get_image_metadata(image_path)
+                    # nsfw_score = None
+                    # if metadata and 'nsfw_score' in metadata:
+                    #     nsfw_score = metadata['nsfw_score']
                     
                     # Charger et redimensionner l'image
                     with Image.open(image_path) as img:
@@ -462,11 +448,11 @@ class image_process:
                     img_label = tk.Label(image_frame, image=photo, cursor="hand2", bg=bg_color)
                     img_label.image = photo  # Garder une référence
                     img_label.pack()
-                    if nsfw_score is not None:
-                        pastille = tk.Canvas(image_frame, width=40, height=24, bg='white', highlightthickness=0)
-                        pastille.place(relx=1.0, y=2, anchor="ne")
-                        pastille.create_oval(0, 0, 40, 24, fill="white", outline="gray")
-                        pastille.create_text(20, 12, text=f"{nsfw_score:.2f}", fill="black", font=("Arial", 10, "bold"))
+                    # if nsfw_score is not None:
+                    #     pastille = tk.Canvas(image_frame, width=40, height=24, bg='white', highlightthickness=0)
+                    #     pastille.place(relx=1.0, y=2, anchor="ne")
+                    #     pastille.create_oval(0, 0, 40, 24, fill="white", outline="gray")
+                    #     pastille.create_text(20, 12, text=f"{nsfw_score:.2f}", fill="black", font=("Arial", 10, "bold"))
                     # Label pour le nom du fichier avec indication si vue
                     filename = os.path.basename(image_path)
                     if is_viewed:
@@ -528,12 +514,14 @@ class image_process:
             self.update_navigation_buttons()
         except Exception as e:
             print(f"[ERROR] Error in display_images: {e}")
+            
     def show_edit_prompt(self, image_path):
         """Afficher le prompt d'édition pour une image"""
         try:
-            metadata = self.get_image_metadata(image_path)
+            metadata = get_image_metadata(image_path)
+            text = ""
             if metadata:
-                text =metadata.get("positive_prompt")
+                text = metadata.get("positive_prompt", "")
             app = cy2_analyse_prompt(text)
             app.mainloop()
         except Exception as e:
@@ -568,7 +556,7 @@ class image_process:
                 shutil.move(image_path, target_path)
                 
                 # Supprimer les métadonnées de la base de données
-                self.remove_image_metadata(image_path)
+                remove_image_metadata(image_path)
                 
                 # Recharge la page pour tout réafficher proprement
                 self.refresh_images()
@@ -579,74 +567,15 @@ class image_process:
             print(f"[ERROR] Error moving image: {e}")
             messagebox.showerror("Error", f"Failed to move image: {e}")
 
-    # def hide_image_widget_immediately(self, image_path):
-    #     """Masquer immédiatement le widget d'une image spécifique"""
+   
+
+    
+    # def check_and_update_canvas(self):
+    #     """Mettre à jour la région de défilement du canvas"""
     #     try:
-    #         for widget in self.image_widgets[:]:  # Copie de la liste pour éviter les modifications pendant l'itération
-    #             if hasattr(widget, 'image_path') and widget.image_path == image_path:
-    #                 # Détruire le widget
-    #                 widget.destroy()
-    #                 # Retirer de la liste des widgets
-    #                 self.image_widgets.remove(widget)
-    #                 print(f"[INFO] Image widget removed: {os.path.basename(image_path)}")
-                    
-    #                 # Réorganiser les widgets restants
-    #                 self.reorganize_image_grid()
-    #                 break
-                    
+    #         self.canvas.configure(scrollregion=self.canvas.bbox("all"))
     #     except Exception as e:
-    #         print(f"[ERROR] Error hiding image widget: {e}")
-
-    # def reorganize_image_grid(self):
-    #     """Réorganiser la grille d'images après suppression d'un élément"""
-    #     try:
-    #         cols = 4  # Nombre de colonnes
-            
-    #         # Repositionner tous les widgets restants
-    #         for idx, widget in enumerate(self.image_widgets):
-    #             if widget.winfo_exists():  # Vérifier que le widget existe encore
-    #                 row = idx // cols
-    #                 col = idx % cols
-    #                 widget.grid(row=row, column=col, padx=5, pady=5, sticky="nsew")
-            
-    #         # Mettre à jour la région de défilement
-    #         self.root.after(10, self.check_and_update_canvas)
-            
-    #     except Exception as e:
-    #         print(f"[ERROR] Error reorganizing grid: {e}")
-
-    def remove_image_metadata(self, image_path):
-        """Supprimer les métadonnées d'une image de la base de données"""
-        try:
-            image_path = os.path.normpath(image_path)
-            conn, cursor = self.get_db_connection()
-            
-            # Supprimer les métadonnées
-            cursor.execute(
-                "DELETE FROM image_metadata WHERE function_name = ? AND image_path = ?",
-                (self.title, image_path)
-            )
-            
-            # Supprimer l'entrée "viewed" aussi
-            cursor.execute(
-                "DELETE FROM viewed_images WHERE function_name = ? AND image_path = ?",
-                (self.title, image_path)
-            )
-            
-            conn.commit()
-            conn.close()
-            
-            print(f"[INFO] Metadata removed for: {os.path.basename(image_path)}")
-            
-        except Exception as e:
-            print(f"[ERROR] Error removing metadata: {e}")
-
-    def check_and_update_canvas(self):
-        """Mettre à jour la région de défilement du canvas"""
-        try:
-            self.canvas.configure(scrollregion=self.canvas.bbox("all"))
-        except Exception as e:
-            print(f"[ERROR] Error updating canvas: {e}")
+    #         print(f"[ERROR] Error updating canvas: {e}")
 
     def open_image(self, image_path):
         """Ouvrir une image avec l'application par défaut du système"""
@@ -793,316 +722,10 @@ Progress: {(viewed_count/total_count*100):.1f}% completed"""
             print(f"[ERROR] Error clearing viewed images: {e}")
             messagebox.showerror("Error", f"Failed to clear viewed images: {e}")
 
-    # def calculate_file_hash(self, file_path):
-    #     """Calculer le hash SHA256 d'un fichier"""
-    #     try:
-    #         hash_sha256 = hashlib.sha256()
-    #         with open(file_path, "rb") as f:
-    #             for chunk in iter(lambda: f.read(4096), b""):
-    #                 hash_sha256.update(chunk)
-    #         return hash_sha256.hexdigest()
-    #     except Exception as e:
-    #         print(f"[ERROR] Error calculating hash for {file_path}: {e}")
-    #         return None
+   
 
-    def extract_image_metadata(self, image_path):
-        """Extraire les métadonnées d'une image et calculer le hash en une seule ouverture"""
-        try:
-            # Informations du fichier
-            file_stats = os.stat(image_path)
-            file_size = file_stats.st_size
-            creation_date = file_stats.st_ctime
-            modified_date = file_stats.st_mtime
-
-            # Calculer le hash SHA256 en une seule lecture
-            hash_sha256 = hashlib.sha256()
-            with open(image_path, "rb") as f:
-                for chunk in iter(lambda: f.read(4096), b""):
-                    hash_sha256.update(chunk)
-            file_hash = hash_sha256.hexdigest()
-
-            # Métadonnées de l'image avec PIL
-            with Image.open(image_path) as img:
-                width, height = img.size
-                format_type = img.format
-                mode = img.mode
-
-                # Extraire les données EXIF
-                exif_data = {}
-                if hasattr(img, '_getexif'):
-                    exif = img._getexif()
-                    if exif is not None:
-                        for tag, value in exif.items():
-                            tag_name = TAGS.get(tag, tag)
-                            exif_data[tag_name] = str(value)
-
-            # Extraire les métadonnées ComfyUI
-            comfyui_metadata = self.extract_comfyui_metadata(image_path)
-            
-            metadata = {
-                'file_size': file_size,
-                'width': width,
-                'height': height,
-                'format': format_type,
-                'mode': mode,
-                'file_hash': file_hash,
-                'creation_date': creation_date,
-                'modified_date': modified_date,
-                'exif_data': json.dumps(exif_data) if exif_data else None,
-                'positive_prompt': '',
-                'negative_prompt': '',
-                'workflow_data': '',
-                'model_info': {}
-            }
-            
-            # Ajouter les données ComfyUI si trouvées
-            if comfyui_metadata:
-                metadata.update({
-                    'positive_prompt': comfyui_metadata.get('positive_prompt', ''),
-                    'negative_prompt': comfyui_metadata.get('negative_prompt', ''),
-                    'workflow_data': comfyui_metadata.get('workflow_data', ''),
-                    'model_info': comfyui_metadata.get('model_info', {})
-                })
-            
-            return metadata
-            
-        except Exception as e:
-            print(f"[ERROR] Error extracting metadata for {image_path}: {e}")
-            return None
-
-    def extract_comfyui_metadata(self, image_path):
-        """Extraire les métadonnées spécifiques à ComfyUI"""
-        try:
-            prompts_data = {}
-            
-            with Image.open(image_path) as img:
-                # ComfyUI stocke ses données dans les métadonnées PNG
-                if hasattr(img, 'text') and img.text:
-                    # Chercher les clés spécifiques à ComfyUI
-                    if 'workflow' in img.text:
-                        try:
-                            workflow_data = json.loads(img.text['workflow'])
-                            prompts_data['workflow'] = workflow_data
-                        except json.JSONDecodeError:
-                            pass
-                    
-                    if 'prompt' in img.text:
-                        try:
-                            prompt_data = json.loads(img.text['prompt'])
-                            prompts_data['prompt'] = prompt_data
-                        except json.JSONDecodeError:
-                            pass
-                    
-                    # Extraire les prompts des nœuds
-                    positive_prompt, negative_prompt = self.parse_comfyui_prompts(prompts_data)
-                    model_info = self.extract_model_info(prompts_data)
-                    
-                    if positive_prompt or negative_prompt:
-                        return {
-                            'positive_prompt': positive_prompt,
-                            'negative_prompt': negative_prompt,
-                            'workflow_data': json.dumps(prompts_data) if prompts_data else None,
-                            'model_info': model_info
-                        }
-            return None
-            
-        except Exception as e:
-            print(f"[ERROR] Error extracting ComfyUI metadata for {image_path}: {e}")
-            return None
-
-    def parse_comfyui_prompts(self, comfyui_data):
-        """Parser les prompts positifs et négatifs depuis les données ComfyUI"""
-        try:
-            positive_prompt = ""
-            negative_prompt = ""
-            
-            for data_key, data_value in comfyui_data.items():
-                if isinstance(data_value, dict):
-                    for node_id, node_data in data_value.items():
-                        if isinstance(node_data, dict) and 'inputs' in node_data:
-                            inputs = node_data['inputs']
-                            class_type = node_data.get('class_type', '').lower()
-                            
-                            # Champs explicites
-                            if not positive_prompt and 'positive' in inputs:
-                                positive_prompt = inputs['positive']
-                            if not negative_prompt and 'negative' in inputs:
-                                negative_prompt = inputs['negative']
-
-                            # Champs text selon le type
-                            if 'text' in inputs:
-                                text_content = inputs['text']
-                                if not positive_prompt and (
-                                    'positive' in class_type or 
-                                    ('clip' in class_type and 'negative' not in class_type)
-                                ):
-                                    positive_prompt = text_content
-                                elif not negative_prompt and 'negative' in class_type:
-                                    negative_prompt = text_content
-                                elif not positive_prompt:
-                                    positive_prompt = text_content
-            
-            return positive_prompt, negative_prompt
-            
-        except Exception as e:
-            print(f"[ERROR] Error parsing ComfyUI prompts: {e}")
-            return "", ""
-
-    def extract_model_info(self, comfyui_data):
-        """Extraire les informations du modèle utilisé"""
-        try:
-            model_info = {}
-            
-            for data_key, data_value in comfyui_data.items():
-                if isinstance(data_value, dict):
-                    for node_id, node_data in data_value.items():
-                        if isinstance(node_data, dict):
-                            class_type = node_data.get('class_type', '').lower()
-                            inputs = node_data.get('inputs', {})
-                            
-                            # Modèles
-                            if any(keyword in class_type for keyword in ['checkpoint', 'model', 'flux']):
-                                if 'ckpt_name' in inputs:
-                                    model_info['checkpoint'] = inputs['ckpt_name']
-                                if 'model_name' in inputs:
-                                    model_info['model'] = inputs['model_name']
-                                if 'vae_name' in inputs:
-                                    model_info['vae'] = inputs['vae_name']
-                            
-                            # Paramètres de génération
-                            if any(keyword in class_type for keyword in ['sampler', 'scheduler']):
-                                model_info.update({
-                                    'steps': inputs.get('steps'),
-                                    'cfg': inputs.get('cfg'),
-                                    'sampler_name': inputs.get('sampler_name'),
-                                    'scheduler': inputs.get('scheduler'),
-                                    'seed': inputs.get('seed')
-                                })
-            
-            return model_info
-            
-        except Exception as e:
-            print(f"[ERROR] Error extracting model info: {e}")
-            return {}
-
-    def store_image_metadata(self, image_path, metadata):
-        """Stocker les métadonnées d'une image en base"""
-        try:
-            if not metadata:
-                return False
-                
-            image_path = os.path.normpath(image_path)
-            conn, cursor = self.get_db_connection()
-            
-            model_info = metadata.get('model_info', {})
-            
-            # Convertir les valeurs pour éviter les erreurs de type
-            positive_prompt = str(metadata.get('positive_prompt', '')) if metadata.get('positive_prompt') else ''
-            negative_prompt = str(metadata.get('negative_prompt', '')) if metadata.get('negative_prompt') else ''
-            workflow_data = str(metadata.get('workflow_data', '')) if metadata.get('workflow_data') else ''
-            
-            cursor.execute('''
-                INSERT OR REPLACE INTO image_metadata 
-                (function_name, image_path, file_size, width, height, format, mode, 
-                 file_hash, creation_date, modified_date, exif_data,
-                 positive_prompt, negative_prompt, workflow_data,
-                 model_checkpoint, model_vae, generation_steps, cfg_scale,
-                 sampler_name, scheduler, seed)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            ''', (
-                self.title, 
-                image_path, 
-                metadata['file_size'], 
-                metadata['width'], 
-                metadata['height'], 
-                metadata['format'], 
-                metadata['mode'], 
-                metadata['file_hash'],
-                metadata['creation_date'], 
-                metadata['modified_date'], 
-                metadata['exif_data'],
-                positive_prompt,
-                negative_prompt,
-                workflow_data,
-                str(model_info.get('checkpoint', '')) if model_info.get('checkpoint') else '',
-                str(model_info.get('vae', '')) if model_info.get('vae') else '',
-                model_info.get('steps') if model_info.get('steps') is not None else None,
-                model_info.get('cfg') if model_info.get('cfg') is not None else None,
-                str(model_info.get('sampler_name', '')) if model_info.get('sampler_name') else '',
-                str(model_info.get('scheduler', '')) if model_info.get('scheduler') else '',
-                model_info.get('seed') if model_info.get('seed') is not None else None
-            ))
-            
-            conn.commit()
-            conn.close()
-            return True
-            
-        except Exception as e:
-            print(f"[ERROR] Error storing metadata: {e}")
-            return False
-
-    def get_image_metadata(self, image_path):
-        """Récupérer les métadonnées d'une image depuis la base"""
-        try:
-            image_path = os.path.normpath(image_path)
-            conn, cursor = self.get_db_connection()
-            cursor.execute('''
-                SELECT file_size, width, height, format, mode, file_hash, 
-                       creation_date, modified_date, exif_data, extracted_date,
-                       positive_prompt, negative_prompt, workflow_data,
-                       model_checkpoint, model_vae, generation_steps, cfg_scale,
-                       sampler_name, scheduler, seed, nsfw_score
-                FROM image_metadata 
-                WHERE function_name = ? AND image_path = ?
-            ''', (self.title, image_path))
-            result = cursor.fetchone()
-            conn.close()
-            if result:
-                return {
-                    'file_size': result[0],
-                    'width': result[1],
-                    'height': result[2],
-                    'format': result[3],
-                    'mode': result[4],
-                    'file_hash': result[5],
-                    'creation_date': result[6],
-                    'modified_date': result[7],
-                    'exif_data': json.loads(result[8]) if result[8] else None,
-                    'extracted_date': result[9],
-                    'positive_prompt': result[10] or '',
-                    'negative_prompt': result[11] or '',
-                    'workflow_data': result[12] or '',
-                    'model_checkpoint': result[13] or '',
-                    'model_vae': result[14] or '',
-                    'generation_steps': result[15],
-                    'cfg_scale': result[16],
-                    'sampler_name': result[17] or '',
-                    'scheduler': result[18] or '',
-                    'seed': result[19],
-                    'nsfw_score': result[20]  # <-- AJOUT ICI
-                }
-            return None
-            
-        except Exception as e:
-            print(f"[ERROR] Error getting metadata: {e}")
-            return None
-
-    # def extract_and_store_metadata_batch(self, image_paths):
-    #     """Extraire et stocker les métadonnées pour un lot d'images"""
-    #     try:
-    #         for image_path in image_paths:
-    #             # Vérifier si les métadonnées existent déjà
-    #             existing_metadata = self.get_image_metadata(image_path)
-    #             if existing_metadata:
-    #                 continue  # Skip si déjà traité
-                
-    #             # Extraire et stocker les métadonnées
-    #             metadata = self.extract_image_metadata(image_path)
-    #             if metadata:
-    #                 self.store_image_metadata(image_path, metadata)
-                    
-    #     except Exception as e:
-    #         print(f"[ERROR] Error in batch metadata extraction: {e}")
+   
+    
 
     def show_loading_modal(self, message="Chargement des images..."):
         """Affiche une fenêtre modale avec une barre de progression indéterminée"""
@@ -1204,57 +827,7 @@ Progress: {(viewed_count/total_count*100):.1f}% completed"""
         except Exception as e:
             print(f"[ERROR] Error saving options: {e}")
 
-    def Extract_all_metadata(self):
-        """Charger les métadonnées pour tous les fichiers présents dans la table viewed_images avec une barre de progression"""
-        try:
-            conn, cursor = self.get_db_connection()
-            cursor.execute(
-                "SELECT image_path FROM viewed_images WHERE function_name = ?",
-                (self.title,)
-            )
-            image_paths = [row[0] for row in cursor.fetchall()]
-            conn.close()
-
-            # Vérifier quelles images n'ont pas encore de métadonnées
-            images_needing_metadata = []
-            for image_path in image_paths:
-                existing_metadata = self.get_image_metadata(image_path)
-                if not existing_metadata:
-                    images_needing_metadata.append(image_path)
-
-            total = len(images_needing_metadata)
-            if total == 0:
-                messagebox.showinfo("Info", "Toutes les images ont déjà des métadonnées.")
-                return
-
-            # Créer une fenêtre de progression
-            progress_win = tk.Toplevel(self.root)
-            progress_win.title("Extraction des métadonnées")
-            progress_win.geometry("400x120")
-            progress_win.resizable(False, False)
-            progress_label = ttk.Label(progress_win, text="Extraction des métadonnées...")
-            progress_label.pack(pady=(20, 10))
-            progress_bar = ttk.Progressbar(progress_win, length=350, mode="determinate", maximum=total)
-            progress_bar.pack(pady=(0, 10))
-            percent_label = ttk.Label(progress_win, text="0%")
-            percent_label.pack()
-
-            self.root.update_idletasks()
-
-            for idx, image_path in enumerate(images_needing_metadata, 1):
-                metadata = self.extract_image_metadata(image_path)
-                if metadata:
-                    self.store_image_metadata(image_path, metadata)
-                progress_bar["value"] = idx
-                percent_label.config(text=f"{int(idx/total*100)}%")
-                progress_win.update_idletasks()
-
-            progress_win.destroy()
-            messagebox.showinfo("Terminé", f"Métadonnées extraites pour {total} images.")
-
-        except Exception as e:
-            print(f"[ERROR] Erreur lors du chargement des métadonnées : {e}")
-            messagebox.showerror("Erreur", f"Erreur lors du chargement des métadonnées : {e}")
+  
 
 
 def main(config):

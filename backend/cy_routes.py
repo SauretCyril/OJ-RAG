@@ -305,11 +305,12 @@ async def read_annonces_json():
                             else:
                                 role = "analyse le texte suivant et réponds à cette question, peux tu renvoyer les informations sous forme de données json, les champs son définie dans la question entre [ et ]"
                                 print(
-                                    f"{parent_dir}ERR-4658d : le rôle pour le classement",
+                                    f"{parent_dir}ERR-4658e : le rôle pour le classement",
                                     role,
                                 )
                                 infos = get_mistral_answer(the_request, role, texte)
-                                #print(f"{parent_dir}NEW-4658e answer mistral = ", infos)
+                                print(f"{parent_dir}NEW-4658f answer mistral = ", infos)
+                                
                             if infos:
                                 try:
                                     print(f"{parent_dir}NEW-4658d")    

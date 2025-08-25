@@ -37,7 +37,7 @@ class AnnouncementManager:
             raise
     
     def create_table(self):
-        """Créer la table des annonces si elle n'existe pas"""
+        """Créer la table des annonces si elle n'existe pas et ajoute la colonne nature si besoin"""
         try:
             self.cursor.execute('''
                 CREATE TABLE IF NOT EXISTS announcements (
@@ -45,37 +45,33 @@ class AnnouncementManager:
                     num_dossier TEXT NOT NULL,
                     url TEXT NOT NULL,
                     contenu TEXT NOT NULL,
-                    nature TEXT DEFAULT '',
+                    -- nature sera ajoutée après si besoin
                     date_creation TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     date_modification TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     statut TEXT DEFAULT 'actif' CHECK (statut IN ('actif', 'inactif', 'archive')),
                     UNIQUE(num_dossier, url)
                 )
             ''')
-            
-            self.cursor.execute('''
-                CREATE INDEX IF NOT EXISTS idx_num_dossier ON announcements(num_dossier)
-            ''')
-            
-            # self.cursor.execute('''
-            #     ALTER TABLE announcements ADD COLUMN nature TEXT DEFAULT '';
-            # ''')
+
+            # Ajout de la colonne nature si elle n'existe pas déjà
+            self.cursor.execute("PRAGMA table_info(announcements)")
+            columns = [row[1] for row in self.cursor.fetchall()]
+            if "nature" not in columns:
+                self.cursor.execute("ALTER TABLE announcements ADD COLUMN nature TEXT DEFAULT ''")
 
             # Index pour améliorer les performances de recherche
             self.cursor.execute('''
                 CREATE INDEX IF NOT EXISTS idx_num_dossier ON announcements(num_dossier)
             ''')
-            
             self.cursor.execute('''
                 CREATE INDEX IF NOT EXISTS idx_url ON announcements(url)
             ''')
-            
             self.cursor.execute('''
                 CREATE INDEX IF NOT EXISTS idx_statut ON announcements(statut)
             ''')
-            
+
             self.conn.commit()
-            
+
         except sqlite3.Error as e:
             print(f"Erreur lors de la création de la table: {str(e)}")
             messagebox.showerror("Erreur Base de Données", f"Impossible de créer la table: {str(e)}")
@@ -344,9 +340,9 @@ if __name__ == "__main__":
     manager = AnnouncementManager(db_path)
     
     # Ajouter quelques annonces d'exemple
-    manager.add_announcement("DOSS001", "https://example.com/annonce1", "Contenu de l'annonce 1")
-    manager.add_announcement("DOSS002", "https://example.com/annonce2", "Contenu de l'annonce 2")
-    manager.add_announcement("DOSS001", "https://example.com/annonce3", "Autre annonce pour le dossier 1")
+    #manager.add_announcement("DOSS001", "https://example.com/annonce1", "Contenu de l'annonce 1")
+    #manager.add_announcement("DOSS002", "https://example.com/annonce2", "Contenu de l'annonce 2")
+    #manager.add_announcement("DOSS001", "https://example.com/annonce3", "Autre annonce pour le dossier 1")
     
     # Récupérer toutes les annonces
     all_announcements = manager.get_all_announcements()

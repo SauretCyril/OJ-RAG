@@ -30,61 +30,47 @@ def extract_text_from_word(file_path):
         full_text.append(para.text)
     return '\n'.join(full_text)
 
-def get_mistral_answer(question, role, content):
-    """
-    Interroge l'API Mistral pour obtenir une réponse à une question basée sur un contenu.
-    
-    Args:
-        question (str): La question à poser
-        role (str): Le rôle que l'IA doit adopter
-        content (str): Le contenu textuel sur lequel baser la réponse
-        
-    Returns:
-        str: La réponse générée par le modèle Mistral
-    """
-    # Récupérer la clé API Mistral depuis les variables d'environnement
-    api_key = os.getenv("MISTRAL_API_KEY")
-    
-    if not api_key:
-        raise ValueError("La clé API Mistral n'est pas définie dans le fichier .env")
-    
-    # Construire les messages pour l'API
-    messages = [
-        {"role": "system", "content": role},
-        {"role": "user", "content": f"Contenu: {content}\n\nQuestion: {question}"}
-    ]
-    
-    # Configuration de la requête à l'API Mistral
-    url = "https://api.mistral.ai/v1/chat/completions"
-    headers = {
-        "Authorization": f"Bearer {api_key}",
-        "Content-Type": "application/json"
-    }
-    
-    # Données à envoyer à l'API Mistral
-    data = {
-        "model": "mistral-medium",
-        "messages": messages,
-        "temperature": 0.7,
-        "max_tokens": 8000  # Augmenter cette valeur (était 5000)
-    }
-    
+def get_mistral_answer(question, role, texte):
     try:
+        # Récupérer la clé API Mistral depuis les variables d'environnement
+        api_key = os.getenv("MISTRAL_API_KEY")
+        
+        if not api_key:
+            raise ValueError("La clé API Mistral n'est pas définie dans le fichier .env")
+        
+        # Construire les messages pour l'API
+        messages = [
+            {"role": "system", "content": role},
+            {"role": "user", "content": f"Contenu: {texte}\n\nQuestion: {question}"}
+        ]
+        
+        # Configuration de la requête à l'API Mistral
+        url = "https://api.mistral.ai/v1/chat/completions"
+        headers = {
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json"
+        }
+        
+        # Données à envoyer à l'API Mistral
+        data = {
+            "model": "mistral-medium",
+            "messages": messages,
+            "temperature": 0.7,
+            "max_tokens": 8000  # Augmenter cette valeur (était 5000)
+        }
+        
         # Appel à l'API Mistral
         response = requests.post(url, headers=headers, json=data)
-        response.raise_for_status()  # Lever une exception en cas d'erreur HTTP
-        
-        # Récupérer la réponse
-        result = response.json()
-        answer = result.get("choices", [{}])[0].get("message", {}).get("content", "")
-        
-        return answer
-    
-    except requests.exceptions.RequestException as e:
-        # Gérer les erreurs de requête
-        return f"Erreur lors de l'appel à l'API Mistral: {str(e)}"
-    except json.JSONDecodeError:
-        return f"Erreur de décodage de la réponse: {response.text}"
+        if response.status_code == 429:
+            return '{"error": "Trop de requêtes envoyées à l\'API Mistral. Merci de patienter avant de réessayer."}'
+        response.raise_for_status()
+        return response.text
+    except requests.exceptions.HTTPError as e:
+        if e.response is not None and e.response.status_code == 429:
+            return '{"error": "Trop de requêtes envoyées à l\'API Mistral. Merci de patienter avant de réessayer."}'
+        return f'{{"error": "Erreur lors de l\'appel à l\'API Mistral: {str(e)}"}}'
+    except Exception as e:
+        return f'{{"error": "Erreur lors de l\'appel à l\'API Mistral: {str(e)}"}}'
 
 def create_excel_report(results, output_file_name):
     try:

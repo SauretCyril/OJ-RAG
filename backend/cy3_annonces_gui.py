@@ -1083,7 +1083,7 @@ class AnnouncementGUI:
         }
 
         try:
-            response = requests.get("http://localhost:5000/save_announcement", params=params)
+            response = requests.post("http://localhost:5000/save_announcement", json=params)
             response.raise_for_status()
             data = response.json() if response.headers.get("Content-Type", "").startswith("application/json") else {}
             if response.status_code == 200:
