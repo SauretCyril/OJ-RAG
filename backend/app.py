@@ -116,6 +116,22 @@ def prompt_table_open():
         return {"status": "error", "message": f"Impossible de contacter le serveur local: {e}"}, 500
 
 
+@app.route('/run_annonces_gui', methods=['POST'])
+def run_annonces_gui():
+    try:
+        subprocess.Popen(['python', './backend/cy3_annonces_gui.py'])
+        return jsonify({"message": "Lancement demandé."})
+    except Exception as e:
+        return jsonify({"message": f"Erreur: {e}"}), 500
+
+@app.route('/run_analyse_prompt', methods=['POST'])
+def run_analyse_prompt():
+    try:
+        venv_python = os.path.join(os.path.dirname(sys.executable), "python.exe")
+        subprocess.Popen([venv_python, './backend/cy2_analyse_prompt.py'])
+        return jsonify({"message": "Lancement demandé."})
+    except Exception as e:
+        return jsonify({"message": f"Erreur: {e}"}), 500
 
 
 

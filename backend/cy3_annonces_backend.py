@@ -18,6 +18,7 @@ class AnnouncementManager:
         self.cursor = None
         self.connect()
         self.create_table()
+        #self.migrate_announcements_table()
     
     def connect(self):
         """Établir une connexion à la base de données"""
@@ -48,35 +49,87 @@ class AnnouncementManager:
                     -- nature sera ajoutée après si besoin
                     date_creation TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     date_modification TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    statut TEXT DEFAULT 'actif' CHECK (statut IN ('actif', 'inactif', 'archive')),
+                    statut TEXT DEFAULT 'actif' CHECK (statut IN ('actif', 'inactif', 'archive', 'créé','envoyé')),
                     UNIQUE(num_dossier, url)
                 )
             ''')
-
-            # Ajout de la colonne nature si elle n'existe pas déjà
-            self.cursor.execute("PRAGMA table_info(announcements)")
-            columns = [row[1] for row in self.cursor.fetchall()]
-            if "nature" not in columns:
-                self.cursor.execute("ALTER TABLE announcements ADD COLUMN nature TEXT DEFAULT ''")
-
-            # Index pour améliorer les performances de recherche
-            self.cursor.execute('''
-                CREATE INDEX IF NOT EXISTS idx_num_dossier ON announcements(num_dossier)
-            ''')
-            self.cursor.execute('''
-                CREATE INDEX IF NOT EXISTS idx_url ON announcements(url)
-            ''')
-            self.cursor.execute('''
-                CREATE INDEX IF NOT EXISTS idx_statut ON announcements(statut)
-            ''')
-
             self.conn.commit()
+            # # Ajout de la colonne nature si elle n'existe pas déjà
+            # self.cursor.execute("PRAGMA table_info(announcements)")
+            # columns = [row[1] for row in self.cursor.fetchall()]
+            # if "nature" not in columns:
+            #     self.cursor.execute("ALTER TABLE announcements ADD COLUMN nature TEXT DEFAULT ''")
+
+            # # Index pour améliorer les performances de recherche
+            # self.cursor.execute('''
+            #     CREATE INDEX IF NOT EXISTS idx_num_dossier ON announcements(num_dossier)
+            # ''')
+            # self.cursor.execute('''
+            #     CREATE INDEX IF NOT EXISTS idx_url ON announcements(url)
+            # ''')
+            # self.cursor.execute('''
+            #     CREATE INDEX IF NOT EXISTS idx_statut ON announcements(statut)
+            # ''')
+
+          
 
         except sqlite3.Error as e:
             print(f"Erreur lors de la création de la table: {str(e)}")
             messagebox.showerror("Erreur Base de Données", f"Impossible de créer la table: {str(e)}")
             raise
-    
+
+    def migrate_announcements_table(self):
+        try:
+            print(f"dbg-2000 : migrate_announcements_table")
+            # Vérifier si la colonne nature existe déjà
+            self.cursor.execute("PRAGMA table_info(announcements)")
+            columns = [row[1] for row in self.cursor.fetchall()]
+            has_nature = "nature" in columns
+            print(f"dbg-2004 : La colonne 'nature' existe : {has_nature}")
+            # 1. Renommer l’ancienne table
+            self.cursor.execute("ALTER TABLE announcements RENAME TO announcements_old")
+            print(f"dbg-2005 : Ancienne table renommée en 'announcements_old'")
+            # 2. Créer la nouvelle table avec la contrainte CHECK mise à jour
+            self.cursor.execute(f'''
+                CREATE TABLE announcements (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    num_dossier TEXT NOT NULL,
+                    url TEXT NOT NULL,
+                    contenu TEXT NOT NULL,
+                    date_creation TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    date_modification TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    statut TEXT DEFAULT 'actif' CHECK (statut IN ('actif', 'inactif', 'archive', 'créé', 'envoyé')),
+                    nature TEXT DEFAULT '',
+                    UNIQUE(num_dossier, url)
+                )
+            ''')
+            print(f"dbg-2006 : Nouvelle table 'announcements' créée avec succès.")
+            # 3. Copier les données
+            if has_nature:
+                self.cursor.execute('''
+                    INSERT INTO announcements (id, num_dossier, url, contenu, date_creation, date_modification, statut, nature)
+                    SELECT id, num_dossier, url, contenu, date_creation, date_modification, statut, nature
+                    FROM announcements_old
+                ''')
+                print(f"dbg-2007 : Données copiées de 'announcements_old' vers 'announcements' avec succès.")
+            else:
+                self.cursor.execute('''
+                    INSERT INTO announcements (id, num_dossier, url, contenu, date_creation, date_modification, statut)
+                    SELECT id, num_dossier, url, contenu, date_creation, date_modification, statut
+                    FROM announcements_old
+                ''')
+                print(f"dbg-2008 : Données copiées de 'announcements_old' vers 'announcements' avec succès.")
+
+            # 4. Supprimer l’ancienne table
+            self.cursor.execute("DROP TABLE announcements_old")
+            print(f"dbg-2009 : Ancienne table 'announcements_old' supprimée.")
+            self.conn.commit()
+           
+            print("dbg-2010 : Migration terminée avec succès.")
+        except sqlite3.Error as e:
+            print(f"Erreur lors de la migration: {str(e)}")
+            messagebox.showerror("Erreur Base de Données", f"Impossible de migrer la table: {str(e)}")
+            self.conn.rollback()
     def add_announcement(self, num_dossier: str, url: str, contenu: str, nature: str = '', statut: str = 'actif') -> Optional[int]:
         """
         Ajouter une nouvelle annonce

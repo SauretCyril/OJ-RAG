@@ -42,11 +42,11 @@ try:
         from multiprocessing import freeze_support
         freeze_support()
         t1 = threading.Thread(target=run_main)
-        t2 = threading.Thread(target=run_local)
+        #t2 = threading.Thread(target=run_local)
         t1.start()
-        t2.start()
+        #t2.start()
         t1.join()
-        t2.join()
+        #t2.join()
 
 except Exception as e:
     print(f"ERREUR DE DÉMARRAGE: {str(e)}")

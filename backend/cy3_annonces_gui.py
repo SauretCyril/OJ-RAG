@@ -8,8 +8,10 @@ import subprocess
 import platform
 from datetime import datetime
 from cy3_annonces_backend import AnnouncementManager
+from cy3_connect_db import get_current_db
 import requests 
 from cy_cookies import *
+
 class AnnouncementGUI:
     """Interface graphique pour gérer les annonces avec AnnouncementManager"""
     
@@ -21,19 +23,20 @@ class AnnouncementGUI:
         
         # Initialiser le gestionnaire d'annonces
 
-        if not self.get_current_db():
+        success = self.get_current_db()
+        if not success:
             messagebox.showerror("Erreur", "Impossible de charger la base de données.")
             exit()
-        # Le répertoire courant est celui du db_path de AnnouncementManager
-        
-        
+       
+      
+
         
 
         # Variables pour le formulaire
         self.current_announcement_id = None
         self.search_var = tk.StringVar()
         self.search_field_var = tk.StringVar(value="all")
-        self.status_filter_var = tk.StringVar(value="all")
+        self.status_filter_var = tk.StringVar(value="actif")
         
         # Variables pour la gestion des numéros de dossier
         self.dossier_prefix_var = tk.StringVar(value="X")
@@ -128,7 +131,8 @@ class AnnouncementGUI:
         
         # Frame pour les statistiques
         self.create_stats_frame(main_frame)
-    
+        self.toggle_dossier_frame()
+        self.toggle_search_frame()
     def create_directory_info_frame(self, parent):
         """Créer la zone d'information du répertoire courant"""
         info_frame = ttk.LabelFrame(parent, text="Informations du Projet")
@@ -433,7 +437,7 @@ class AnnouncementGUI:
         ttk.Label(filter_row, text="Statut:").pack(side=tk.LEFT)
         
         status_combo = ttk.Combobox(filter_row, textvariable=self.status_filter_var,
-                                   values=["all", "actif", "inactif", "archive"],
+                                   values=["all", "actif", "inactif", "archive", "créé", "envoyé"],
                                    state="readonly", width=15)
         status_combo.pack(side=tk.LEFT, padx=(5, 10))
         status_combo.bind('<<ComboboxSelected>>', self.on_filter_change)
@@ -711,7 +715,7 @@ class AnnouncementGUI:
         # Champ Statut
         ttk.Label(fields_frame, text="Statut:").grid(row=4, column=0, sticky="w", pady=5)
         statut_combo = ttk.Combobox(fields_frame, textvariable=self.statut_var,
-                                   values=["actif", "inactif", "archive"],
+                                   values=["actif", "inactif", "archive", "créé", "envoyé"],
                                    state="readonly", width=27)
         statut_combo.grid(row=4, column=1, sticky="ew", padx=(10, 0), pady=5)
         

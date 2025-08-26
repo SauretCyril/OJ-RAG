@@ -23,9 +23,18 @@
           <li><a href="#index" onclick="generate_index_html()">Index</a></li>
           <!--<li><a href="#clear-cache" onclick="clearExplorerCache()">Effacer Cache</a></li>-->
           <li><a href="/columns_manager" target="_blank">Colonnes</a></li>
-          <li><a href="#" onclick="prompt_table_open()">Prompt</a></li>
+          <!--<li><a href="#" onclick="prompt_table_open()">Prompt</a></li>-->
           <li><a href="#" onclick="open_files_Setting()">Settings</a></li>
-
+          <li>
+            <a href="#" onclick="runAnnoncesGui()" title="Collecte Annonces">
+              <i class="fas fa-play"></i>Annonces
+            </a>
+          </li>
+           <li>
+            <a href="#" onclick="runAnalysePrompt()" title="Analyse Prompt">
+              <i class="fas fa-play"></i> Prompt
+            </a>
+          </li>
         </ul>
       </nav>
       <div style="float: right">
@@ -209,6 +218,7 @@
   <!-- Nouveau module pour la gestion des fiches -->
   <script src="{{ url_for('static', filename='js/cy_Panel.js') }}"></script>
   <script src="{{ url_for('static', filename='js/cy_Directories.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/cy_tools.js') }}"></script>
   <!-- Ajoutez ceci avant </body> -->
   
 </body>

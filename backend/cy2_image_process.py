@@ -398,6 +398,7 @@ class image_process:
             
             cols = 4  # Nombre de colonnes
             for idx, image_path in enumerate(self.image_files):
+                print(f"[DEBUG] Displaying image: {image_path}")
                 try:
                     row = idx // cols
                     col = idx % cols
@@ -545,7 +546,7 @@ class image_process:
                 shutil.move(image_path, target_path)
                 
                 # Supprimer les métadonnées de la base de données
-                remove_image_metadata(image_path)
+                #remove_image_metadata(image_path)
                 
                 # Recharge la page pour tout réafficher proprement
                 self.refresh_images()
