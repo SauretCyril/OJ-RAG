@@ -4,6 +4,35 @@ import subprocess
 import pkg_resources
 import threading
 
+# --- Activation automatique du venv si besoin ---
+def is_venv_active():
+    # Méthode standard
+    return (
+        hasattr(sys, 'real_prefix') or
+        (hasattr(sys, 'base_prefix') and sys.base_prefix != sys.prefix) or
+        'VIRTUAL_ENV' in os.environ
+    )
+
+def activate_venv_and_restart():
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    venv_dir = os.path.join(current_dir, ".venv")
+    if not os.path.isdir(venv_dir):
+        print("Aucun environnement virtuel .venv trouvé.")
+        return
+    # Windows
+    python_exe = os.path.join(venv_dir, "Scripts", "python.exe")
+    # Linux/Mac
+    if not os.path.exists(python_exe):
+        python_exe = os.path.join(venv_dir, "bin", "python")
+    if not os.path.exists(python_exe):
+        print("Impossible de trouver l'exécutable Python du venv.")
+        return
+    print("Activation du venv et redémarrage du launcher...")
+    os.execv(python_exe, [python_exe] + sys.argv)
+
+if not is_venv_active():
+    activate_venv_and_restart()
+
 # Ajouter le dossier du projet au PYTHONPATH
 current_dir = os.path.dirname(os.path.abspath(__file__))
 backend_dir = os.path.join(current_dir, "backend")
@@ -35,8 +64,8 @@ try:
     def run_main():
         app.run(debug=True, use_reloader=False)
 
-    def run_local():
-        applocal.run(port=5005, debug=True, use_reloader=False)
+    # def run_local():
+    #     applocal.run(port=5005, debug=True, use_reloader=False)
 
     if __name__ == "__main__":
         from multiprocessing import freeze_support

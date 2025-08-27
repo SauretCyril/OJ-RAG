@@ -29,31 +29,49 @@ class cy2_analyse_prompt(tk.Tk):
         # title_label = ttk.Label(self, text=f"{self.descriptif}", font=("Arial", 14, "bold"))
         # title_label.pack(side="top", fill="x", padx=5, pady=5)
 
-        # Zone de saisie du prompt positif
+        # Frame principal pour les prompts
         prompt_frame = ttk.Frame(self)
         prompt_frame.pack(side="top", fill="x", padx=5, pady=5)
 
+        # Frame vertical pour anglais/français
+        prompt_col_frame = ttk.Frame(prompt_frame)
+        prompt_col_frame.pack(side="left", fill="y", padx=(0, 5))
+
         # Zone Positive Prompt (anglais)
-        en_frame = ttk.Frame(prompt_frame)
-        en_frame.pack(side="left", fill="y", padx=(0, 5))
-        ttk.Label(en_frame, text="Positive Prompt (en)").pack(side="top", anchor="w")
-        self.prompt_textbox_en = tk.Text(en_frame, height=22, width=60)
+        ttk.Label(prompt_col_frame, text="Positive Prompt (en)").pack(side="top", anchor="w", pady=(0, 2))
+        self.prompt_textbox_en = tk.Text(prompt_col_frame, height=8, width=60)
         self.prompt_textbox_en.pack(side="top", fill="x", expand=True)
 
-        # Boutons de traduction
+        # Zone Positive Prompt (français)
+        ttk.Label(prompt_col_frame, text="Prompt positif (fr)").pack(side="top", anchor="w", pady=(10, 2))
+        self.prompt_textbox_fr = tk.Text(prompt_col_frame, height=8, width=60)
+        self.prompt_textbox_fr.pack(side="top", fill="x", expand=True)
+
+        # Boutons de traduction au milieu
         btns_frame = ttk.Frame(prompt_frame)
-        btns_frame.pack(side="left", padx=5)
+        btns_frame.pack(side="left", padx=5, pady=(30,0))
         ttk.Button(btns_frame, text="fr→en", width=8, command=self.translate_fr2en).pack(pady=2)
         ttk.Button(btns_frame, text="en→fr", width=8, command=self.translate_en2fr).pack(pady=2)
 
-        # Zone Positive Prompt (français)
-        fr_frame = ttk.Frame(prompt_frame)
-        fr_frame.pack(side="left", fill="y", padx=(0, 5))
-        ttk.Label(fr_frame, text="Prompt positif (fr)").pack(side="top", anchor="w")
-        self.prompt_textbox_fr = tk.Text(fr_frame, height=22, width=60)
-        self.prompt_textbox_fr.pack(side="top", fill="x", expand=True)
+        # Frame vertical pour question/réponse
+        qr_frame = ttk.Frame(prompt_frame)
+        qr_frame.pack(side="left", fill="y", padx=(0, 5))
 
-       
+        ttk.Label(qr_frame, text="Question à Mistral").pack(side="top", anchor="w")
+        self.question_textbox = tk.Text(qr_frame, height=5, width=60)
+        self.question_textbox.pack(side="top", fill="x", expand=True, pady=(0, 5))
+
+        ttk.Button(qr_frame, text="Répondre", command=self.ask_mistral).pack(side="top", pady=(0, 5))
+
+        ttk.Label(qr_frame, text="Résultat").pack(side="top", anchor="w")
+        self.result_textbox = tk.Text(qr_frame, height=6, width=60, state="normal")
+        self.result_textbox.pack(side="top", fill="x", expand=True)
+
+        ttk.Button(qr_frame, text="Traduire en anglais", command=self.translate_result_to_en).pack(side="top", pady=(0, 5))
+
+        ttk.Label(qr_frame, text="Result (en)").pack(side="top", anchor="w")
+        self.result_textbox_en = tk.Text(qr_frame, height=6, width=60, state="normal")
+        self.result_textbox_en.pack(side="top", fill=" x", expand=True)
 
         # Zone de filtre
         filter_frame = ttk.Frame(self)
@@ -83,7 +101,7 @@ class cy2_analyse_prompt(tk.Tk):
         # Style pour agrandir la police de la colonne Type
         style = ttk.Style(self)
         style.configure("Treeview", rowheight=40)
-        style.configure("Treeview.TypeColumn", font=("Arial", 14, "bold"))
+        style.configure("Treeview.TypeColumn", font=("Arial", 12, "bold"))
 
         # Scrollbar
         scrollbar = ttk.Scrollbar(table_frame, orient="vertical", command=self.tree.yview)
@@ -309,6 +327,45 @@ class cy2_analyse_prompt(tk.Tk):
 
     def analyse_prompt_text(self, text):
         return [{"fr": line.strip(), "en": "", "type": "Prompt"} for line in text.splitlines() if line.strip()]
+
+    def ask_mistral(self):
+        question = self.question_textbox.get("1.0", tk.END).strip()
+        prompt_fr = self.prompt_textbox_fr.get("1.0", tk.END).strip()
+        if not question:
+            messagebox.showinfo("Info", "Veuillez saisir une question.")
+            return
+        if not prompt_fr:
+            messagebox.showinfo("Info", "Le prompt positif (fr) est vide.")
+            return
+        # On pose la question à Mistral en donnant le prompt comme contexte
+        role = "Tu es un assistant expert en analyse de prompts d'image."
+        content = f"Prompt : {prompt_fr}\nQuestion : {question}"
+        try:
+            self.config(cursor="watch")
+            self.update_idletasks()
+            result = get_mistral_answer(question, role, content)
+            self.result_textbox.config(state="normal")
+            self.result_textbox.delete("1.0", tk.END)
+            self.result_textbox.insert("1.0", result)
+            self.result_textbox.config(state="normal")
+        except Exception as e:
+            self.result_textbox.config(state="normal")
+            self.result_textbox.delete("1.0", tk.END)
+            self.result_textbox.insert("1.0", f"Erreur : {e}")
+        finally:
+            self.config(cursor="")
+            self.update_idletasks()
+
+    def translate_result_to_en(self):
+        result_fr = self.result_textbox.get("1.0", tk.END).strip()
+        if not result_fr:
+            messagebox.showinfo("Info", "Aucun résultat à traduire.")
+            return
+        result_en = self.mistral_translate(result_fr, src_lang="fr", tgt_lang="en")
+        self.result_textbox_en.config(state="normal")
+        self.result_textbox_en.delete("1.0", tk.END)
+        self.result_textbox_en.insert("1.0", result_en)
+        self.result_textbox_en.config(state="normal")
 
 if __name__ == "__main__":
     app = cy2_analyse_prompt()
