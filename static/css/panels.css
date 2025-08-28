@@ -334,6 +334,11 @@
     background-color: #0056b3;
 }
 
+.btn-python-tool {
+    background-color: #28a745;
+    color: rgb(0, 0, 0);
+}
+
 .btn-success {
     background-color: #28a745;
     color: white;

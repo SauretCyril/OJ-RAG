@@ -133,7 +133,28 @@ def run_analyse_prompt():
     except Exception as e:
         return jsonify({"message": f"Erreur: {e}"}), 500
 
+@app.route('/run_images_production', methods=['POST'])
+def run_images_production():
+    try:
+        venv_python = os.path.join(os.path.dirname(sys.executable), "python.exe")
+        subprocess.Popen([venv_python, './backend/cy2_app_images.py'])
+        return jsonify({"message": "Lancement demandé."})
+    except Exception as e:
+        return jsonify({"message": f"Erreur: {e}"}), 500
 
+@app.route('/run_general_analyse', methods=['POST'])
+def run_general_analyse():
+    try:
+        data = request.get_json()
+        numdos = data.get('numdos')
+        if not numdos:
+            return jsonify({"message": "Le paramètre 'numdos' est requis."}), 400
+        venv_python = os.path.join(os.path.dirname(sys.executable), "python.exe")
+        subprocess.Popen([venv_python, f'./backend/cy4_general_analyse.py --numdos {numdos}'])
+
+        return jsonify({"message": "Lancement demandé."})
+    except Exception as e:
+        return jsonify({"message": f"Erreur: {e}"}), 500
 
 if __name__ == '__main__':
     # Initialiser le logging avec app_config

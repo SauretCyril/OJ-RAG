@@ -118,7 +118,9 @@ function get_currentAnnonce() {
         if (!currentRow || !currentRow.id) {
             return null;
         }
-        return getAnnonce_byfile(currentRow.id);
+        ann=getAnnonce_byfile(currentRow.id);
+        
+        return ann;
     } catch (err) {
         console.error("Erreur dans get_currentAnnonce:", err);
         return null;

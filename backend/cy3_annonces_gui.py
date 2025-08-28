@@ -55,7 +55,7 @@ class AnnouncementGUI:
             response = requests.get("http://localhost:5000/get_directory_root")
             response.raise_for_status()
             data = response.json()
-            db_path = data.get("db_path") 
+            ##db_path = data.get("db_path") 
             db_path=get_cookie_value("current_dossier")
             # Récupérer le db_path de la réponse
             

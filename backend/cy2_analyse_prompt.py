@@ -9,7 +9,6 @@ from cy_mistral import get_mistral_answer
 import requests
 import time
 
-TYPES = [ "personnage", "habits", "lumières", "lieux", 'lumière', "Qualité", 'Atmosphere', 'Age', "Autre"]
 
 def wrap_text(text, width=60):
     import textwrap
@@ -71,17 +70,12 @@ class cy2_analyse_prompt(tk.Tk):
 
         ttk.Label(qr_frame, text="Result (en)").pack(side="top", anchor="w")
         self.result_textbox_en = tk.Text(qr_frame, height=6, width=60, state="normal")
-        self.result_textbox_en.pack(side="top", fill=" x", expand=True)
+        self.result_textbox_en.pack(side="top", fill="x", expand=True)
 
         # Zone de filtre
         filter_frame = ttk.Frame(self)
         filter_frame.pack(side="top", fill="x", padx=5, pady=5)
-        #ttk.Label(filter_frame, text="Type:").pack(side="left")
-        #self.filter_type = ttk.Combobox(filter_frame, values=[""] + TYPES, state="readonly")
-        #self.filter_type.pack(side="left", padx=5)
-        #self.filter_type.set("")
-        #ttk.Button(filter_frame, text="Filtrer", command=self.apply_filter).pack(side="left", padx=5)
-        #ttk.Button(filter_frame, text="Réinitialiser", command=self.reset_filter).pack(side="left", padx=5)
+       
         ttk.Button(filter_frame, text="Décomposer", command=self.decompose_prompt_fr).pack(side="left", padx=5)
         ttk.Button(filter_frame, text="Reconstruire", command=self.rebuild_prompt).pack(side="left", padx=5)
 

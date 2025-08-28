@@ -1,4 +1,3 @@
-
 function generateTableHeaders() {
     const thead = document.querySelector('thead');
     if (!thead) return;
@@ -63,6 +62,11 @@ function generateTableHeaders() {
     // (à adapter selon ton besoin, ici exemple)
      document.getElementById('fix_btn-edit').onclick = () => { fix_openEditModal(); };
      document.getElementById('fix_btn-open').onclick = () => { fix_open_dir(); };
+     document.getElementById('fix_btn-analyse').onclick = () => { 
+     const numdos = getState('current_numdos'); // ou adapte selon ta logique pour récupérer le numéro de dossier courant
+        fix_open_analyse(numdos); 
+     };
+     
      document.getElementById('fix_btn-delete').onclick = () => { updateStateCurrentAnnonce('etat', 'DELETED'); };
      document.getElementById('fix_btn-change').onclick = () => { fix_change_dir(); };
      document.getElementById('fix_open_prompt_analyse').onclick = () => { ask_local_PromptTable(); };

@@ -14,7 +14,6 @@
 <body>
   <div id="main-section">
     <header class="header-bar">
-     
       <nav>
         <ul>
           <li><a href="#home">Home</a></li>
@@ -25,18 +24,11 @@
           <li><a href="/columns_manager" target="_blank">Colonnes</a></li>
           <!--<li><a href="#" onclick="prompt_table_open()">Prompt</a></li>-->
           <li><a href="#" onclick="open_files_Setting()">Settings</a></li>
-          <li>
-            <a href="#" onclick="runAnnoncesGui()" title="Collecte Annonces">
-              <i class="fas fa-play"></i>Annonces
-            </a>
-          </li>
-           <li>
-            <a href="#" onclick="runAnalysePrompt()" title="Analyse Prompt">
-              <i class="fas fa-play"></i> Prompt
-            </a>
-          </li>
         </ul>
       </nav>
+
+
+
       <div style="float: right">
         <select id="Excluded" title="Filtrer les dossiers">
           <option value="En cours">En cours</option>
@@ -44,6 +36,17 @@
         </select>
       </div>
     </header>
+          <div class="tools-bar" style="display: flex; gap: 12px; align-items: center; margin: 10px 0;">
+        <a href="#" onclick="runAnnoncesGui()" class="btn btn-python-tool" title="Collecte Annonces">
+          <i class="fas fa-play"></i> Annonces
+        </a>
+        <a href="#" onclick="runAnalysePromptImage()" class="btn btn-python-tool" title="Analyse Prompt">
+          <i class="fas fa-play"></i>prompts Images
+        </a>
+         <a href="#" onclick="runImagesProduction()" class="btn btn-python-tool" title="Images production">
+          <i class="fas fa-play"></i> Images
+        </a>
+      </div>
     <div id="settings-bar-container">
       <div id="settings-section" class="settings-col">
         <label for="current-dossier">Current Dossier :</label>
@@ -57,7 +60,7 @@
             <div style="display: flex; flex-direction: row; width: 100%; align-items: center;">
               <button id="fix_btn-edit" class="action-btn">Edit</button>
               <button id="fix_btn-open" class="action-btn">Open Dossier</button>
-
+              <button id="fix_btn-analyse" class="action-btn">Analyse</button>
               <div style="margin-left: auto; display: flex; gap: 8px;">
                 <!--<button id="fix_btn-repondue" class="action-btn">To Répondue</button>-->
                 <button id="fix_btn-delete" class="action-btn">Delete</button>

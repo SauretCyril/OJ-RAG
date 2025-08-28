@@ -93,41 +93,20 @@ class image_process:
             #self.cursor.execute("DROP TABLE IF EXISTS image_metadata")
             
             # Vérifier si la table image_metadata existe déjà
-            self.cursor.execute("""
-                SELECT name FROM sqlite_master WHERE type='table' AND name='image_metadata'
-            """)
-            table_exists = self.cursor.fetchone()
+            # self.cursor.execute("""
+            #     SELECT name FROM sqlite_master WHERE type='table' AND name='image_metadata'
+            # """)
+            # table_exists = self.cursor.fetchone()
 
-            if not table_exists:
-                self.cursor.execute('''
-                    CREATE TABLE image_metadata (
-                        id INTEGER PRIMARY KEY AUTOINCREMENT,
-                        function_name TEXT NOT NULL,
-                        image_path TEXT NOT NULL,
-                        file_size INTEGER,
-                        width INTEGER,
-                        height INTEGER,
-                        format TEXT,
-                        mode TEXT,
-                        file_hash TEXT,
-                        creation_date TIMESTAMP,
-                        modified_date TIMESTAMP,
-                        exif_data TEXT,
-                        nsfw_score REAL DEFAULT 0,
-                        positive_prompt TEXT,
-                        negative_prompt TEXT,
-                        workflow_data TEXT,
-                        model_checkpoint TEXT,
-                        model_vae TEXT,
-                        generation_steps INTEGER,
-                        cfg_scale REAL,
-                        sampler_name TEXT,
-                        scheduler TEXT,
-                        seed INTEGER,
-                        extracted_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                        UNIQUE(function_name, image_path)
-                    )
-                ''')
+            # if not table_exists:
+            #     self.cursor.execute('''
+            #         CREATE TABLE image_metadata (
+            #             id INTEGER PRIMARY KEY AUTOINCREMENT,
+            #             function_name TEXT NOT NULL,
+            #             image_path TEXT NOT NULL,
+            #             UNIQUE(function_name, image_path)
+            #         )
+            #     ''')
             
             self.conn.commit()
             print(f"[INFO] Database initialized with complete ComfyUI support: {self.db_path}")
@@ -410,13 +389,7 @@ class image_process:
                     # Vérifier si l'image a été vue
                     is_viewed = self.is_image_viewed(image_path)
                     
-                    # Récupérer les métadonnées
-                    # metadata = get_image_metadata(image_path)
-                    # nsfw_score = None
-                    # if metadata and 'nsfw_score' in metadata:
-                    #     nsfw_score = metadata['nsfw_score']
-                    
-                    # Charger et redimensionner l'image
+                 
                     with Image.open(image_path) as img:
                         # Redimensionner en gardant les proportions
                         # Utiliser la taille de thumbnail configurable
@@ -437,32 +410,12 @@ class image_process:
                     img_label = tk.Label(image_frame, image=photo, cursor="hand2", bg=bg_color)
                     img_label.image = photo  # Garder une référence
                     img_label.pack()
-                    # if nsfw_score is not None:
-                    #     pastille = tk.Canvas(image_frame, width=40, height=24, bg='white', highlightthickness=0)
-                    #     pastille.place(relx=1.0, y=2, anchor="ne")
-                    #     pastille.create_oval(0, 0, 40, 24, fill="white", outline="gray")
-                    #     pastille.create_text(20, 12, text=f"{nsfw_score:.2f}", fill="black", font=("Arial", 10, "bold"))
-                    # Label pour le nom du fichier avec indication si vue
+                  
                     filename = os.path.basename(image_path)
                     if is_viewed:
                         filename = f"✓ {filename}"  # Ajouter une coche
                     
-                    # Ajouter les informations de métadonnées si disponibles
-                    #if metadata:
-                        #info_text = f"{filename}\n{metadata['width']}x{metadata['height']} - {metadata['format']}"
-                        # if metadata['file_size']:
-                        #     size_mb = metadata['file_size'] / (1024 * 1024)
-                        #     info_text += f"\n{size_mb:.1f} MB"
-                    
-                        # # Ajouter un aperçu du prompt si disponible
-                        # if metadata.get('positive_prompt'):
-                        #     prompt_preview = metadata['positive_prompt'][:30] + "..." if len(metadata['positive_prompt']) > 30 else metadata['positive_prompt']
-                        #     info_text += f"\n📝 {prompt_preview}"
-                    #else:
-                        #info_text = filename
-                    
-                    #name_label = ttk.Label(image_frame, text=info_text, wraplength=180)
-                    #name_label.pack()
+                   
                     
                     # Boutons d'action
                     btn_frame = ttk.Frame(image_frame)

@@ -98,7 +98,7 @@ const AppState = {
     
     tabActive: "Campagne",
     currentDossier : null,
-
+    
     // Données
     
    

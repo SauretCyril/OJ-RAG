@@ -121,7 +121,8 @@ async function fillNextDossierName(returnValueOnly = false) {
             lastDossier = "A000";
         }
     } else {
-        lastDossier = get_currentAnnonce().dossier;
+        const currentAnnonce = get_currentAnnonce();
+        lastDossier = currentAnnonce ? currentAnnonce.dossier : "A000";
     }
 
     let letter = lastDossier.charAt(0);

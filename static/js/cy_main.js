@@ -353,10 +353,13 @@ function updateSelectedAnnonceInfo() {
     
     
     const row = getState('currentSelectedRow');
+    
     if (row && row.id) {
         const annonce = getAnnonce_byfile(row.id);
+        
         let infoHtml = `Dossier : ${annonce['dossier']} - ${annonce['description']}`;
         if (annonce['url'] && /^https?:\/\/.+/.test(annonce['url'])) {
+            setState("current_numdos", annonce['dossier']);
             infoHtml += ` <a href="${annonce['url']}" target="_blank" title="Ouvrir le lien">
             <span style="vertical-align:middle; margin-left:5px;">
                 <svg width="32" height="32" viewBox="0 0 16 16" fill="none" style="display:inline;">
@@ -367,6 +370,7 @@ function updateSelectedAnnonceInfo() {
             </span>
             </a>`;
         }
+        
         infoDiv.innerHTML = infoHtml;
     } else {
         infoDiv.textContent = '';

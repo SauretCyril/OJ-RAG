@@ -86,6 +86,7 @@ class FunctionDatabase:
                 CREATE TABLE IF NOT EXISTS functions (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     name TEXT UNIQUE NOT NULL,
+                    lib_images TEXT NOT NULL,
                     default_directory TEXT NOT NULL,
                     cible_directory TEXT NOT NULL,
                     db_path TEXT NOT NULL,
