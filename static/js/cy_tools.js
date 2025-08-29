@@ -35,7 +35,7 @@ window.runImagesProduction = function() {
 };
 
 window.fix_open_analyse = function(numDossier) {
-    //alert("Lancement de l'analyse générale pour le dossier " + numDossier + "...");
+    alert("Lancement de l'analyse générale pour le dossier " + numDossier + "...");
     fetch('/run_general_analyse', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

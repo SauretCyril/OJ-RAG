@@ -137,7 +137,8 @@ def run_analyse_prompt():
 def run_images_production():
     try:
         venv_python = os.path.join(os.path.dirname(sys.executable), "python.exe")
-        subprocess.Popen([venv_python, './backend/cy2_app_images.py'])
+        subprocess.Popen([venv_python, './backend/cy2_app_images.py', 'H:\\Entreprendre\\Actions-15-Images\\I003\\data\\_index_.db'])
+
         return jsonify({"message": "Lancement demandé."})
     except Exception as e:
         return jsonify({"message": f"Erreur: {e}"}), 500
@@ -147,13 +148,30 @@ def run_general_analyse():
     try:
         data = request.get_json()
         numdos = data.get('numdos')
+        print(f"dbg-app-E00- Numéro de dossier : {numdos}")
         if not numdos:
             return jsonify({"message": "Le paramètre 'numdos' est requis."}), 400
-        venv_python = os.path.join(os.path.dirname(sys.executable), "python.exe")
-        subprocess.Popen([venv_python, f'./backend/cy4_general_analyse.py --numdos {numdos}'])
 
+        # Chemin absolu vers le python de l'environnement virtuel du workspace
+        venv_python = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '.venv', 'Scripts', 'python.exe'))
+        script_path = os.path.abspath(os.path.join(os.path.dirname(__file__), 'cy4_general_analyse.py'))
+
+        print(f"dbg-app-E01- Chemin python : {venv_python}")
+        print(f"dbg-app-E02- Chemin script : {script_path}")
+
+        if not os.path.isfile(venv_python):
+            print(f"dbg-app-E03- Python introuvable : {venv_python}")
+            return jsonify({"message": f"Python introuvable : {venv_python}"}), 500
+        if not os.path.isfile(script_path):
+            print(f"dbg-app-E04- Script introuvable : {script_path}")
+            return jsonify({"message": f"Script introuvable : {script_path}"}), 500
+        
+        
+        subprocess.Popen([venv_python, script_path, '--numdos', str(numdos)])
+        print(f"dbg-app-E05- Lancement de l'analyse générale pour le dossier : {numdos}")
         return jsonify({"message": "Lancement demandé."})
     except Exception as e:
+        print(f"dbg-app-E06- Exception : {e}")
         return jsonify({"message": f"Erreur: {e}"}), 500
 
 if __name__ == '__main__':
@@ -161,7 +179,7 @@ if __name__ == '__main__':
     app_config.setup_logging()
     
     # Utiliser les constantes de app_config si disponibles
-    port = app_config.constants.get('port', 5001)
+    port = app_config.constants.get('port', 5000)
     debug = app_config.constants.get('debug', True)
     
     app.run(debug=debug, port=port)

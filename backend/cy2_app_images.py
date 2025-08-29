@@ -63,57 +63,50 @@ class FunctionDatabase:
     
     def __init__(self, db_path):
         """Initialiser la connexion à la base de données"""
+
         self.db_path = os.path.normpath(db_path)
+        print(f"dbg-cy02-Database path: {self.db_path}")
         self.conn = None
         self.cursor = None
         self.connect()
         self.create_table()
-    
+        self.clear_data()
+        self.ensure_default_function()
+
     def connect(self):
         """Établir une connexion à la base de données"""
         try:
             self.conn = sqlite3.connect(self.db_path)
             self.cursor = self.conn.cursor()
+            print(f"dbg-cy02-01-Connected to database: {self.db_path}")
         except sqlite3.Error as e:
-            print(f"Error-01 connecting to database: {str(e)}")
+            print(f"Error-dbg-cy02-01 connecting to database: {str(e)}")
             messagebox.showerror("Database Error", f"Could not connect to database: {str(e)}")
             raise
     
     def create_table(self):
         """Créer la table des fonctions si elle n'existe pas"""
-        try:
-            self.cursor.execute('''
-                CREATE TABLE IF NOT EXISTS functions (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    name TEXT UNIQUE NOT NULL,
-                    lib_images TEXT NOT NULL,
-                    default_directory TEXT NOT NULL,
-                    cible_directory TEXT NOT NULL,
-                    db_path TEXT NOT NULL,
-                    processor_type TEXT DEFAULT "standard"
-                )
-            ''')
-            
-            # Vérifier si les colonnes nécessaires existent et les ajouter si besoin
+        if not self.check_functions_table_exists():
             try:
-                self.cursor.execute("PRAGMA table_info(functions)")
-                columns = [column[1] for column in self.cursor.fetchall()]
-                
-                if "processor_type" not in columns:
-                    self.cursor.execute('ALTER TABLE functions ADD COLUMN processor_type TEXT DEFAULT "standard"')
-                    print("Added processor_type column to functions table")
-                    
-                if "status_options" not in columns:
-                    self.cursor.execute('ALTER TABLE functions ADD COLUMN status_options TEXT DEFAULT "new,viewed,approved,rejected,favorite"')
-                    print("Added status_options column to functions table")
-            except sqlite3.Error as e:
-                print(f"Error checking columns: {str(e)}")
-            
-            self.conn.commit()
-        except sqlite3.Error as e:
-            print(f"Error-02 creating table: {str(e)}")
-            messagebox.showerror("Database Error", f"Could not create table: {str(e)}")
-            raise
+                self.cursor.execute('''
+                    CREATE TABLE IF NOT EXISTS functions (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        name TEXT UNIQUE NOT NULL,
+                        lib_images TEXT NOT NULL,
+                        default_directory TEXT NOT NULL,
+                        cible_directory TEXT NOT NULL,
+                        db_path TEXT NOT NULL,
+                        status_options TEXT DEFAULT "new,viewed,approved,rejected,favorite",
+                        processor_type TEXT DEFAULT "standard"
+                    )
+                ''')
+                self.conn.commit()
+            except Exception as e:
+                print(f"Error-dbg-cy02-03-Table created not successfully: {e}")
+                messagebox.showerror("Database Error", f"Could not create table: {str(e)}")
+                raise
+        else:
+            print(f"dbg-cy02-03-Table 'functions' already exists")
     
     def get_all_functions(self):
         """Récupérer toutes les fonctions de la table"""
@@ -229,6 +222,52 @@ class FunctionDatabase:
         """Fermer la connexion à la base de données"""
         if self.conn:
             self.conn.close()
+
+    def check_functions_table_exists(self):
+        """Vérifie si la table 'functions' existe dans la base de données"""
+        try:
+            self.cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='functions'")
+            result = self.cursor.fetchone()
+            return result is not None
+        except sqlite3.Error as e:
+            print(f"Erreur lors de la vérification de la table 'functions': {e}")
+            return False
+
+    def ensure_default_function(self):
+        """Ajoute la fonction 'default' si elle n'existe pas déjà"""
+        try:
+            self.cursor.execute("SELECT id FROM functions WHERE name = ?", ("default",))
+            if not self.cursor.fetchone():
+                self.cursor.execute(
+                    """INSERT INTO functions 
+                    (name, lib_images, default_directory, cible_directory, db_path, processor_type, status_options)
+                    VALUES (?, ?, ?, ?, ?, ?, ?)""",
+                    (
+                        "default",
+                        r"H:\Entreprendre\Actions-15-Images\I003",
+                        r"E:\Comfyui_G11\ComfyUI\output",
+                        r"E:\Comfyui_G11\ComfyUI\rejected",
+                        r"H:\Entreprendre\Actions-15-Images\I003\data\_index_.db",
+                        "move",
+                        "bad"
+                    )
+                )
+                self.conn.commit()
+                print("Default function added.")
+            else:
+                print("Default function already exists.")
+        except Exception as e:
+            print(f"Error ensuring default function: {e}")
+
+    def clear_data(self):
+        """Supprime toutes les lignes de la table functions"""
+        try:
+            self.cursor.execute("DELETE FROM functions")
+            self.conn.commit()
+            print("Table 'functions' vidée avec succès.")
+        except sqlite3.Error as e:
+            print(f"Erreur lors du vidage de la table : {e}")
+            messagebox.showerror("Database Error", f"Could not clear table: {str(e)}")
 
 
 class FunctionForm(tk.Toplevel):
@@ -428,33 +467,24 @@ class FunctionForm(tk.Toplevel):
 class SplitApplication(tk.Tk):
     """Application combinant le gestionnaire de fonctions et l'explorateur d'images"""
     
-    def __init__(self):
+    def __init__(self, db_path):
         super().__init__()
         self.title("Image Management System")
         self.geometry("1400x800")
         self.minsize(1200, 600)
+
+        # Utiliser le chemin passé en paramètre
+        self.db_path = os.path.abspath(db_path)
+        # Vérifier la validité du chemin
+        if not self.db_path or not os.path.dirname(self.db_path) or not os.path.splitext(self.db_path)[1]:
+            messagebox.showerror("Error", "Invalid database path. Application will exit.")
+            self.destroy()
+            raise ValueError("Invalid database path")
         
-        # Chemin par défaut pour la base de données des fonctions
-        self.db_path = os.path.normpath(os.path.join(
-            os.path.dirname(os.path.abspath(__file__)), 
-            "..", 
-            "data", 
-            "functions.db"
-        ))
-         
-        # Créer le répertoire parent si nécessaire
-        os.makedirs(os.path.dirname(self.db_path), exist_ok=True)
-        
-        # Initialiser la base de données
+
         self.db = FunctionDatabase(self.db_path)
-        
-        # Créer l'interface utilisateur
         self.create_widgets()
-        
-        # Configurer la fermeture de l'application
         self.protocol("WM_DELETE_WINDOW", self.on_closing)
-        
-        # Variable pour suivre l'image_process actif
         self.active_image_process = None
     
     def create_widgets(self):
@@ -763,6 +793,11 @@ class SplitApplication(tk.Tk):
 
 # Main program entry point
 if __name__ == "__main__":
-    app = SplitApplication()
+    import sys
+    if len(sys.argv) < 2:
+        print("Usage: python cy2_app_images.py <functions_db_path>")
+        sys.exit(1)
+    db_path = sys.argv[1]
+    app = SplitApplication(db_path)
     app.mainloop()
 
