@@ -19,7 +19,7 @@ from cy2_metadata import *
 
 
 class image_process:
-    def __init__(self, root, config):
+    def __init__(self, root, config, rewrite=True):
         """Initialiser l'interface graphique principale"""
         self.root = root
         self.title = config.get('title', 'Image Explorer')
@@ -50,7 +50,7 @@ class image_process:
         self.root.geometry("1200x800")
         
         # Initialiser la base de données
-        self.init_database()
+        self.init_database(rewrite=rewrite)
         
         # Configurer l'interface utilisateur
         self.setup_ui()
@@ -67,9 +67,13 @@ class image_process:
             print(f"[WARNING] Directory does not exist: {self.default_directory}")
             messagebox.showwarning("Warning", f"Directory does not exist: {self.default_directory}")
 
-    def init_database(self):
+    def init_database(self, rewrite=False):
         """Initialise la base de données SQLite pour stocker les images vues par fonction"""
         try:
+            if rewrite and os.path.exists(self.db_path):
+                os.remove(self.db_path)
+                print(f"[INFO] Database {self.db_path} deleted for rewrite.")
+
             self.conn = sqlite3.connect(self.db_path, check_same_thread=False)
             self.cursor = self.conn.cursor()
 
@@ -86,29 +90,12 @@ class image_process:
                         function_name TEXT NOT NULL,
                         image_path TEXT NOT NULL,
                         viewed_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                        UNIQUE(function_name, image_path)
+                        metadata JSON,  -- Champ pour stocker les métadonnées au format JSON
+                        key TEXT NOT NULL,
+                        UNIQUE(key)
                     )
                 ''')
 
-            # Supprimer et recréer la table des métadonnées avec tous les champs ComfyUI
-            #self.cursor.execute("DROP TABLE IF EXISTS image_metadata")
-            
-            # Vérifier si la table image_metadata existe déjà
-            # self.cursor.execute("""
-            #     SELECT name FROM sqlite_master WHERE type='table' AND name='image_metadata'
-            # """)
-            # table_exists = self.cursor.fetchone()
-
-            # if not table_exists:
-            #     self.cursor.execute('''
-            #         CREATE TABLE image_metadata (
-            #             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            #             function_name TEXT NOT NULL,
-            #             image_path TEXT NOT NULL,
-            #             UNIQUE(function_name, image_path)
-            #         )
-            #     ''')
-            
             self.conn.commit()
             print(f"[INFO] Database initialized with complete ComfyUI support: {self.db_path}")
         except Exception as e:
@@ -122,12 +109,11 @@ class image_process:
     def is_image_viewed(self, image_path):
         """Vérifier si une image a été vue pour cette fonction spécifique"""
         try:
-            image_path = os.path.normpath(image_path)
             conn, cursor = self.get_db_connection()
-            
+            image_hash = self.get_image_hash(image_path)
             cursor.execute(
-                "SELECT COUNT(*) FROM viewed_images WHERE function_name = ? AND image_path = ?",
-                (self.title, image_path)
+                "SELECT COUNT(*) FROM viewed_images WHERE key = ?",
+                (image_hash,)  # <-- tuple à un seul élément
             )
             result = cursor.fetchone()[0] > 0
             conn.close()
@@ -144,15 +130,19 @@ class image_process:
         """Marquer une image comme vue pour cette fonction spécifique"""
         try:
             image_path = os.path.normpath(image_path)
-            
+            image_hash = self.get_image_hash(image_path)
+            meta = extract_comfyui_metadata(image_path)
+            if meta is not None and not isinstance(meta, str):
+                print(f"[Dbg-1245] Extracted model info for {os.path.basename(image_path)}: {meta}")
+                meta = json.dumps(meta)
+
             conn, cursor = self.get_db_connection()
             cursor.execute(
-                "INSERT OR IGNORE INTO viewed_images (function_name, image_path) VALUES (?, ?)",  # <-- Changement ici
-                (self.title, image_path)
+                "INSERT OR IGNORE INTO viewed_images (function_name, image_path, viewed_date, metadata, key) VALUES (?, ?, CURRENT_TIMESTAMP, ?, ?)",
+                (self.title, image_path, meta, image_hash)
             )
             conn.commit()
             conn.close()
-            
             return True
         except Exception as e:
             print(f"[ERROR] Error marking image as viewed: {e}")
@@ -302,6 +292,13 @@ class image_process:
 
         threading.Thread(target=load_thread, daemon=True).start()
 
+    def get_image_hash(self, image_path):
+        """Calculer le hash SHA-256 d'une image"""
+        with open(image_path, "rb") as f:
+            file_bytes = f.read()
+            image_hash = hashlib.sha256(file_bytes).hexdigest()
+        return image_hash
+
     def load_images(self):
         """Charger et afficher les images du dossier courant"""
         try:
@@ -310,8 +307,7 @@ class image_process:
                 return
 
             # Extensions d'images supportées
-            image_extensions = ('.png', '.jpg', '.jpeg', '.gif', '.bmp', '.tiff', '.webp')
-            
+            image_extensions = ('.png', '.jpg', '.jpeg', '.gif', '.bmp', '.tiff', '.webp') 
             # Lister tous les fichiers images
             all_files = []
             for file in os.listdir(self.current_directory):
@@ -329,6 +325,7 @@ class image_process:
                 print(f"[DEBUG] Filtering {len(all_files)} images for function '{self.title}'")
                 
                 for image_path in all_files:
+                    
                     if not self.is_image_viewed(image_path):
                         filtered_files.append(image_path)
                     #else:
@@ -415,9 +412,7 @@ class image_process:
                     filename = os.path.basename(image_path)
                     if is_viewed:
                         filename = f"✓ {filename}"  # Ajouter une coche
-                    
-                   
-                    
+  
                     # Boutons d'action
                     btn_frame = ttk.Frame(image_frame)
                     btn_frame.pack(fill="x", pady=2)
@@ -461,12 +456,33 @@ class image_process:
     def show_edit_prompt(self, image_path):
         """Afficher le prompt d'édition pour une image"""
         try:
-            metadata = extract_comfyui_metadata(image_path)
+            
+            #get image with hash key 
+            image = self.get_image_by_hash(image_path)
             
             text = ""
-            if metadata:
-                text = metadata.get("positive_prompt", "")
-            app = cy2_analyse_prompt(text)
+            print("dbg-cy2-12 image_path:", image_path)
+            if image:
+                print("dbg-cy2-13 image: image found")
+                # "model" est le 5ème champ dans la ligne (voir CREATE TABLE)
+                # Utiliser un dictionnaire pour accéder par nom de colonne
+                columns = ["id", "function_name", "image_path", "viewed_date", "model", "key"]
+                image_dict = dict(zip(columns, image))
+                model_json = image_dict.get("model")
+                if model_json:
+                    try:
+                        if isinstance(model_json, str):
+                            model = json.loads(model_json)
+                        else:
+                            model = model_json
+                        text = model.get("positive_prompt", "")
+                    except Exception as e:
+                        print(f"[ERROR] Error parsing model JSON: {e}")
+                        text = ""
+                else:
+                    text = ""
+            print("dbg-cy2-14 image: prompt text:", text)
+            app = cy2_analyse_prompt(prompt_text=text)
             app.mainloop()
         except Exception as e:
             print(f"[ERROR] Error showing edit prompt: {e}")
@@ -497,21 +513,28 @@ class image_process:
             result=True
             if result:
                 # Déplacer le fichier
-                shutil.move(image_path, target_path)
-                
-                # Supprimer les métadonnées de la base de données
-                #remove_image_metadata(image_path)
-                
-                # Recharge la page pour tout réafficher proprement
+                shutil.move(image_path, target_path)       
                 self.refresh_images()
-                
-                #messagebox.showinfo("Success", f"Image moved: {filename}")
-                
+                         
         except Exception as e:
             print(f"[ERROR] Error moving image: {e}")
             messagebox.showerror("Error", f"Failed to move image: {e}")
 
-   
+    def get_image_by_hash(self, image_path):
+        """Récupérer les infos d'une image depuis la base à partir de son hash"""
+        try:
+            image_hash = self.get_image_hash(image_path)
+            conn, cursor = self.get_db_connection()
+            cursor.execute(
+                "SELECT * FROM viewed_images WHERE key = ?",
+                (image_hash,)
+            )
+            row = cursor.fetchone()
+            conn.close()
+            return row  # Retourne la ligne brute (tuple) ou None si non trouvée
+        except Exception as e:
+            print(f"[ERROR] Error getting image by hash: {e}")
+            return None
 
     
     # def check_and_update_canvas(self):
@@ -790,7 +813,7 @@ def main(config):
 # Point d'entrée si le script est exécuté directement
 if __name__ == "__main__":
     # Configuration de test
-    test_config = {
+    config = {
         'title': 'Test Image Explorer',
         'default_directory': r'C:\Users\Public\Pictures',
         'cible_directory': r'C:\Users\Public\Pictures\Moved',
@@ -798,7 +821,7 @@ if __name__ == "__main__":
         'processor_type': 'standard'
     }
     
-    main(test_config)
+    main(config)
 
 def on_close():
     app.save_options()

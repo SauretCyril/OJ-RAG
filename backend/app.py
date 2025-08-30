@@ -137,7 +137,7 @@ def run_analyse_prompt():
 def run_images_production():
     try:
         venv_python = os.path.join(os.path.dirname(sys.executable), "python.exe")
-        subprocess.Popen([venv_python, './backend/cy2_app_images.py', 'H:\\Entreprendre\\Actions-15-Images\\I003\\data\\_index_.db'])
+        subprocess.Popen([venv_python, './backend/cy2_app_images.py', 'H:/Entreprendre/Actions-15-Images/I003/data/_fonctions_.db'])
 
         return jsonify({"message": "Lancement demandé."})
     except Exception as e:
@@ -148,9 +148,11 @@ def run_general_analyse():
     try:
         data = request.get_json()
         numdos = data.get('numdos')
+        content = data.get('content')
+        
         print(f"dbg-app-E00- Numéro de dossier : {numdos}")
-        if not numdos:
-            return jsonify({"message": "Le paramètre 'numdos' est requis."}), 400
+        # if not numdos:
+        #     return jsonify({"message": "Le paramètre 'numdos' est requis."}), 400
 
         # Chemin absolu vers le python de l'environnement virtuel du workspace
         venv_python = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '.venv', 'Scripts', 'python.exe'))
@@ -165,9 +167,9 @@ def run_general_analyse():
         if not os.path.isfile(script_path):
             print(f"dbg-app-E04- Script introuvable : {script_path}")
             return jsonify({"message": f"Script introuvable : {script_path}"}), 500
-        
-        
-        subprocess.Popen([venv_python, script_path, '--numdos', str(numdos)])
+
+
+        subprocess.Popen([venv_python, script_path, '--numdos', str(numdos), '--content', content])
         print(f"dbg-app-E05- Lancement de l'analyse générale pour le dossier : {numdos}")
         return jsonify({"message": "Lancement demandé."})
     except Exception as e:

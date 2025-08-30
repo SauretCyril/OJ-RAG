@@ -64,7 +64,7 @@ class AnnouncementGUI:
             if not db_path:
                 return False
 
-            self.db_path = os.path.join(db_path, "_index_.db")
+            self.db_path = os.path.join(db_path, "_news_.db")
             if not os.path.exists(self.db_path):
                 return False
             
@@ -739,6 +739,10 @@ class AnnouncementGUI:
         # --- Nouveau bouton pour créer le dossier via l'API ---
         ttk.Button(form_buttons, text="Créer Dossier Serveur", 
                   command=self.create_dossier_on_server).pack(side=tk.LEFT, padx=5)
+
+        # --- Nouveau bouton "Analyser" ---
+        ttk.Button(form_buttons, text="Analyser", 
+                  command=self.analyser_announcement).pack(side=tk.LEFT, padx=5)
     
     def open_current_url(self):
         """Ouvrir l'URL saisie dans le formulaire"""
@@ -1097,6 +1101,30 @@ class AnnouncementGUI:
         except Exception as e:
             messagebox.showerror("Erreur", f"Erreur lors de la création du dossier sur le serveur : {str(e)}")
         
+
+    def analyser_announcement(self):
+        """Analyser le contenu de l'annonce sélectionnée via l'API Flask"""
+        # Vérifier qu'une ligne est sélectionnée
+        if not self.current_announcement_id:
+            messagebox.showwarning("Attention", "Veuillez sélectionner une annonce à analyser.")
+            return
+
+        contenu = self.contenu_text.get(1.0, tk.END).strip()
+        numdos =  self.num_dossier_var.get().strip()
+        if not contenu:
+            messagebox.showwarning("Attention", "Le champ 'Contenu' est vide.")
+            return
+
+        params = {"content": contenu, "numdos": numdos}
+        print(f"dbg-cy3-01 : Params pour l'analyse : {params}")
+        try:
+            response = requests.post("http://localhost:5000/run_general_analyse", json=params)
+            response.raise_for_status()
+            data = response.json() if response.headers.get("Content-Type", "").startswith("application/json") else {}
+            # messagebox.showinfo("Analyse terminée", f"Résultat :\n{data if data else response.text}")
+        except Exception as e:
+            messagebox.showerror("Erreur", f"Erreur lors de l'analyse : {str(e)}")
+
 
 def main():
     """Fonction principale pour lancer l'application"""

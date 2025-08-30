@@ -1,28 +1,33 @@
 import tkinter as tk
 import json
 import os
-from tkinter import ttk, messagebox
+from tkinter import ttk, messagebox, filedialog
 from cy_mistral import get_mistral_answer
 from cy_requests import extract_text_from_pdf
 from cy_paths import get_cookie_value
+from cy4_pdf_functions import save_analysis_to_pdf
 import requests
 import argparse
+import subprocess
 
 
 class cy4_general_analyse(tk.Tk):
-    def __init__(self, question_file=None,numdos=None, question=None, role=None, texte=None, cv_file=None):
+    def __init__(self, question_file=None,numdos=None, question=None, role=None, content=None, cv_file=None):
         super().__init__()
         self.title("Analyse Générale Mistral")
         self.geometry("900x600")
        
-
+        self.numdos = numdos
         ##### 1 déterminer le current dossier et le fichier de question
 
         self.get_current_dossier()
         self.get_file_ask()
         print("dbg-cy4_00 : current dossier = ", self.current_dossier)
         print("dbg-cy4_01 : fichier question_file = ", self.question_file)
-        
+        self.analysis_dir = f"{self.current_dossier}/_news"
+        self.analysis_dir_file = f"{self.analysis_dir}/{self.numdos}_analyse_.pdf" if self.numdos else "N/A"
+        self.analysis_dir_file=os.path.normpath(self.analysis_dir_file)
+        print("dbg-cy4_02 : fichier analysis_dir_file = ", self.analysis_dir_file)
         ##### 2 déterminer la question depuis un fichier
         default_question = "Posez votre question à Mistral ici."
         if question is None and self.question_file is not None:
@@ -40,8 +45,8 @@ class cy4_general_analyse(tk.Tk):
         default_texte = "Texte par défaut pour l'analyse."
         # Si numdos et current_dossier sont définis, vérifier et extraire le texte du PDF
         
-        if numdos is not None and self.current_dossier is not None:
-            self.pdf_file = os.path.normpath(os.path.join(self.current_dossier, f"{numdos}\{numdos}_annonce_.pdf"))
+        if self.numdos is not None and self.current_dossier is not None:
+            self.pdf_file = os.path.normpath(os.path.join(self.current_dossier, f"{self.numdos}\{self.numdos}_annonce_.pdf"))
             print("dbg-cy4_05 : pdf_file = ", self.pdf_file)
             if os.path.exists(self.pdf_file):
                 try:
@@ -49,12 +54,14 @@ class cy4_general_analyse(tk.Tk):
                     
                 except Exception as e:
                     print(f"Erreur lors de l'extraction du texte du PDF : {e}")
+            else:
+                print(f"Le fichier PDF '{self.pdf_file}' n'existe pas.")
         print("dbg-cy4_06 : default_texte = ", default_texte)
         
         # Détermination du fichier CV et extraction du texte
         default_cv = "Aucun CV trouvé ou extrait."
-        if cv_file is None and numdos and self.current_dossier:
-            cv_file = os.path.normpath(os.path.join(self.current_dossier, f"{numdos}\{numdos}_CV_CyrilSauret.pdf"))
+        if cv_file is None and self.numdos and self.current_dossier:
+            cv_file = os.path.normpath(os.path.join(self.current_dossier, f"{self.numdos}\{self.numdos}_CV_CyrilSauret.pdf"))
         self.cv_file = cv_file
         if self.cv_file and os.path.exists(self.cv_file):
             try:
@@ -65,6 +72,18 @@ class cy4_general_analyse(tk.Tk):
         # Frame principal
         main_frame = ttk.Frame(self)
         main_frame.pack(side="top", fill="both", expand=True, padx=10, pady=10)
+
+        # Affichage du dossier d'analyse en haut du formulaire
+        self.analysis_dir_label = ttk.Label(main_frame, text=f"Dossier d'analyse : {self.analysis_dir}", foreground="blue")
+        self.analysis_dir_label.pack(anchor="w", pady=(0, 2))
+
+        # Affichage du chemin complet du fichier PDF d'analyse
+        self.analysis_file_label = ttk.Label(main_frame, text=f"Fichier PDF : {self.analysis_dir_file}", foreground="gray")
+        self.analysis_file_label.pack(anchor="w", pady=(0, 10))
+
+        # Bouton pour ouvrir le PDF si le fichier existe
+        if os.path.exists(self.analysis_dir_file):
+            ttk.Button(main_frame, text="Ouvrir le PDF", command=self.open_analysis_pdf).pack(anchor="w", pady=(0, 10))
 
         # Question
         ttk.Label(main_frame, text="Question").pack(anchor="w")
@@ -82,12 +101,15 @@ class cy4_general_analyse(tk.Tk):
         ttk.Label(main_frame, text="Texte").pack(anchor="w")
         self.texte_textbox = tk.Text(main_frame, height=6, width=100)
         self.texte_textbox.pack(fill="x", pady=(0, 10))
-        self.texte_textbox.insert("1.0", texte if texte else default_texte)
+        self.texte_textbox.insert("1.0", content if content else default_texte)
 
         # CV
         ttk.Label(main_frame, text="CV (texte extrait)").pack(anchor="w")
-        self.cv_textbox = tk.Text(main_frame, height=6, width=100)
-        self.cv_textbox.pack(fill="x", pady=(0, 10))
+        cv_frame = ttk.Frame(main_frame)
+        cv_frame.pack(fill="x", pady=(0, 10))
+        self.cv_textbox = tk.Text(cv_frame, height=6, width=100)
+        self.cv_textbox.pack(side="left", fill="x", expand=True)
+        ttk.Button(cv_frame, text="Charger un CV", command=self.load_cv_file).pack(side="left", padx=5)
         self.cv_textbox.insert("1.0", default_cv)
 
         # Frame horizontal pour les deux résultats
@@ -103,6 +125,8 @@ class cy4_general_analyse(tk.Tk):
         ttk.Label(question_frame, text="Résultat question").pack(anchor="w")
         self.result_textbox = tk.Text(question_frame, height=10, width=48, state="normal")
         self.result_textbox.pack(fill="both", expand=True)
+        # Déplacer ici le bouton Sauver en PDF (question)
+        ttk.Button(question_frame, text="Sauver en PDF", command=self.save_pdf).pack(pady=(5, 10))
 
         # Frame pour la corrélation et sa réponse
         correlation_frame = ttk.Frame(results_frame)
@@ -113,6 +137,8 @@ class cy4_general_analyse(tk.Tk):
         ttk.Label(correlation_frame, text="Résultat corrélation").pack(anchor="w")
         self.correlation_textbox = tk.Text(correlation_frame, height=10, width=48, state="normal")
         self.correlation_textbox.pack(fill="both", expand=True)
+        # Ajouter ici le bouton Sauver Corrélation en PDF
+        ttk.Button(correlation_frame, text="Sauver Corrélation en PDF", command=self.save_correlation_pdf).pack(pady=(5, 10))
 
     def get_current_dossier(self):
         response = requests.get("http://localhost:5000/get_directory_root")
@@ -193,7 +219,68 @@ class cy4_general_analyse(tk.Tk):
             self.config(cursor="")
             self.update_idletasks()
 
+    def save_pdf(self):
+        
+        if not self.numdos:
+            messagebox.showerror("Erreur", "Numéro de dossier manquant.")
+            return
+        question = self.question_textbox.get("1.0", tk.END).strip()
+        role = self.role_textbox.get("1.0", tk.END).strip()
+        texte_annonce = self.texte_textbox.get("1.0", tk.END).strip()
+        resultat_question = self.result_textbox.get("1.0", tk.END).strip()
+        cv_infos = self.cv_textbox.get("1.0", tk.END).strip() if self.cv_textbox.get("1.0", tk.END).strip() else None
+        resultat_correlation = self.correlation_textbox.get("1.0", tk.END).strip() if self.correlation_textbox.get("1.0", tk.END).strip() else None
 
+        try:
+            filepath = save_analysis_to_pdf(
+                self.current_dossier,self.numdos,self.analysis_dir_file, question, role, texte_annonce, resultat_question, cv_infos, resultat_correlation
+            )
+            messagebox.showinfo("PDF Sauvé", f"PDF enregistré :\n{filepath}")
+        except Exception as e:
+            messagebox.showerror("Erreur", f"Erreur lors de la sauvegarde du PDF : {e}")
+
+    def open_analysis_pdf(self):
+        """Ouvre le PDF d'analyse avec l'application par défaut du système."""
+        try:
+            if os.path.exists(self.analysis_dir_file):
+                os.startfile(self.analysis_dir_file)  # Windows only
+            else:
+                messagebox.showerror("Erreur", "Le fichier PDF n'existe pas.")
+        except Exception as e:
+            messagebox.showerror("Erreur", f"Impossible d'ouvrir le PDF : {e}")
+
+    def load_cv_file(self):
+        """Ouvre un fichier PDF et extrait le texte dans la zone CV."""
+        file_path = filedialog.askopenfilename(
+            title="Sélectionner un fichier CV PDF",
+            filetypes=[("PDF files", "*.pdf")]
+        )
+        if file_path:
+            try:
+                text = extract_text_from_pdf(file_path)
+                self.cv_textbox.delete("1.0", tk.END)
+                self.cv_textbox.insert("1.0", text)
+                self.cv_file = file_path
+            except Exception as e:
+                messagebox.showerror("Erreur", f"Erreur lors de l'extraction du texte du CV : {e}")
+
+    def save_correlation_pdf(self):
+        """Sauvegarde le résultat de la corrélation dans un PDF dédié."""
+        if not self.numdos:
+            messagebox.showerror("Erreur", "Numéro de dossier manquant.")
+            return
+        resultat_correlation = self.correlation_textbox.get("1.0", tk.END).strip()
+        if not resultat_correlation:
+            messagebox.showerror("Erreur", "Aucun résultat de corrélation à sauvegarder.")
+            return
+        correlation_pdf_file = os.path.join(self.analysis_dir, f"{self.numdos}_correlation_.pdf")
+        try:
+            # On ne sauvegarde que la corrélation, titre en gras
+            from cy4_pdf_functions import save_correlation_to_pdf
+            save_correlation_to_pdf(self.current_dossier, self.numdos, correlation_pdf_file, resultat_correlation)
+            messagebox.showinfo("PDF Sauvé", f"PDF de corrélation enregistré :\n{correlation_pdf_file}")
+        except Exception as e:
+            messagebox.showerror("Erreur", f"Erreur lors de la sauvegarde du PDF de corrélation : {e}")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Analyse Générale Mistral")
@@ -201,7 +288,7 @@ if __name__ == "__main__":
     parser.add_argument("--numdos", type=str, default=None, help="Numéro de dossier")
     parser.add_argument("--question", type=str, default=None, help="Question personnalisée")
     parser.add_argument("--role", type=str, default=None, help="Rôle personnalisé")
-    parser.add_argument("--texte", type=str, default=None, help="Texte personnalisé")
+    parser.add_argument("--content", type=str, default=None, help="Texte personnalisé")
     parser.add_argument("--cv_file", type=str, default=None, help="Chemin du fichier CV PDF")
 
     args = parser.parse_args()
@@ -211,7 +298,7 @@ if __name__ == "__main__":
         numdos=args.numdos,
         question=args.question,
         role=args.role,
-        texte=args.texte,
+        content=args.content,
         cv_file=args.cv_file
     )
     app.mainloop()

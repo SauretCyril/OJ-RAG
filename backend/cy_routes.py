@@ -45,7 +45,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # Define excluded directories
-EXCLUDED_DIRECTORIES = ["suivi", "pile", "conf"]  # Add your excluded directories here
+EXCLUDED_DIRECTORIES = ["suivi", "pile", "conf","_news"]  # Add your excluded directories here
 files_type = [{"suffix": "ANNONCE_SUFFIX", "type": "AN"}]
 
 
