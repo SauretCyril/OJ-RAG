@@ -1,8 +1,12 @@
-# OJ-RAG : Système d’Analyse et de Gestion de Dossiers
+# OJ-GenAI-Desk : Système d’Analyse et de Gestion de Dossiers
+
+## Introduction
+
+C'est projet de recherche et d'expérimentation tout en étant un projet opérationnel, puisque je m'en sert au quotidien pour gérer mes différents dossiers (les dossiers et les configurations  sont en local). Il est destiner à remplacer un explorateur de fichier trés pauvre et des gestionnaires de document trop rigide. 
 
 ## Présentation
 
-OJ-RAG est une application complète pour l’analyse, la gestion et le classement de dossiers, principalement orientée vers le traitement d’offres d’emploi, de CV et de documents associés. Le projet combine un backend Python (Flask) et un frontend moderne en JavaScript, avec une architecture modulaire pour faciliter l’évolution et la maintenance.
+OJ-GenAI-Desk est une application complète pour l’analyse, la gestion et le classement de dossiers, principalement orientée vers le traitement d’offres d’emploi, de CV et de documents associés. Le projet combine un backend Python (Flask) et un frontend moderne en JavaScript, avec une architecture modulaire pour faciliter l’évolution et la maintenance. 
 
 ## Modules principaux
 

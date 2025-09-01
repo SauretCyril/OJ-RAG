@@ -1,4 +1,18 @@
-# Stack Technique Utilisé dans le Projet OJ-RAG
+# OJ-RAG : Système d’Analyse et de Gestion de Dossiers
+
+## Présentation du projet
+
+OJ-RAG est une application modulaire pour l’analyse, la gestion et le classement de dossiers, principalement orientée vers le traitement d’offres d’emploi, de CV et de documents associés. Le projet combine un backend Python (Flask) et un frontend moderne en JavaScript, avec une architecture modulaire pour faciliter l’évolution et la maintenance.
+
+## Modules principaux
+
+- **cy** : Module central regroupant les routes principales de l’application (API, gestion des annonces, configuration, etc.).
+- **cy1** : Module dédié à l’exploration et à la gestion des fichiers (explorateur local, navigation, filtres).
+- **cy2** : Module spécialisé dans le traitement et l’analyse des images (exploration, marquage, extraction de métadonnées).
+- **cy3** : Module pour la gestion avancée des prompts et des interactions IA (génération, analyse, sauvegarde).
+- **cy4** : Module d’analyse générale (correlation annonce/CV, extraction de texte, génération de rapports PDF).
+- **cy5** : Module pour la gestion des configurations, colonnes et filtres (personnalisation de l’interface et des données).
+- **cy6** : Module d’intégration et d’automatisation (scripts, batchs, gestion des versions et des migrations).
 
 ## 1. Backend
 
