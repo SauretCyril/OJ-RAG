@@ -18,8 +18,8 @@ class AnnouncementManager:
         self.cursor = None
         self.connect()
         self.create_table()
-        #self.migrate_announcements_table()
-    
+        # self.migrate_announcements_table()
+
     def connect(self):
         """Établir une connexion à la base de données"""
         try:
@@ -98,8 +98,9 @@ class AnnouncementManager:
                     contenu TEXT NOT NULL,
                     date_creation TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     date_modification TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    statut TEXT DEFAULT 'actif' CHECK (statut IN ('actif', 'inactif', 'archive', 'créé', 'envoyé')),
+                    statut TEXT DEFAULT 'actif' CHECK (statut IN ('actif', 'inactif', 'archive', 'créé', 'envoyé', 'N/A')),
                     nature TEXT DEFAULT '',
+                    commentaire TEXT DEFAULT '',
                     UNIQUE(num_dossier, url)
                 )
             ''')
@@ -130,7 +131,7 @@ class AnnouncementManager:
             print(f"Erreur lors de la migration: {str(e)}")
             messagebox.showerror("Erreur Base de Données", f"Impossible de migrer la table: {str(e)}")
             self.conn.rollback()
-    def add_announcement(self, num_dossier: str, url: str, contenu: str, nature: str = '', statut: str = 'actif') -> Optional[int]:
+    def add_announcement(self, num_dossier, url, contenu, nature='', statut='actif', commentaire=''):
         """
         Ajouter une nouvelle annonce
         
@@ -146,9 +147,9 @@ class AnnouncementManager:
         """
         try:
             self.cursor.execute('''
-                INSERT INTO announcements (num_dossier, url, contenu, nature, statut)
-                VALUES (?, ?, ?, ?, ?)
-            ''', (num_dossier.strip(), url.strip(), contenu.strip(), nature.strip(), statut))
+                INSERT INTO announcements (num_dossier, url, contenu, nature, statut, commentaire)
+                VALUES (?, ?, ?, ?, ?, ?)
+            ''', (num_dossier.strip(), url.strip(), contenu.strip(), nature.strip(), statut, commentaire))
             
             self.conn.commit()
             return self.cursor.lastrowid
@@ -226,7 +227,7 @@ class AnnouncementManager:
             messagebox.showerror("Erreur Base de Données", f"Impossible de récupérer les annonces: {str(e)}")
             return []
     
-    def update_announcement(self, announcement_id: int, num_dossier: str, url: str, contenu: str, nature: str = '', statut: str = 'actif') -> bool:
+    def update_announcement(self, announcement_id: int, num_dossier: str, url: str, contenu: str, nature: str = '', statut: str = 'actif', commentaire: str = '') -> bool:
         """
         Mettre à jour une annonce existante
         
@@ -243,10 +244,10 @@ class AnnouncementManager:
         try:
             self.cursor.execute('''
                 UPDATE announcements SET
-                    num_dossier = ?, url = ?, contenu = ?, nature = ?, statut = ?,
+                    num_dossier = ?, url = ?, contenu = ?, nature = ?, statut = ?, commentaire = ?,
                     date_modification = CURRENT_TIMESTAMP
                 WHERE id = ?
-            ''', (num_dossier.strip(), url.strip(), contenu.strip(), nature.strip(), statut, announcement_id))
+            ''', (num_dossier.strip(), url.strip(), contenu.strip(), nature.strip(), statut, commentaire, announcement_id))
             
             self.conn.commit()
             return self.cursor.rowcount > 0
@@ -411,3 +412,4 @@ if __name__ == "__main__":
     
     # Fermer la connexion
     manager.close()
+

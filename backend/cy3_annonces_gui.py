@@ -715,9 +715,14 @@ class AnnouncementGUI:
         # Champ Statut
         ttk.Label(fields_frame, text="Statut:").grid(row=4, column=0, sticky="w", pady=5)
         statut_combo = ttk.Combobox(fields_frame, textvariable=self.statut_var,
-                                   values=["actif", "inactif", "archive", "créé", "envoyé"],
+                                   values=["actif", "inactif", "archive", "créé", "envoyé", "N/A"],
                                    state="readonly", width=27)
         statut_combo.grid(row=4, column=1, sticky="ew", padx=(10, 0), pady=5)
+        
+        # Champ Commentaire
+        ttk.Label(fields_frame, text="Commentaire:").grid(row=5, column=0, sticky="w", pady=5)
+        self.commentaire_entry = ttk.Entry(fields_frame, width=60)
+        self.commentaire_entry.grid(row=5, column=1, padx=5)
         
         # Configuration de la grille
         fields_frame.grid_columnconfigure(1, weight=1)
@@ -840,6 +845,9 @@ class AnnouncementGUI:
                 self.contenu_text.delete(1.0, tk.END)
                 self.contenu_text.insert(1.0, announcement.get("contenu", ""))
                 self.statut_var.set(announcement.get("statut", ""))
+                # Charger le commentaire s'il existe
+                self.commentaire_entry.delete(0, tk.END)
+                self.commentaire_entry.insert(0, announcement.get("commentaire", ""))
         except Exception as e:
             messagebox.showerror("Erreur", f"Erreur lors du chargement: {str(e)}")
     
@@ -855,6 +863,7 @@ class AnnouncementGUI:
         self.nature_var.set("")
         self.contenu_text.delete(1.0, tk.END)
         self.statut_var.set("actif")
+        self.commentaire_entry.delete(0, tk.END)
     
     def save_announcement(self):
         """Sauvegarder l'annonce (nouvelle ou modification)"""
@@ -864,6 +873,7 @@ class AnnouncementGUI:
         contenu = self.contenu_text.get(1.0, tk.END).strip()
         statut = self.statut_var.get()
         nature = self.nature_var.get().strip()
+        commentaire = self.commentaire_entry.get().strip()
         
         # Validation
         if not all([num_dossier, url, contenu]):
@@ -873,12 +883,12 @@ class AnnouncementGUI:
             if self.current_announcement_id:
                 # Modification
                 success = self.manager.update_announcement(
-                    self.current_announcement_id, num_dossier, url, contenu, nature, statut
+                    self.current_announcement_id, num_dossier, url, contenu, nature, statut, commentaire
                 )
                 message = "Annonce modifiée avec succès"
             else:
                 # Nouvelle annonce
-                success = self.manager.add_announcement(num_dossier, url, contenu, nature, statut)
+                success = self.manager.add_announcement(num_dossier, url, contenu, nature, statut, commentaire)
                 message = "Nouvelle annonce ajoutée avec succès"
             
             if success:
@@ -944,7 +954,8 @@ class AnnouncementGUI:
                     original.get("url", ""),
                     original.get("contenu", ""),
                     original.get("nature", ""),
-                    original.get("statut", "")
+                    original.get("statut", ""),
+                    original.get("commentaire", "")
                 )
                 if success:
                     messagebox.showinfo("Succès", f"Annonce dupliquée avec le numéro {new_num_dossier}.")
@@ -991,7 +1002,7 @@ class AnnouncementGUI:
             
             by_status = stats.get('by_status', {})
             status_parts = []
-            for status in ['actif', 'inactif', 'archive']:
+            for status in ['actif', 'inactif', 'archive', 'créé', 'envoyé', 'N/A','créé ']:
                 count = by_status.get(status, 0)
                 if count > 0:
                     status_parts.append(f"{status.capitalize()}: {count}")
