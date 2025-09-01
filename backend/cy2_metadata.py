@@ -181,8 +181,8 @@ def Extract_all_metadata(self):
         for idx, image_path in enumerate(images_needing_metadata, 1):
             metadata = self.extract_image_metadata(image_path)
             if metadata:
-                nsfw_score = get_nsfw_score(image_path)
-                metadata['nsfw_score'] = nsfw_score
+                trez_score = get_trez_score(image_path)
+                metadata['trez_score'] = trez_score
                 self.store_image_metadata(image_path, metadata)
             progress_bar["value"] = idx
             percent_label.config(text=f"{int(idx/total*100)}%")
@@ -218,7 +218,7 @@ def store_image_metadata( image_path, metadata):
              file_hash, creation_date, modified_date, exif_data,
              positive_prompt, negative_prompt, workflow_data,
              model_checkpoint, model_vae, generation_steps, cfg_scale,
-             sampler_name, scheduler, seed, nsfw_score)
+             sampler_name, scheduler, seed, trez_score)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ''', (
             self.title, 
@@ -242,7 +242,7 @@ def store_image_metadata( image_path, metadata):
             str(model_info.get('sampler_name', '')) if model_info.get('sampler_name') else '',
             str(model_info.get('scheduler', '')) if model_info.get('scheduler') else '',
             model_info.get('seed') if model_info.get('seed') is not None else None,
-            metadata.get('nsfw_score', 0.0)  # <-- Ajout ici
+            metadata.get('trez_score', 0.0)  # <-- Ajout ici
         ))
 
         conn.commit()
@@ -263,8 +263,8 @@ def get_image_metadata(self, image_path):
                    creation_date, modified_date, exif_data, extracted_date,
                    positive_prompt, negative_prompt, workflow_data,
                    model_checkpoint, model_vae, generation_steps, cfg_scale,
-                   sampler_name, scheduler, seed, nsfw_score
-            FROM image_metadata 
+                   sampler_name, scheduler, seed, trez_score
+            FROM image_metadata
             WHERE function_name = ? AND image_path = ?
         ''', (self.title, image_path))
         result = cursor.fetchone()
@@ -291,7 +291,7 @@ def get_image_metadata(self, image_path):
                 'sampler_name': result[17] or '',
                 'scheduler': result[18] or '',
                 'seed': result[19],
-                'nsfw_score': result[20]  # <-- AJOUT ICI
+                'trez_score': result[20]  # <-- AJOUT ICI
             }
         return None
         

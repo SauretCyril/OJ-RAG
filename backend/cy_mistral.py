@@ -257,50 +257,7 @@ def get_mistral_translate(text, src_lang="fr", tgt_lang="en"):
     content = text
     return  get_mistral_answer(question, role, content)
 
-def get_nsfw_score(image_path):
-    """
-    Interroge Mistral AI pour obtenir un score NSFW entre 0 (sûr) et 1 (NSFW).
-    """
-    api_key = os.getenv("MISTRAL_API_KEY")
-    if not api_key:
-        raise ValueError("La clé API Mistral n'est pas définie dans le fichier .env")
 
-    # Lis l'image en binaire et encode en base64
-    with open(image_path, "rb") as f:
-        image_bytes = f.read()
-    image_b64 = base64.b64encode(image_bytes).decode("utf-8")
-
-    prompt = (
-        "Donne un score de 0 (pas NSFW) à 1 (très NSFW) pour cette image. "
-        "Réponds uniquement par un nombre décimal entre 0 et 1."
-    )
-
-    url = "https://api.mistral.ai/v1/chat/completions"
-    headers = {
-        "Authorization": f"Bearer {api_key}",
-        "Content-Type": "application/json"
-    }
-    data = {
-        "model": "mistral-medium",  # ou le modèle adapté
-        "messages": [
-            {"role": "system", "content": prompt},
-            {"role": "user", "content": f"[image base64]\n{image_b64}"}
-        ],
-        "max_tokens": 10,
-        "temperature": 0.0
-    }
-
-    try:
-        response = requests.post(url, headers=headers, json=data, timeout=30)
-        response.raise_for_status()
-        result = response.json()
-        score_str = result.get("choices", [{}])[0].get("message", {}).get("content", "").strip()
-        score = float(score_str.replace(",", "."))
-        score = max(0.0, min(1.0, score))
-        return score
-    except Exception as e:
-        print(f"[NSFW] Erreur lors de l'appel à Mistral : {e}")
-        return 0.0
 
 if __name__ == '__main__':
     #Question à poser aux documents

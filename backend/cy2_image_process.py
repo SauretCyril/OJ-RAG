@@ -12,7 +12,7 @@ import time
 import hashlib
 from PIL.ExifTags import TAGS
 from cy2_analyse_prompt import cy2_analyse_prompt
-from cy_mistral import get_nsfw_score
+from cy_mistral import get_trez_score
 from cy2_metadata import *
 #from cy2_analyse_prompt import cls_local_PromptTable
 

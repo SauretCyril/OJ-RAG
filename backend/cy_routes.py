@@ -327,7 +327,8 @@ def read_annonces_json():
                                         data["description"] = extracted_json.get("poste", "N/A")
                                         data["Lieu"] = extracted_json.get("lieu", "N/A")
                                         data["entreprise"] = extracted_json.get("entreprise", "N/A")
-                             
+                                        data["ID"] = extracted_json.get("lot_reponse", "N/A")
+
                                 except json.JSONDecodeError:
                                     print(f"{parent_dir}NEW-4958g lors de l'analyse du JSON extrait.")
                                     data["description"]="infos not find"

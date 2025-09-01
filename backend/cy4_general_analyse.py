@@ -200,6 +200,7 @@ class cy4_general_analyse(tk.Tk):
             "Dis ce qui manque dans le CV par rapport à l'annonce, ce qui est en commun, "
             "et ce que le CV apporte en plus. "
             "Sois synthétique et précis."
+            "En fonction des manques et des apports, ecris une accroche de 3 phrases pour mon CV."
         )
         role = "Tu es un assistant RH expert en matching de profils et annonces."
         try:
