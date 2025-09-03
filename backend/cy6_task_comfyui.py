@@ -1,30 +1,38 @@
-
 import sys
 import json
-sys.path.append('G:/G_WCS/Comfyui_api')
-from utils.file import log_json
-from  Client.websocket_api_client import update_workflow,workflow_is_running,queue_add,server_connect
+import os
+#sys.path.append('G:/G_WCS/Comfyui_api')
+from cy6_file import log_json
+
+from  cy6_websocket_api_client import update_workflow,workflow_is_running,queue_add,server_connect
 
 #seed aleatoire
 class comfyui_task:
-     
-     name="Default"
-     workFlowRoot ="G:/G_WCS/Comfyui_api/WorkFlowFile"
-     
-
-     def update_values(self,values):
-        self.values=values
+    name="Default"
+    workflowRoot ="data/Workflows"
     
-     def updateWorkflow(self,file,values):
+    def update_values(self, values):
+        self.values = values
 
-         json = update_workflow(values,self.workFlowRoot + "/" + file)
-         #print(f"{json}")
-         return json
-        
-     def log_values(self):
+    def updateWorkflow(self,fileworkflow,filevalues):
+        fileworkflow = self.workflowRoot + "/" + fileworkflow
+        filevalues = self.workflowRoot + "/" + filevalues
+
+        if os.path.exists(fileworkflow):
+            if os.path.exists(filevalues):
+
+                #values = self.values
+                json = update_workflow(filevalues,fileworkflow)
+                return json
+            else:
+                raise ValueError("Invalid values.")
+        else:
+            raise ValueError("Invalid workflow file does not exist : " + fileworkflow)
+
+    def log_values(self):
         log_json('02_value_to_update',self.values)
      
-     def addToQueue(self):
+    def addToQueue(self):
         json = self.updateWorkflow(self.file,self.values)
         print("--------------------------------")
          

@@ -201,6 +201,7 @@ class cy4_general_analyse(tk.Tk):
             "et ce que le CV apporte en plus. "
             "Sois synthétique et précis."
             "En fonction des manques et des apports, ecris une accroche de 3 phrases pour mon CV."
+            "j'ai besoins egalement d'une lettre de motivation dans un chapitre en fin d'analyse."
         )
         role = "Tu es un assistant RH expert en matching de profils et annonces."
         try:

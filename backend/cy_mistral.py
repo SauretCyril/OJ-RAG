@@ -23,6 +23,9 @@ mistral = Blueprint('mistral', __name__)
 logging.basicConfig(level=logging.ERROR)
 logger = logging.getLogger(__name__)
 
+def get_trez_score(texte):
+    # Implémentez la logique pour obtenir le score Trez ici
+    pass
 
 def extract_text_from_word(file_path):
     doc = Document(file_path)

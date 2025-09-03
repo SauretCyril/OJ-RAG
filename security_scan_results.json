@@ -1,0 +1,122 @@
+[
+  {
+    "file": "g:/G_WCS/OJ-RAG\\backend\\app.py",
+    "type": "ip_address",
+    "line": 88,
+    "matched_text": "127.0.0.1"
+  },
+  {
+    "file": "g:/G_WCS/OJ-RAG\\backend\\app.py",
+    "type": "ip_address",
+    "line": 106,
+    "matched_text": "127.0.0.1"
+  },
+  {
+    "file": "g:/G_WCS/OJ-RAG\\backend\\cy2_image_process.py",
+    "type": "sensitive_paths",
+    "line": 818,
+    "matched_text": "C:\\Users\\"
+  },
+  {
+    "file": "g:/G_WCS/OJ-RAG\\backend\\cy2_image_process.py",
+    "type": "sensitive_paths",
+    "line": 819,
+    "matched_text": "C:\\Users\\"
+  },
+  {
+    "file": "g:/G_WCS/OJ-RAG\\backend\\cy6_websocket_api_client.py",
+    "type": "ip_address",
+    "line": 13,
+    "matched_text": "127.0.0.1"
+  },
+  {
+    "file": "g:/G_WCS/OJ-RAG\\backend\\cy6_websocket_api_client.py",
+    "type": "ip_address",
+    "line": 218,
+    "matched_text": "127.0.0.1"
+  },
+  {
+    "file": "g:/G_WCS/OJ-RAG\\backend\\scan_integrite.py",
+    "type": "private_key",
+    "line": 17,
+    "matched_text": "-----BEGIN.*PRIVATE KEY-----"
+  },
+  {
+    "file": "g:/G_WCS/OJ-RAG\\backend\\scan_integrite.py",
+    "type": "sensitive_paths",
+    "line": 18,
+    "matched_text": "/etc/shadow"
+  },
+  {
+    "file": "g:/G_WCS/OJ-RAG\\backend\\scan_integrite.py",
+    "type": "sensitive_paths",
+    "line": 18,
+    "matched_text": "/home/"
+  },
+  {
+    "file": "g:/G_WCS/OJ-RAG\\backend\\scan_integrite.py",
+    "type": "sensitive_paths",
+    "line": 18,
+    "matched_text": "/var/www"
+  },
+  {
+    "file": "g:/G_WCS/OJ-RAG\\backend\\scan_integrite.py",
+    "type": "sensitive_paths",
+    "line": 18,
+    "matched_text": "/var/log"
+  },
+  {
+    "file": "g:/G_WCS/OJ-RAG\\tests\\backend\\fixtures\\test_fixtures.py",
+    "type": "email",
+    "line": 257,
+    "matched_text": "test@example.com"
+  },
+  {
+    "file": "g:/G_WCS/OJ-RAG\\tests\\backend\\fixtures\\test_fixtures.py",
+    "type": "email",
+    "line": 258,
+    "matched_text": "user.name@company.co.uk"
+  },
+  {
+    "file": "g:/G_WCS/OJ-RAG\\tests\\backend\\fixtures\\test_fixtures.py",
+    "type": "email",
+    "line": 259,
+    "matched_text": "admin+tag@domain.org"
+  },
+  {
+    "file": "g:/G_WCS/OJ-RAG\\READ-ME.md",
+    "type": "ip_address",
+    "line": 115,
+    "matched_text": "127.0.0.1"
+  },
+  {
+    "file": "g:/G_WCS/OJ-RAG\\README.md",
+    "type": "ip_address",
+    "line": 47,
+    "matched_text": "127.0.0.1"
+  },
+  {
+    "file": "g:/G_WCS/OJ-RAG\\README.md",
+    "type": "ip_address",
+    "line": 47,
+    "matched_text": "127.0.0.1"
+  },
+  {
+    "file": "g:/G_WCS/OJ-RAG\\tests\\frontend\\utils\\helpers.test.js",
+    "type": "email",
+    "line": 15,
+    "matched_text": "test@example.com"
+  },
+  {
+    "file": "g:/G_WCS/OJ-RAG\\tests\\frontend\\utils\\helpers.test.js",
+    "type": "email",
+    "line": 16,
+    "matched_text": "user.name@company.co.uk"
+  },
+  {
+    "file": "g:/G_WCS/OJ-RAG\\tests\\frontend\\utils\\helpers.test.js",
+    "type": "email",
+    "line": 17,
+    "matched_text": "admin+tag@domain.org"
+  }
+]

@@ -2,20 +2,19 @@ import random
 import sys
 
 
-sys.path.append('G:/G_WCS/Comfyui_api')
-from cy6_task_comfyui import comfyui_task
+#sys.path.append('G:/G_WCS/Comfyui_api')
+from  cy6_task_comfyui import comfyui_task
 from  cy6_websocket_api_client import server_run_now,update_workflow
 
 #seed aleatoire
-class comfyui_run_now(cy6_comfyui_task):
+class comfyui_run_now(comfyui_task):
     #update json
-    file ="cy6_wkf001_api_basic.json"
-    name="run_now"
-    seednum =random.randint(0,9999999)
-    
-    def run_now(self):
-        #json = task_update_workflow(self.values,self.workFlowRoot + "/" + self.file)
-        json=self.updateWorkflow(self.file,self.values)
+   
+    name = "run_now"
+    seednum = random.randint(0, 9999999)
+
+    def run_now(self,fileworkflow,filevalues):
+        json=self.updateWorkflow(fileworkflow,filevalues)
         #mise à jour api run_basic avec le json modifié
         result =server_run_now(json)
         images = result['1']['output']
@@ -50,7 +49,12 @@ values={
         }
     }
 
-tsk1 =  comfyui_run_now()
-tsk1.update_values(values)
-tsk1.run_now()
+if __name__ == "__main__":
+    tsk1 =  comfyui_run_now()
+    #fileworkflow = "wk000_basic.json"
+    #filevalues = "wk000_basic_values.json"
 
+    fileworkflow = "wk001_ponyRealism.json"
+    filevalues = "wk001_ponyRealism_values.json"
+
+    tsk1.run_now(fileworkflow,filevalues)

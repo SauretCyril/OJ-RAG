@@ -25,7 +25,7 @@ class image_process:
         self.title = config.get('title', 'Image Explorer')
         self.default_directory = config.get('default_directory', '')
         self.cible_directory = config.get('cible_directory', '')
-        self.db_path = config.get('db_path', 'image_explorer.db')
+        self.db_path = config.get('db_path', 'g:/tmp/image_explorer.db')
         self.processor_type = config.get('processor_type', 'standard')
         
         # Variables d'état

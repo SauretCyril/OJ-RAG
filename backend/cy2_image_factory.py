@@ -11,13 +11,11 @@ def create_image_processor(root, config):
     processor_type = config.get('processor_type', 'standard')
     # print(f"[INFO-012] Creating image processor of type: {processor_type}")
     # # Retourner le processeur adapté au type demandé
-    # if processor_type == 'workflow':
-    #     print(f"[INFO-012a] Creating workflow image processor")
-    #     processor = images_workflow(root, config)
-    # else:
-    #     print(f"[INFO-012b] Creating standard image processor (type: {processor_type})")
-    #     processor = image_process(root, config)
-    processor = image_process(root, config)
+    if processor_type == 'move':
+         print(f"[INFO-012a] Creating workflow image processor")
+         #processor = images_workflow(root, config)
+         processor = image_process(root, config)
+   
     # IMPORTANT: Initialiser l'objet après sa création
     processor.initialize()
     

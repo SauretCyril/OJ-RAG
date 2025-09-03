@@ -252,6 +252,7 @@ class FunctionDatabase:
                         "bad"
                     )
                 )
+                
                 self.conn.commit()
                 print("Default function added.")
             else:
@@ -798,6 +799,7 @@ if __name__ == "__main__":
         print("Usage: python cy2_app_images.py <functions_db_path>")
         sys.exit(1)
     db_path = sys.argv[1]
+    
     app = SplitApplication(db_path)
     app.mainloop()
 

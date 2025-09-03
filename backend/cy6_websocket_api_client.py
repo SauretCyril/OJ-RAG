@@ -6,7 +6,7 @@ import uuid
 import json
 import urllib.request
 import urllib.parse
-from utils.file import load_json,log_json
+from cy6_file import load_json,log_json
 
 from urllib import request
 
@@ -75,9 +75,16 @@ def get_images(ws, prompt):
 
 
 
-def update_workflow(values,file):
+def update_workflow(filevalues,file):
     print(f"open file {file }")
+    #il faut ouvrir filevalues
+    with open(filevalues, "r",encoding="utf-8") as f:
+        values_json_data=f.read()
     
+    print(f"sv:msg04={values_json_data}")
+
+    values=json.loads( values_json_data)
+
     data_updated={}
    
     try:
@@ -138,9 +145,9 @@ def update_workflow(values,file):
                 case _:
                     print(f"Invalid type {typ}")
                     return
-    except Exception:
+    except Exception as e:
         print("---Error---------------------------------------")
-        print(f"update worflow Error: {Exception}")
+        print(f"update worflow Error: {e}")
         #log_json('current_workflow_data_updated',data_updated)
         # print ("\n")
         # print (file)
@@ -153,13 +160,14 @@ def update_workflow(values,file):
     #set the text prompt for our positive CLIPTextEncode
 
 #Run workflow and get images
-def server_run_now(ws,jsonf):
-    # try:
-    #     ws = websocket.WebSocket()
-    #     ws.connect("ws://{}/ws?clientId={}".format(server_address, client_id))
-    # except Exception:
-    #     print(f"Error: {Exception}")
-    #     exit(None) 
+def server_run_now(jsonf):
+    try:
+         ws = websocket.WebSocket()
+         ws.connect("ws://{}/ws?clientId={}".format(server_address, client_id))
+    except Exception:
+         print(f"Error: {Exception}")
+         exit(None) 
+    
     result = get_images(ws, jsonf)
     return result
 

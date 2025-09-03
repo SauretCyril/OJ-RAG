@@ -2,8 +2,8 @@ import random
 import sys
 
 sys.path.append('G:/G_WCS/Comfyui_api')
-from comfyUi.task_comfyui import comfyui_task
-from  Client.websocket_api_client import queue_add,workflow_is_running,get_history_images,server_connect
+from cy6_task_comfyui import comfyui_task
+from cy6_websocket_api_client import queue_add,workflow_is_running,get_history_images,server_connect
 
 #seed aleatoire
 
