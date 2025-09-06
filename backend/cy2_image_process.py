@@ -14,6 +14,8 @@ from PIL.ExifTags import TAGS
 from cy2_analyse_prompt import cy2_analyse_prompt
 from cy_mistral import get_trez_score
 from cy2_metadata import *
+from dotenv import load_dotenv
+import platform
 #from cy2_analyse_prompt import cls_local_PromptTable
 
 
@@ -183,6 +185,20 @@ class image_process:
         # Label du dossier courant
         self.dir_label = ttk.Label(control_frame, text=f"Directory: {self.current_directory}")
         self.dir_label.pack(side="left", padx=(10, 0))
+
+        # Ajouter un séparateur vertical
+        ttk.Separator(control_frame, orient="vertical").pack(side="left", padx=10, fill="y")
+
+        # Label de la base de données
+        db_label = ttk.Label(control_frame, text=f"Database: {self.db_path}")
+        db_label.pack(side="left")
+
+        # Ajouter un séparateur vertical pour le répertoire cible
+        ttk.Separator(control_frame, orient="vertical").pack(side="left", padx=10, fill="y")
+
+        # Label du répertoire cible
+        target_label = ttk.Label(control_frame, text=f"Target Dir: {self.cible_directory}")
+        target_label.pack(side="left")
 
         # Troisième ligne - Actions
         action_frame = ttk.Frame(top_frame)
@@ -547,9 +563,7 @@ class image_process:
     def open_image(self, image_path):
         """Ouvrir une image avec l'application par défaut du système"""
         try:
-            import os
-            import platform
-            import subprocess
+
 
             print(f"[DEBUG] open_image: {image_path}")  # Ajoute ceci pour debug
 
@@ -813,11 +827,17 @@ def main(config):
 # Point d'entrée si le script est exécuté directement
 if __name__ == "__main__":
     # Configuration de test
+    load_dotenv()
+    db_path = os.getenv("IMAGES_DB", "")
+    images_collecte = os.getenv("IMAGES_COLLECTE", "")
+    images_central = os.getenv("IMAGES_CENTRAL", "")
+    images_Trash = os.getenv("IMAGES_TRASH", "")
+
     config = {
         'title': 'Test Image Explorer',
-        'default_directory': r'C:\Users\Public\Pictures',
-        'cible_directory': r'C:\Users\Public\Pictures\Moved',
-        'db_path': 'test_image_explorer.db',
+        'default_directory':  images_collecte ,
+        'cible_directory':  images_Trash,
+        'db_path': db_path,
         'processor_type': 'standard'
     }
     

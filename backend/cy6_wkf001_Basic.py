@@ -7,7 +7,7 @@ from  cy6_task_comfyui import comfyui_task
 from  cy6_websocket_api_client import server_run_now,update_workflow
 
 #seed aleatoire
-class comfyui_run_now(comfyui_task):
+class comfyui_basic_task(comfyui_task):
     #update json
    
     name = "run_now"

@@ -104,11 +104,12 @@ def update_workflow(filevalues,file):
             
             #data_updated.update(f"{#node}:{'type':{typ}}") # type: ignore
             #data_updated.update(f"{node}:{'value':{values[val]}}")
-            
+            print(f"dbg-4514 = node {node} : type {typ} ")
             match typ: 
                 
                 case "CLIPTextEncode":
                     jsonf[node]['inputs']['text'] =  values[val]['value']
+                    
                 case "prompt":
                 
                     jsonf[node]['inputs']['text'] =  values[val]['value']
