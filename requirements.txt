@@ -18,8 +18,6 @@ langchain
 mistralai
 scikit-learn
 Pillow
-# Ajout pour la détection trez
-nudenet
 watchdog
 tqdm
 
