@@ -8,7 +8,7 @@ import time  # Ajout de cette ligne
 from cy6_wkf001_Basic import comfyui_basic_task
 import tempfile
 from dotenv import load_dotenv
-import os
+
 
 class process_prompts_manager:
     def __init__(self, root, db_path="g:/tmp/prompts_manager.db", mode="init"):
@@ -238,178 +238,6 @@ class process_prompts_manager:
         """Gérer le double-clic sur une ligne"""
         self.edit_prompt()
 
-    def load_prompt_details(self, prompt_id):
-        """Charger les détails d'un prompt dans le formulaire"""
-        try:
-            self.cursor.execute("SELECT name, prompt_values, workflow, image, url FROM prompts WHERE id=?", (prompt_id,))
-            row = self.cursor.fetchone()
-            if row:
-                name, prompt_values, workflow, image, url = row
-                self.selected_prompt_id = prompt_id
-                self.name_var.set(name)
-                self.image_var.set(image or "")
-                self.url_var.set(url or "")
-                
-                # Charger les valeurs dans le tableau
-                self.values_tree.delete(*self.values_tree.get_children())
-                try:
-                    values_dict = json.loads(prompt_values) if prompt_values else {}
-                    for k, v in values_dict.items():
-                        action = "🔁" if v.get("type", "") == "prompt" else ""
-                        self.values_tree.insert("", "end", iid=k, values=(v.get("id", ""), v.get("type", ""), v.get("value", ""), action))
-                except Exception:
-                    pass
-                
-                # Charger le workflow
-                self.workflow_tree.delete(*self.workflow_tree.get_children())
-                try:
-                    workflow_dict = json.loads(workflow) if workflow else {}
-                    for node_id, node in workflow_dict.items():
-                        class_type = node.get("class_type", "")
-                        inputs = node.get("inputs", {})
-                        input_display = ""
-                        if inputs:
-                            input_key = next(iter(inputs))
-                            input_val = inputs[input_key]
-                            input_display = f"{input_key}: {input_val}"
-                        title = node.get("_meta", {}).get("title", "")
-                        self.workflow_tree.insert("", "end", iid=str(node_id), 
-                                                values=(node_id, class_type, input_display, title))
-                except Exception:
-                    pass
-        except Exception as e:
-            messagebox.showerror("Erreur", f"Erreur lors du chargement: {str(e)}")
-
-    def clear_form(self):
-        """Vider le formulaire"""
-        self.selected_prompt_id = None
-        self.name_var.set("")
-        self.url_var.set("")
-        self.image_var.set("")
-        self.values_tree.delete(*self.values_tree.get_children())
-        self.workflow_tree.delete(*self.workflow_tree.get_children())
-
-    def new_prompt(self):
-        """Préparer le formulaire pour un nouveau prompt"""
-        self.clear_form()
-
-    def edit_prompt(self):
-        """Modifier le prompt sélectionné"""
-        selection = self.tree.selection()
-        if not selection:
-            messagebox.showinfo("Info", "Veuillez sélectionner un prompt à modifier.")
-            return
-        # Le reste est géré par on_select qui a déjà chargé les détails
-
-    def add_values_row(self):
-        """Ajouter une ligne au tableau des valeurs"""
-        new_id = str(len(self.values_tree.get_children()) + 1)
-        self.values_tree.insert("", "end", iid=new_id, values=("", "", "", ""))
-
-    def delete_values_row(self):
-        """Supprimer une ligne du tableau des valeurs"""
-        selected = self.values_tree.selection()
-        for iid in selected:
-            self.values_tree.delete(iid)
-
-    def save_prompt(self):
-        """Sauvegarder le prompt (nouveau ou modification)"""
-        name = self.name_var.get().strip()
-        image = self.image_var.get().strip()
-        url = self.url_var.get().strip()
-        
-        if not name:
-            messagebox.showerror("Erreur", "Le nom est obligatoire.")
-            return
-        
-        # Récupérer le tableau en dict JSON
-        values_dict = {}
-        for idx, iid in enumerate(self.values_tree.get_children(), 1):
-            vals = self.values_tree.item(iid, "values")
-            values_dict[str(idx)] = {
-                "id": vals[0],
-                "type": vals[1],
-                "value": vals[2]
-            }
-        prompt_values_val = json.dumps(values_dict, ensure_ascii=False)
-        
-        try:
-            if self.selected_prompt_id:
-                # Préserver le workflow existant
-                self.cursor.execute("SELECT workflow FROM prompts WHERE id=?", (self.selected_prompt_id,))
-                workflow = self.cursor.fetchone()[0]
-                
-                # Mise à jour
-                self.cursor.execute(
-                    "UPDATE prompts SET name=?, prompt_values=?, image=?, url=? WHERE id=?",
-                    (name, prompt_values_val, image, url, self.selected_prompt_id)
-                )
-                message = "Prompt modifié avec succès"
-            else:
-                # Nouveau prompt avec workflow vide
-                workflow = "{}"
-                self.cursor.execute(
-                    "INSERT INTO prompts (name, prompt_values, workflow, image, url) VALUES (?, ?, ?, ?, ?)",
-                    (name, prompt_values_val, workflow, image, url)
-                )
-                message = "Nouveau prompt ajouté avec succès"
-            
-            self.conn.commit()
-            messagebox.showinfo("Succès", message)
-            self.load_prompts()
-        except Exception as e:
-            messagebox.showerror("Erreur", f"Erreur lors de la sauvegarde: {str(e)}")
-
-    def execute_workflow(self):
-        """Exécuter le workflow avec comfyui_basic_task"""
-        if not self.selected_prompt_id:
-            messagebox.showwarning("Attention", "Veuillez sélectionner un prompt.")
-            return
-        
-        try:
-            self.cursor.execute("SELECT workflow, prompt_values, name FROM prompts WHERE id=?", (self.selected_prompt_id,))
-            row = self.cursor.fetchone()
-            if row:
-                workflow_json, prompt_values_json, name = row
-                
-                # Créer le répertoire data/Workflows s'il n'existe pas
-                os.makedirs("data/Workflows", exist_ok=True)
-                
-                # Générer des noms de fichiers uniques dans data/Workflows
-                timestamp = int(time.time())
-                workflow_file_path = f"data/Workflows/{name}_workflow_{timestamp}.json"
-                prompt_values_file_path = f"data/Workflows/{name}_values_{timestamp}.json"
-                
-                # Écrire les fichiers directement dans data/Workflows
-                with open(workflow_file_path, "w", encoding="utf-8") as wf_file:
-                    wf_file.write(workflow_json)
-                
-                with open(prompt_values_file_path, "w", encoding="utf-8") as pv_file:
-                    pv_file.write(prompt_values_json)
-                
-                # Exécuter le workflow
-                messagebox.showinfo("Information", "Lancement du workflow ComfyUI...")
-                tsk1 = comfyui_basic_task()
-                
-                # Ne passer que les noms de fichiers (sans le chemin complet)
-                # Pour que run_now puisse les préfixer correctement
-                tsk1.run_now(
-                    os.path.basename(workflow_file_path),
-                    os.path.basename(prompt_values_file_path)
-                )
-                
-                # Nettoyer les fichiers
-                try:
-                    os.unlink(workflow_file_path)
-                    os.unlink(prompt_values_file_path)
-                except:
-                    pass
-                    
-                messagebox.showinfo("Succès", "Workflow exécuté avec succès!")
-        except Exception as e:
-            messagebox.showerror("Erreur", f"Erreur lors de l'exécution: {str(e)}")
-            print(f"Erreur détaillée: {str(e)}")
-
     def delete_prompt(self):
         """Supprimer le prompt sélectionné"""
         selection = self.tree.selection()
@@ -495,6 +323,34 @@ class process_prompts_manager:
     def on_double_click(self, event):
         """Gérer le double-clic sur une ligne"""
         self.edit_prompt()
+
+    def open_large_edit_window(self, item_id):
+        """Ouvre une fenêtre pour éditer une valeur de type prompt"""
+        # Récupérer les données de la ligne sélectionnée
+        values = self.values_tree.item(item_id, "values")
+        prompt_value = values[2]  # La colonne "value"
+
+        # Créer une fenêtre popup
+        popup = tk.Toplevel(self.root)
+        popup.title("Édition du prompt")
+        popup.geometry("600x400")
+        popup.transient(self.root)
+        popup.grab_set()
+
+        # Zone de texte pour éditer le prompt
+        text_area = tk.Text(popup, wrap="word")
+        text_area.pack(fill="both", expand=True, padx=10, pady=10)
+        text_area.insert("1.0", prompt_value)  # Insérer la valeur actuelle
+
+        # Bouton pour enregistrer les modifications
+        def save_changes():
+            new_value = text_area.get("1.0", "end-1c").strip()  # Récupérer le texte
+            values = list(self.values_tree.item(item_id, "values"))
+            values[2] = new_value  # Mettre à jour la colonne "value"
+            self.values_tree.item(item_id, values=values)  # Mettre à jour la ligne
+            popup.destroy()
+
+        ttk.Button(popup, text="OK", command=save_changes).pack(pady=10)
 
     def load_prompt_details(self, prompt_id):
         """Charger les détails d'un prompt dans le formulaire"""
@@ -722,7 +578,7 @@ class process_prompts_manager:
              "4": {
                 "id": "9",
                 "type": "SaveImage",
-                "value": "basic"
+                "filename_prefix": "basic"
             }
         }, ensure_ascii=False)
         workflow = json.dumps({

@@ -80,40 +80,73 @@ def columns_manager():
 def get_local_FileExplorer():
     data = request.get_json()
     dir_path = data.get('path')
+    explorer_type = data.get('explorer_type', 'standard')
+    
     if not dir_path or not os.path.exists(dir_path):
         return {"status": "error", "message": "Le répertoire spécifié est invalide ou n'existe pas."}, 400
 
     try:
-        response = requests.post(
-            "http://127.0.0.1:5005/local_FileExplorer",
-            json=data,
-            timeout=2
-        )
-        if response.ok:
-            return {"status": "success", "message": "Commande envoyée au serveur local."}, 200
-        else:
-            return {"status": "error", "message": "Erreur lors de l'appel au serveur local."}, 500
+        # Chemin absolu vers le python de l'environnement virtuel
+        venv_python = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '.venv', 'Scripts', 'python.exe'))
+        script_path = os.path.abspath(os.path.join(os.path.dirname(__file__), 'cy_file_explorer.py'))
+        
+        print(f"dbg-explorer-01- Chemin python : {venv_python}")
+        print(f"dbg-explorer-02- Chemin script : {script_path}")
+        print(f"dbg-explorer-03- Répertoire cible : {dir_path}")
+        print(f"dbg-explorer-04- Type explorateur : {explorer_type}")
+        
+        if not os.path.isfile(venv_python):
+            print(f"dbg-explorer-05- Python introuvable : {venv_python}")
+            return jsonify({"status": "error", "message": f"Python introuvable : {venv_python}"}), 500
+        if not os.path.isfile(script_path):
+            print(f"dbg-explorer-06- Script introuvable : {script_path}")
+            return jsonify({"status": "error", "message": f"Script introuvable : {script_path}"}), 500
+
+        # Lancer l'explorateur avec subprocess
+        subprocess.Popen([venv_python, script_path, dir_path, explorer_type])
+        print(f"dbg-explorer-07- Lancement de l'explorateur pour : {dir_path}")
+        
+        return jsonify({"status": "success", "message": f"Explorateur ouvert : {dir_path}"}), 200
+        
     except Exception as e:
-        print(f"Erreur lors de l'appel à 5005: {e}")  # Ajoutez ceci pour voir l'erreur exacte
-        return {"status": "error", "message": f"Impossible de contacter le serveur local: {e}"}, 500
+        print(f"dbg-explorer-08- Exception : {e}")
+        return jsonify({"status": "error", "message": f"Erreur lors du lancement de l'explorateur : {e}"}), 500
 
 @app.route('/get_local_PromptTable', methods=['POST'])
 def prompt_table_open():
     print("dbg-667a : Received request to open prompt table")
     data = request.json
+    
     try:
-        response = requests.post(
-            "http://127.0.0.1:5005/local_PromptTable",
-            json=data,
-            timeout=2
-        )
-        if response.ok:
-            return {"status": "success", "message": "Commande envoyée au serveur local."}, 200
-        else:
-            return {"status": "error", "message": "Erreur lors de l'appel au serveur local."}, 500
+        # Chemin absolu vers le python de l'environnement virtuel
+        venv_python = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '.venv', 'Scripts', 'python.exe'))
+        script_path = os.path.abspath(os.path.join(os.path.dirname(__file__), 'cy_prompt_table.py'))
+        
+        # Préparer les arguments
+        file_path = data.get('file_path', 'prompts.json')
+        is_depend_on = str(data.get('isDependOn', False))
+        num_dossier = data.get('num_dossier', '')
+        nom_fichier = data.get('nom_fichier', '')
+        descriptif = data.get('descriptif', '')
+        
+        print(f"dbg-prompt-01- Chemin python : {venv_python}")
+        print(f"dbg-prompt-02- Chemin script : {script_path}")
+        print(f"dbg-prompt-03- Paramètres : {file_path}, {is_depend_on}, {num_dossier}")
+        
+        if not os.path.isfile(venv_python):
+            return jsonify({"status": "error", "message": f"Python introuvable : {venv_python}"}), 500
+        if not os.path.isfile(script_path):
+            return jsonify({"status": "error", "message": f"Script introuvable : {script_path}"}), 500
+
+        # Lancer la table de prompts avec subprocess
+        subprocess.Popen([venv_python, script_path, file_path, is_depend_on, num_dossier, nom_fichier, descriptif])
+        print(f"dbg-prompt-04- Lancement de la table de prompts")
+        
+        return jsonify({"status": "success", "message": "Table de prompts ouverte"}), 200
+        
     except Exception as e:
-        print(f"Erreur lors de l'appel à 5005: {e}")
-        return {"status": "error", "message": f"Impossible de contacter le serveur local: {e}"}, 500
+        print(f"dbg-prompt-05- Exception : {e}")
+        return jsonify({"status": "error", "message": f"Erreur lors du lancement de la table de prompts : {e}"}), 500
 
 
 @app.route('/run_annonces_gui', methods=['POST'])

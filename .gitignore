@@ -1,16 +1,54 @@
+# Fichiers PDF (potentiellement sensibles)
 *.pdf
-templates/LK_links.html
+
+# Fichiers de build et distribution
 build/
 exe/
 dist/
 node_modules/
-*.pdf
 
+# Fichiers Python
 __pycache__/
 *.pyc
+*.pyo
+*.pyd
+
+# Fichiers de configuration sensibles
 .env
+.env.local
+.env.*.local
+config.json
 config/
+
+# Bases de données (potentiellement sensibles)
+*.db
+*.sqlite
+*.sqlite3
+data/announcements.db
+data/functions.db
+prompts_manager.db
+test_image_explorer.db
+
+# Fichiers de données utilisateur sensibles
 data/AixPlo.json
 data/cookies.json
-static/LK_links.html
 data/workflows/
+
+# Logs (peuvent contenir des chemins sensibles)
+*.log
+app.log
+
+# Fichiers temporaires et de cache
+*.tmp
+*.temp
+*.cache
+
+# Fichiers HTML générés
+templates/LK_links.html
+static/LK_links.html
+
+# Fichiers de résultats de scan de sécurité
+security_scan_results.json
+
+# Fichiers de commandes avec chemins potentiels
+prompt_command.json

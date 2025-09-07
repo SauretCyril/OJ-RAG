@@ -1070,13 +1070,35 @@ def load_Instruction_classement():
         return ""
 
 
-@cy_routes.route("/select_dir", methods=["GET"])
-async def SelectDirectory():
-    root = tk.Tk()
-    root.withdraw()  # Hide the main window
-    selected_dir = filedialog.askdirectory()
-    root.destroy()
-    return selected_dir
+@cy_routes.route("/select_dir", methods=["POST"])
+def SelectDirectory():
+    try:
+        # Créer la fenêtre principale et la configurer
+        root = tk.Tk()
+        root.withdraw()  # Hide the main window
+        
+        # Configurer la fenêtre pour être au premier plan
+        root.attributes('-topmost', True)  # Toujours au premier plan
+        root.focus_force()  # Forcer le focus
+        root.lift()  # Amener au premier plan
+        
+        # Ouvrir la boîte de dialogue modale
+        selected_dir = filedialog.askdirectory(
+            parent=root,
+            title="Sélectionner un répertoire",
+            mustexist=True
+        )
+        
+        # Nettoyer
+        root.destroy()
+        
+        if selected_dir:
+            return jsonify({"status": "success", "path": selected_dir}), 200
+        else:
+            return jsonify({"status": "cancelled", "path": ""}), 200
+    except Exception as e:
+        print(f"Erreur lors de la sélection du répertoire: {e}")
+        return jsonify({"status": "error", "message": str(e)}), 500
 
 
 @cy_routes.route("/generate_html_index", methods=["POST"])

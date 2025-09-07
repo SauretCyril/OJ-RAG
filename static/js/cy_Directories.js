@@ -6,56 +6,32 @@
 // Fonction pour ouvrir une boîte de dialogue de sélection de répertoire
 async function selectDirectoryDialog(pathInput) {
     try {
-        // Essayer d'utiliser l'API moderne showDirectoryPicker si disponible
-        if ('showDirectoryPicker' in window) {
-            const directoryHandle = await window.showDirectoryPicker();
-            const path = directoryHandle.name;
-            
-            // Récupérer le chemin complet en parcourant la hiérarchie des handles
-            let pathParts = [path];
-            let currentHandle = directoryHandle;
-            
-            try {
-                while (currentHandle.parent) {
-                    currentHandle = await currentHandle.parent;
-                    if (currentHandle.name) {
-                        pathParts.unshift(currentHandle.name);
-                    }
-                }
-            } catch (error) {
-                console.warn("Impossible de récupérer le chemin complet:", error);
+        console.log('Ouverture de la boîte de dialogue de sélection de répertoire...');
+        
+        // Utiliser la fonction Python du backend pour une sélection de répertoire native
+        const response = await fetch('/select_dir', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
             }
-            
-            // Construire le chemin avec des slashes/backslashes selon l'OS
-            const fullPath = pathParts.join('\\');
-            pathInput.value = fullPath;
-        } else {
-            // Solution de secours: Créer un input de type file masqué avec l'attribut webkitdirectory
-            const fileInput = document.createElement('input');
-            fileInput.type = 'file';
-            fileInput.style.display = 'none';
-            fileInput.setAttribute('webkitdirectory', '');
-            fileInput.setAttribute('directory', '');
-            
-            document.body.appendChild(fileInput);
-            
-            // Ouvrir la boîte de dialogue de sélection de fichier
-            fileInput.click();
-            
-            // Attendre que l'utilisateur sélectionne un dossier
-            fileInput.onchange = function() {
-                if (this.files && this.files.length > 0) {
-                    // Extraire le chemin du dossier sélectionné
-                    const filePath = this.files[0].webkitRelativePath || this.files[0].path;
-                    const folderPath = filePath.split('/')[0];
-                    
-                    pathInput.value = folderPath;
-                }
-                
-                // Nettoyer
-                document.body.removeChild(fileInput);
-            };
+        });
+        
+        if (!response.ok) {
+            throw new Error(`Erreur HTTP: ${response.status}`);
         }
+        
+        const data = await response.json();
+        
+        if (data.status === 'success' && data.path) {
+            console.log('Répertoire sélectionné:', data.path);
+            pathInput.value = data.path;
+        } else if (data.status === 'cancelled') {
+            console.log('Sélection annulée par l\'utilisateur');
+            // Ne pas afficher d'erreur, c'est normal
+        } else if (data.status === 'error') {
+            throw new Error(data.message || 'Erreur inconnue');
+        }
+        
     } catch (error) {
         console.error("Erreur lors de la sélection du répertoire:", error);
         alert("Impossible de sélectionner le répertoire: " + error.message);
@@ -68,11 +44,14 @@ async function selectRep() {
     const formHtml = `
         <dialog id="directoryForm" class="directory-form">
             <form method="dialog">
+                <div class="form-title">
+                    <h1>Gestion des Répertoires</h1>
+                    <p class="form-subtitle">Configurez et organisez vos répertoires de travail</p>
+                </div>
                 <div class="current-directory-header">
                     <h3>Répertoire courant :</h3>
                     <div class="current-directory-path">${currentDossier}</div>
                 </div>
-                <h2>Gestion des répertoires</h2>
                 <div class="directories-container">
                     <table id="directoriesTable" class="directories-table">
                         <thead>
@@ -130,40 +109,71 @@ async function selectRep() {
     let style6 = document.createElement('style');
     style6.textContent = `
         .directory-form {
-            width: 60%;
-            min-width: 60%;
-            height: 60%;
-            min-height: 60%;
-            padding: 20px;
-            border: 1px solid #ccc;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            width: 55%;
+            min-width: 650px;
+            max-width: 900px;
+            height: 65%;
+            min-height: 500px;
+            padding: 24px;
+            border: none;
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+            background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
             display: flex;
             flex-direction: column;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+        .form-title {
+            text-align: center;
+            margin-bottom: 24px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        .form-title h1 {
+            margin: 0 0 8px 0;
+            font-size: 28px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .form-subtitle {
+            margin: 0;
+            color: #64748b;
+            font-size: 14px;
+            font-weight: 400;
         }
         .current-directory-header {
-            background-color: #f0f8ff;
-            padding: 10px;
-            border-radius: 5px;
-            margin-bottom: 15px;
-            border: 1px solid #b8daff;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 16px 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border: none;
             display: flex;
             align-items: center;
             flex-wrap: wrap;
+            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.2);
         }
         .current-directory-header h3 {
             margin: 0;
-            margin-right: 10px;
-            color: #0056b3;
+            margin-right: 12px;
+            color: #ffffff;
+            font-weight: 600;
+            font-size: 16px;
         }
         .current-directory-path {
-            font-family: monospace;
-            font-weight: bold;
-            color: #003366;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-weight: 500;
+            color: #f0f4ff;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
             flex: 1;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 6px 12px;
+            border-radius: 6px;
+            backdrop-filter: blur(10px);
         }
         .directory-form .form-group {
             margin-bottom: 15px;
@@ -185,15 +195,24 @@ async function selectRep() {
             margin-top: 15px;
         }
         .directory-form .button-group button {
-            padding: 10px 20px;
+            padding: 12px 24px;
             border: none;
-            border-radius: 4px;
+            border-radius: 8px;
             cursor: pointer;
-            background-color: #007bff;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
+            font-weight: 600;
+            font-size: 14px;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.2);
+            min-width: 120px;
         }
         .directory-form .button-group button:hover {
-            background-color: #0056b3;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 16px rgba(102, 126, 234, 0.3);
+        }
+        .directory-form .button-group button:active {
+            transform: translateY(0);
         }
         .directories-container {
             flex: 1;
@@ -207,43 +226,67 @@ async function selectRep() {
             width: 100%;
             border-collapse: collapse;
             table-layout: fixed;
+            background: #ffffff;
+            border-radius: 8px;
+            overflow: hidden;
         }
         .directories-table th, .directories-table td {
-            padding: 10px 8px;
+            padding: 6px 8px;
             text-align: left;
             border-bottom: 1px solid #ddd;
             overflow: hidden;
             text-overflow: ellipsis;
         }
         .directories-table th {
-            background-color: #f2f2f2;
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
             position: sticky;
             top: 0;
+            font-weight: 600;
+            color: #475569;
+            text-transform: uppercase;
+            font-size: 12px;
+            letter-spacing: 0.5px;
         }
         .action-column {
-            width: 70px;
-            min-width: 70px;
+            width: 60px;
+            min-width: 60px;
         }
+        .directories-table th:nth-child(1) { width: 60px; }  /* Sélection */
+        .directories-table th:nth-child(2) { width: 25%; }   /* Nom */
+        .directories-table th:nth-child(3) { width: 55%; }   /* Chemin */
+        .directories-table th:nth-child(4) { width: 60px; }  /* Actions */
         .directories-table input {
             width: 100%;
-            padding: 5px;
+            padding: 6px 10px;
             box-sizing: border-box;
+            height: 28px;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            font-size: 13px;
+            transition: all 0.2s ease;
+            background: #ffffff;
+        }
+        .directories-table input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
         }
         .selected-row {
             background-color: #042c52ff;
         }
         .action-buttons {
             display: flex;
-            gap: 5px;
-            width: 70px;
-            min-width: 70px;
+            gap: 3px;
+            width: 60px;
+            min-width: 60px;
             justify-content: space-between;
         }
         .browse-btn {
             background-color: #6c757d;
             color: white;
-            width: 30px;
-            padding: 4px;
+            width: 26px;
+            height: 26px;
+            padding: 3px;
             margin-right: 2px;
         }
         .browse-btn:hover {
@@ -252,11 +295,11 @@ async function selectRep() {
         .select-btn {
             background-color: #28a745;
             color: white;
-            width: 30px;
-            min-width: 30px;
-            padding: 4px;
-            height: 30px;
-            min-height: 30px;
+            width: 26px;
+            min-width: 26px;
+            padding: 3px;
+            height: 26px;
+            min-height: 26px;
         }
         .select-btn:hover {
             background-color: #218838;
@@ -264,18 +307,18 @@ async function selectRep() {
         .remove-btn {
             background-color: #dc3545;
             color: white;
-            width: 30px;
-            min-width: 30px;
-            padding: 4px;
-            height: 30px;
-            min-height: 30px;
+            width: 26px;
+            min-width: 26px;
+            padding: 3px;
+            height: 26px;
+            min-height: 26px;
         }
         .remove-btn:hover {
             background-color: #c82333;
         }
         tr {
-            height: 40px;
-            min-height: 40px;
+            height: 32px;
+            min-height: 32px;
         }
     `;
     document.head.appendChild(style6);
@@ -361,7 +404,8 @@ function addDirectoryToTable(label = '', path = '') {
     // Cellule pour les actions
     const actionsCell = document.createElement('td');
     actionsCell.className = 'action-buttons';
-    actionsCell.style.visibility = 'hidden';
+    // Rendre les boutons toujours visibles
+    actionsCell.style.visibility = 'visible';
     
     // Bouton Browse
     const browseButton = document.createElement('button');
@@ -405,23 +449,15 @@ function addDirectoryToTable(label = '', path = '') {
     tableBody.appendChild(row);
 }
 
-// Fonction pour sélectionner une ligne et afficher ses boutons d'action
+// Fonction pour sélectionner une ligne (pour mise en surbrillance visuelle)
 function selectDirectoryRow(row) {
     // Désélectionner la ligne précédemment sélectionnée
     if (selectedDirectoryRow) {
         selectedDirectoryRow.classList.remove('selected-row');
-        const prevActionsCell = selectedDirectoryRow.querySelector('.action-buttons');
-        if (prevActionsCell) {
-            prevActionsCell.style.visibility = 'hidden';
-        }
     }
     
     // Sélectionner la nouvelle ligne
     row.classList.add('selected-row');
-    const actionsCell = row.querySelector('.action-buttons');
-    if (actionsCell) {
-        actionsCell.style.visibility = 'visible';
-    }
     
     // Mettre à jour la référence à la ligne sélectionnée
     selectedDirectoryRow = row;
