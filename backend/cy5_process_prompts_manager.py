@@ -8,10 +8,17 @@ import time  # Ajout de cette ligne
 from cy6_wkf001_Basic import comfyui_basic_task
 import tempfile
 from dotenv import load_dotenv
+import subprocess
+
+# import platform
+# if platform.system() == "Windows":
+#     import pythoncom
+# else:
+#     pythoncom = None
 
 
 class process_prompts_manager:
-    def __init__(self, root, db_path="g:/tmp/prompts_manager.db", mode="init"):
+    def __init__(self, root, db_path="g:/tmp/prompts_manager.db", mode="init", DirCollecte=None):
         self.root = root
         self.db_path = db_path
         self.prompts = []
@@ -19,11 +26,15 @@ class process_prompts_manager:
 
         # Charger la configuration
         self.config = self.load_config()
-        self.images_dir_var = tk.StringVar(value=self.config.get("images_dir", "./output"))
+        # Récupérer la valeur de la variable d'environnement IMAGES_COLLECTE si elle existe
+        images_dir_env = DirCollecte
+        self.images_dir_var = tk.StringVar(
+            value=images_dir_env if images_dir_env else self.config.get("images_dir", "./output")
+        )
 
         self.root.title("Prompts Manager")
         self.root.geometry("1200x700")
-        self.root.minsize(1000, 600)
+        self.root.minsize(1200, 800)
 
         self.init_database(mode)
         self.setup_ui()
@@ -103,7 +114,7 @@ class process_prompts_manager:
 
         self.create_table_frame(left_frame)
         self.create_form_frame(right_frame)
-
+        self.values_tree.bind("<Double-1>", self.on_double_click_values)
         # Zone de configuration du répertoire des images
         dir_frame = ttk.Frame(self.root)
         dir_frame.pack(fill="x", padx=10, pady=5)
@@ -225,6 +236,8 @@ class process_prompts_manager:
         ttk.Button(form_buttons, text="Exécuter", command=self.execute_workflow).pack(side="left", padx=5)
         ttk.Button(form_buttons, text="Annuler", command=self.clear_form).pack(side="left", padx=5)
         ttk.Button(form_buttons, text="Nouveau", command=self.new_prompt).pack(side="left", padx=5)
+        # Ajouter le bouton pour ouvrir le programme d'analyse
+        ttk.Button(form_buttons, text="Analyser Prompt", command=self.open_prompt_analysis).pack(side="left", padx=5)
 
     # Méthodes pour gérer le formulaire permanent
     def on_select(self, event):
@@ -237,6 +250,33 @@ class process_prompts_manager:
     def on_double_click(self, event):
         """Gérer le double-clic sur une ligne"""
         self.edit_prompt()
+
+    def on_double_click_values(self, event):
+        """Permettre l'édition inline dans le tableau des values"""
+        # Identifier la ligne et la colonne cliquées
+        item_id = self.values_tree.identify_row(event.y)
+        col = self.values_tree.identify_column(event.x)
+        if not item_id or col == "#4":  # Ne pas permettre l'édition sur la colonne "action"
+            return
+
+        col_idx = int(col.replace("#", "")) - 1  # Convertir la colonne en index (0-based)
+        x, y, width, height = self.values_tree.bbox(item_id, col)
+        entry = tk.Entry(self.values_tree)
+        entry.place(x=x, y=y, width=width, height=height)
+        entry.insert(0, self.values_tree.item(item_id, "values")[col_idx])
+
+        def save_edit(event):
+            # Récupérer les nouvelles valeurs et mettre à jour la cellule
+            new_value = entry.get().strip()
+            values = list(self.values_tree.item(item_id, "values"))
+            values[col_idx] = new_value
+            self.values_tree.item(item_id, values=values)
+            entry.destroy()
+
+        # Sauvegarder les modifications sur "Enter" ou en quittant le focus
+        entry.bind("<Return>", save_edit)
+        entry.bind("<FocusOut>", lambda e: entry.destroy())
+        entry.focus()
 
     def delete_prompt(self):
         """Supprimer le prompt sélectionné"""
@@ -507,11 +547,11 @@ class process_prompts_manager:
                 
                 # Ne passer que les noms de fichiers (sans le chemin complet)
                 # Pour que run_now puisse les préfixer correctement
-                tsk1.run_now(
+                filename = tsk1.run_now(
                     os.path.basename(workflow_file_path),
                     os.path.basename(prompt_values_file_path)
                 )
-                
+                print(f"Workflow exécuté. Fichier de sortie: {filename}")
                 # Nettoyer les fichiers
                 try:
                     os.unlink(workflow_file_path)
@@ -637,12 +677,33 @@ class process_prompts_manager:
         )
         self.conn.commit()
 
-def main(db_path="g:/tmp/prompts_manager.db"):
+    def open_prompt_analysis(self):
+        """Ouvre le programme d'analyse du prompt avec la valeur du prompt positif"""
+        # Récupérer la valeur du prompt positif dans le tableau des values
+        for item_id in self.values_tree.get_children():
+            values = self.values_tree.item(item_id, "values")
+            if values[1] == "prompt":  # Vérifie si le type est "prompt"
+                prompt_value = values[2]  # Colonne "value"
+                if prompt_value:  # Si une valeur est présente
+                    try:
+                        # Utiliser les utilitaires venv pour lancer le script
+                        from cy_venv_utils import run_python_script
+                        run_python_script('cy2_analyse_prompt', ['--prompt_text', f'"{prompt_value}"'])
+                        return
+                    except Exception as e:
+                        messagebox.showerror("Erreur", f"Impossible de lancer l'analyse du prompt : {e}")
+                        return
+
+        # Si aucun prompt positif n'est trouvé, afficher un message d'erreur
+        messagebox.showerror("Erreur", "Aucun prompt positif trouvé dans le tableau des values.")
+
+def main(db_path="g:/tmp/prompts_manager.db", DirCollecte=None):
     root = tk.Tk()
-    app = process_prompts_manager(root, db_path=db_path, mode="dev")  # Passer db_path à l'instance
+    app = process_prompts_manager(root, db_path=db_path, mode="dev", DirCollecte=DirCollecte)  # Passer DirCollecte
     root.mainloop()
 
 if __name__ == "__main__":
     load_dotenv()
     db_path = os.getenv("PROMPTS_DB", "g:/tmp/prompts_manager.db")
-    main(db_path=db_path)
+    images_dir_env = os.getenv("IMAGES_COLLECTE", "./output")
+    main(db_path=db_path, DirCollecte=images_dir_env)

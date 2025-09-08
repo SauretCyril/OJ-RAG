@@ -86,24 +86,13 @@ def get_local_FileExplorer():
         return {"status": "error", "message": "Le répertoire spécifié est invalide ou n'existe pas."}, 400
 
     try:
-        # Chemin absolu vers le python de l'environnement virtuel
-        venv_python = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '.venv', 'Scripts', 'python.exe'))
-        script_path = os.path.abspath(os.path.join(os.path.dirname(__file__), 'cy_file_explorer.py'))
+        from cy_venv_utils import run_python_script
         
-        print(f"dbg-explorer-01- Chemin python : {venv_python}")
-        print(f"dbg-explorer-02- Chemin script : {script_path}")
         print(f"dbg-explorer-03- Répertoire cible : {dir_path}")
         print(f"dbg-explorer-04- Type explorateur : {explorer_type}")
         
-        if not os.path.isfile(venv_python):
-            print(f"dbg-explorer-05- Python introuvable : {venv_python}")
-            return jsonify({"status": "error", "message": f"Python introuvable : {venv_python}"}), 500
-        if not os.path.isfile(script_path):
-            print(f"dbg-explorer-06- Script introuvable : {script_path}")
-            return jsonify({"status": "error", "message": f"Script introuvable : {script_path}"}), 500
-
-        # Lancer l'explorateur avec subprocess
-        subprocess.Popen([venv_python, script_path, dir_path, explorer_type])
+        # Lancer l'explorateur avec les utilitaires venv
+        run_python_script('cy_file_explorer', [dir_path, explorer_type])
         print(f"dbg-explorer-07- Lancement de l'explorateur pour : {dir_path}")
         
         return jsonify({"status": "success", "message": f"Explorateur ouvert : {dir_path}"}), 200
@@ -118,9 +107,9 @@ def prompt_table_open():
     data = request.json
     
     try:
-        # Chemin absolu vers le python de l'environnement virtuel
-        venv_python = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '.venv', 'Scripts', 'python.exe'))
-        script_path = os.path.abspath(os.path.join(os.path.dirname(__file__), 'cy_prompt_table.py'))
+        # Note: La table de prompts nécessite un script dédié qui n'existe pas encore
+        # Pour l'instant, on utilise directement la classe
+        from cy_venv_utils import run_python_script
         
         # Préparer les arguments
         file_path = data.get('file_path', 'prompts.json')
@@ -129,20 +118,31 @@ def prompt_table_open():
         nom_fichier = data.get('nom_fichier', '')
         descriptif = data.get('descriptif', '')
         
-        print(f"dbg-prompt-01- Chemin python : {venv_python}")
-        print(f"dbg-prompt-02- Chemin script : {script_path}")
         print(f"dbg-prompt-03- Paramètres : {file_path}, {is_depend_on}, {num_dossier}")
         
-        if not os.path.isfile(venv_python):
-            return jsonify({"status": "error", "message": f"Python introuvable : {venv_python}"}), 500
-        if not os.path.isfile(script_path):
-            return jsonify({"status": "error", "message": f"Script introuvable : {script_path}"}), 500
-
-        # Lancer la table de prompts avec subprocess
-        subprocess.Popen([venv_python, script_path, file_path, is_depend_on, num_dossier, nom_fichier, descriptif])
-        print(f"dbg-prompt-04- Lancement de la table de prompts")
-        
-        return jsonify({"status": "success", "message": "Table de prompts ouverte"}), 200
+        # Pour l'instant, créer directement l'instance (même processus)
+        # TODO: Créer cy_prompt_table.py pour exécution séparée
+        try:
+            import threading
+            from cls_local_analyse_prompt import cls_local_PromptTable
+            
+            def launch_prompt_table():
+                app_prompt = cls_local_PromptTable(
+                    file_path=file_path,
+                    isDependOn=(is_depend_on.lower() == 'true'),
+                    num_dossier=num_dossier,
+                    nom_fichier=nom_fichier,
+                    descriptif=descriptif
+                )
+                app_prompt.mainloop()
+            
+            threading.Thread(target=launch_prompt_table, daemon=True).start()
+            print(f"dbg-prompt-04- Lancement de la table de prompts")
+            
+            return jsonify({"status": "success", "message": "Table de prompts ouverte"}), 200
+            
+        except ImportError:
+            return jsonify({"status": "error", "message": "Module de table de prompts non disponible"}), 500
         
     except Exception as e:
         print(f"dbg-prompt-05- Exception : {e}")
@@ -152,7 +152,8 @@ def prompt_table_open():
 @app.route('/run_annonces_gui', methods=['POST'])
 def run_annonces_gui():
     try:
-        subprocess.Popen(['python', './backend/cy3_annonces_gui.py'])
+        from cy_venv_utils import run_python_script
+        run_python_script('cy3_annonces_gui')
         return jsonify({"message": "Lancement demandé."})
     except Exception as e:
         return jsonify({"message": f"Erreur: {e}"}), 500
@@ -160,8 +161,8 @@ def run_annonces_gui():
 @app.route('/run_analyse_prompt', methods=['POST'])
 def run_analyse_prompt():
     try:
-        venv_python = os.path.join(os.path.dirname(sys.executable), "python.exe")
-        subprocess.Popen([venv_python, './backend/cy2_analyse_prompt.py'])
+        from cy_venv_utils import run_python_script
+        run_python_script('cy2_analyse_prompt')
         return jsonify({"message": "Lancement demandé."})
     except Exception as e:
         return jsonify({"message": f"Erreur: {e}"}), 500
@@ -169,9 +170,8 @@ def run_analyse_prompt():
 @app.route('/run_images_production', methods=['POST'])
 def run_images_production():
     try:
-        venv_python = os.path.join(os.path.dirname(sys.executable), "python.exe")
-        subprocess.Popen([venv_python, './backend/cy2_app_images.py', 'H:/Entreprendre/Actions-15-Images/I003/data/_fonctions_.db'])
-
+        from cy_venv_utils import run_python_script
+        run_python_script('cy2_app_images', ['H:/Entreprendre/Actions-15-Images/I003/data/_fonctions_.db'])
         return jsonify({"message": "Lancement demandé."})
     except Exception as e:
         return jsonify({"message": f"Erreur: {e}"}), 500

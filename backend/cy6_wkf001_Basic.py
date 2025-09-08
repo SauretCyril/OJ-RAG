@@ -28,7 +28,8 @@ class comfyui_basic_task(comfyui_task):
                     #Voir le résultat
                     image.show()
                     #Sauver le résultat
-                    image.save(f"./output/glass bottole-{self.seednum}-{node_id}.png")
+                    #image.save(f"./output/glass bottole-{self.seednum}-{node_id}.png")
+                    return image.name
     
 
 values={

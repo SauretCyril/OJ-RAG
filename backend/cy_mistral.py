@@ -14,6 +14,7 @@ from datetime import datetime
 import os
 import base64
 import time
+import sys
 
 # Charger les variables d'environnement
 load_dotenv()
@@ -37,6 +38,7 @@ def extract_text_from_word(file_path):
 def get_mistral_answer(question, role, texte):
     try:
         # Récupérer la clé API Mistral depuis les variables d'environnement
+        print(f"Python utilisé dans cy_mistral.py : {sys.executable}")
         api_key = os.getenv("MISTRAL_API_KEY")
         
         if not api_key:
@@ -264,6 +266,8 @@ def get_mistral_translate(text, src_lang="fr", tgt_lang="en"):
 
 if __name__ == '__main__':
     #Question à poser aux documents
+    
+
     subject = "Realisations_analyses"
     type_doc_source="docx"
     question = "Analyse cette réalisation et extrait les informations suivantes sous format JSON structuré:"
@@ -289,3 +293,4 @@ if __name__ == '__main__':
     print(f"Question: {question}")
 
     analyser_documents(directory,subject,type_doc_source,question,role)
+    

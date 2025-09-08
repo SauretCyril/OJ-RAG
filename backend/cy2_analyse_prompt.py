@@ -3,12 +3,14 @@ from tkinter import ttk, messagebox
 import json
 import os
 from flask import request, Blueprint
-from cy_paths import GetRoot
+
 from cy_mistral import get_mistral_answer
 
 import requests
 import time
-
+import argparse
+import sys
+print(f"Python utilisé : {sys.executable}")
 
 def wrap_text(text, width=60):
     import textwrap
@@ -135,6 +137,7 @@ class cy2_analyse_prompt(tk.Tk):
             self.update_idletasks()
 
            
+
     # --- Méthodes de la classe ---
 
     def translate_fr2en(self):
@@ -362,5 +365,14 @@ class cy2_analyse_prompt(tk.Tk):
         self.result_textbox_en.config(state="normal")
 
 if __name__ == "__main__":
-    app = cy2_analyse_prompt()
+    # Gestion des arguments de ligne de commande
+    parser = argparse.ArgumentParser(description="Analyseur de prompts")
+    parser.add_argument("--prompt_text", type=str, help="Texte du prompt à analyser", default=None)
+    args = parser.parse_args()
+
+    # Passer le prompt_text à l'application
+    app = cy2_analyse_prompt(prompt_text=args.prompt_text)
     app.mainloop()
+
+import sys
+print(f"Python utilisé : {sys.executable}")
