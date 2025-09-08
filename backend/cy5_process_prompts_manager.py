@@ -99,6 +99,7 @@ class process_prompts_manager:
         btn_frame.pack(fill=tk.X, pady=(0, 10))
         ttk.Button(btn_frame, text="Nouvelle Prompt", command=self.new_prompt).pack(side=tk.LEFT, padx=5)
         ttk.Button(btn_frame, text="Actualiser", command=self.load_prompts).pack(side=tk.LEFT, padx=5)
+        ttk.Button(btn_frame, text="New", command=self.new_prompt).pack(side=tk.LEFT, padx=5)
 
         # PanedWindow pour diviser en deux parties
         paned_window = ttk.PanedWindow(main_frame, orient=tk.HORIZONTAL)
@@ -114,7 +115,6 @@ class process_prompts_manager:
 
         self.create_table_frame(left_frame)
         self.create_form_frame(right_frame)
-        self.values_tree.bind("<Double-1>", self.on_double_click_values)
         # Zone de configuration du répertoire des images
         dir_frame = ttk.Frame(self.root)
         dir_frame.pack(fill="x", padx=10, pady=5)
@@ -144,7 +144,7 @@ class process_prompts_manager:
         scrollbar.pack(side="right", fill="y")
 
         # Événements
-        self.tree.bind("<<TreeviewSelect>>", self.on_select)
+        self.tree.bind("<<TreeviewSelect>>", self.on_select_prompt)
         self.tree.bind("<Double-1>", self.on_double_click)
 
         # Boutons sous le tableau
@@ -238,9 +238,12 @@ class process_prompts_manager:
         ttk.Button(form_buttons, text="Nouveau", command=self.new_prompt).pack(side="left", padx=5)
         # Ajouter le bouton pour ouvrir le programme d'analyse
         ttk.Button(form_buttons, text="Analyser Prompt", command=self.open_prompt_analysis).pack(side="left", padx=5)
+        
+        # Lier les événements après la création des widgets
+        self.values_tree.bind("<Double-1>", self.on_double_click_values)
 
     # Méthodes pour gérer le formulaire permanent
-    def on_select(self, event):
+    def on_select_prompt(self, event):
         """Gérer la sélection d'une ligne dans le tableau"""
         selection = self.tree.selection()
         if selection:
@@ -284,28 +287,28 @@ class process_prompts_manager:
         if not selection:
             messagebox.showinfo("Info", "Veuillez sélectionner un prompt à supprimer.")
             return
-        
+
         prompt_id = selection[0]
-        
+
         # Récupérer le nom du prompt pour confirmation
         self.cursor.execute("SELECT name FROM prompts WHERE id=?", (prompt_id,))
         row = self.cursor.fetchone()
         if not row:
             return
-        
+
         name = row[0]
-        
+
         # Demander confirmation
         confirm = messagebox.askyesno(
-            "Confirmation", 
+            "Confirmation",
             f"Êtes-vous sûr de vouloir supprimer le prompt '{name}'?"
         )
-        
+
         if confirm:
             # Supprimer de la base de données
             self.cursor.execute("DELETE FROM prompts WHERE id=?", (prompt_id,))
             self.conn.commit()
-            
+
             # Recharger et effacer le formulaire
             self.load_prompts()
             self.clear_form()
@@ -353,16 +356,6 @@ class process_prompts_manager:
             id_, name, image = row
             self.tree.insert("", "end", iid=id_, values=(name, image))
 
-    def on_select(self, event):
-        """Gérer la sélection d'une ligne dans le tableau"""
-        selection = self.tree.selection()
-        if selection:
-            prompt_id = selection[0]  # L'ID est stocké comme iid
-            self.load_prompt_details(prompt_id)
-
-    def on_double_click(self, event):
-        """Gérer le double-clic sur une ligne"""
-        self.edit_prompt()
 
     def open_large_edit_window(self, item_id):
         """Ouvre une fenêtre pour éditer une valeur de type prompt"""
@@ -444,75 +437,66 @@ class process_prompts_manager:
         self.workflow_tree.delete(*self.workflow_tree.get_children())
 
     def new_prompt(self):
-        """Préparer le formulaire pour un nouveau prompt"""
-        self.clear_form()
+        """Ouvre une popup pour saisir les informations d'un nouveau prompt"""
+        # Créer une fenêtre popup
+        popup = tk.Toplevel(self.root)
+        popup.title("Créer un nouveau prompt")
+        popup.geometry("600x400")
+        popup.transient(self.root)
+        popup.grab_set()
 
-    def edit_prompt(self):
-        """Modifier le prompt sélectionné"""
-        selection = self.tree.selection()
-        if not selection:
-            messagebox.showinfo("Info", "Veuillez sélectionner un prompt à modifier.")
-            return
-        # Le reste est géré par on_select qui a déjà chargé les détails
+        # Variables pour les champs
+        name_var = tk.StringVar()
+        url_var = tk.StringVar()
+        values_var = tk.StringVar()
+        workflow_var = tk.StringVar()
 
-    def add_values_row(self):
-        """Ajouter une ligne au tableau des valeurs"""
-        new_id = str(len(self.values_tree.get_children()) + 1)
-        self.values_tree.insert("", "end", iid=new_id, values=("", "", "", ""))
+        # Champs de saisie
+        ttk.Label(popup, text="Nom:").pack(anchor="w", padx=10, pady=5)
+        ttk.Entry(popup, textvariable=name_var, width=50).pack(fill="x", padx=10, pady=5)
 
-    def delete_values_row(self):
-        """Supprimer une ligne du tableau des valeurs"""
-        selected = self.values_tree.selection()
-        for iid in selected:
-            self.values_tree.delete(iid)
+        ttk.Label(popup, text="URL:").pack(anchor="w", padx=10, pady=5)
+        ttk.Entry(popup, textvariable=url_var, width=50).pack(fill="x", padx=10, pady=5)
 
-    def save_prompt(self):
-        """Sauvegarder le prompt (nouveau ou modification)"""
-        name = self.name_var.get().strip()
-        image = self.image_var.get().strip()
-        url = self.url_var.get().strip()
-        
-        if not name:
-            messagebox.showerror("Erreur", "Le nom est obligatoire.")
-            return
-        
-        # Récupérer le tableau en dict JSON
-        values_dict = {}
-        for idx, iid in enumerate(self.values_tree.get_children(), 1):
-            vals = self.values_tree.item(iid, "values")
-            values_dict[str(idx)] = {
-                "id": vals[0],
-                "type": vals[1],
-                "value": vals[2]
-            }
-        prompt_values_val = json.dumps(values_dict, ensure_ascii=False)
-        
-        try:
-            if self.selected_prompt_id:
-                # Préserver le workflow existant
-                self.cursor.execute("SELECT workflow FROM prompts WHERE id=?", (self.selected_prompt_id,))
-                workflow = self.cursor.fetchone()[0]
-                
-                # Mise à jour
-                self.cursor.execute(
-                    "UPDATE prompts SET name=?, prompt_values=?, image=?, url=? WHERE id=?",
-                    (name, prompt_values_val, image, url, self.selected_prompt_id)
-                )
-                message = "Prompt modifié avec succès"
-            else:
-                # Nouveau prompt avec workflow vide
-                workflow = "{}"
+        ttk.Label(popup, text="Values (JSON):").pack(anchor="w", padx=10, pady=5)
+        values_text = tk.Text(popup, height=5, wrap="word")
+        values_text.pack(fill="both", padx=10, pady=5)
+
+        ttk.Label(popup, text="Workflow (JSON):").pack(anchor="w", padx=10, pady=5)
+        workflow_text = tk.Text(popup, height=5, wrap="word")
+        workflow_text.pack(fill="both", padx=10, pady=5)
+
+        # Bouton pour sauvegarder
+        def save_new_prompt():
+            name = name_var.get().strip()
+            url = url_var.get().strip()
+            values = values_text.get("1.0", "end-1c").strip()
+            workflow = workflow_text.get("1.0", "end-1c").strip()
+
+            if not name:
+                messagebox.showerror("Erreur", "Le champ 'Nom' est obligatoire.")
+                return
+
+            try:
+                # Vérifier si les valeurs JSON sont valides
+                values_dict = json.loads(values) if values else {}
+                workflow_dict = json.loads(workflow) if workflow else {}
+
+                # Insérer dans la base de données
                 self.cursor.execute(
                     "INSERT INTO prompts (name, prompt_values, workflow, image, url) VALUES (?, ?, ?, ?, ?)",
-                    (name, prompt_values_val, workflow, image, url)
+                    (name, json.dumps(values_dict, ensure_ascii=False), json.dumps(workflow_dict, ensure_ascii=False), "", url)
                 )
-                message = "Nouveau prompt ajouté avec succès"
-            
-            self.conn.commit()
-            messagebox.showinfo("Succès", message)
-            self.load_prompts()
-        except Exception as e:
-            messagebox.showerror("Erreur", f"Erreur lors de la sauvegarde: {str(e)}")
+                self.conn.commit()
+                self.load_prompts()
+                popup.destroy()
+                messagebox.showinfo("Succès", "Nouveau prompt ajouté avec succès.")
+            except json.JSONDecodeError as e:
+                messagebox.showerror("Erreur", f"Les champs Values ou Workflow contiennent un JSON invalide : {e}")
+            except Exception as e:
+                messagebox.showerror("Erreur", f"Une erreur s'est produite : {e}")
+
+        ttk.Button(popup, text="Sauvegarder", command=save_new_prompt).pack(pady=10)
 
     def execute_workflow(self):
         """Exécuter le workflow avec comfyui_basic_task"""
@@ -563,39 +547,6 @@ class process_prompts_manager:
         except Exception as e:
             messagebox.showerror("Erreur", f"Erreur lors de l'exécution: {str(e)}")
             print(f"Erreur détaillée: {str(e)}")
-
-    def delete_prompt(self):
-        """Supprimer le prompt sélectionné"""
-        selection = self.tree.selection()
-        if not selection:
-            messagebox.showinfo("Info", "Veuillez sélectionner un prompt à supprimer.")
-            return
-        
-        prompt_id = selection[0]
-        
-        # Récupérer le nom du prompt pour confirmation
-        self.cursor.execute("SELECT name FROM prompts WHERE id=?", (prompt_id,))
-        row = self.cursor.fetchone()
-        if not row:
-            return
-        
-        name = row[0]
-        
-        # Demander confirmation
-        confirm = messagebox.askyesno(
-            "Confirmation", 
-            f"Êtes-vous sûr de vouloir supprimer le prompt '{name}'?"
-        )
-        
-        if confirm:
-            # Supprimer de la base de données
-            self.cursor.execute("DELETE FROM prompts WHERE id=?", (prompt_id,))
-            self.conn.commit()
-            
-            # Recharger et effacer le formulaire
-            self.load_prompts()
-            self.clear_form()
-            messagebox.showinfo("Succès", f"Prompt '{name}' supprimé avec succès.")
 
     def add_default_basic_prompt(self):
         name = "basic"
@@ -696,6 +647,122 @@ class process_prompts_manager:
 
         # Si aucun prompt positif n'est trouvé, afficher un message d'erreur
         messagebox.showerror("Erreur", "Aucun prompt positif trouvé dans le tableau des values.")
+
+    def add_values_row(self):
+        """Ajouter une nouvelle ligne dans le tableau des values"""
+        # Créer une popup pour saisir les détails
+        popup = tk.Toplevel(self.root)
+        popup.title("Ajouter une valeur")
+        popup.geometry("400x300")
+        popup.transient(self.root)
+        popup.grab_set()
+        
+        # Variables pour les champs
+        id_var = tk.StringVar()
+        type_var = tk.StringVar()
+        value_var = tk.StringVar()
+        
+        # Champs de saisie
+        ttk.Label(popup, text="ID:").pack(anchor="w", padx=10, pady=5)
+        ttk.Entry(popup, textvariable=id_var, width=40).pack(fill="x", padx=10, pady=5)
+        
+        ttk.Label(popup, text="Type:").pack(anchor="w", padx=10, pady=5)
+        type_combo = ttk.Combobox(popup, textvariable=type_var, values=["prompt", "seed", "SaveImage", "steps", "cfg"], width=37)
+        type_combo.pack(fill="x", padx=10, pady=5)
+        
+        ttk.Label(popup, text="Valeur:").pack(anchor="w", padx=10, pady=5)
+        value_text = tk.Text(popup, height=5, wrap="word")
+        value_text.pack(fill="both", expand=True, padx=10, pady=5)
+        
+        # Bouton pour sauvegarder
+        def save_value():
+            id_val = id_var.get().strip()
+            type_val = type_var.get().strip()
+            value_val = value_text.get("1.0", "end-1c").strip()
+            
+            if not id_val or not type_val:
+                messagebox.showerror("Erreur", "Les champs ID et Type sont obligatoires.")
+                return
+            
+            # Ajouter la ligne au tableau
+            action = "🔁" if type_val == "prompt" else ""
+            self.values_tree.insert("", "end", iid=id_val, values=(id_val, type_val, value_val, action))
+            popup.destroy()
+        
+        ttk.Button(popup, text="Ajouter", command=save_value).pack(pady=10)
+    
+    def delete_values_row(self):
+        """Supprimer la ligne sélectionnée du tableau des values"""
+        selection = self.values_tree.selection()
+        if not selection:
+            messagebox.showinfo("Info", "Veuillez sélectionner une ligne à supprimer.")
+            return
+        
+        for item in selection:
+            self.values_tree.delete(item)
+    
+    def save_prompt(self):
+        """Sauvegarder le prompt courant"""
+        if not self.selected_prompt_id:
+            messagebox.showwarning("Attention", "Aucun prompt sélectionné à sauvegarder.")
+            return
+        
+        name = self.name_var.get().strip()
+        url = self.url_var.get().strip()
+        image = self.image_var.get().strip()
+        
+        if not name:
+            messagebox.showerror("Erreur", "Le nom est obligatoire.")
+            return
+        
+        try:
+            # Construire le JSON des values depuis le tableau
+            values_dict = {}
+            for item_id in self.values_tree.get_children():
+                values = self.values_tree.item(item_id, "values")
+                values_dict[item_id] = {
+                    "id": values[0],
+                    "type": values[1],
+                    "value": values[2]
+                }
+            
+            # Récupérer le workflow existant (on ne le modifie pas ici)
+            self.cursor.execute("SELECT workflow FROM prompts WHERE id=?", (self.selected_prompt_id,))
+            workflow = self.cursor.fetchone()[0] if self.cursor.fetchone() else "{}"
+            
+            # Mettre à jour la base de données
+            self.cursor.execute(
+                "UPDATE prompts SET name=?, prompt_values=?, image=?, url=? WHERE id=?",
+                (name, json.dumps(values_dict, ensure_ascii=False), image, url, self.selected_prompt_id)
+            )
+            self.conn.commit()
+            
+            # Recharger la liste
+            self.load_prompts()
+            messagebox.showinfo("Succès", "Prompt sauvegardé avec succès.")
+            
+        except Exception as e:
+            messagebox.showerror("Erreur", f"Erreur lors de la sauvegarde : {e}")
+    
+    def edit_prompt(self):
+        """Modifier le prompt sélectionné"""
+        selection = self.tree.selection()
+        if not selection:
+            messagebox.showinfo("Info", "Veuillez sélectionner un prompt à modifier.")
+            return
+        
+        prompt_id = selection[0]
+        self.load_prompt_details(prompt_id)
+        messagebox.showinfo("Info", "Prompt chargé pour modification. Utilisez le panneau de droite pour éditer.")
+    
+    def select_image(self, var):
+        """Sélectionner un fichier image"""
+        file_path = filedialog.askopenfilename(
+            title="Sélectionner une image",
+            filetypes=[("Images", "*.png *.jpg *.jpeg *.gif *.bmp"), ("Tous les fichiers", "*.*")]
+        )
+        if file_path:
+            var.set(file_path)
 
 def main(db_path="g:/tmp/prompts_manager.db", DirCollecte=None):
     root = tk.Tk()
