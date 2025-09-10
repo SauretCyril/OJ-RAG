@@ -116,9 +116,7 @@ def update_workflow(filevalues,file):
                 case "seed" :
                     
                     jsonf[node]['inputs']['seed'] = values[val]['value']
-                
-                
-                
+
                 case "PortraitMasterStylePose.pose" :
                     jsonf[node]['inputs']['model_pose'] = values[val]['model_pose']
                 case "BilboXPhotoPrompt.style" :
@@ -140,7 +138,7 @@ def update_workflow(filevalues,file):
                 case "LoraLoaderTagsQuery":
                     jsonf[node]['inputs']['lora_name'] =  values[val]['lora_name']
                 case "SaveImage":
-                    jsonf[node]['inputs']['filename_prefix'] =  values[val]['filename_prefix']
+                    jsonf[node]['inputs']['filename_prefix'] =  values[val]['SaveImage']
                 case "LoraInfo":
                      jsonf[node]['inputs']['lora_name'] =  values[val]['lora_name']
                 case _:

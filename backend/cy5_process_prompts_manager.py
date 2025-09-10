@@ -397,7 +397,7 @@ class process_prompts_manager:
                 self.name_var.set(name)
                 self.image_var.set(image or "")
                 self.url_var.set(url or "")
-                
+
                 # Charger les valeurs dans le tableau
                 self.values_tree.delete(*self.values_tree.get_children())
                 try:
@@ -405,9 +405,9 @@ class process_prompts_manager:
                     for k, v in values_dict.items():
                         action = "🔁" if v.get("type", "") == "prompt" else ""
                         self.values_tree.insert("", "end", iid=k, values=(v.get("id", ""), v.get("type", ""), v.get("value", ""), action))
-                except Exception:
-                    pass
-                
+                except Exception as e:
+                    print(f"Erreur lors du chargement des valeurs : {e}")
+
                 # Charger le workflow
                 self.workflow_tree.delete(*self.workflow_tree.get_children())
                 try:
@@ -422,11 +422,11 @@ class process_prompts_manager:
                             input_display = f"{input_key}: {input_val}"
                         title = node.get("_meta", {}).get("title", "")
                         self.workflow_tree.insert("", "end", iid=str(node_id), 
-                                                values=(node_id, class_type, input_display, title))
-                except Exception:
-                    pass
+                                                  values=(node_id, class_type, input_display, title))
+                except Exception as e:
+                    print(f"Erreur lors du chargement du workflow : {e}")
         except Exception as e:
-            messagebox.showerror("Erreur", f"Erreur lors du chargement: {str(e)}")
+            messagebox.showerror("Erreur", f"Erreur lors du chargement : {str(e)}")
 
     def clear_form(self):
         """Vider le formulaire"""
@@ -442,15 +442,15 @@ class process_prompts_manager:
         # Créer une fenêtre popup
         popup = tk.Toplevel(self.root)
         popup.title("Créer un nouveau prompt")
-        popup.geometry("600x400")
         popup.transient(self.root)
         popup.grab_set()
+
+        # Centrer la fenêtre
+        self.center_window(popup, width=600, height=500)
 
         # Variables pour les champs
         name_var = tk.StringVar()
         url_var = tk.StringVar()
-        values_var = tk.StringVar()
-        workflow_var = tk.StringVar()
 
         # Champs de saisie
         ttk.Label(popup, text="Nom:").pack(anchor="w", padx=10, pady=5)
@@ -459,19 +459,27 @@ class process_prompts_manager:
         ttk.Label(popup, text="URL:").pack(anchor="w", padx=10, pady=5)
         ttk.Entry(popup, textvariable=url_var, width=50).pack(fill="x", padx=10, pady=5)
 
-        ttk.Label(popup, text="Values (JSON):").pack(anchor="w", padx=10, pady=5)
-        values_text = tk.Text(popup, height=5, wrap="word")
-        values_text.pack(fill="both", padx=10, pady=5)
+        # Champs pour le prompt_values JSON
+        ttk.Label(popup, text="Prompt Values (JSON):").pack(anchor="w", padx=10, pady=5)
+        prompt_values_text = tk.Text(popup, height=5, wrap="word")
+        prompt_values_text.pack(fill="both", padx=10, pady=5)
 
+        # Champs pour le workflow JSON
         ttk.Label(popup, text="Workflow (JSON):").pack(anchor="w", padx=10, pady=5)
         workflow_text = tk.Text(popup, height=5, wrap="word")
         workflow_text.pack(fill="both", padx=10, pady=5)
+
+        # Bouton pour charger un fichier JSON dans prompt_values
+        ttk.Button(popup, text="Charger JSON (Prompt Values)", command=lambda: self.load_json_to_text(prompt_values_text)).pack(pady=5)
+
+        # Bouton pour charger un fichier JSON dans workflow
+        ttk.Button(popup, text="Charger JSON (Workflow)", command=lambda: self.load_json_to_text(workflow_text)).pack(pady=5)
 
         # Bouton pour sauvegarder
         def save_new_prompt():
             name = name_var.get().strip()
             url = url_var.get().strip()
-            values = values_text.get("1.0", "end-1c").strip()
+            prompt_values = prompt_values_text.get("1.0", "end-1c").strip()
             workflow = workflow_text.get("1.0", "end-1c").strip()
 
             if not name:
@@ -479,21 +487,21 @@ class process_prompts_manager:
                 return
 
             try:
-                # Vérifier si les valeurs JSON sont valides
-                values_dict = json.loads(values) if values else {}
+                # Vérifier si les JSON sont valides
+                prompt_values_dict = json.loads(prompt_values) if prompt_values else {}
                 workflow_dict = json.loads(workflow) if workflow else {}
 
                 # Insérer dans la base de données
                 self.cursor.execute(
-                    "INSERT INTO prompts (name, prompt_values, workflow, image, url) VALUES (?, ?, ?, ?, ?)",
-                    (name, json.dumps(values_dict, ensure_ascii=False), json.dumps(workflow_dict, ensure_ascii=False), "", url)
+                    "INSERT INTO prompts (name, prompt_values, workflow, url) VALUES (?, ?, ?, ?)",
+                    (name, json.dumps(prompt_values_dict, ensure_ascii=False), json.dumps(workflow_dict, ensure_ascii=False), url)
                 )
                 self.conn.commit()
                 self.load_prompts()
                 popup.destroy()
                 messagebox.showinfo("Succès", "Nouveau prompt ajouté avec succès.")
             except json.JSONDecodeError as e:
-                messagebox.showerror("Erreur", f"Les champs Values ou Workflow contiennent un JSON invalide : {e}")
+                messagebox.showerror("Erreur", f"Les champs JSON contiennent des données invalides : {e}")
             except Exception as e:
                 messagebox.showerror("Erreur", f"Une erreur s'est produite : {e}")
 
@@ -532,7 +540,7 @@ class process_prompts_manager:
                 
                 # Ne passer que les noms de fichiers (sans le chemin complet)
                 # Pour que run_now puisse les préfixer correctement
-                filename = tsk1.run_now(
+                filename = tsk1.addToQueue(
                     os.path.basename(workflow_file_path),
                     os.path.basename(prompt_values_file_path)
                 )
@@ -707,15 +715,15 @@ class process_prompts_manager:
         if not self.selected_prompt_id:
             messagebox.showwarning("Attention", "Aucun prompt sélectionné à sauvegarder.")
             return
-        
+
         name = self.name_var.get().strip()
         url = self.url_var.get().strip()
         image = self.image_var.get().strip()
-        
+
         if not name:
             messagebox.showerror("Erreur", "Le nom est obligatoire.")
             return
-        
+
         try:
             # Construire le JSON des values depuis le tableau
             values_dict = {}
@@ -726,35 +734,124 @@ class process_prompts_manager:
                     "type": values[1],
                     "value": values[2]
                 }
-            
+
             # Récupérer le workflow existant (on ne le modifie pas ici)
             self.cursor.execute("SELECT workflow FROM prompts WHERE id=?", (self.selected_prompt_id,))
-            workflow = self.cursor.fetchone()[0] if self.cursor.fetchone() else "{}"
-            
+            result = self.cursor.fetchone()  # Stocker le résultat de fetchone()
+            workflow = result[0] if result else "{}"  # Vérifier si le résultat existe
+
             # Mettre à jour la base de données
             self.cursor.execute(
                 "UPDATE prompts SET name=?, prompt_values=?, image=?, url=? WHERE id=?",
                 (name, json.dumps(values_dict, ensure_ascii=False), image, url, self.selected_prompt_id)
             )
             self.conn.commit()
-            
+
             # Recharger la liste
             self.load_prompts()
             messagebox.showinfo("Succès", "Prompt sauvegardé avec succès.")
-            
+
         except Exception as e:
             messagebox.showerror("Erreur", f"Erreur lors de la sauvegarde : {e}")
     
     def edit_prompt(self):
-        """Modifier le prompt sélectionné"""
+        """Ouvre une popup pour éditer le prompt sélectionné avec édition JSON brute"""
         selection = self.tree.selection()
         if not selection:
             messagebox.showinfo("Info", "Veuillez sélectionner un prompt à modifier.")
             return
-        
-        prompt_id = selection[0]
-        self.load_prompt_details(prompt_id)
-        messagebox.showinfo("Info", "Prompt chargé pour modification. Utilisez le panneau de droite pour éditer.")
+
+        prompt_id = selection[0]  # Récupérer l'ID du prompt sélectionné
+
+        try:
+            # Récupérer les données du prompt depuis la base de données
+            self.cursor.execute("SELECT name, prompt_values, workflow, url FROM prompts WHERE id=?", (prompt_id,))
+            row = self.cursor.fetchone()
+            if not row:
+                messagebox.showerror("Erreur", f"Prompt introuvable avec l'ID {prompt_id}.")
+                return
+
+            name, prompt_values, workflow, url = row
+
+            # Créer une fenêtre popup pour l'édition
+            popup = tk.Toplevel(self.root)
+            popup.title(f"Modifier le prompt: {name}")
+            popup.transient(self.root)
+            popup.grab_set()
+
+            # Centrer la fenêtre
+            self.center_window(popup, width=700, height=500)
+
+            # Variables pour les champs
+            name_var = tk.StringVar(value=name)
+            url_var = tk.StringVar(value=url or "")
+
+            # Champs de saisie
+            ttk.Label(popup, text="Nom:").pack(anchor="w", padx=10, pady=5)
+            ttk.Entry(popup, textvariable=name_var, width=60).pack(fill="x", padx=10, pady=5)
+
+            ttk.Label(popup, text="URL:").pack(anchor="w", padx=10, pady=5)
+            ttk.Entry(popup, textvariable=url_var, width=60).pack(fill="x", padx=10, pady=5)
+
+            # Champs pour le prompt_values JSON
+            ttk.Label(popup, text="Prompt Values (JSON):").pack(anchor="w", padx=10, pady=5)
+            prompt_values_text = tk.Text(popup, height=8, wrap="word")
+            prompt_values_text.pack(fill="both", expand=True, padx=10, pady=5)
+            prompt_values_text.insert("1.0", json.dumps(json.loads(prompt_values or "{}"), indent=2, ensure_ascii=False))
+
+            # Champs pour le workflow JSON
+            ttk.Label(popup, text="Workflow (JSON):").pack(anchor="w", padx=10, pady=5)
+            workflow_text = tk.Text(popup, height=8, wrap="word")
+            workflow_text.pack(fill="both", expand=True, padx=10, pady=5)
+            workflow_text.insert("1.0", json.dumps(json.loads(workflow or "{}"), indent=2, ensure_ascii=False))
+
+            # Bouton pour charger un fichier JSON dans prompt_values
+            ttk.Button(popup, text="Charger JSON (Prompt Values)", command=lambda: self.load_json_to_text(prompt_values_text)).pack(pady=5)
+
+            # Bouton pour charger un fichier JSON dans workflow
+            ttk.Button(popup, text="Charger JSON (Workflow)", command=lambda: self.load_json_to_text(workflow_text)).pack(pady=5)
+
+            # Boutons pour sauvegarder ou annuler
+            buttons_frame = ttk.Frame(popup)
+            buttons_frame.pack(fill="x", padx=10, pady=10)
+
+            def save_changes():
+                """Sauvegarder les modifications dans la base de données"""
+                new_name = name_var.get().strip()
+                new_url = url_var.get().strip()
+                new_prompt_values = prompt_values_text.get("1.0", "end-1c").strip()
+                new_workflow = workflow_text.get("1.0", "end-1c").strip()
+
+                if not new_name:
+                    messagebox.showerror("Erreur", "Le champ 'Nom' est obligatoire.")
+                    return
+
+                try:
+                    # Vérifier si les JSON sont valides
+                    prompt_values_dict = json.loads(new_prompt_values) if new_prompt_values else {}
+                    workflow_dict = json.loads(new_workflow) if new_workflow else {}
+
+                    # Mettre à jour la base de données
+                    self.cursor.execute(
+                        "UPDATE prompts SET name=?, prompt_values=?, workflow=?, url=? WHERE id=?",
+                        (new_name, json.dumps(prompt_values_dict, ensure_ascii=False), json.dumps(workflow_dict, ensure_ascii=False), new_url, prompt_id)
+                    )
+                    self.conn.commit()
+
+                    # Recharger la liste des prompts
+                    self.load_prompts()
+                    popup.destroy()
+                    messagebox.showinfo("Succès", "Prompt modifié avec succès.")
+                except json.JSONDecodeError as e:
+                    messagebox.showerror("Erreur", f"Les champs JSON contiennent des données invalides : {e}")
+                except Exception as e:
+                    messagebox.showerror("Erreur", f"Une erreur s'est produite : {e}")
+
+            ttk.Button(buttons_frame, text="Sauvegarder", command=save_changes).pack(side="left", padx=5)
+            ttk.Button(buttons_frame, text="Annuler", command=popup.destroy).pack(side="left", padx=5)
+
+        except Exception as e:
+            messagebox.showerror("Erreur", f"Erreur lors du chargement du prompt : {e}")
     
     def select_image(self, var):
         """Sélectionner un fichier image"""
@@ -767,7 +864,38 @@ class process_prompts_manager:
 
     def edit_prompt_form(self):
         """Ouvre le formulaire de création/modification de prompt"""
-        self.new_prompt()  # Réutilise la méthode `new_prompt` pour ouvrir le formulaire
+        self.edit_prompt()  # Réutilise la méthode `new_prompt` pour ouvrir le formulaire
+
+    def load_json_to_text(self, text_widget):
+        """Charger un fichier JSON et insérer son contenu dans une zone de texte"""
+        file_path = filedialog.askopenfilename(
+            title="Ouvrir un fichier JSON",
+            filetypes=[("Fichiers JSON", "*.json"), ("Tous les fichiers", "*.*")]
+        )
+        if file_path:
+            try:
+                with open(file_path, "r", encoding="utf-8") as f:
+                    json_data = json.load(f)
+                    formatted_json = json.dumps(json_data, indent=2, ensure_ascii=False)
+                    text_widget.delete("1.0", "end")  # Effacer le contenu existant
+                    text_widget.insert("1.0", formatted_json)  # Insérer le JSON formaté
+            except Exception as e:
+                messagebox.showerror("Erreur", f"Impossible de charger le fichier JSON : {e}")
+
+    def center_window(self, window, width=600, height=400):
+        """Centre une fenêtre popup par rapport à la fenêtre principale"""
+        # Récupérer les dimensions de la fenêtre principale
+        root_x = self.root.winfo_x()
+        root_y = self.root.winfo_y()
+        root_width = self.root.winfo_width()
+        root_height = self.root.winfo_height()
+
+        # Calculer la position pour centrer la fenêtre
+        x = root_x + (root_width // 2) - (width // 2)
+        y = root_y + (root_height // 2) - (height // 2)
+
+        # Appliquer la géométrie
+        window.geometry(f"{width}x{height}+{x}+{y}")
 
 def main(db_path="g:/tmp/prompts_manager.db", DirCollecte=None):
     root = tk.Tk()
