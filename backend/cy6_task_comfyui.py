@@ -34,15 +34,12 @@ class comfyui_task:
      
     def addToQueue(self,fileworkflow,filevalues):
         json = self.updateWorkflow(fileworkflow,filevalues)
+        
         print("--------------------------------")
-
-        print (fileworkflow)
-        print (filevalues)
         print (json)
         print("--------------------------------")
         prompt_list=[]
         prompt_list.append(queue_add(json))
-        #prompt_list.append(queue_add(json))
 
         nbqueue = len(prompt_list)
         ws = server_connect()

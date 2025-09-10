@@ -98,13 +98,14 @@ def update_workflow(filevalues,file):
            
             typ = values[val]['type']
             node =values[val]['id']
-            print (f"--->{val} / node = {node} / Type {typ} ")
+            
+            print (f"dbg-4514 = node {node} : type {typ} : val {val} : value {values[val]}")
             #print(f"............set value to node={node} - typ={typ}")
             #print(f"................value ={values[val]}")
             
             #data_updated.update(f"{#node}:{'type':{typ}}") # type: ignore
             #data_updated.update(f"{node}:{'value':{values[val]}}")
-            print(f"dbg-4514 = node {node} : type {typ} ")
+           
             match typ: 
                 
                 case "CLIPTextEncode":
@@ -114,8 +115,8 @@ def update_workflow(filevalues,file):
                 
                     jsonf[node]['inputs']['text'] =  values[val]['value']
                 case "seed" :
-                    
-                    jsonf[node]['inputs']['seed'] = values[val]['value']
+                    seednum =random.randint(0,9999999)
+                    jsonf[node]['inputs']['seed'] = seednum
 
                 case "PortraitMasterStylePose.pose" :
                     jsonf[node]['inputs']['model_pose'] = values[val]['model_pose']

@@ -55,3 +55,45 @@ def migrate_announcements_table(db_path):
 if __name__ == "__main__":
     db_path = os.path.join("data", "announcements.db")  # adapte le chemin si besoin
     migrate_announcements_table(db_path)
+
+def addToQueue(self, fileworkflow, filevalues):
+    json = self.updateWorkflow(fileworkflow, filevalues)
+    
+    # Log des données JSON pour débogage
+    print("Données JSON envoyées au serveur :")
+    print(json)
+    
+    print("--------------------------------")
+    prompt_list = []
+    prompt_list.append(queue_add(json))
+
+    nbqueue = len(prompt_list)
+    ws = server_connect()
+    nb = 0
+    print(f"nb workflows = {nbqueue}")
+
+    while nb != nbqueue:
+        nb = 0
+        for promptId in prompt_list:
+            if not workflow_is_running(ws, promptId):
+                nb += 1
+        print(f"workflow : {promptId}  ->  {nb}/{nbqueue}")
+
+def updateWorkflow(self, fileworkflow, filevalues):
+    fileworkflow = self.workflowRoot + "/" + fileworkflow
+    filevalues = self.workflowRoot + "/" + filevalues
+
+    print(f"Chemin du fichier workflow : {fileworkflow}")
+    print(f"Chemin du fichier values : {filevalues}")
+
+    if os.path.exists(fileworkflow):
+        if os.path.exists(filevalues):
+            # Générer les données JSON
+            json_data = update_workflow(filevalues, fileworkflow)
+            print("Données JSON générées par update_workflow :")
+            print(json_data)
+            return json_data
+        else:
+            raise ValueError("Invalid values.")
+    else:
+        raise ValueError("Invalid workflow file does not exist : " + fileworkflow)

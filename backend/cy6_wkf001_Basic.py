@@ -50,12 +50,12 @@ values={
         }
     }
 
-if __name__ == "__main__":
-    tsk1 =  comfyui_run_now()
-    #fileworkflow = "wk000_basic.json"
-    #filevalues = "wk000_basic_values.json"
+# if __name__ == "__main__":
+#     tsk1 =  comfyui_run_now()
+#     #fileworkflow = "wk000_basic.json"
+#     #filevalues = "wk000_basic_values.json"
 
-    fileworkflow = "wk001_ponyRealism.json"
-    filevalues = "wk001_ponyRealism_values.json"
+#     fileworkflow = "wk001_ponyRealism.json"
+#     filevalues = "wk001_ponyRealism_values.json"
 
-    tsk1.run_now(fileworkflow,filevalues)
+#     tsk1.run_now(fileworkflow,filevalues)
