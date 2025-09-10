@@ -97,9 +97,10 @@ class process_prompts_manager:
         # Boutons d'action
         btn_frame = ttk.Frame(main_frame)
         btn_frame.pack(fill=tk.X, pady=(0, 10))
-        ttk.Button(btn_frame, text="Nouvelle Prompt", command=self.new_prompt).pack(side=tk.LEFT, padx=5)
+        
         ttk.Button(btn_frame, text="Actualiser", command=self.load_prompts).pack(side=tk.LEFT, padx=5)
         ttk.Button(btn_frame, text="New", command=self.new_prompt).pack(side=tk.LEFT, padx=5)
+        ttk.Button(btn_frame, text="Edit Form", command=self.edit_prompt_form).pack(side=tk.LEFT, padx=5)  # Nouveau bouton
 
         # PanedWindow pour diviser en deux parties
         paned_window = ttk.PanedWindow(main_frame, orient=tk.HORIZONTAL)
@@ -763,6 +764,10 @@ class process_prompts_manager:
         )
         if file_path:
             var.set(file_path)
+
+    def edit_prompt_form(self):
+        """Ouvre le formulaire de création/modification de prompt"""
+        self.new_prompt()  # Réutilise la méthode `new_prompt` pour ouvrir le formulaire
 
 def main(db_path="g:/tmp/prompts_manager.db", DirCollecte=None):
     root = tk.Tk()
