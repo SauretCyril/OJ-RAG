@@ -3,46 +3,29 @@ import json
 import os
 #sys.path.append('G:/G_WCS/Comfyui_api')
 from cy6_file import log_json
-
-from  cy6_websocket_api_client import update_workflow,workflow_is_running,queue_add,server_connect
+from  cy6_websocket_api_client import update_workflow,socket_queue_prompt,server_connect,workflow_is_running,socket_get_images
 
 #seed aleatoire
 class comfyui_task:
     name="Default"
-    workflowRoot ="data/Workflows"
     
     def update_values(self, values):
         self.values = values
 
-    def updateWorkflow(self,fileworkflow,filevalues):
-        fileworkflow = self.workflowRoot + "/" + fileworkflow
-        filevalues = self.workflowRoot + "/" + filevalues
-
-        if os.path.exists(fileworkflow):
-            if os.path.exists(filevalues):
-
-                #values = self.values
-                json = update_workflow(filevalues,fileworkflow)
-                return json
-            else:
-                raise ValueError("Invalid values.")
-        else:
-            raise ValueError("Invalid workflow file does not exist : " + fileworkflow)
+   
 
     def log_values(self):
         log_json('02_value_to_update',self.values)
      
     def addToQueue(self,fileworkflow,filevalues):
-        json = self.updateWorkflow(fileworkflow,filevalues)
+        json = update_workflow(filevalues,fileworkflow)
         
-        print("--------------------------------")
-        print (json)
-        print("--------------------------------")
         prompt_list=[]
-        prompt_list.append(queue_add(json))
+        prompt_id = socket_queue_prompt(json)['prompt_id']
+        prompt_list.append(prompt_id)
 
         nbqueue = len(prompt_list)
-        ws = server_connect()
+        self.ws = server_connect()
         nb=0
         print (f"nb workflows = {nbqueue}")
 
@@ -50,6 +33,10 @@ class comfyui_task:
         while nb!=nbqueue:
             nb=0
             for promptId in prompt_list:
-                if not workflow_is_running(ws,promptId):
-                    nb=+1
+                if not workflow_is_running(self.ws ,promptId):
+                    nb+=1
             print(f"workflow : {promptId}  ->  {nb}/{nbqueue}")
+        return promptId
+
+    def GetImages(self, key):
+        output_images = socket_get_images(self.ws, key)

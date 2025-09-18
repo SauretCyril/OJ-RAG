@@ -7,13 +7,14 @@ import json
 import urllib.request
 import urllib.parse
 from cy6_file import load_json,log_json
-
+import os
 from urllib import request
+import random
 
 server_address = "127.0.0.1:8188"
 client_id = str(uuid.uuid4())
 
-def queue_prompt(prompt):
+def socket_queue_prompt(prompt):
     p = {"prompt": prompt, "client_id": client_id}
     data = json.dumps(p).encode('utf-8')
     req =  urllib.request.Request("http://{}/prompt".format(server_address), data=data)
@@ -29,9 +30,10 @@ def get_history(prompt_id):
     with urllib.request.urlopen("http://{}/history/{}".format(server_address, prompt_id)) as response:
         return json.loads(response.read())
 
-def get_images(ws, prompt):
+
+def socket_get_images(ws,prompt_id):
     try:
-        prompt_id = queue_prompt(prompt)['prompt_id']
+        # prompt_id = queue_prompt(prompt)['prompt_id']
         output_images = {}
         while True:
             out = ws.recv()
@@ -58,7 +60,7 @@ def get_images(ws, prompt):
                     image_data = get_image(image['filename'], image['subfolder'], image['type'])
                     images_output.append(image_data)
                 output_images[node_id] = images_output
-                    
+        return output_images
 
    
     except Exception:
@@ -75,13 +77,18 @@ def get_images(ws, prompt):
 
 
 
-def update_workflow(filevalues,file):
-    print(f"open file {file }")
+def update_workflow(filevalues,fileworkflow):
+    print(f"dbg-4514 => open file workflow -- {fileworkflow }")
     #il faut ouvrir filevalues
+    if  not os.path.exists(filevalues):
+        raise ValueError(f"Invalid values file : {filevalues}")
+    if  not os.path.exists(fileworkflow):
+        raise ValueError(f"Invalid workflow file : {fileworkflow}")
+
     with open(filevalues, "r",encoding="utf-8") as f:
         values_json_data=f.read()
     
-    print(f"sv:msg04={values_json_data}")
+    print(f"dbg-4514 =>values ={values_json_data}")
 
     values=json.loads( values_json_data)
 
@@ -90,16 +97,14 @@ def update_workflow(filevalues,file):
     try:
         # with open(file, "r",encoding="utf-8") as f:
         #     worflow_json_data=f.read()
-        
-        # jsonf=json.loads( worflow_json_data)
-        jsonf = load_json(file)
+        jsonf = load_json(fileworkflow)
        
         for val in values:
            
             typ = values[val]['type']
             node =values[val]['id']
             
-            print (f"dbg-4514 = node {node} : type {typ} : val {val} : value {values[val]}")
+            print (f"dbg-4514 = node {node} : type {typ}:")
             #print(f"............set value to node={node} - typ={typ}")
             #print(f"................value ={values[val]}")
             
@@ -110,13 +115,17 @@ def update_workflow(filevalues,file):
                 
                 case "CLIPTextEncode":
                     jsonf[node]['inputs']['text'] =  values[val]['value']
+                    print (f"dbg-4515-1 = ok")
                     
                 case "prompt":
-                
                     jsonf[node]['inputs']['text'] =  values[val]['value']
+
+                    print (f"dbg-4515-2 = ok")
                 case "seed" :
-                    seednum =random.randint(0,9999999)
+                    #seednum=124578
+                    seednum = random.randint(0, 9999999)
                     jsonf[node]['inputs']['seed'] = seednum
+                    print (f"dbg-4515-3 = {str(seednum)} ")
 
                 case "PortraitMasterStylePose.pose" :
                     jsonf[node]['inputs']['model_pose'] = values[val]['model_pose']
@@ -139,7 +148,9 @@ def update_workflow(filevalues,file):
                 case "LoraLoaderTagsQuery":
                     jsonf[node]['inputs']['lora_name'] =  values[val]['lora_name']
                 case "SaveImage":
-                    jsonf[node]['inputs']['filename_prefix'] =  values[val]['SaveImage']
+                    jsonf[node]['inputs']['filename_prefix'] =  values[val]['value']
+                    print (f"dbg-4515-4 = {values[val]['value']} ")
+
                 case "LoraInfo":
                      jsonf[node]['inputs']['lora_name'] =  values[val]['lora_name']
                 case _:
@@ -212,14 +223,14 @@ def server_get_prompt(ws,prompt,isList,node_id):
 
 
 
-def queue_add(jsonf):
-  p = {"prompt": jsonf}
-  data = json.dumps(p).encode('utf-8')
-  req =  request.Request("http://127.0.0.1:8188/prompt", data=data)
-  request.urlopen(req)
-  prompt_id = queue_prompt(jsonf)['prompt_id']
-  
-  return prompt_id
+def socket_queue_add(jsonf):
+    # p = {"prompt": jsonf}
+    # data = json.dumps(p).encode('utf-8')
+    # req =  request.Request("http://127.0.0.1:8188/prompt", data=data)
+    # request.urlopen(req)
+    prompt_id = socket_queue_prompt(jsonf)['prompt_id']
+    
+    return prompt_id
 
 def server_connect():
     ws = websocket.WebSocket()

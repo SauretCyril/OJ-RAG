@@ -9,6 +9,7 @@ from cy6_wkf001_Basic import comfyui_basic_task
 import tempfile
 from dotenv import load_dotenv
 import subprocess
+import threading
 
 # import platform
 # if platform.system() == "Windows":
@@ -23,6 +24,7 @@ class process_prompts_manager:
         self.db_path = db_path
         self.prompts = []
         self.selected_prompt_id = None
+        self.execution_stack = []  # Pile pour surveiller les workflows
 
         # Charger la configuration
         self.config = self.load_config()
@@ -50,7 +52,7 @@ class process_prompts_manager:
             # Mode init: Supprime la base existante et recrée
             if os.path.exists(self.db_path):
                 os.remove(self.db_path)
-            self.conn = sqlite3.connect(self.db_path)
+            self.conn = sqlite3.connect(self.db_path, check_same_thread=False)
             self.cursor = self.conn.cursor()
             self.cursor.execute('''
                 CREATE TABLE IF NOT EXISTS prompts (
@@ -66,7 +68,7 @@ class process_prompts_manager:
             self.add_default_basic_prompt()
         else:  # mode == "dev"
             # Mode dev: Crée la base si elle n'existe pas
-            self.conn = sqlite3.connect(self.db_path)
+            self.conn = sqlite3.connect(self.db_path, check_same_thread=False)
             self.cursor = self.conn.cursor()
             self.cursor.execute('''
                 CREATE TABLE IF NOT EXISTS prompts (
@@ -123,6 +125,21 @@ class process_prompts_manager:
         ttk.Entry(dir_frame, textvariable=self.images_dir_var, width=50).pack(side="left", fill="x", expand=True, padx=5)
         ttk.Button(dir_frame, text="...", width=3, command=self.select_images_dir).pack(side="left", padx=5)
         ttk.Button(dir_frame, text="Enregistrer", command=self.save_images_dir).pack(side="left", padx=5)
+
+        # Frame pour surveiller la pile des workflows
+        stack_frame = ttk.LabelFrame(self.root, text="Pile d'exécution des workflows")
+        stack_frame.pack(fill="both", expand=True, padx=10, pady=10)
+
+        columns = ("prompt_id", "status")
+        self.execution_stack_tree = ttk.Treeview(stack_frame, columns=columns, show="headings", height=10)
+        for col in columns:
+            self.execution_stack_tree.heading(col, text=col.capitalize())
+            self.execution_stack_tree.column(col, width=200)
+
+        scrollbar = ttk.Scrollbar(stack_frame, orient="vertical", command=self.execution_stack_tree.yview)
+        self.execution_stack_tree.configure(yscrollcommand=scrollbar.set)
+        self.execution_stack_tree.pack(side="left", fill="both", expand=True)
+        scrollbar.pack(side="right", fill="y")
 
     def create_table_frame(self, parent):
         """Créer le tableau des prompts"""
@@ -543,54 +560,91 @@ class process_prompts_manager:
         ttk.Button(popup, text="Sauvegarder", command=save_prompt).pack(pady=10)
 
     def execute_workflow(self):
-        """Exécuter le workflow avec comfyui_basic_task"""
+        """Exécuter le workflow avec comfyui_basic_task en arrière-plan"""
         if not self.selected_prompt_id:
             messagebox.showwarning("Attention", "Veuillez sélectionner un prompt.")
             return
-        
+
+        # Ajouter à la pile d'exécution avec statut "En cours"
+        execution_id = f"exec_{int(time.time())}"  # Identifiant unique pour ce job
+        self.add_to_execution_stack(execution_id, f"En cours: Prompt #{self.selected_prompt_id}")
+
+        # Créer un thread pour exécuter le workflow
+        thread = threading.Thread(target=self._execute_workflow_task, 
+                             args=(self.selected_prompt_id, execution_id))
+        thread.daemon = True  # Permet de terminer le thread si l'application se ferme
+        thread.start()
+
+    def _execute_workflow_task(self, prompt_id, execution_id):
+        """Tâche d'exécution du workflow (appelée dans un thread séparé)"""
         try:
-            self.cursor.execute("SELECT workflow, prompt_values, name FROM prompts WHERE id=?", (self.selected_prompt_id,))
-            row = self.cursor.fetchone()
+            # Créer une nouvelle connexion SQLite dans ce thread
+            conn = sqlite3.connect(self.db_path)
+            cursor = conn.cursor()
+
+            cursor.execute("SELECT workflow, prompt_values, name FROM prompts WHERE id=?", (prompt_id,))
+            row = cursor.fetchone()
             if row:
                 workflow_json, prompt_values_json, name = row
-                
+
+                # Mettre à jour le statut dans la pile d'exécution
+                self.update_execution_stack_status(execution_id, f"Préparation: {name}")
+
                 # Créer le répertoire data/Workflows s'il n'existe pas
                 os.makedirs("data/Workflows", exist_ok=True)
-                
+
                 # Générer des noms de fichiers uniques dans data/Workflows
                 timestamp = int(time.time())
                 workflow_file_path = f"data/Workflows/{name}_workflow_{timestamp}.json"
                 prompt_values_file_path = f"data/Workflows/{name}_values_{timestamp}.json"
-                
+
                 # Écrire les fichiers directement dans data/Workflows
                 with open(workflow_file_path, "w", encoding="utf-8") as wf_file:
                     wf_file.write(workflow_json)
-                
+
                 with open(prompt_values_file_path, "w", encoding="utf-8") as pv_file:
                     pv_file.write(prompt_values_json)
-                
+
+                # Mettre à jour le statut
+                self.update_execution_stack_status(execution_id, f"Exécution: {name}")
+
                 # Exécuter le workflow
-                messagebox.showinfo("Information", "Lancement du workflow ComfyUI...")
                 tsk1 = comfyui_basic_task()
-                
-                # Ne passer que les noms de fichiers (sans le chemin complet)
-                # Pour que run_now puisse les préfixer correctement
-                filename = tsk1.addToQueue(
-                    os.path.basename(workflow_file_path),
-                    os.path.basename(prompt_values_file_path)
-                )
-                print(f"Workflow exécuté. Fichier de sortie: {filename}")
+                promptId = tsk1.addToQueue(workflow_file_path, prompt_values_file_path)
+                print(f"Workflow exécuté. Fichier de sortie: {promptId}")
+
+                # Mettre à jour le statut avec l'ID du prompt
+                self.update_execution_stack_status(execution_id, f"Génération: {promptId}")
+
+                # Récupérer les images générées
+                output_images = tsk1.GetImages(promptId)
+                print(f"Images générées: {output_images}")
+
                 # Nettoyer les fichiers
                 try:
                     os.unlink(workflow_file_path)
                     os.unlink(prompt_values_file_path)
                 except:
                     pass
-                    
-                messagebox.showinfo("Succès", "Workflow exécuté avec succès!")
+
+                # Mettre à jour le statut final
+                self.update_execution_stack_status(execution_id, f"Terminé: {name} ({promptId})")
         except Exception as e:
-            messagebox.showerror("Erreur", f"Erreur lors de l'exécution: {str(e)}")
-            print(f"Erreur détaillée: {str(e)}")
+            # Mettre à jour le statut en cas d'erreur
+            self.update_execution_stack_status(execution_id, f"Erreur: {str(e)}")
+            print(f"Erreur lors de l'exécution: {str(e)}")
+        finally:
+            # Fermer la connexion SQLite
+            conn.close()
+
+    def update_execution_stack_status(self, execution_id, status):
+        """Met à jour le statut d'un workflow dans la pile d'exécution"""
+        for item in self.execution_stack:
+            if item["prompt_id"] == execution_id:
+                item["status"] = status
+                break
+        # Mettre à jour l'UI dans le thread principal
+        self.root.after(0, self.update_execution_stack_ui)
 
     def add_default_basic_prompt(self):
         name = "basic"
@@ -847,6 +901,25 @@ class process_prompts_manager:
 
         # Appliquer la géométrie
         window.geometry(f"{width}x{height}+{x}+{y}")
+
+    def add_to_execution_stack(self, prompt_id, status):
+        """Ajouter un workflow à la pile d'exécution"""
+        # Vérifier si l'ID est déjà dans la pile
+        for item in self.execution_stack:
+            if item["prompt_id"] == prompt_id:
+                item["status"] = status
+                self.root.after(0, self.update_execution_stack_ui)
+                return
+            
+        # Sinon, ajouter un nouvel élément
+        self.execution_stack.append({"prompt_id": prompt_id, "status": status})
+        self.root.after(0, self.update_execution_stack_ui)  # Mettre à jour l'UI dans le thread principal
+    
+    def update_execution_stack_ui(self):
+        """Mettre à jour l'affichage de la pile d'exécution"""
+        self.execution_stack_tree.delete(*self.execution_stack_tree.get_children())
+        for item in self.execution_stack:
+            self.execution_stack_tree.insert("", "end", values=(item["prompt_id"], item["status"]))
 
 def main(db_path="g:/tmp/prompts_manager.db", DirCollecte=None):
     root = tk.Tk()
