@@ -287,11 +287,14 @@ class process_prompts_manager:
         if not item_id:
             return
 
-        # Si c'est un clic sur la colonne "action" (#5) et que le type est "prompt"
+        # Si c'est un clic sur la colonne "action" (#5)
         if col == "#5":
             values = self.values_tree.item(item_id, "values")
-            if values[2] == "prompt":  # type_val == "prompt"
+            type_val = values[2]
+            if type_val == "prompt":
                 self.open_large_edit_window(item_id)
+            elif type_val == "image":
+                self.open_image_selector_window(item_id)
             return
 
         if col == "#1":
@@ -316,7 +319,13 @@ class process_prompts_manager:
                 data["id"] = new_value
             elif col_idx == 2:
                 data["type"] = new_value
-                row_values[4] = "edit" if new_value == "prompt" else ""
+                # Mettre à jour l'action selon le nouveau type
+                if new_value == "prompt":
+                    row_values[4] = "edit"
+                elif new_value == "image":
+                    row_values[4] = "image"
+                else:
+                    row_values[4] = ""
             elif col_idx == 3:
                 data["value"] = new_value
                 data.pop("__display_value", None)
@@ -390,6 +399,141 @@ class process_prompts_manager:
         # Raccourcis clavier
         popup.bind("<Control-Return>", lambda e: save_changes())
         popup.bind("<Escape>", lambda e: cancel_changes())
+
+    def open_image_selector_window(self, item_id):
+        """Ouvre une fenêtre pour sélectionner et afficher une image"""
+        values = self.values_tree.item(item_id, "values")
+        row_data = self.values_data.get(item_id, {})
+        current_image_path = row_data.get("value") or values[3]
+
+        popup = tk.Toplevel(self.root)
+        popup.title("Sélection d'image")
+        popup.geometry("600x500")
+        popup.transient(self.root)
+        popup.grab_set()
+        
+        # Centrer la fenêtre
+        self.center_window(popup, 600, 500)
+
+        # Frame principal avec padding
+        main_frame = ttk.Frame(popup)
+        main_frame.pack(fill="both", expand=True, padx=10, pady=10)
+
+        # Label d'information
+        ttk.Label(main_frame, text="Sélection d'image:", font=("Arial", 12, "bold")).pack(anchor="w", pady=(0, 10))
+
+        # Frame pour le chemin de l'image
+        path_frame = ttk.Frame(main_frame)
+        path_frame.pack(fill="x", pady=(0, 10))
+        
+        ttk.Label(path_frame, text="Chemin:").pack(side="left", padx=(0, 5))
+        image_path_var = tk.StringVar(value=current_image_path)
+        path_entry = ttk.Entry(path_frame, textvariable=image_path_var)
+        path_entry.pack(side="left", fill="x", expand=True, padx=(0, 5))
+        
+        def browse_image():
+            file_path = filedialog.askopenfilename(
+                title="Sélectionner une image",
+                filetypes=[
+                    ("Images", "*.png *.jpg *.jpeg *.gif *.bmp *.tiff *.webp"),
+                    ("PNG", "*.png"),
+                    ("JPEG", "*.jpg *.jpeg"),
+                    ("Tous les fichiers", "*.*")
+                ]
+            )
+            if file_path:
+                image_path_var.set(file_path)
+                display_image(file_path)
+
+        ttk.Button(path_frame, text="Parcourir...", command=browse_image).pack(side="left")
+
+        # Frame pour l'affichage de l'image
+        image_frame = ttk.LabelFrame(main_frame, text="Aperçu de l'image")
+        image_frame.pack(fill="both", expand=True, pady=(0, 10))
+
+        # Label pour afficher l'image
+        image_label = ttk.Label(image_frame, text="Aucune image sélectionnée", anchor="center")
+        image_label.pack(fill="both", expand=True, padx=10, pady=10)
+
+        def display_image(image_path):
+            """Affiche l'image dans le label"""
+            try:
+                if os.path.exists(image_path):
+                    # Ouvrir et redimensionner l'image
+                    pil_image = Image.open(image_path)
+                    
+                    # Calculer les dimensions pour maintenir le ratio
+                    max_width, max_height = 400, 300
+                    image_width, image_height = pil_image.size
+                    
+                    ratio = min(max_width / image_width, max_height / image_height)
+                    new_width = int(image_width * ratio)
+                    new_height = int(image_height * ratio)
+                    
+                    pil_image = pil_image.resize((new_width, new_height), Image.Resampling.LANCZOS)
+                    
+                    # Convertir pour Tkinter
+                    tk_image = ImageTk.PhotoImage(pil_image)
+                    
+                    # Afficher l'image
+                    image_label.configure(image=tk_image, text="")
+                    image_label.image = tk_image  # Garder une référence
+                    
+                    # Afficher les informations de l'image
+                    info_text = f"Dimensions: {image_width}x{image_height}\nTaille: {os.path.getsize(image_path)} bytes"
+                    ttk.Label(image_frame, text=info_text, font=("Arial", 9)).pack(pady=(5, 0))
+                else:
+                    image_label.configure(image="", text="Fichier image introuvable")
+                    image_label.image = None
+            except Exception as e:
+                image_label.configure(image="", text=f"Erreur lors du chargement:\n{str(e)}")
+                image_label.image = None
+
+        # Afficher l'image actuelle si elle existe
+        if current_image_path and os.path.exists(current_image_path):
+            display_image(current_image_path)
+
+        # Mettre à jour l'affichage quand le chemin change
+        def on_path_change(*args):
+            path = image_path_var.get().strip()
+            if path and os.path.exists(path):
+                display_image(path)
+            else:
+                image_label.configure(image="", text="Aucune image sélectionnée")
+                image_label.image = None
+
+        image_path_var.trace('w', on_path_change)
+
+        # Frame pour les boutons
+        button_frame = ttk.Frame(main_frame)
+        button_frame.pack(fill="x", pady=(10, 0))
+
+        def save_image_path():
+            new_path = image_path_var.get().strip()
+            if new_path and not os.path.exists(new_path):
+                messagebox.showwarning("Attention", "Le fichier image spécifié n'existe pas.")
+                return
+            
+            # Mettre à jour les données
+            row_values = list(self.values_tree.item(item_id, "values"))
+            row_values[3] = new_path
+            self.values_tree.item(item_id, values=row_values)
+
+            data = self.values_data.setdefault(item_id, {})
+            data["value"] = new_path
+            data.pop("__display_value", None)
+            popup.destroy()
+
+        def cancel_selection():
+            popup.destroy()
+
+        # Boutons avec espacement
+        ttk.Button(button_frame, text="OK", command=save_image_path).pack(side="left", padx=(0, 10))
+        ttk.Button(button_frame, text="Annuler", command=cancel_selection).pack(side="left")
+
+        # Raccourcis clavier
+        popup.bind("<Return>", lambda e: save_image_path())
+        popup.bind("<Escape>", lambda e: cancel_selection())
 
     def delete_prompt(self):
         """Supprimer le prompt sélectionné"""
@@ -467,70 +611,6 @@ class process_prompts_manager:
             self.tree.insert("", "end", iid=id_, values=(name, image))
         self.toggle_selection_buttons(False)
 
-
-    def open_large_edit_window(self, item_id):
-        """Ouvre une fenetre pour Editer une valeur de type prompt"""
-        values = self.values_tree.item(item_id, "values")
-        row_data = self.values_data.get(item_id, {})
-        prompt_value = row_data.get("value") or values[3]
-
-        popup = tk.Toplevel(self.root)
-        popup.title("Edition du prompt")
-        popup.geometry("400x400")  # Fenêtre plus large
-        popup.transient(self.root)
-        popup.grab_set()
-        
-        # Centrer la fenêtre
-        self.center_window(popup, 800, 400)
-
-        # Frame principal avec padding
-        main_frame = ttk.Frame(popup)
-        main_frame.pack(fill="both", expand=True, padx=10, pady=10)
-
-        # Label d'information
-        ttk.Label(main_frame, text="Édition du prompt:", font=("Arial", 12, "bold")).pack(anchor="w", pady=(0, 10))
-
-        # Zone de texte avec scrollbar
-        text_frame = ttk.Frame(main_frame)
-        text_frame.pack(fill="both", expand=True)
-
-        text_area = tk.Text(text_frame, wrap="word", height=10, font=("Arial", 10))
-        scrollbar = ttk.Scrollbar(text_frame, orient="vertical", command=text_area.yview)
-        text_area.configure(yscrollcommand=scrollbar.set)
-
-        text_area.pack(side="left", fill="both", expand=True)
-        scrollbar.pack(side="right", fill="y")
-
-        # Insérer le contenu existant
-        text_area.insert("1.0", prompt_value)
-        text_area.focus_set()
-
-        # Frame pour les boutons
-        button_frame = ttk.Frame(main_frame)
-        button_frame.pack(fill="x", pady=(10, 0))
-
-        def save_changes():
-            new_value = text_area.get("1.0", "end-1c").strip()
-            row_values = list(self.values_tree.item(item_id, "values"))
-            row_values[3] = new_value
-            self.values_tree.item(item_id, values=row_values)
-
-            data = self.values_data.setdefault(item_id, {})
-            data["value"] = new_value
-            data.pop("__display_value", None)
-            popup.destroy()
-
-        def cancel_changes():
-            popup.destroy()
-
-        # Boutons avec espacement
-        ttk.Button(button_frame, text="Sauvegarder", command=save_changes).pack(side="left", padx=(0, 10))
-        ttk.Button(button_frame, text="Annuler", command=cancel_changes).pack(side="left")
-
-        # Raccourcis clavier
-        popup.bind("<Control-Return>", lambda e: save_changes())
-        popup.bind("<Escape>", lambda e: cancel_changes())
-
     def load_prompt_details(self, prompt_id):
         """Charger les details d'un prompt dans le formulaire"""
         try:
@@ -558,7 +638,14 @@ class process_prompts_manager:
                         if not display_value and extras:
                             display_value = json.dumps(extras, ensure_ascii=False)
                             entry["__display_value"] = display_value
-                        action = "edit" if type_val == "prompt" else ""
+                        
+                        # Définir l'action selon le type
+                        action = ""
+                        if type_val == "prompt":
+                            action = "edit"
+                        elif type_val == "image":
+                            action = "image"
+                        
                         self.values_tree.insert("", "end", iid=key, values=(key, id_val, type_val, display_value, action))
                         entry.setdefault("id", id_val)
                         entry.setdefault("type", type_val)
@@ -945,7 +1032,7 @@ class process_prompts_manager:
         ttk.Entry(popup, textvariable=id_var, width=40).pack(fill="x", padx=10, pady=5)
 
         ttk.Label(popup, text="Type:").pack(anchor="w", padx=10, pady=5)
-        type_combo = ttk.Combobox(popup, textvariable=type_var, values=["prompt", "seed", "SaveImage", "steps", "cfg"], width=37)
+        type_combo = ttk.Combobox(popup, textvariable=type_var, values=["prompt", "image", "seed", "SaveImage", "steps", "cfg"], width=37)
         type_combo.pack(fill="x", padx=10, pady=5)
 
         ttk.Label(popup, text="Valeur:").pack(anchor="w", padx=10, pady=5)
@@ -964,7 +1051,13 @@ class process_prompts_manager:
             new_key = str(self.value_row_counter)
             id_val = id_var.get().strip() or new_key
 
-            action = "edit" if type_val == "prompt" else ""
+            # Définir l'action selon le type
+            action = ""
+            if type_val == "prompt":
+                action = "edit"
+            elif type_val == "image":
+                action = "image"
+
             self.values_tree.insert("", "end", iid=new_key, values=(new_key, id_val, type_val, value_val, action))
 
             entry = {"id": id_val, "type": type_val}
