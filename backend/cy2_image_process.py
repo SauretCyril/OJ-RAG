@@ -528,13 +528,34 @@ class image_process:
             #result = messagebox.askyesno("Confirm Move", f"Move {filename} to {self.cible_directory}?")
             result=True
             if result:
+                # Sauvegarder la page actuelle avant le déplacement
+                current_page = self.page
+                
                 # Déplacer le fichier
-                shutil.move(image_path, target_path)       
-                self.refresh_images()
+                shutil.move(image_path, target_path)
+                
+                # Recharger sans remettre à zéro la page
+                self.load_images_async()
+                
+                # Si après le rechargement on n'a plus d'images sur cette page,
+                # revenir à la page précédente
+                if not self.image_files and current_page > 0:
+                    self.page = current_page - 1
+                    self.load_images_async()
                          
         except Exception as e:
             print(f"[ERROR] Error moving image: {e}")
             messagebox.showerror("Error", f"Failed to move image: {e}")
+
+    def refresh_images(self):
+        """Rafraîchir l'affichage des images sans changer de page"""
+        # Enlever le self.page = 0 pour conserver la page actuelle
+        self.load_images_async()
+
+    def refresh_images_from_start(self):
+        """Rafraîchir l'affichage des images en revenant à la page 1"""
+        self.page = 0
+        self.load_images_async()
 
     def get_image_by_hash(self, image_path):
         """Récupérer les infos d'une image depuis la base à partir de son hash"""
