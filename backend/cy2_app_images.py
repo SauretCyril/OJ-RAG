@@ -795,10 +795,12 @@ class SplitApplication(tk.Tk):
 # Main program entry point
 if __name__ == "__main__":
     import sys
-    if len(sys.argv) < 2:
-        print("Usage: python cy2_app_images.py <functions_db_path>")
-        sys.exit(1)
-    db_path = sys.argv[1]
+   
+    db_path = os.getenv("IMAGES_FUNCTIONS_DB", "")
+    print("Usage: python cy2_app_images.py <functions_db_path>")
+    #sys.exit(1)
+    if len(sys.argv) > 1:   
+        db_path = sys.argv[1]
     
     app = SplitApplication(db_path)
     app.mainloop()

@@ -668,7 +668,31 @@ class process_prompts_manager:
 
                 # Récupérer les images générées
                 output_images = tsk1.GetImages(promptId)
-                print(f"Images générées: {output_images}")
+                print(f"Images generees: {output_images}")
+
+                updated_values = getattr(tsk1, 'values', None)
+                updated_workflow = getattr(tsk1, 'last_workflow', None)
+                if updated_values or updated_workflow:
+                    try:
+                        prompt_pk = int(prompt_id)
+                    except (TypeError, ValueError):
+                        prompt_pk = prompt_id
+                    try:
+                        update_fields = []
+                        params = []
+                        if updated_values:
+                            update_fields.append("prompt_values=?")
+                            params.append(json.dumps(updated_values, ensure_ascii=False))
+                        if updated_workflow:
+                            update_fields.append("workflow=?")
+                            params.append(json.dumps(updated_workflow, ensure_ascii=False))
+                        update_fields_sql = ', '.join(update_fields)
+                        params.append(prompt_pk)
+                        cursor.execute(f"UPDATE prompts SET {update_fields_sql} WHERE id=?", params)
+                        conn.commit()
+                        self.root.after(0, lambda pid=prompt_pk: self._refresh_prompt_after_execution(pid))
+                    except Exception as update_err:
+                        print(f"Erreur lors de la mise a jour des valeurs du prompt: {update_err}")
 
                 # Nettoyer les fichiers
                 try:
@@ -686,6 +710,20 @@ class process_prompts_manager:
         finally:
             # Fermer la connexion SQLite
             conn.close()
+
+    def _refresh_prompt_after_execution(self, prompt_id):
+        if not hasattr(self, 'tree'):
+            return
+        prompt_key = str(prompt_id)
+        current_selection = set(self.tree.selection())
+        self.load_prompts()
+        if prompt_key in current_selection:
+            try:
+                self.tree.selection_set(prompt_key)
+            except tk.TclError:
+                return
+            self.toggle_selection_buttons(True)
+            self.load_prompt_details(prompt_key)
 
     def update_execution_stack_status(self, execution_id, status):
         """Met à jour le statut d'un workflow dans la pile d'exécution"""

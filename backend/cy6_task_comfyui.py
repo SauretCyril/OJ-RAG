@@ -18,8 +18,10 @@ class comfyui_task:
         log_json('02_value_to_update',self.values)
      
     def addToQueue(self,fileworkflow,filevalues):
-        json = update_workflow(filevalues,fileworkflow)
-        
+        json, updated_values = update_workflow(filevalues,fileworkflow)
+        self.update_values(updated_values)
+        self.last_workflow = json
+
         prompt_list=[]
         prompt_id = socket_queue_prompt(json)['prompt_id']
         prompt_list.append(prompt_id)

@@ -125,6 +125,7 @@ def update_workflow(filevalues,fileworkflow):
                     #seednum=124578
                     seednum = random.randint(0, 9999999)
                     jsonf[node]['inputs']['seed'] = seednum
+                    values[val]['value'] = seednum
                     print (f"dbg-4515-3 = {str(seednum)} ")
 
                 case "PortraitMasterStylePose.pose" :
@@ -166,7 +167,7 @@ def update_workflow(filevalues,fileworkflow):
     
     #print (f"........END update node ----------------")  
     #log_json('current_workflow_data_updated',data_updated)
-    return jsonf
+    return jsonf, values
 
     #set the text prompt for our positive CLIPTextEncode
 

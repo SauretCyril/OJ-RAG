@@ -14,7 +14,9 @@ class comfyui_basic_task(comfyui_task):
     seednum = random.randint(0, 9999999)
 
     def run_now(self,fileworkflow,filevalues):
-        json=update_workflow(fileworkflow,filevalues)
+        json, updated_values = update_workflow(fileworkflow,filevalues)
+        self.update_values(updated_values)
+        self.last_workflow = json
         #mise à jour api run_basic avec le json modifié
         result =server_run_now(json)
         images = result['1']['output']
