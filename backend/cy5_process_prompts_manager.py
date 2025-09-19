@@ -287,8 +287,10 @@ class process_prompts_manager:
         if not item_id:
             return
 
+        # Si c'est un clic sur la colonne "action" (#5) et que le type est "prompt"
         if col == "#5":
-            if self.values_tree.set(item_id, "type") == "prompt":
+            values = self.values_tree.item(item_id, "values")
+            if values[2] == "prompt":  # type_val == "prompt"
                 self.open_large_edit_window(item_id)
             return
 
@@ -325,6 +327,69 @@ class process_prompts_manager:
         entry.bind("<Return>", save_edit)
         entry.bind("<FocusOut>", lambda e: entry.destroy())
         entry.focus()
+
+    def open_large_edit_window(self, item_id):
+        """Ouvre une fenetre pour Editer une valeur de type prompt"""
+        values = self.values_tree.item(item_id, "values")
+        row_data = self.values_data.get(item_id, {})
+        prompt_value = row_data.get("value") or values[3]
+
+        popup = tk.Toplevel(self.root)
+        popup.title("Edition du prompt")
+        popup.geometry("800x400")  # Fenêtre plus large
+        popup.transient(self.root)
+        popup.grab_set()
+        
+        # Centrer la fenêtre
+        self.center_window(popup, 800, 400)
+
+        # Frame principal avec padding
+        main_frame = ttk.Frame(popup)
+        main_frame.pack(fill="both", expand=True, padx=10, pady=10)
+
+        # Label d'information
+        ttk.Label(main_frame, text="Édition du prompt:", font=("Arial", 12, "bold")).pack(anchor="w", pady=(0, 10))
+
+        # Zone de texte avec scrollbar
+        text_frame = ttk.Frame(main_frame)
+        text_frame.pack(fill="both", expand=True)
+
+        text_area = tk.Text(text_frame, wrap="word", height=10, font=("Arial", 10))
+        scrollbar = ttk.Scrollbar(text_frame, orient="vertical", command=text_area.yview)
+        text_area.configure(yscrollcommand=scrollbar.set)
+
+        text_area.pack(side="left", fill="both", expand=True)
+        scrollbar.pack(side="right", fill="y")
+
+        # Insérer le contenu existant
+        text_area.insert("1.0", prompt_value)
+        text_area.focus_set()
+
+        # Frame pour les boutons
+        button_frame = ttk.Frame(main_frame)
+        button_frame.pack(fill="x", pady=(10, 0))
+
+        def save_changes():
+            new_value = text_area.get("1.0", "end-1c").strip()
+            row_values = list(self.values_tree.item(item_id, "values"))
+            row_values[3] = new_value
+            self.values_tree.item(item_id, values=row_values)
+
+            data = self.values_data.setdefault(item_id, {})
+            data["value"] = new_value
+            data.pop("__display_value", None)
+            popup.destroy()
+
+        def cancel_changes():
+            popup.destroy()
+
+        # Boutons avec espacement
+        ttk.Button(button_frame, text="Sauvegarder", command=save_changes).pack(side="left", padx=(0, 10))
+        ttk.Button(button_frame, text="Annuler", command=cancel_changes).pack(side="left")
+
+        # Raccourcis clavier
+        popup.bind("<Control-Return>", lambda e: save_changes())
+        popup.bind("<Escape>", lambda e: cancel_changes())
 
     def delete_prompt(self):
         """Supprimer le prompt sélectionné"""
@@ -411,13 +476,38 @@ class process_prompts_manager:
 
         popup = tk.Toplevel(self.root)
         popup.title("Edition du prompt")
-        popup.geometry("600x400")
+        popup.geometry("400x400")  # Fenêtre plus large
         popup.transient(self.root)
         popup.grab_set()
+        
+        # Centrer la fenêtre
+        self.center_window(popup, 800, 400)
 
-        text_area = tk.Text(popup, wrap="word")
-        text_area.pack(fill="both", expand=True, padx=10, pady=10)
+        # Frame principal avec padding
+        main_frame = ttk.Frame(popup)
+        main_frame.pack(fill="both", expand=True, padx=10, pady=10)
+
+        # Label d'information
+        ttk.Label(main_frame, text="Édition du prompt:", font=("Arial", 12, "bold")).pack(anchor="w", pady=(0, 10))
+
+        # Zone de texte avec scrollbar
+        text_frame = ttk.Frame(main_frame)
+        text_frame.pack(fill="both", expand=True)
+
+        text_area = tk.Text(text_frame, wrap="word", height=10, font=("Arial", 10))
+        scrollbar = ttk.Scrollbar(text_frame, orient="vertical", command=text_area.yview)
+        text_area.configure(yscrollcommand=scrollbar.set)
+
+        text_area.pack(side="left", fill="both", expand=True)
+        scrollbar.pack(side="right", fill="y")
+
+        # Insérer le contenu existant
         text_area.insert("1.0", prompt_value)
+        text_area.focus_set()
+
+        # Frame pour les boutons
+        button_frame = ttk.Frame(main_frame)
+        button_frame.pack(fill="x", pady=(10, 0))
 
         def save_changes():
             new_value = text_area.get("1.0", "end-1c").strip()
@@ -430,7 +520,16 @@ class process_prompts_manager:
             data.pop("__display_value", None)
             popup.destroy()
 
-        ttk.Button(popup, text="OK", command=save_changes).pack(pady=10)
+        def cancel_changes():
+            popup.destroy()
+
+        # Boutons avec espacement
+        ttk.Button(button_frame, text="Sauvegarder", command=save_changes).pack(side="left", padx=(0, 10))
+        ttk.Button(button_frame, text="Annuler", command=cancel_changes).pack(side="left")
+
+        # Raccourcis clavier
+        popup.bind("<Control-Return>", lambda e: save_changes())
+        popup.bind("<Escape>", lambda e: cancel_changes())
 
     def load_prompt_details(self, prompt_id):
         """Charger les details d'un prompt dans le formulaire"""
