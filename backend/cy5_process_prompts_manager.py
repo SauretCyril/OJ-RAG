@@ -218,7 +218,9 @@ class process_prompts_manager:
         self.values_tree = ttk.Treeview(values_frame, columns=columns, show="headings", height=6)
         for col in columns:
             self.values_tree.heading(col, text=col.capitalize())
-            self.values_tree.column(col, width=100 if col == "key" else 150 if col != "action" else 60)
+            
+        # Configurer les tailles des colonnes
+        self.configure_values_tree_columns()
 
         scrollbar = ttk.Scrollbar(values_frame, orient="vertical", command=self.values_tree.yview)
         self.values_tree.configure(yscrollcommand=scrollbar.set)
@@ -241,7 +243,9 @@ class process_prompts_manager:
         self.workflow_tree = ttk.Treeview(workflow_frame, columns=wf_columns, show="headings", height=6)
         for col in wf_columns:
             self.workflow_tree.heading(col, text=col)
-            self.workflow_tree.column(col, width=150)
+            
+        # Configurer les tailles des colonnes
+        self.configure_workflow_tree_columns()
 
         wf_scrollbar = ttk.Scrollbar(workflow_frame, orient="vertical", command=self.workflow_tree.yview)
         self.workflow_tree.configure(yscrollcommand=wf_scrollbar.set)
@@ -344,7 +348,7 @@ class process_prompts_manager:
         prompt_value = row_data.get("value") or values[3]
 
         popup = tk.Toplevel(self.root)
-        popup.title("Edition du prompt")
+        popup.title("Édition du prompt")
         popup.geometry("800x400")  # Fenêtre plus large
         popup.transient(self.root)
         popup.grab_set()
@@ -725,6 +729,10 @@ class process_prompts_manager:
                 url_var.set(url or "")
                 prompt_values_var = prompt_values or "{}"
                 workflow_var = workflow or "{}"
+        else:
+            # Mode "new" : utiliser les valeurs par défaut
+            default_values = self.get_default_prompt_values()
+            prompt_values_var = json.dumps(default_values, indent=2, ensure_ascii=False)
 
         # Champs de saisie
         ttk.Label(popup, text="Nom:").pack(anchor="w", padx=10, pady=5)
@@ -740,7 +748,16 @@ class process_prompts_manager:
 
         prompt_values_text = tk.Text(prompt_values_frame, height=5, wrap="word")
         prompt_values_text.pack(side="left", fill="both", expand=True)
-        prompt_values_text.insert("1.0", json.dumps(json.loads(prompt_values_var), indent=2, ensure_ascii=False))
+        
+        # Insérer le contenu initial
+        try:
+            if prompt_values_var != "{}":
+                formatted_json = json.dumps(json.loads(prompt_values_var), indent=2, ensure_ascii=False)
+            else:
+                formatted_json = prompt_values_var
+            prompt_values_text.insert("1.0", formatted_json)
+        except json.JSONDecodeError:
+            prompt_values_text.insert("1.0", prompt_values_var)
 
         ttk.Button(prompt_values_frame, text="...", command=lambda: self.load_json_to_text(prompt_values_text)).pack(side="left", padx=5)
 
@@ -751,7 +768,16 @@ class process_prompts_manager:
 
         workflow_text = tk.Text(workflow_frame, height=5, wrap="word")
         workflow_text.pack(side="left", fill="both", expand=True)
-        workflow_text.insert("1.0", json.dumps(json.loads(workflow_var), indent=2, ensure_ascii=False))
+        
+        # Insérer le contenu initial du workflow
+        try:
+            if workflow_var != "{}":
+                formatted_json = json.dumps(json.loads(workflow_var), indent=2, ensure_ascii=False)
+            else:
+                formatted_json = workflow_var
+            workflow_text.insert("1.0", formatted_json)
+        except json.JSONDecodeError:
+            workflow_text.insert("1.0", workflow_var)
 
         ttk.Button(workflow_frame, text="...", command=lambda: self.load_json_to_text(workflow_text)).pack(side="left", padx=5)
 
@@ -1025,6 +1051,9 @@ class process_prompts_manager:
         popup.transient(self.root)
         popup.grab_set()
 
+        # Centrer la fenêtre
+        self.center_window(popup, width=400, height=300)
+
         id_var = tk.StringVar()
         type_var = tk.StringVar()
 
@@ -1038,6 +1067,45 @@ class process_prompts_manager:
         ttk.Label(popup, text="Valeur:").pack(anchor="w", padx=10, pady=5)
         value_text = tk.Text(popup, height=5, wrap="word")
         value_text.pack(fill="both", expand=True, padx=10, pady=5)
+
+        # Insérer les valeurs par défaut à l'ouverture
+        default_values = self.get_default_prompt_values()
+        default_text = json.dumps(default_values, indent=2, ensure_ascii=False)
+        value_text.insert("1.0", default_text)
+
+        def on_type_change(*args):
+            """Fonction appelée quand le type change"""
+            current_type = type_var.get().strip()
+            if current_type == "prompt":
+                # Obtenir les valeurs par défaut des prompts
+                default_values = self.get_default_prompt_values()
+                
+                # Si c'est le premier prompt, utiliser le prompt positif par défaut
+                prompt_count = sum(1 for item_id in self.values_tree.get_children() 
+                                 if self.values_tree.item(item_id, "values")[2] == "prompt")
+                
+                if prompt_count == 0:
+                    # Premier prompt = prompt positif
+                    default_text = default_values.get("positive_prompt", "beautiful scenery nature glass bottle landscape, purple galaxy bottle")
+                    if not id_var.get().strip():
+                        id_var.set("6")  # ID par défaut du prompt positif
+                elif prompt_count == 1:
+                    # Deuxième prompt = prompt négatif
+                    default_text = default_values.get("negative_prompt", "text, watermark")
+                    if not id_var.get().strip():
+                        id_var.set("7")  # ID par défaut du prompt négatif
+                else:
+                    # Autres prompts
+                    default_text = ""
+                
+                # Mettre à jour le texte seulement s'il contient les valeurs par défaut
+                current_content = value_text.get("1.0", "end-1c").strip()
+                if current_content == json.dumps(default_values, indent=2, ensure_ascii=False) or not current_content:
+                    value_text.delete("1.0", "end")
+                    value_text.insert("1.0", default_text)
+
+        # Lier l'événement de changement de type
+        type_var.trace('w', on_type_change)
 
         def save_value():
             type_val = type_var.get().strip()
@@ -1068,6 +1136,15 @@ class process_prompts_manager:
             popup.destroy()
 
         ttk.Button(popup, text="Ajouter", command=save_value).pack(pady=10)
+
+    def get_default_prompt_values(self):
+        """Retourne les valeurs par défaut des prompts depuis add_default_basic_prompt"""
+        return {
+            "positive_prompt": "beautiful scenery nature glass bottle landscape, purple galaxy bottle",
+            "negative_prompt": "text, watermark",
+            "seed": 1234567,
+            "filename_prefix": "basic"
+        }
 
     def delete_values_row(self):
         """Supprimer la ligne selectionnee du tableau des values"""
@@ -1201,6 +1278,43 @@ class process_prompts_manager:
         self.execution_stack_tree.delete(*self.execution_stack_tree.get_children())
         for item in self.execution_stack:
             self.execution_stack_tree.insert("", "end", values=(item["prompt_id"], item["status"]))
+
+    def configure_values_tree_columns(self):
+        """Configure les tailles des colonnes du tableau values"""
+        # Configuration personnalisée des colonnes
+        column_config = {
+            "key": {"width": 20, "minwidth": 20, "stretch": False},
+            "id": {"width": 20, "minwidth": 20, "stretch": True},
+            "type": {"width": 80, "minwidth": 60, "stretch": False},
+            "value": {"width": 200, "minwidth": 250, "stretch": True},
+            "action": {"width": 50, "minwidth": 60, "stretch": False}
+        }
+        
+        for col_name, config in column_config.items():
+            self.values_tree.column(
+                col_name, 
+                width=config["width"],
+                minwidth=config["minwidth"],
+                stretch=config.get("stretch", True)
+            )
+
+    def configure_workflow_tree_columns(self):
+        """Configure les tailles des colonnes du tableau workflow"""
+        # Configuration personnalisée des colonnes
+        column_config = {
+            "id": {"width": 20, "minwidth": 50, "stretch": False},
+            "class_type": {"width": 150, "minwidth": 120, "stretch": True},
+            "input": {"width": 200, "minwidth": 150, "stretch": True},
+            "title": {"width": 120, "minwidth": 100, "stretch": True}
+        }
+        
+        for col_name, config in column_config.items():
+            self.workflow_tree.column(
+                col_name, 
+                width=config["width"],
+                minwidth=config["minwidth"],
+                stretch=config.get("stretch", True)
+            )
 
 def main(db_path="g:/tmp/prompts_manager.db", DirCollecte=None):
     root = tk.Tk()
