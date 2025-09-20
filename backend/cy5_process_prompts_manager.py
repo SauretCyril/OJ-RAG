@@ -730,9 +730,30 @@ class process_prompts_manager:
                 prompt_values_var = prompt_values or "{}"
                 workflow_var = workflow or "{}"
         else:
-            # Mode "new" : utiliser les valeurs par défaut
-            default_values = self.get_default_prompt_values()
-            prompt_values_var = json.dumps(default_values, indent=2, ensure_ascii=False)
+            # Mode "new" : utiliser les valeurs par défaut de add_default_basic_prompt
+            default_prompt_values = {
+                "1": {
+                    "id": "6",
+                    "type": "prompt",
+                    "value": "beautiful scenery nature glass bottle landscape, purple galaxy bottle"
+                },
+                "2": {
+                    "id": "7",
+                    "type": "prompt",
+                    "value": "text, watermark"
+                },
+                "3": {
+                    "id": "3",
+                    "type": "seed",
+                    "value": 1234567
+                },
+                "4": {
+                    "id": "9",
+                    "type": "SaveImage",
+                    "filename_prefix": "basic"
+                }
+            }
+            prompt_values_var = json.dumps(default_prompt_values, indent=2, ensure_ascii=False)
 
         # Champs de saisie
         ttk.Label(popup, text="Nom:").pack(anchor="w", padx=10, pady=5)
