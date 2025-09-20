@@ -33,8 +33,35 @@ def get_history(prompt_id):
 
 def socket_get_images(ws,prompt_id):
     try:
-        # prompt_id = queue_prompt(prompt)['prompt_id']
-        output_images = {}
+        output_paths = []
+        base_dir_map = {
+            "output": os.getenv("IMAGES_COLLECTE"),
+            "temp": os.getenv("IMAGES_TRASH"),
+            "input": os.getenv("IMAGES_CENTRAL"),
+            "central": os.getenv("IMAGES_CENTRAL"),
+        }
+        default_base = os.getenv("IMAGES_COLLECTE")
+
+        def resolve_path(image_info):
+            filename = image_info.get('filename')
+            if not filename:
+                return None
+            folder_type = image_info.get('type')
+            base_dir = base_dir_map.get(folder_type) or default_base
+            subfolder = image_info.get('subfolder') or ''
+            parts = []
+            if base_dir:
+                parts.append(base_dir)
+            if subfolder:
+                normalized_subfolder = subfolder.replace('/', os.sep).strip()
+                if normalized_subfolder:
+                    parts.append(normalized_subfolder)
+            parts.append(filename)
+            try:
+                return os.path.normpath(os.path.join(*parts))
+            except TypeError:
+                return None
+
         while True:
             out = ws.recv()
             if isinstance(out, str):
@@ -47,34 +74,20 @@ def socket_get_images(ws,prompt_id):
                 continue #previews are binary data
 
         history = get_history(prompt_id)[prompt_id]
-        #for o in history['outputs']:
-        
-        
+
         for node_id in history['outputs']:
             node_output = history['outputs'][node_id]
-           
+
             if 'images' in node_output:
-                images_output = []
-               
                 for image in node_output['images']:
-                    image_data = get_image(image['filename'], image['subfolder'], image['type'])
-                    images_output.append(image_data)
-                output_images[node_id] = images_output
-        return output_images
+                    resolved_path = resolve_path(image)
+                    if resolved_path:
+                        output_paths.append(resolved_path)
+        return output_paths
 
-   
-    except Exception:
-        print(f"Get image Error: {Exception}")
-        exit(None)
-    
-    result={'0':{'prompt_id':prompt_id},
-    '1':{'output':output_images}}
-    return result
-
-
-
-
-
+    except Exception as exc:
+        print(f"Get image Error: {exc}")
+        return []
 
 
 def update_workflow(filevalues,fileworkflow):

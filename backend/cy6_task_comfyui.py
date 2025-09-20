@@ -42,3 +42,5 @@ class comfyui_task:
 
     def GetImages(self, key):
         output_images = socket_get_images(self.ws, key)
+        self.output_images = output_images
+        return output_images

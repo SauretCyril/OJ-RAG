@@ -30,7 +30,7 @@ class process_prompts_manager:
 
         # Charger la configuration
         self.config = self.load_config()
-        # Récupérer la valeur de la variable d'environnement IMAGES_COLLECTE si elle existe
+        # RÃ©cupÃ©rer la valeur de la variable d'environnement IMAGES_COLLECTE si elle existe
         images_dir_env = DirCollecte
         self.images_dir_var = tk.StringVar(
             value=images_dir_env if images_dir_env else self.config.get("images_dir", "./output")
@@ -46,12 +46,12 @@ class process_prompts_manager:
 
     def init_database(self, mode="init"):
         """
-        Initialise la base de données
-        mode="init" : Recrée la base et ajoute le prompt par défaut
-        mode="dev"  : Crée la base si elle n'existe pas, n'ajoute pas le prompt par défaut
+        Initialise la base de donnÃ©es
+        mode="init" : RecrÃ©e la base et ajoute le prompt par dÃ©faut
+        mode="dev"  : CrÃ©e la base si elle n'existe pas, n'ajoute pas le prompt par dÃ©faut
         """
         if mode == "init":
-            # Mode init: Supprime la base existante et recrée
+            # Mode init: Supprime la base existante et recrÃ©e
             if os.path.exists(self.db_path):
                 os.remove(self.db_path)
             self.conn = sqlite3.connect(self.db_path, check_same_thread=False)
@@ -63,13 +63,15 @@ class process_prompts_manager:
                     prompt_values JSON,
                     workflow JSON,
                     image TEXT,
-                    url TEXT
+                    url TEXT,
+                    parent INTEGER
                 )
             ''')
             self.conn.commit()
+            self.ensure_parent_column()
             self.add_default_basic_prompt()
         else:  # mode == "dev"
-            # Mode dev: Crée la base si elle n'existe pas
+            # Mode dev: CrÃ©e la base si elle n'existe pas
             self.conn = sqlite3.connect(self.db_path, check_same_thread=False)
             self.cursor = self.conn.cursor()
             self.cursor.execute('''
@@ -79,23 +81,37 @@ class process_prompts_manager:
                     prompt_values JSON,
                     workflow JSON,
                     image TEXT,
-                    url TEXT
+                    url TEXT,
+                    parent INTEGER
                 )
             ''')
             self.conn.commit()
+            self.ensure_parent_column()
+
+
+    def ensure_parent_column(self):
+        """Ensure the prompts table exposes the parent column even for legacy databases."""
+        try:
+            self.cursor.execute("PRAGMA table_info(prompts)")
+            columns = [row[1] for row in self.cursor.fetchall()]
+            if "parent" not in columns:
+                self.cursor.execute("ALTER TABLE prompts ADD COLUMN parent INTEGER")
+                self.conn.commit()
+        except sqlite3.OperationalError as exc:
+            print(f"Impossible d'ajouter la colonne parent : {exc}")
 
     def setup_ui(self):
-        """Créer l'interface utilisateur avec panneau divisé"""
+        """CrÃ©er l'interface utilisateur avec panneau divisÃ©"""
         # Frame principal
         main_frame = ttk.Frame(self.root)
         main_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
 
         # Titre
         title_label = ttk.Label(main_frame, text="Gestionnaire de Prompts", font=("Arial", 16, "bold"))
-        title_label.pack(pady=(10, 5))  # Réduit l'espace sous le titre
+        title_label.pack(pady=(10, 5))  # RÃ©duit l'espace sous le titre
 
-        # Affichage du chemin de la base de données
-        db_path_label = ttk.Label(main_frame, text=f"Base de données : {self.db_path}", font=("Arial", 10, "italic"))
+        # Affichage du chemin de la base de donnÃ©es
+        db_path_label = ttk.Label(main_frame, text=f"Base de donnÃ©es : {self.db_path}", font=("Arial", 10, "italic"))
         db_path_label.pack(pady=(0, 15))  # Ajoute un espace sous le label
 
         # Boutons d'action
@@ -116,22 +132,22 @@ class process_prompts_manager:
         left_frame = ttk.Frame(paned_window)
         paned_window.add(left_frame, weight=3)
 
-        # Frame droite : formulaire de détails
+        # Frame droite : formulaire de dÃ©tails
         right_frame = ttk.Frame(paned_window)
         paned_window.add(right_frame, weight=2)
 
         self.create_table_frame(left_frame)
         self.create_form_frame(right_frame)
-        # Zone de configuration du répertoire des images
+        # Zone de configuration du rÃ©pertoire des images
         dir_frame = ttk.Frame(self.root)
         dir_frame.pack(fill="x", padx=10, pady=5)
-        ttk.Label(dir_frame, text="Répertoire des images:").pack(side="left", padx=5)
+        ttk.Label(dir_frame, text="RÃ©pertoire des images:").pack(side="left", padx=5)
         ttk.Entry(dir_frame, textvariable=self.images_dir_var, width=50).pack(side="left", fill="x", expand=True, padx=5)
         ttk.Button(dir_frame, text="...", width=3, command=self.select_images_dir).pack(side="left", padx=5)
         ttk.Button(dir_frame, text="Enregistrer", command=self.save_images_dir).pack(side="left", padx=5)
 
         # Frame pour surveiller la pile des workflows
-        stack_frame = ttk.LabelFrame(self.root, text="Pile d'exécution des workflows")
+        stack_frame = ttk.LabelFrame(self.root, text="Pile d'exÃ©cution des workflows")
         stack_frame.pack(fill="both", expand=True, padx=10, pady=10)
 
         columns = ("prompt_id", "status")
@@ -155,16 +171,18 @@ class process_prompts_manager:
                 button.pack_forget()
 
     def create_table_frame(self, parent):
-        """Créer le tableau des prompts"""
+        """CrÃ©er le tableau des prompts"""
         table_frame = ttk.LabelFrame(parent, text="Liste des Prompts")
         table_frame.pack(fill="both", expand=True, padx=(0, 5))
 
         # Configuration du tableau
-        columns = ("name", "image")
+        columns = ("id", "name", "parent", "image")
         self.tree = ttk.Treeview(table_frame, columns=columns, show="headings", height=20)
+        column_titles = {"id": "ID", "name": "Name", "parent": "Parent", "image": "Image"}
+        column_widths = {"id": 80, "name": 240, "parent": 120, "image": 240}
         for col in columns:
-            self.tree.heading(col, text=col.capitalize())
-            self.tree.column(col, width=300)
+            self.tree.heading(col, text=column_titles.get(col, col.capitalize()))
+            self.tree.column(col, width=column_widths.get(col, 200))
 
         # Scrollbar
         scrollbar = ttk.Scrollbar(table_frame, orient="vertical", command=self.tree.yview)
@@ -174,13 +192,13 @@ class process_prompts_manager:
         self.tree.pack(side="left", fill="both", expand=True)
         scrollbar.pack(side="right", fill="y")
 
-        # Événements
+        # Ã‰vÃ©nements
         self.tree.bind("<<TreeviewSelect>>", self.on_select_prompt)
         self.tree.bind("<Double-1>", self.on_double_click)
 
     def create_form_frame(self, parent):
-        """Créer le formulaire de détails permanent"""
-        form_frame = ttk.LabelFrame(parent, text="Détails du Prompt")
+        """CrÃ©er le formulaire de dÃ©tails permanent"""
+        form_frame = ttk.LabelFrame(parent, text="DÃ©tails du Prompt")
         form_frame.pack(fill="both", expand=True, padx=(5, 0))
 
         # Variables pour les champs
@@ -262,26 +280,26 @@ class process_prompts_manager:
         form_buttons.pack(fill="x", padx=10, pady=10)
         
         ttk.Button(form_buttons, text="Sauvegarder", command=self.save_prompt).pack(side="left", padx=5)
-        ttk.Button(form_buttons, text="Exécuter", command=self.execute_workflow).pack(side="left", padx=5)
+        ttk.Button(form_buttons, text="ExÃ©cuter", command=self.execute_workflow).pack(side="left", padx=5)
         ttk.Button(form_buttons, text="Annuler", command=self.clear_form).pack(side="left", padx=5)
         ttk.Button(form_buttons, text="Nouveau", command=self.new_prompt).pack(side="left", padx=5)
         # Ajouter le bouton pour ouvrir le programme d'analyse
         ttk.Button(form_buttons, text="Analyser Prompt", command=self.open_prompt_analysis).pack(side="left", padx=5)
         
-        # Lier les événements après la création des widgets
+        # Lier les Ã©vÃ©nements aprÃ¨s la crÃ©ation des widgets
         self.values_tree.bind("<Double-1>", self.on_double_click_values)
 
-    # Méthodes pour gérer le formulaire permanent
+    # MÃ©thodes pour gÃ©rer le formulaire permanent
     def on_select_prompt(self, event):
-        """Gérer la sélection d'une ligne dans le tableau"""
+        """GÃ©rer la sÃ©lection d'une ligne dans le tableau"""
         selection = self.tree.selection()
         self.toggle_selection_buttons(bool(selection))
         if selection:
-            prompt_id = selection[0]  # L'ID est stocké comme iid
+            prompt_id = selection[0]  # L'ID est stockÃ© comme iid
             self.load_prompt_details(prompt_id)
 
     def on_double_click(self, event):
-        """Gérer le double-clic sur une ligne"""
+        """GÃ©rer le double-clic sur une ligne"""
         self.edit_prompt()
 
     def on_double_click_values(self, event):
@@ -323,7 +341,7 @@ class process_prompts_manager:
                 data["id"] = new_value
             elif col_idx == 2:
                 data["type"] = new_value
-                # Mettre à jour l'action selon le nouveau type
+                # Mettre Ã  jour l'action selon le nouveau type
                 if new_value == "prompt":
                     row_values[4] = "edit"
                 elif new_value == "image":
@@ -348,12 +366,12 @@ class process_prompts_manager:
         prompt_value = row_data.get("value") or values[3]
 
         popup = tk.Toplevel(self.root)
-        popup.title("Édition du prompt")
-        popup.geometry("800x400")  # Fenêtre plus large
+        popup.title("Ã‰dition du prompt")
+        popup.geometry("800x400")  # FenÃªtre plus large
         popup.transient(self.root)
         popup.grab_set()
         
-        # Centrer la fenêtre
+        # Centrer la fenÃªtre
         self.center_window(popup, 800, 400)
 
         # Frame principal avec padding
@@ -361,7 +379,7 @@ class process_prompts_manager:
         main_frame.pack(fill="both", expand=True, padx=10, pady=10)
 
         # Label d'information
-        ttk.Label(main_frame, text="Édition du prompt:", font=("Arial", 12, "bold")).pack(anchor="w", pady=(0, 10))
+        ttk.Label(main_frame, text="Ã‰dition du prompt:", font=("Arial", 12, "bold")).pack(anchor="w", pady=(0, 10))
 
         # Zone de texte avec scrollbar
         text_frame = ttk.Frame(main_frame)
@@ -374,7 +392,7 @@ class process_prompts_manager:
         text_area.pack(side="left", fill="both", expand=True)
         scrollbar.pack(side="right", fill="y")
 
-        # Insérer le contenu existant
+        # InsÃ©rer le contenu existant
         text_area.insert("1.0", prompt_value)
         text_area.focus_set()
 
@@ -405,18 +423,18 @@ class process_prompts_manager:
         popup.bind("<Escape>", lambda e: cancel_changes())
 
     def open_image_selector_window(self, item_id):
-        """Ouvre une fenêtre pour sélectionner et afficher une image"""
+        """Ouvre une fenÃªtre pour sÃ©lectionner et afficher une image"""
         values = self.values_tree.item(item_id, "values")
         row_data = self.values_data.get(item_id, {})
         current_image_path = row_data.get("value") or values[3]
 
         popup = tk.Toplevel(self.root)
-        popup.title("Sélection d'image")
+        popup.title("SÃ©lection d'image")
         popup.geometry("600x500")
         popup.transient(self.root)
         popup.grab_set()
         
-        # Centrer la fenêtre
+        # Centrer la fenÃªtre
         self.center_window(popup, 600, 500)
 
         # Frame principal avec padding
@@ -424,7 +442,7 @@ class process_prompts_manager:
         main_frame.pack(fill="both", expand=True, padx=10, pady=10)
 
         # Label d'information
-        ttk.Label(main_frame, text="Sélection d'image:", font=("Arial", 12, "bold")).pack(anchor="w", pady=(0, 10))
+        ttk.Label(main_frame, text="SÃ©lection d'image:", font=("Arial", 12, "bold")).pack(anchor="w", pady=(0, 10))
 
         # Frame pour le chemin de l'image
         path_frame = ttk.Frame(main_frame)
@@ -437,7 +455,7 @@ class process_prompts_manager:
         
         def browse_image():
             file_path = filedialog.askopenfilename(
-                title="Sélectionner une image",
+                title="SÃ©lectionner une image",
                 filetypes=[
                     ("Images", "*.png *.jpg *.jpeg *.gif *.bmp *.tiff *.webp"),
                     ("PNG", "*.png"),
@@ -452,11 +470,11 @@ class process_prompts_manager:
         ttk.Button(path_frame, text="Parcourir...", command=browse_image).pack(side="left")
 
         # Frame pour l'affichage de l'image
-        image_frame = ttk.LabelFrame(main_frame, text="Aperçu de l'image")
+        image_frame = ttk.LabelFrame(main_frame, text="AperÃ§u de l'image")
         image_frame.pack(fill="both", expand=True, pady=(0, 10))
 
         # Label pour afficher l'image
-        image_label = ttk.Label(image_frame, text="Aucune image sélectionnée", anchor="center")
+        image_label = ttk.Label(image_frame, text="Aucune image sÃ©lectionnÃ©e", anchor="center")
         image_label.pack(fill="both", expand=True, padx=10, pady=10)
 
         def display_image(image_path):
@@ -481,7 +499,7 @@ class process_prompts_manager:
                     
                     # Afficher l'image
                     image_label.configure(image=tk_image, text="")
-                    image_label.image = tk_image  # Garder une référence
+                    image_label.image = tk_image  # Garder une rÃ©fÃ©rence
                     
                     # Afficher les informations de l'image
                     info_text = f"Dimensions: {image_width}x{image_height}\nTaille: {os.path.getsize(image_path)} bytes"
@@ -497,13 +515,13 @@ class process_prompts_manager:
         if current_image_path and os.path.exists(current_image_path):
             display_image(current_image_path)
 
-        # Mettre à jour l'affichage quand le chemin change
+        # Mettre Ã  jour l'affichage quand le chemin change
         def on_path_change(*args):
             path = image_path_var.get().strip()
             if path and os.path.exists(path):
                 display_image(path)
             else:
-                image_label.configure(image="", text="Aucune image sélectionnée")
+                image_label.configure(image="", text="Aucune image sÃ©lectionnÃ©e")
                 image_label.image = None
 
         image_path_var.trace('w', on_path_change)
@@ -515,10 +533,10 @@ class process_prompts_manager:
         def save_image_path():
             new_path = image_path_var.get().strip()
             if new_path and not os.path.exists(new_path):
-                messagebox.showwarning("Attention", "Le fichier image spécifié n'existe pas.")
+                messagebox.showwarning("Attention", "Le fichier image spÃ©cifiÃ© n'existe pas.")
                 return
             
-            # Mettre à jour les données
+            # Mettre Ã  jour les donnÃ©es
             row_values = list(self.values_tree.item(item_id, "values"))
             row_values[3] = new_path
             self.values_tree.item(item_id, values=row_values)
@@ -540,15 +558,15 @@ class process_prompts_manager:
         popup.bind("<Escape>", lambda e: cancel_selection())
 
     def delete_prompt(self):
-        """Supprimer le prompt sélectionné"""
+        """Supprimer le prompt sÃ©lectionnÃ©"""
         selection = self.tree.selection()
         if not selection:
-            messagebox.showinfo("Info", "Veuillez sélectionner un prompt à supprimer.")
+            messagebox.showinfo("Info", "Veuillez sÃ©lectionner un prompt Ã  supprimer.")
             return
 
         prompt_id = selection[0]
 
-        # Récupérer le nom du prompt pour confirmation
+        # RÃ©cupÃ©rer le nom du prompt pour confirmation
         self.cursor.execute("SELECT name FROM prompts WHERE id=?", (prompt_id,))
         row = self.cursor.fetchone()
         if not row:
@@ -559,20 +577,20 @@ class process_prompts_manager:
         # Demander confirmation
         confirm = messagebox.askyesno(
             "Confirmation",
-            f"Êtes-vous sûr de vouloir supprimer le prompt '{name}'?"
+            f"ÃŠtes-vous sÃ»r de vouloir supprimer le prompt '{name}'?"
         )
 
         if confirm:
-            # Supprimer de la base de données
+            # Supprimer de la base de donnÃ©es
             self.cursor.execute("DELETE FROM prompts WHERE id=?", (prompt_id,))
             self.conn.commit()
 
             # Recharger et effacer le formulaire
             self.load_prompts()
             self.clear_form()
-            messagebox.showinfo("Succès", f"Prompt '{name}' supprimé avec succès.")
+            messagebox.showinfo("SuccÃ¨s", f"Prompt '{name}' supprimÃ© avec succÃ¨s.")
 
-    # Méthodes pour charger et sauvegarder la configuration
+    # MÃ©thodes pour charger et sauvegarder la configuration
     def load_config(self):
         config_path = "data/config.json"
         if os.path.exists(config_path):
@@ -601,18 +619,19 @@ class process_prompts_manager:
     def save_images_dir(self):
         images_dir = self.images_dir_var.get().strip()
         if not images_dir:
-            messagebox.showwarning("Attention", "Le répertoire ne peut pas être vide.")
+            messagebox.showwarning("Attention", "Le rÃ©pertoire ne peut pas Ãªtre vide.")
             return
         self.config["images_dir"] = images_dir
         self.save_config(self.config)
-        messagebox.showinfo("Succès", f"Répertoire des images configuré: {images_dir}")
+        messagebox.showinfo("SuccÃ¨s", f"RÃ©pertoire des images configurÃ©: {images_dir}")
 
     def load_prompts(self):
         self.tree.delete(*self.tree.get_children())
-        self.cursor.execute("SELECT id, name, image FROM prompts")
+        self.cursor.execute("SELECT id, name, parent, image FROM prompts")
         for row in self.cursor.fetchall():
-            id_, name, image = row
-            self.tree.insert("", "end", iid=id_, values=(name, image))
+            id_, name, parent, image = row
+            parent_display = "" if parent is None else str(parent)
+            self.tree.insert("", "end", iid=id_, values=(id_, name, parent_display, image))
         self.toggle_selection_buttons(False)
 
     def load_prompt_details(self, prompt_id):
@@ -643,7 +662,7 @@ class process_prompts_manager:
                             display_value = json.dumps(extras, ensure_ascii=False)
                             entry["__display_value"] = display_value
                         
-                        # Définir l'action selon le type
+                        # DÃ©finir l'action selon le type
                         action = ""
                         if type_val == "prompt":
                             action = "edit"
@@ -702,15 +721,15 @@ class process_prompts_manager:
         """
         Affiche un formulaire pour ajouter ou modifier un prompt.
         :param mode: "new" pour ajouter un nouveau prompt, "edit" pour modifier un prompt existant.
-        :param prompt_id: ID du prompt à modifier (nécessaire pour le mode "edit").
+        :param prompt_id: ID du prompt Ã  modifier (nÃ©cessaire pour le mode "edit").
         """
-        # Créer une fenêtre popup
+        # CrÃ©er une fenÃªtre popup
         popup = tk.Toplevel(self.root)
-        popup.title("Créer un nouveau prompt" if mode == "new" else "Modifier le prompt")
+        popup.title("CrÃ©er un nouveau prompt" if mode == "new" else "Modifier le prompt")
         popup.transient(self.root)
         popup.grab_set()
 
-        # Centrer la fenêtre
+        # Centrer la fenÃªtre
         self.center_window(popup, width=700, height=500)
 
         # Variables pour les champs
@@ -719,7 +738,7 @@ class process_prompts_manager:
         prompt_values_var = "{}"
         workflow_var = "{}"
 
-        # Si mode "edit", charger les données existantes
+        # Si mode "edit", charger les donnÃ©es existantes
         if mode == "edit" and prompt_id:
             self.cursor.execute("SELECT name, prompt_values, workflow, url FROM prompts WHERE id=?", (prompt_id,))
             row = self.cursor.fetchone()
@@ -730,7 +749,7 @@ class process_prompts_manager:
                 prompt_values_var = prompt_values or "{}"
                 workflow_var = workflow or "{}"
         else:
-            # Mode "new" : utiliser les valeurs par défaut de add_default_basic_prompt
+            # Mode "new" : utiliser les valeurs par dÃ©faut de add_default_basic_prompt
             default_prompt_values = {
                 "1": {
                     "id": "6",
@@ -770,7 +789,7 @@ class process_prompts_manager:
         prompt_values_text = tk.Text(prompt_values_frame, height=5, wrap="word")
         prompt_values_text.pack(side="left", fill="both", expand=True)
         
-        # Insérer le contenu initial
+        # InsÃ©rer le contenu initial
         try:
             if prompt_values_var != "{}":
                 formatted_json = json.dumps(json.loads(prompt_values_var), indent=2, ensure_ascii=False)
@@ -790,7 +809,7 @@ class process_prompts_manager:
         workflow_text = tk.Text(workflow_frame, height=5, wrap="word")
         workflow_text.pack(side="left", fill="both", expand=True)
         
-        # Insérer le contenu initial du workflow
+        # InsÃ©rer le contenu initial du workflow
         try:
             if workflow_var != "{}":
                 formatted_json = json.dumps(json.loads(workflow_var), indent=2, ensure_ascii=False)
@@ -814,18 +833,18 @@ class process_prompts_manager:
                 return
 
             try:
-                # Vérifier si les JSON sont valides
+                # VÃ©rifier si les JSON sont valides
                 prompt_values_dict = json.loads(prompt_values) if prompt_values else {}
                 workflow_dict = json.loads(workflow) if workflow else {}
 
                 if mode == "new":
-                    # Insérer dans la base de données
+                    # InsÃ©rer dans la base de donnÃ©es
                     self.cursor.execute(
                         "INSERT INTO prompts (name, prompt_values, workflow, url) VALUES (?, ?, ?, ?)",
                         (name, json.dumps(prompt_values_dict, ensure_ascii=False), json.dumps(workflow_dict, ensure_ascii=False), url)
                     )
                 elif mode == "edit" and prompt_id:
-                    # Mettre à jour la base de données
+                    # Mettre Ã  jour la base de donnÃ©es
                     self.cursor.execute(
                         "UPDATE prompts SET name=?, prompt_values=?, workflow=?, url=? WHERE id=?",
                         (name, json.dumps(prompt_values_dict, ensure_ascii=False), json.dumps(workflow_dict, ensure_ascii=False), url, prompt_id)
@@ -834,98 +853,99 @@ class process_prompts_manager:
                 self.conn.commit()
                 self.load_prompts()
                 popup.destroy()
-                messagebox.showinfo("Succès", "Prompt sauvegardé avec succès.")
+                messagebox.showinfo("SuccÃ¨s", "Prompt sauvegardÃ© avec succÃ¨s.")
             except json.JSONDecodeError as e:
-                messagebox.showerror("Erreur", f"Les champs JSON contiennent des données invalides : {e}")
+                messagebox.showerror("Erreur", f"Les champs JSON contiennent des donnÃ©es invalides : {e}")
             except Exception as e:
                 messagebox.showerror("Erreur", f"Une erreur s'est produite : {e}")
 
         ttk.Button(popup, text="Sauvegarder", command=save_prompt).pack(pady=10)
 
     def execute_workflow(self):
-        """Exécuter le workflow avec comfyui_basic_task en arrière-plan"""
+        """ExÃ©cuter le workflow avec comfyui_basic_task en arriÃ¨re-plan"""
         if not self.selected_prompt_id:
-            messagebox.showwarning("Attention", "Veuillez sélectionner un prompt.")
+            messagebox.showwarning("Attention", "Veuillez sÃ©lectionner un prompt.")
             return
 
-        # Ajouter à la pile d'exécution avec statut "En cours"
+        # Ajouter Ã  la pile d'exÃ©cution avec statut "En cours"
         execution_id = f"exec_{int(time.time())}"  # Identifiant unique pour ce job
         self.add_to_execution_stack(execution_id, f"En cours: Prompt #{self.selected_prompt_id}")
 
-        # Créer un thread pour exécuter le workflow
+        # CrÃ©er un thread pour exÃ©cuter le workflow
         thread = threading.Thread(target=self._execute_workflow_task, 
                              args=(self.selected_prompt_id, execution_id))
         thread.daemon = True  # Permet de terminer le thread si l'application se ferme
         thread.start()
 
     def _execute_workflow_task(self, prompt_id, execution_id):
-        """Tâche d'exécution du workflow (appelée dans un thread séparé)"""
+        """TÃ¢che d'exÃ©cution du workflow (appelÃ©e dans un thread sÃ©parÃ©)"""
         try:
-            # Créer une nouvelle connexion SQLite dans ce thread
+            # CrÃ©er une nouvelle connexion SQLite dans ce thread
             conn = sqlite3.connect(self.db_path)
             cursor = conn.cursor()
 
-            cursor.execute("SELECT workflow, prompt_values, name FROM prompts WHERE id=?", (prompt_id,))
+            cursor.execute("SELECT workflow, prompt_values, name, image, url FROM prompts WHERE id=?", (prompt_id,))
             row = cursor.fetchone()
             if row:
-                workflow_json, prompt_values_json, name = row
+                workflow_json, prompt_values_json, name, image, url = row
 
-                # Mettre à jour le statut dans la pile d'exécution
-                self.update_execution_stack_status(execution_id, f"Préparation: {name}")
+                # Mettre Ã  jour le statut dans la pile d'exÃ©cution
+                self.update_execution_stack_status(execution_id, f"PrÃ©paration: {name}")
 
-                # Créer le répertoire data/Workflows s'il n'existe pas
+                # CrÃ©er le rÃ©pertoire data/Workflows s'il n'existe pas
                 os.makedirs("data/Workflows", exist_ok=True)
 
-                # Générer des noms de fichiers uniques dans data/Workflows
+                # GÃ©nÃ©rer des noms de fichiers uniques dans data/Workflows
                 timestamp = int(time.time())
                 workflow_file_path = f"data/Workflows/{name}_workflow_{timestamp}.json"
                 prompt_values_file_path = f"data/Workflows/{name}_values_{timestamp}.json"
 
-                # Écrire les fichiers directement dans data/Workflows
+                # Ã‰crire les fichiers directement dans data/Workflows
                 with open(workflow_file_path, "w", encoding="utf-8") as wf_file:
                     wf_file.write(workflow_json)
 
                 with open(prompt_values_file_path, "w", encoding="utf-8") as pv_file:
                     pv_file.write(prompt_values_json)
 
-                # Mettre à jour le statut
-                self.update_execution_stack_status(execution_id, f"Exécution: {name}")
+                # Mettre Ã  jour le statut
+                self.update_execution_stack_status(execution_id, f"ExÃ©cution: {name}")
 
-                # Exécuter le workflow
+                # ExÃ©cuter le workflow
                 tsk1 = comfyui_basic_task()
                 promptId = tsk1.addToQueue(workflow_file_path, prompt_values_file_path)
-                print(f"Workflow exécuté. Fichier de sortie: {promptId}")
+                print(f"Workflow exÃ©cutÃ©. Fichier de sortie: {promptId}")
 
-                # Mettre à jour le statut avec l'ID du prompt
-                self.update_execution_stack_status(execution_id, f"Génération: {promptId}")
+                # Mettre Ã  jour le statut avec l'ID du prompt
+                self.update_execution_stack_status(execution_id, f"GÃ©nÃ©ration: {promptId}")
 
-                # Récupérer les images générées
+                # RÃ©cupÃ©rer les images gÃ©nÃ©rÃ©es
                 output_images = tsk1.GetImages(promptId)
                 print(f"Images generees: {output_images}")
 
                 updated_values = getattr(tsk1, 'values', None)
+                if output_images:
+                    if isinstance(updated_values, dict):
+                        updated_values["output_image"] = output_images
+                    else:
+                        updated_values = {"output_image": output_images}
+                        setattr(tsk1, "values", updated_values)
                 updated_workflow = getattr(tsk1, 'last_workflow', None)
-                if updated_values or updated_workflow:
-                    try:
-                        prompt_pk = int(prompt_id)
-                    except (TypeError, ValueError):
-                        prompt_pk = prompt_id
-                    try:
-                        update_fields = []
-                        params = []
-                        if updated_values:
-                            update_fields.append("prompt_values=?")
-                            params.append(json.dumps(updated_values, ensure_ascii=False))
-                        if updated_workflow:
-                            update_fields.append("workflow=?")
-                            params.append(json.dumps(updated_workflow, ensure_ascii=False))
-                        update_fields_sql = ', '.join(update_fields)
-                        params.append(prompt_pk)
-                        cursor.execute(f"UPDATE prompts SET {update_fields_sql} WHERE id=?", params)
-                        conn.commit()
-                        self.root.after(0, lambda pid=prompt_pk: self._refresh_prompt_after_execution(pid))
-                    except Exception as update_err:
-                        print(f"Erreur lors de la mise a jour des valeurs du prompt: {update_err}")
+                try:
+                    parent_pk = int(prompt_id)
+                except (TypeError, ValueError):
+                    parent_pk = prompt_id
+
+                new_prompt_values = json.dumps(updated_values, ensure_ascii=False) if updated_values is not None else prompt_values_json
+                new_workflow = json.dumps(updated_workflow, ensure_ascii=False) if updated_workflow is not None else workflow_json
+
+                try:
+                    cursor.execute("INSERT INTO prompts (name, prompt_values, workflow, image, url, parent) VALUES (?, ?, ?, ?, ?, ?)",
+                                   (name, new_prompt_values, new_workflow, image, url, parent_pk))
+                    conn.commit()
+                    new_prompt_pk = cursor.lastrowid
+                    self.root.after(0, lambda pid=new_prompt_pk: self._refresh_prompt_after_execution(pid))
+                except Exception as insert_err:
+                    print(f"Erreur lors de l'insertion du nouveau prompt: {insert_err}")
 
                 # Nettoyer les fichiers
                 try:
@@ -934,12 +954,12 @@ class process_prompts_manager:
                 except:
                     pass
 
-                # Mettre à jour le statut final
-                self.update_execution_stack_status(execution_id, f"Terminé: {name} ({promptId})")
+                # Mettre Ã  jour le statut final
+                self.update_execution_stack_status(execution_id, f"TerminÃ©: {name} ({promptId})")
         except Exception as e:
-            # Mettre à jour le statut en cas d'erreur
+            # Mettre Ã  jour le statut en cas d'erreur
             self.update_execution_stack_status(execution_id, f"Erreur: {str(e)}")
-            print(f"Erreur lors de l'exécution: {str(e)}")
+            print(f"Erreur lors de l'exÃ©cution: {str(e)}")
         finally:
             # Fermer la connexion SQLite
             conn.close()
@@ -947,24 +967,39 @@ class process_prompts_manager:
     def _refresh_prompt_after_execution(self, prompt_id):
         if not hasattr(self, 'tree'):
             return
-        prompt_key = str(prompt_id)
-        current_selection = set(self.tree.selection())
+        target_id = str(prompt_id)
+        previous_selection = self.tree.selection()
         self.load_prompts()
-        if prompt_key in current_selection:
-            try:
-                self.tree.selection_set(prompt_key)
-            except tk.TclError:
-                return
+        try:
+            self.tree.selection_set(target_id)
+            self.tree.focus(target_id)
+            self.tree.see(target_id)
             self.toggle_selection_buttons(True)
-            self.load_prompt_details(prompt_key)
+            self.load_prompt_details(target_id)
+            return
+        except tk.TclError:
+            pass
+
+        if previous_selection:
+            fallback_id = previous_selection[0]
+            try:
+                self.tree.selection_set(fallback_id)
+                self.tree.focus(fallback_id)
+                self.tree.see(fallback_id)
+                self.toggle_selection_buttons(True)
+                self.load_prompt_details(fallback_id)
+            except tk.TclError:
+                self.toggle_selection_buttons(False)
+        else:
+            self.toggle_selection_buttons(False)
 
     def update_execution_stack_status(self, execution_id, status):
-        """Met à jour le statut d'un workflow dans la pile d'exécution"""
+        """Met Ã  jour le statut d'un workflow dans la pile d'exÃ©cution"""
         for item in self.execution_stack:
             if item["prompt_id"] == execution_id:
                 item["status"] = status
                 break
-        # Mettre à jour l'UI dans le thread principal
+        # Mettre Ã  jour l'UI dans le thread principal
         self.root.after(0, self.update_execution_stack_ui)
 
     def add_default_basic_prompt(self):
@@ -1072,7 +1107,7 @@ class process_prompts_manager:
         popup.transient(self.root)
         popup.grab_set()
 
-        # Centrer la fenêtre
+        # Centrer la fenÃªtre
         self.center_window(popup, width=400, height=300)
 
         id_var = tk.StringVar()
@@ -1089,19 +1124,19 @@ class process_prompts_manager:
         value_text = tk.Text(popup, height=5, wrap="word")
         value_text.pack(fill="both", expand=True, padx=10, pady=5)
 
-        # Insérer les valeurs par défaut à l'ouverture
+        # InsÃ©rer les valeurs par dÃ©faut Ã  l'ouverture
         default_values = self.get_default_prompt_values()
         default_text = json.dumps(default_values, indent=2, ensure_ascii=False)
         value_text.insert("1.0", default_text)
 
         def on_type_change(*args):
-            """Fonction appelée quand le type change"""
+            """Fonction appelÃ©e quand le type change"""
             current_type = type_var.get().strip()
             if current_type == "prompt":
-                # Obtenir les valeurs par défaut des prompts
+                # Obtenir les valeurs par dÃ©faut des prompts
                 default_values = self.get_default_prompt_values()
                 
-                # Si c'est le premier prompt, utiliser le prompt positif par défaut
+                # Si c'est le premier prompt, utiliser le prompt positif par dÃ©faut
                 prompt_count = sum(1 for item_id in self.values_tree.get_children() 
                                  if self.values_tree.item(item_id, "values")[2] == "prompt")
                 
@@ -1109,23 +1144,23 @@ class process_prompts_manager:
                     # Premier prompt = prompt positif
                     default_text = default_values.get("positive_prompt", "beautiful scenery nature glass bottle landscape, purple galaxy bottle")
                     if not id_var.get().strip():
-                        id_var.set("6")  # ID par défaut du prompt positif
+                        id_var.set("6")  # ID par dÃ©faut du prompt positif
                 elif prompt_count == 1:
-                    # Deuxième prompt = prompt négatif
+                    # DeuxiÃ¨me prompt = prompt nÃ©gatif
                     default_text = default_values.get("negative_prompt", "text, watermark")
                     if not id_var.get().strip():
-                        id_var.set("7")  # ID par défaut du prompt négatif
+                        id_var.set("7")  # ID par dÃ©faut du prompt nÃ©gatif
                 else:
                     # Autres prompts
                     default_text = ""
                 
-                # Mettre à jour le texte seulement s'il contient les valeurs par défaut
+                # Mettre Ã  jour le texte seulement s'il contient les valeurs par dÃ©faut
                 current_content = value_text.get("1.0", "end-1c").strip()
                 if current_content == json.dumps(default_values, indent=2, ensure_ascii=False) or not current_content:
                     value_text.delete("1.0", "end")
                     value_text.insert("1.0", default_text)
 
-        # Lier l'événement de changement de type
+        # Lier l'Ã©vÃ©nement de changement de type
         type_var.trace('w', on_type_change)
 
         def save_value():
@@ -1140,7 +1175,7 @@ class process_prompts_manager:
             new_key = str(self.value_row_counter)
             id_val = id_var.get().strip() or new_key
 
-            # Définir l'action selon le type
+            # DÃ©finir l'action selon le type
             action = ""
             if type_val == "prompt":
                 action = "edit"
@@ -1159,7 +1194,7 @@ class process_prompts_manager:
         ttk.Button(popup, text="Ajouter", command=save_value).pack(pady=10)
 
     def get_default_prompt_values(self):
-        """Retourne les valeurs par défaut des prompts depuis add_default_basic_prompt"""
+        """Retourne les valeurs par dÃ©faut des prompts depuis add_default_basic_prompt"""
         return {
             "positive_prompt": "beautiful scenery nature glass bottle landscape, purple galaxy bottle",
             "negative_prompt": "text, watermark",
@@ -1228,19 +1263,19 @@ class process_prompts_manager:
             messagebox.showerror("Erreur", f"Erreur lors de la sauvegarde : {e}")
 
     def edit_prompt(self):
-        """Ouvre une popup pour éditer le prompt sélectionné"""
+        """Ouvre une popup pour Ã©diter le prompt sÃ©lectionnÃ©"""
         selection = self.tree.selection()
         if not selection:
-            messagebox.showinfo("Info", "Veuillez sélectionner un prompt à modifier.")
+            messagebox.showinfo("Info", "Veuillez sÃ©lectionner un prompt Ã  modifier.")
             return
 
-        prompt_id = selection[0]  # Récupérer l'ID du prompt sélectionné
+        prompt_id = selection[0]  # RÃ©cupÃ©rer l'ID du prompt sÃ©lectionnÃ©
         self.prompt_form(mode="edit", prompt_id=prompt_id)
 
     def select_image(self, var):
-        """Sélectionner un fichier image"""
+        """SÃ©lectionner un fichier image"""
         file_path = filedialog.askopenfilename(
-            title="Sélectionner une image",
+            title="SÃ©lectionner une image",
             filetypes=[("Images", "*.png *.jpg *.jpeg *.gif *.bmp"), ("Tous les fichiers", "*.*")]
         )
         if file_path:
@@ -1251,7 +1286,7 @@ class process_prompts_manager:
         self.edit_prompt()  # Reutilise la methode `new_prompt` pour ouvrir le formulaire
 
     def load_json_to_text(self, text_widget):
-        """Charger un fichier JSON et insérer son contenu dans une zone de texte"""
+        """Charger un fichier JSON et insÃ©rer son contenu dans une zone de texte"""
         file_path = filedialog.askopenfilename(
             title="Ouvrir un fichier JSON",
             filetypes=[("Fichiers JSON", "*.json"), ("Tous les fichiers", "*.*")]
@@ -1262,47 +1297,47 @@ class process_prompts_manager:
                     json_data = json.load(f)
                     formatted_json = json.dumps(json_data, indent=2, ensure_ascii=False)
                     text_widget.delete("1.0", "end")  # Effacer le contenu existant
-                    text_widget.insert("1.0", formatted_json)  # Insérer le JSON formaté
+                    text_widget.insert("1.0", formatted_json)  # InsÃ©rer le JSON formatÃ©
             except Exception as e:
                 messagebox.showerror("Erreur", f"Impossible de charger le fichier JSON : {e}")
 
     def center_window(self, window, width=600, height=400):
-        """Centre une fenêtre popup par rapport à la fenêtre principale"""
-        # Récupérer les dimensions de la fenêtre principale
+        """Centre une fenÃªtre popup par rapport Ã  la fenÃªtre principale"""
+        # RÃ©cupÃ©rer les dimensions de la fenÃªtre principale
         root_x = self.root.winfo_x()
         root_y = self.root.winfo_y()
         root_width = self.root.winfo_width()
         root_height = self.root.winfo_height()
 
-        # Calculer la position pour centrer la fenêtre
+        # Calculer la position pour centrer la fenÃªtre
         x = root_x + (root_width // 2) - (width // 2)
         y = root_y + (root_height // 2) - (height // 2)
 
-        # Appliquer la géométrie
+        # Appliquer la gÃ©omÃ©trie
         window.geometry(f"{width}x{height}+{x}+{y}")
 
     def add_to_execution_stack(self, prompt_id, status):
-        """Ajouter un workflow à la pile d'exécution"""
-        # Vérifier si l'ID est déjà dans la pile
+        """Ajouter un workflow Ã  la pile d'exÃ©cution"""
+        # VÃ©rifier si l'ID est dÃ©jÃ  dans la pile
         for item in self.execution_stack:
             if item["prompt_id"] == prompt_id:
                 item["status"] = status
                 self.root.after(0, self.update_execution_stack_ui)
                 return
             
-        # Sinon, ajouter un nouvel élément
+        # Sinon, ajouter un nouvel Ã©lÃ©ment
         self.execution_stack.append({"prompt_id": prompt_id, "status": status})
-        self.root.after(0, self.update_execution_stack_ui)  # Mettre à jour l'UI dans le thread principal
+        self.root.after(0, self.update_execution_stack_ui)  # Mettre Ã  jour l'UI dans le thread principal
     
     def update_execution_stack_ui(self):
-        """Mettre à jour l'affichage de la pile d'exécution"""
+        """Mettre Ã  jour l'affichage de la pile d'exÃ©cution"""
         self.execution_stack_tree.delete(*self.execution_stack_tree.get_children())
         for item in self.execution_stack:
             self.execution_stack_tree.insert("", "end", values=(item["prompt_id"], item["status"]))
 
     def configure_values_tree_columns(self):
         """Configure les tailles des colonnes du tableau values"""
-        # Configuration personnalisée des colonnes
+        # Configuration personnalisÃ©e des colonnes
         column_config = {
             "key": {"width": 20, "minwidth": 20, "stretch": False},
             "id": {"width": 20, "minwidth": 20, "stretch": True},
@@ -1321,7 +1356,7 @@ class process_prompts_manager:
 
     def configure_workflow_tree_columns(self):
         """Configure les tailles des colonnes du tableau workflow"""
-        # Configuration personnalisée des colonnes
+        # Configuration personnalisÃ©e des colonnes
         column_config = {
             "id": {"width": 20, "minwidth": 50, "stretch": False},
             "class_type": {"width": 150, "minwidth": 120, "stretch": True},
