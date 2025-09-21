@@ -737,9 +737,10 @@ class process_prompts_manager:
                         entry = dict(v) if isinstance(v, dict) else {"value": v}
                         id_val = entry.get("id", "")
                         type_val = entry.get("type", "")
-                        if isinstance(type_val, str) and type_val.lower() == "output":
+                        normalized_type = type_val.lower() if isinstance(type_val, str) else ""
+                        if normalized_type in {"output", "output_image"}:
                             has_output_type = True
-                        elif isinstance(key, str) and not type_val and key.lower().startswith("output"):
+                        elif isinstance(key, str) and not normalized_type and key.lower().startswith("output"):
                             has_output_type = True
                         display_value = entry.get("value", "")
                         extras = {ek: ev for ek, ev in entry.items() if ek not in {"id", "type", "value", "__display_value"}}
@@ -951,6 +952,41 @@ class process_prompts_manager:
         ttk.Button(popup, text="Sauvegarder", command=save_prompt).pack(pady=10)
 
 
+    def _next_value_key(self, values_dict):
+        numeric_keys = []
+        for key in values_dict.keys():
+            try:
+                numeric_keys.append(int(key))
+            except (TypeError, ValueError):
+                continue
+        if numeric_keys:
+            return str(max(numeric_keys) + 1)
+        candidate = 1
+        existing = {str(k) for k in values_dict.keys()}
+        while str(candidate) in existing:
+            candidate += 1
+        return str(candidate)
+
+    def _infer_output_node_id(self, values_dict, workflow_json):
+        if isinstance(values_dict, dict):
+            for entry in values_dict.values():
+                if isinstance(entry, dict):
+                    entry_type = entry.get('type')
+                    normalized = entry_type.lower() if isinstance(entry_type, str) else ''
+                    if normalized == 'output_image' and entry.get('id'):
+                        return str(entry.get('id'))
+                    if normalized == 'saveimage' and entry.get('id'):
+                        return str(entry.get('id'))
+        try:
+            workflow_dict = json.loads(workflow_json) if workflow_json else {}
+            if isinstance(workflow_dict, dict):
+                for node_id, node in workflow_dict.items():
+                    if isinstance(node, dict) and node.get('class_type') == 'SaveImage':
+                        return str(node_id)
+        except (TypeError, json.JSONDecodeError):
+            pass
+        return '9'
+
     def inherit_prompt(self):
         """Duplicate the selected prompt without output entries."""
         if not self.selected_prompt_id:
@@ -988,12 +1024,14 @@ class process_prompts_manager:
         for key, value in values_dict.items():
             entry_dict = dict(value) if isinstance(value, dict) else None
             entry_type = None
+            normalized_type = ""
             if entry_dict is not None:
                 entry_dict.pop("__display_value", None)
                 entry_type = entry_dict.get("type")
-                if isinstance(entry_type, str) and entry_type.lower() == "output":
+                normalized_type = entry_type.lower() if isinstance(entry_type, str) else ""
+                if normalized_type in {"output", "output_image"}:
                     continue
-            if (entry_type is None or entry_type == "") and isinstance(key, str) and key.lower().startswith("output"):
+            if (not normalized_type) and isinstance(key, str) and key.lower().startswith("output"):
                 continue
             cleaned_values[key] = entry_dict if entry_dict is not None else value
 
@@ -1096,12 +1134,33 @@ class process_prompts_manager:
 
                 updated_values = getattr(tsk1, 'values', None)
                 if output_images:
-                    output_entry = {"type": "output", "value": output_images}
-                    if isinstance(updated_values, dict):
-                        updated_values["output_image"] = output_entry
+                    if not isinstance(updated_values, dict):
+                        updated_values = {}
+                        setattr(tsk1, 'values', updated_values)
+
+                    output_id = self._infer_output_node_id(updated_values, workflow_json)
+                    existing_key = None
+                    for key, entry in list(updated_values.items()):
+                        if isinstance(entry, dict):
+                            entry_type = entry.get('type')
+                            normalized = entry_type.lower() if isinstance(entry_type, str) else ''
+                            if normalized in {'output', 'output_image'}:
+                                existing_key = key
+                                break
+
+                    if existing_key is None:
+                        new_key = self._next_value_key(updated_values)
+                        updated_values[new_key] = {'id': output_id, 'type': 'output_image', 'value': output_images}
                     else:
-                        updated_values = {"output_image": output_entry}
-                        setattr(tsk1, "values", updated_values)
+                        entry = updated_values.get(existing_key)
+                        if isinstance(entry, dict):
+                            entry['id'] = entry.get('id') or output_id
+                            entry['type'] = 'output_image'
+                            entry['value'] = output_images
+                            entry.pop('__display_value', None)
+                        else:
+                            updated_values[existing_key] = {'id': output_id, 'type': 'output_image', 'value': output_images}
+
                 updated_workflow = getattr(tsk1, 'last_workflow', None)
                 try:
                     prompt_pk = int(prompt_id)
