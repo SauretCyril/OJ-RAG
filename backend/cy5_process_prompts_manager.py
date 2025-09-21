@@ -1317,6 +1317,12 @@ class process_prompts_manager:
 
     def open_prompt_analysis(self):
         """Ouvre le programme d'analyse du prompt avec la valeur du prompt positif"""
+        if not self.selected_prompt_id:
+            messagebox.showerror("Erreur", "Veuillez selectionner un prompt avant l'analyse.")
+            return
+
+        prompt_id = str(self.selected_prompt_id)
+
         for item_id in self.values_tree.get_children():
             values = self.values_tree.item(item_id, "values")
             type_val = values[2]
@@ -1325,7 +1331,7 @@ class process_prompts_manager:
                 if prompt_value:
                     try:
                         from cy_venv_utils import run_python_script
-                        run_python_script('cy2_analyse_prompt', ['--prompt_text', f'"{prompt_value}"'])
+                        run_python_script('cy2_analyse_prompt', ['--prompt_id', prompt_id, '--prompt_text', f'"{prompt_value}"'])
                         return
                     except Exception as e:
                         messagebox.showerror("Erreur", f"Impossible de lancer l'analyse du prompt : {e}")
@@ -1613,3 +1619,4 @@ if __name__ == "__main__":
     db_path = os.getenv("PROMPTS_DB", "g:/tmp/prompts_manager.db")
     images_dir_env = os.getenv("IMAGES_COLLECTE", "./output")
     main(db_path=db_path, DirCollecte=images_dir_env)
+

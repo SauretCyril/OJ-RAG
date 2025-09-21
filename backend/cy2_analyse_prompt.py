@@ -17,9 +17,10 @@ def wrap_text(text, width=60):
     return "\n".join(textwrap.wrap(text, width=width))
 
 class cy2_analyse_prompt(tk.Tk):
-    def __init__(self, prompt_text=None):
+    def __init__(self, prompt_text=None, prompt_id=None):
         super().__init__()
         self.prompt_text = prompt_text
+        self.prompt_id = prompt_id
 
         self.title("Prompt")
         self.geometry("1100x800")
@@ -29,6 +30,11 @@ class cy2_analyse_prompt(tk.Tk):
         # Titre en haut
         # title_label = ttk.Label(self, text=f"{self.descriptif}", font=("Arial", 14, "bold"))
         # title_label.pack(side="top", fill="x", padx=5, pady=5)
+
+        if self.prompt_id is not None:
+            info_frame = ttk.Frame(self)
+            info_frame.pack(side="top", fill="x", padx=5, pady=(5, 0))
+            ttk.Label(info_frame, text=f"Prompt ID: {self.prompt_id}").pack(side="left")
 
         # Frame principal pour les prompts
         prompt_frame = ttk.Frame(self)
@@ -368,10 +374,11 @@ if __name__ == "__main__":
     # Gestion des arguments de ligne de commande
     parser = argparse.ArgumentParser(description="Analyseur de prompts")
     parser.add_argument("--prompt_text", type=str, help="Texte du prompt à analyser", default=None)
+    parser.add_argument("--prompt_id", type=str, help="Identifiant du prompt", default=None)
     args = parser.parse_args()
 
     # Passer le prompt_text à l'application
-    app = cy2_analyse_prompt(prompt_text=args.prompt_text)
+    app = cy2_analyse_prompt(prompt_text=args.prompt_text, prompt_id=args.prompt_id)
     app.mainloop()
 
 import sys
