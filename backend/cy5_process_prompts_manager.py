@@ -121,6 +121,12 @@ class process_prompts_manager:
                 return ""
         if not isinstance(workflow_dict, dict):
             return ""
+
+        def normalize(model_name: str) -> str:
+            base = os.path.basename(model_name)
+            root, _ = os.path.splitext(base)
+            return root or base or model_name
+
         for node in workflow_dict.values():
             if not isinstance(node, dict):
                 continue
@@ -128,11 +134,11 @@ class process_prompts_manager:
                 inputs = node.get("inputs", {})
                 ckpt_name = inputs.get("ckpt_name")
                 if isinstance(ckpt_name, str):
-                    return ckpt_name
+                    return normalize(ckpt_name)
                 if isinstance(ckpt_name, (list, tuple)):
                     for item in ckpt_name:
                         if isinstance(item, str) and item:
-                            return item
+                            return normalize(item)
         return ""
 
     def setup_ui(self):
@@ -315,14 +321,37 @@ class process_prompts_manager:
         form_buttons.pack(fill="x", padx=10, pady=10)
         
         ttk.Button(form_buttons, text="Sauvegarder", command=self.save_prompt).pack(side="left", padx=5)
-        ttk.Button(form_buttons, text="ExÃ©cuter", command=self.execute_workflow).pack(side="left", padx=5)
+        self.execute_button = ttk.Button(form_buttons, text="Exécuter", command=self.execute_workflow)
+        self.execute_button.pack(side="left", padx=5)
+        self.inherit_button = ttk.Button(form_buttons, text="Heriter", command=self.inherit_prompt)
+        self._inherit_button_visible = False
         ttk.Button(form_buttons, text="Annuler", command=self.clear_form).pack(side="left", padx=5)
-        ttk.Button(form_buttons, text="Nouveau", command=self.new_prompt).pack(side="left", padx=5)
+        #ttk.Button(form_buttons, text="Nouveau", command=self.new_prompt).pack(side="left", padx=5)
         # Ajouter le bouton pour ouvrir le programme d'analyse
         ttk.Button(form_buttons, text="Analyser Prompt", command=self.open_prompt_analysis).pack(side="left", padx=5)
         
+        self.update_execution_controls(False)
         # Lier les Ã©vÃ©nements aprÃ¨s la crÃ©ation des widgets
         self.values_tree.bind("<Double-1>", self.on_double_click_values)
+
+    def update_execution_controls(self, has_output: bool):
+        """Toggle execution-related buttons based on output presence."""
+        if not hasattr(self, 'execute_button') or not hasattr(self, 'inherit_button'):
+            return
+
+        if has_output:
+            self.execute_button.state(['disabled'])
+            if not getattr(self, '_inherit_button_visible', False):
+                self.inherit_button.pack(side="left", padx=5)
+                self._inherit_button_visible = True
+            self.inherit_button.state(['!disabled'])
+        else:
+            self.execute_button.state(['!disabled'])
+            if getattr(self, '_inherit_button_visible', False):
+                self.inherit_button.pack_forget()
+                self._inherit_button_visible = False
+            self.inherit_button.state(['disabled'])
+
 
     # MÃ©thodes pour gÃ©rer le formulaire permanent
     def on_select_prompt(self, event):
@@ -687,6 +716,7 @@ class process_prompts_manager:
 
     def load_prompt_details(self, prompt_id):
         """Charger les details d'un prompt dans le formulaire"""
+        has_output_type = False
         try:
             self.cursor.execute("SELECT name, prompt_values, workflow, image, url, model FROM prompts WHERE id=?", (prompt_id,))
             row = self.cursor.fetchone()
@@ -707,6 +737,10 @@ class process_prompts_manager:
                         entry = dict(v) if isinstance(v, dict) else {"value": v}
                         id_val = entry.get("id", "")
                         type_val = entry.get("type", "")
+                        if isinstance(type_val, str) and type_val.lower() == "output":
+                            has_output_type = True
+                        elif isinstance(key, str) and not type_val and key.lower().startswith("output"):
+                            has_output_type = True
                         display_value = entry.get("value", "")
                         extras = {ek: ev for ek, ev in entry.items() if ek not in {"id", "type", "value", "__display_value"}}
                         if not display_value and extras:
@@ -748,6 +782,8 @@ class process_prompts_manager:
                     print(f"Erreur lors du chargement du workflow : {e}")
         except Exception as e:
             messagebox.showerror("Erreur", f"Erreur lors du chargement : {str(e)}")
+        finally:
+            self.update_execution_controls(has_output_type)
 
     def clear_form(self):
         """Vider le formulaire"""
@@ -763,6 +799,7 @@ class process_prompts_manager:
         self.workflow_tree.delete(*self.workflow_tree.get_children())
         self.values_data.clear()
         self.value_row_counter = 0
+        self.update_execution_controls(False)
 
     def new_prompt(self):
         """Ouvre une popup pour saisir les informations d'un nouveau prompt"""
@@ -913,6 +950,89 @@ class process_prompts_manager:
 
         ttk.Button(popup, text="Sauvegarder", command=save_prompt).pack(pady=10)
 
+
+    def inherit_prompt(self):
+        """Duplicate the selected prompt without output entries."""
+        if not self.selected_prompt_id:
+            messagebox.showwarning("Information", "Veuillez sélectionner un prompt avant d'hériter.")
+            return
+
+        selected_id = self.selected_prompt_id
+        try:
+            prompt_pk = int(selected_id)
+        except (TypeError, ValueError):
+            prompt_pk = selected_id
+
+        try:
+            self.cursor.execute("SELECT name, prompt_values, workflow, image, url, model FROM prompts WHERE id=?", (prompt_pk,))
+            row = self.cursor.fetchone()
+        except sqlite3.Error as exc:
+            messagebox.showerror("Erreur", f"Impossible de récupérer le prompt sélectionné : {exc}")
+            return
+
+        if not row:
+            messagebox.showerror("Erreur", "Prompt introuvable.")
+            return
+
+        name, prompt_values, workflow, image, url, model = row
+        try:
+            values_dict = json.loads(prompt_values) if prompt_values else {}
+        except (TypeError, json.JSONDecodeError) as exc:
+            messagebox.showerror("Erreur", f"Prompt values invalides : {exc}")
+            return
+
+        if not isinstance(values_dict, dict):
+            values_dict = {}
+
+        cleaned_values = {}
+        for key, value in values_dict.items():
+            entry_dict = dict(value) if isinstance(value, dict) else None
+            entry_type = None
+            if entry_dict is not None:
+                entry_dict.pop("__display_value", None)
+                entry_type = entry_dict.get("type")
+                if isinstance(entry_type, str) and entry_type.lower() == "output":
+                    continue
+            if (entry_type is None or entry_type == "") and isinstance(key, str) and key.lower().startswith("output"):
+                continue
+            cleaned_values[key] = entry_dict if entry_dict is not None else value
+
+        new_prompt_values = json.dumps(cleaned_values, ensure_ascii=False)
+        parent_value = prompt_pk if isinstance(prompt_pk, int) else None
+        model_value = model or self.derive_model_from_workflow(workflow)
+        new_name = self._build_inherited_name(name)
+
+        try:
+            self.cursor.execute(
+                "INSERT INTO prompts (name, prompt_values, workflow, image, url, parent, model) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                (new_name, new_prompt_values, workflow, image, url, parent_value, model_value),
+            )
+            self.conn.commit()
+        except sqlite3.Error as exc:
+            messagebox.showerror("Erreur", f"Impossible de créer le prompt hérité : {exc}")
+            return
+
+        new_prompt_id = self.cursor.lastrowid
+        self._refresh_prompt_after_execution(new_prompt_id)
+
+
+    def _build_inherited_name(self, base_name: str) -> str:
+        suffix = " (herite)"
+        candidate = f"{base_name}{suffix}"
+        index = 2
+        while self._prompt_name_exists(candidate):
+            candidate = f"{base_name}{suffix} {index}"
+            index += 1
+        return candidate
+
+
+    def _prompt_name_exists(self, name: str) -> bool:
+        try:
+            self.cursor.execute("SELECT 1 FROM prompts WHERE name=? LIMIT 1", (name,))
+            return self.cursor.fetchone() is not None
+        except sqlite3.Error:
+            return False
+
     def execute_workflow(self):
         """ExÃ©cuter le workflow avec comfyui_basic_task en arriÃ¨re-plan"""
         if not self.selected_prompt_id:
@@ -972,33 +1092,33 @@ class process_prompts_manager:
 
                 # RÃ©cupÃ©rer les images gÃ©nÃ©rÃ©es
                 output_images = tsk1.GetImages(promptId)
-                print(f"Images generees: {output_images}")
+                #print(f"Images generees: {output_images}")
 
                 updated_values = getattr(tsk1, 'values', None)
                 if output_images:
+                    output_entry = {"type": "output", "value": output_images}
                     if isinstance(updated_values, dict):
-                        updated_values["output_image"] = output_images
+                        updated_values["output_image"] = output_entry
                     else:
-                        updated_values = {"output_image": output_images}
+                        updated_values = {"output_image": output_entry}
                         setattr(tsk1, "values", updated_values)
                 updated_workflow = getattr(tsk1, 'last_workflow', None)
                 try:
-                    parent_pk = int(prompt_id)
+                    prompt_pk = int(prompt_id)
                 except (TypeError, ValueError):
-                    parent_pk = prompt_id
+                    prompt_pk = prompt_id
 
                 new_prompt_values = json.dumps(updated_values, ensure_ascii=False) if updated_values is not None else prompt_values_json
                 new_workflow = json.dumps(updated_workflow, ensure_ascii=False) if updated_workflow is not None else workflow_json
 
                 try:
                     model_value = self.derive_model_from_workflow(new_workflow)
-                    cursor.execute("INSERT INTO prompts (name, prompt_values, workflow, image, url, parent, model) VALUES (?, ?, ?, ?, ?, ?, ?)",
-                                   (name, new_prompt_values, new_workflow, image, url, parent_pk, model_value))
+                    cursor.execute("UPDATE prompts SET prompt_values=?, workflow=?, image=?, url=?, model=? WHERE id=?",
+                                   (new_prompt_values, new_workflow, image, url, model_value, prompt_pk))
                     conn.commit()
-                    new_prompt_pk = cursor.lastrowid
-                    self.root.after(0, lambda pid=new_prompt_pk: self._refresh_prompt_after_execution(pid))
-                except Exception as insert_err:
-                    print(f"Erreur lors de l'insertion du nouveau prompt: {insert_err}")
+                    self.root.after(0, lambda pid=prompt_pk: self._refresh_prompt_after_execution(pid))
+                except Exception as update_err:
+                    print(f"Erreur lors de la mise a jour du prompt: {update_err}")
 
                 # Nettoyer les fichiers
                 try:
