@@ -27,6 +27,11 @@ class process_prompts_manager:
         self.execution_stack = []  # Pile pour surveiller les workflows
         self.values_data = {}
         self.value_row_counter = 0
+        self.status_options = ("new", "test", "ok", "nok")
+        self.status_editor = None
+        self.status_column_identifier = None
+        self.comment_editor = None
+        self.comment_column_identifier = None
 
         # Charger la configuration
         self.config = self.load_config()
@@ -65,7 +70,9 @@ class process_prompts_manager:
                     image TEXT,
                     url TEXT,
                     parent INTEGER,
-                    model TEXT
+                    model TEXT,
+                    comment TEXT,
+                    status TEXT DEFAULT 'new'
                 )
             ''')
             self.conn.commit()
@@ -84,11 +91,14 @@ class process_prompts_manager:
                     image TEXT,
                     url TEXT,
                     parent INTEGER,
-                    model TEXT
+                    model TEXT,
+                    comment TEXT,
+                    status TEXT DEFAULT 'new'
                 )
             ''')
             self.conn.commit()
             self.ensure_additional_columns()
+
 
 
     def ensure_additional_columns(self):
@@ -97,16 +107,29 @@ class process_prompts_manager:
             self.cursor.execute("PRAGMA table_info(prompts)")
             columns = [row[1] for row in self.cursor.fetchall()]
             alterations = []
+            status_missing = "status" not in columns
+            comment_missing = "comment" not in columns
             if "parent" not in columns:
                 alterations.append("ALTER TABLE prompts ADD COLUMN parent INTEGER")
             if "model" not in columns:
                 alterations.append("ALTER TABLE prompts ADD COLUMN model TEXT")
+            if comment_missing:
+                alterations.append("ALTER TABLE prompts ADD COLUMN comment TEXT")
+            if status_missing:
+                alterations.append("ALTER TABLE prompts ADD COLUMN status TEXT DEFAULT 'new'")
             for statement in alterations:
                 self.cursor.execute(statement)
             if alterations:
                 self.conn.commit()
+            if status_missing:
+                try:
+                    self.cursor.execute("UPDATE prompts SET status='new' WHERE status IS NULL OR TRIM(status)='' ")
+                    self.conn.commit()
+                except sqlite3.OperationalError:
+                    pass
         except sqlite3.OperationalError as exc:
             print(f"Impossible d'ajouter des colonnes optionnelles : {exc}")
+
 
     def derive_model_from_workflow(self, workflow_data):
         """Extract model name from workflow JSON content."""
@@ -127,18 +150,32 @@ class process_prompts_manager:
             root, _ = os.path.splitext(base)
             return root or base or model_name
 
+        def extract_model_name(raw_value):
+            if isinstance(raw_value, str) and raw_value:
+                return normalize(raw_value)
+            if isinstance(raw_value, (list, tuple)):
+                for item in raw_value:
+                    if isinstance(item, str) and item:
+                        return normalize(item)
+            return ""
+
         for node in workflow_dict.values():
             if not isinstance(node, dict):
                 continue
-            if node.get("class_type") == "CheckpointLoaderSimple":
-                inputs = node.get("inputs", {})
-                ckpt_name = inputs.get("ckpt_name")
-                if isinstance(ckpt_name, str):
-                    return normalize(ckpt_name)
-                if isinstance(ckpt_name, (list, tuple)):
-                    for item in ckpt_name:
-                        if isinstance(item, str) and item:
-                            return normalize(item)
+            class_type = node.get("class_type")
+            if not isinstance(class_type, str):
+                continue
+            inputs = node.get("inputs", {})
+            if not isinstance(inputs, dict):
+                continue
+            if class_type == "CheckpointLoaderSimple":
+                model_name = extract_model_name(inputs.get("ckpt_name"))
+                if model_name:
+                    return model_name
+            if class_type.lower() == "unetloader":
+                model_name = extract_model_name(inputs.get("unet_name"))
+                if model_name:
+                    return model_name
         return ""
 
     def setup_ui(self):
@@ -211,74 +248,80 @@ class process_prompts_manager:
             elif not show and managed:
                 button.pack_forget()
 
+
     def create_table_frame(self, parent):
-        """CrÃ©er le tableau des prompts"""
+        """Creer le tableau des prompts"""
         table_frame = ttk.LabelFrame(parent, text="Liste des Prompts")
         table_frame.pack(fill="both", expand=True, padx=(0, 5))
 
-        # Configuration du tableau
-        columns = ("id", "name", "model", "parent", "image")
+        columns = ("id", "name", "status", "model", "comment", "parent", "image")
         self.tree = ttk.Treeview(table_frame, columns=columns, show="headings", height=20)
-        column_titles = {"id": "ID", "name": "Name", "model": "Model", "parent": "Parent", "image": "Image"}
-        column_widths = {"id": 80, "name": 220, "model": 180, "parent": 120, "image": 220}
+        column_titles = {
+            "id": "ID",
+            "name": "Name",
+            "status": "Status",
+            "model": "Model",
+            "comment": "Comment",
+            "parent": "Parent",
+            "image": "Image",
+        }
         for col in columns:
             self.tree.heading(col, text=column_titles.get(col, col.capitalize()))
-            self.tree.column(col, width=column_widths.get(col, 200))
 
-        # Scrollbar
+        self.configure_prompts_tree_columns()
+
+        self.status_column_identifier = f"#{columns.index('status') + 1}"
+        self.comment_column_identifier = f"#{columns.index('comment') + 1}"
+
         scrollbar = ttk.Scrollbar(table_frame, orient="vertical", command=self.tree.yview)
         self.tree.configure(yscrollcommand=scrollbar.set)
 
-        # Placement des widgets
         self.tree.pack(side="left", fill="both", expand=True)
         scrollbar.pack(side="right", fill="y")
 
-        # Ã‰vÃ©nements
         self.tree.bind("<<TreeviewSelect>>", self.on_select_prompt)
         self.tree.bind("<Double-1>", self.on_double_click)
 
+
+
     def create_form_frame(self, parent):
-        """CrÃ©er le formulaire de dÃ©tails permanent"""
-        form_frame = ttk.LabelFrame(parent, text="DÃ©tails du Prompt")
+        """Creer le formulaire de details permanent"""
+        form_frame = ttk.LabelFrame(parent, text="Details du Prompt")
         form_frame.pack(fill="both", expand=True, padx=(5, 0))
 
-        # Variables pour les champs
         self.name_var = tk.StringVar()
         self.url_var = tk.StringVar()
         self.image_var = tk.StringVar()
+        self.comment_var = tk.StringVar()
 
-        # Frame pour les champs
         fields_frame = ttk.Frame(form_frame)
         fields_frame.pack(fill="both", expand=True, padx=10, pady=10)
 
-        # Champ Nom
         ttk.Label(fields_frame, text="Nom:").grid(row=0, column=0, sticky="w", pady=5)
         ttk.Entry(fields_frame, textvariable=self.name_var, width=40).grid(row=0, column=1, sticky="ew", padx=(10, 0))
 
-        # Champ URL
         ttk.Label(fields_frame, text="URL:").grid(row=1, column=0, sticky="w", pady=5)
         ttk.Entry(fields_frame, textvariable=self.url_var, width=40).grid(row=1, column=1, sticky="ew", padx=(10, 0))
 
-        # Champ Image
         ttk.Label(fields_frame, text="Image:").grid(row=2, column=0, sticky="w", pady=5)
         image_frame = ttk.Frame(fields_frame)
         image_frame.grid(row=2, column=1, sticky="ew", padx=(10, 0))
         ttk.Entry(image_frame, textvariable=self.image_var).pack(side="left", fill="x", expand=True)
-        ttk.Button(image_frame, text="...", width=3, 
-                  command=lambda: self.select_image(self.image_var)).pack(side="left", padx=5)
+        ttk.Button(image_frame, text="...", width=3, command=lambda: self.select_image(self.image_var)).pack(side="left", padx=5)
 
-        # Tableau des valeurs JSON
-        ttk.Label(fields_frame, text="Values:").grid(row=3, column=0, sticky="nw", pady=5)
+        ttk.Label(fields_frame, text="Commentaire:").grid(row=3, column=0, sticky="w", pady=5)
+        ttk.Entry(fields_frame, textvariable=self.comment_var, width=40).grid(row=3, column=1, sticky="ew", padx=(10, 0))
+
+        ttk.Label(fields_frame, text="Values:").grid(row=4, column=0, sticky="nw", pady=5)
         values_frame = ttk.Frame(fields_frame, height=200)
-        values_frame.grid(row=3, column=1, sticky="nsew", padx=(10, 0), pady=5)
+        values_frame.grid(row=4, column=1, sticky="nsew", padx=(10, 0), pady=5)
         values_frame.pack_propagate(False)
 
         columns = ("key", "id", "type", "value", "action")
         self.values_tree = ttk.Treeview(values_frame, columns=columns, show="headings", height=6)
         for col in columns:
             self.values_tree.heading(col, text=col.capitalize())
-            
-        # Configurer les tailles des colonnes
+
         self.configure_values_tree_columns()
 
         scrollbar = ttk.Scrollbar(values_frame, orient="vertical", command=self.values_tree.yview)
@@ -286,24 +329,21 @@ class process_prompts_manager:
         self.values_tree.pack(side="left", fill="both", expand=True)
         scrollbar.pack(side="right", fill="y")
 
-        # Boutons pour les valeurs
         values_btn_frame = ttk.Frame(fields_frame)
-        values_btn_frame.grid(row=4, column=1, sticky="ew", padx=(10, 0))
+        values_btn_frame.grid(row=5, column=1, sticky="ew", padx=(10, 0))
         ttk.Button(values_btn_frame, text="Ajouter ligne", command=self.add_values_row).pack(side="left", padx=5)
         ttk.Button(values_btn_frame, text="Supprimer ligne", command=self.delete_values_row).pack(side="left", padx=5)
 
-        # Tableau du workflow
-        ttk.Label(fields_frame, text="Workflow:").grid(row=5, column=0, sticky="nw", pady=5)
+        ttk.Label(fields_frame, text="Workflow:").grid(row=6, column=0, sticky="nw", pady=5)
         workflow_frame = ttk.Frame(fields_frame, height=200)
-        workflow_frame.grid(row=5, column=1, sticky="nsew", padx=(10, 0), pady=5)
+        workflow_frame.grid(row=6, column=1, sticky="nsew", padx=(10, 0), pady=5)
         workflow_frame.pack_propagate(False)
 
         wf_columns = ("id", "class_type", "input", "title")
         self.workflow_tree = ttk.Treeview(workflow_frame, columns=wf_columns, show="headings", height=6)
         for col in wf_columns:
             self.workflow_tree.heading(col, text=col)
-            
-        # Configurer les tailles des colonnes
+
         self.configure_workflow_tree_columns()
 
         wf_scrollbar = ttk.Scrollbar(workflow_frame, orient="vertical", command=self.workflow_tree.yview)
@@ -311,28 +351,23 @@ class process_prompts_manager:
         self.workflow_tree.pack(side="left", fill="both", expand=True)
         wf_scrollbar.pack(side="right", fill="y")
 
-        # Configuration de la grille
         fields_frame.grid_columnconfigure(1, weight=1)
-        fields_frame.grid_rowconfigure(3, weight=1)
-        fields_frame.grid_rowconfigure(5, weight=1)
+        fields_frame.grid_rowconfigure(4, weight=1)
+        fields_frame.grid_rowconfigure(6, weight=1)
 
-        # Boutons du formulaire
         form_buttons = ttk.Frame(form_frame)
         form_buttons.pack(fill="x", padx=10, pady=10)
-        
+
         ttk.Button(form_buttons, text="Sauvegarder", command=self.save_prompt).pack(side="left", padx=5)
-        self.execute_button = ttk.Button(form_buttons, text="Exécuter", command=self.execute_workflow)
+        self.execute_button = ttk.Button(form_buttons, text="Executer", command=self.execute_workflow)
         self.execute_button.pack(side="left", padx=5)
         self.inherit_button = ttk.Button(form_buttons, text="Heriter", command=self.inherit_prompt)
         self._inherit_button_visible = False
         ttk.Button(form_buttons, text="Annuler", command=self.clear_form).pack(side="left", padx=5)
-        #ttk.Button(form_buttons, text="Nouveau", command=self.new_prompt).pack(side="left", padx=5)
-        # Ajouter le bouton pour ouvrir le programme d'analyse
         ttk.Button(form_buttons, text="Analyser Prompt", command=self.open_prompt_analysis).pack(side="left", padx=5)
-        
+
         self.update_execution_controls(False)
-        # Lier les Ã©vÃ©nements aprÃ¨s la crÃ©ation des widgets
-        self.values_tree.bind("<Double-1>", self.on_double_click_values)
+
 
     def update_execution_controls(self, has_output: bool):
         """Toggle execution-related buttons based on output presence."""
@@ -354,17 +389,135 @@ class process_prompts_manager:
 
 
     # MÃ©thodes pour gÃ©rer le formulaire permanent
+
     def on_select_prompt(self, event):
-        """GÃ©rer la sÃ©lection d'une ligne dans le tableau"""
+        """Gerer la selection d'une ligne dans le tableau"""
+        self._hide_status_editor()
+        self._hide_comment_editor()
         selection = self.tree.selection()
         self.toggle_selection_buttons(bool(selection))
         if selection:
-            prompt_id = selection[0]  # L'ID est stockÃ© comme iid
+            prompt_id = selection[0]
             self.load_prompt_details(prompt_id)
 
+
     def on_double_click(self, event):
-        """GÃ©rer le double-clic sur une ligne"""
+        """Gerer le double-clic sur une ligne"""
+        item_id = self.tree.identify_row(event.y)
+        column = self.tree.identify_column(event.x)
+        if self.status_column_identifier and column == self.status_column_identifier and item_id:
+            self.show_status_editor(item_id)
+            return
+        self._hide_status_editor()
         self.edit_prompt()
+
+    def show_status_editor(self, item_id):
+        """Afficher un editeur inline pour le statut."""
+        if not item_id:
+            return
+        self._hide_status_editor()
+        bbox = self.tree.bbox(item_id, "status")
+        if not bbox:
+            return
+        x, y, width, height = bbox
+        editor = ttk.Combobox(self.tree, values=self.status_options, state="readonly")
+        current = self.tree.set(item_id, "status")
+        if current not in self.status_options:
+            current = self.status_options[0]
+        editor.set(current or self.status_options[0])
+        editor.place(x=x, y=y, width=width, height=height)
+        editor.focus_set()
+        editor.bind("<<ComboboxSelected>>", lambda _event: self.commit_status(item_id))
+        editor.bind("<Return>", lambda _event: self.commit_status(item_id))
+        editor.bind("<Escape>", lambda _event: self._hide_status_editor())
+        editor.bind("<FocusOut>", lambda _event: self._hide_status_editor())
+        self.status_editor = editor
+
+    def commit_status(self, item_id):
+        """Valider la mise a jour du statut dans la base."""
+        if not self.status_editor:
+            return
+        new_status = self.status_editor.get()
+        if new_status not in self.status_options:
+            new_status = self.status_options[0]
+        current_status = self.tree.set(item_id, "status")
+        if current_status == new_status:
+            self._hide_status_editor()
+            return
+        try:
+            prompt_id = int(item_id)
+        except (TypeError, ValueError):
+            prompt_id = item_id
+        try:
+            self.cursor.execute("UPDATE prompts SET status=? WHERE id=?", (new_status, prompt_id))
+            self.conn.commit()
+            self.tree.set(item_id, "status", new_status)
+        except sqlite3.Error as exc:
+            messagebox.showerror("Erreur", f"Impossible de mettre a jour le statut : {exc}")
+        finally:
+            self._hide_status_editor()
+
+
+    def _hide_status_editor(self):
+        """Masquer l'editeur de statut s'il est affiche."""
+        if self.status_editor is not None:
+            try:
+                self.status_editor.destroy()
+            except tk.TclError:
+                pass
+            self.status_editor = None
+
+    def show_comment_editor(self, item_id):
+        """Afficher un editeur inline pour le commentaire."""
+        if not item_id:
+            return
+        self._hide_comment_editor()
+        self._hide_status_editor()
+        bbox = self.tree.bbox(item_id, "comment")
+        if not bbox:
+            return
+        x, y, width, height = bbox
+        editor = tk.Entry(self.tree)
+        current = self.tree.set(item_id, "comment") or ""
+        editor.insert(0, current)
+        editor.place(x=x, y=y, width=width, height=height)
+        editor.focus_set()
+        editor.bind("<Return>", lambda _event: self.commit_comment(item_id))
+        editor.bind("<Escape>", lambda _event: self._hide_comment_editor())
+        editor.bind("<FocusOut>", lambda _event: self._hide_comment_editor())
+        self.comment_editor = editor
+
+    def commit_comment(self, item_id):
+        """Valider la mise a jour du commentaire dans la base."""
+        if not self.comment_editor:
+            return
+        new_comment = self.comment_editor.get().strip()
+        current_comment = self.tree.set(item_id, "comment")
+        if new_comment == current_comment:
+            self._hide_comment_editor()
+            return
+        try:
+            prompt_id = int(item_id)
+        except (TypeError, ValueError):
+            prompt_id = item_id
+        try:
+            self.cursor.execute("UPDATE prompts SET comment=? WHERE id=?", (new_comment, prompt_id))
+            self.conn.commit()
+            self.tree.set(item_id, "comment", new_comment)
+        except sqlite3.Error as exc:
+            messagebox.showerror("Erreur", f"Impossible de mettre a jour le commentaire : {exc}")
+        finally:
+            self._hide_comment_editor()
+
+    def _hide_comment_editor(self):
+        """Masquer l'editeur de commentaire s'il est affiche."""
+        if self.comment_editor is not None:
+            try:
+                self.comment_editor.destroy()
+            except tk.TclError:
+                pass
+            self.comment_editor = None
+
 
     def on_double_click_values(self, event):
         """Permettre l'edition inline dans le tableau des values"""
@@ -689,21 +842,33 @@ class process_prompts_manager:
         self.save_config(self.config)
         messagebox.showinfo("SuccÃ¨s", f"RÃ©pertoire des images configurÃ©: {images_dir}")
 
+
     def load_prompts(self):
+        self._hide_status_editor()
+        self._hide_comment_editor()
         self.tree.delete(*self.tree.get_children())
-        self.cursor.execute("SELECT id, name, parent, image, model, workflow FROM prompts")
+        self.cursor.execute("SELECT id, name, parent, image, model, workflow, status, comment FROM prompts")
         pending_updates = []
+        pending_status = []
         for row in self.cursor.fetchall():
-            id_, name, parent, image, model, workflow = row
+            id_, name, parent, image, model, workflow, status, comment = row
             model_to_use = model or self.derive_model_from_workflow(workflow)
             if model_to_use and model != model_to_use:
                 pending_updates.append((model_to_use, id_))
             parent_display = "" if parent is None else str(parent)
-            self.tree.insert("", "end", iid=id_, values=(id_, name, model_to_use or "", parent_display, image))
+            status_value = status if isinstance(status, str) and status else self.status_options[0]
+            if status_value != status:
+                pending_status.append((status_value, id_))
+            comment_value = comment if isinstance(comment, str) else ""
+            self.tree.insert("", "end", iid=id_, values=(id_, name, status_value, model_to_use or "", comment_value, parent_display, image))
         if pending_updates:
             self.cursor.executemany("UPDATE prompts SET model=? WHERE id=?", pending_updates)
+        if pending_status:
+            self.cursor.executemany("UPDATE prompts SET status=? WHERE id=?", pending_status)
+        if pending_updates or pending_status:
             self.conn.commit()
         self.toggle_selection_buttons(False)
+
 
     def get_workflow_json(self, prompt_id):
         """Utility to fetch workflow JSON for a prompt."""
@@ -714,18 +879,20 @@ class process_prompts_manager:
         except sqlite3.Error:
             return None
 
+
     def load_prompt_details(self, prompt_id):
         """Charger les details d'un prompt dans le formulaire"""
         has_output_type = False
         try:
-            self.cursor.execute("SELECT name, prompt_values, workflow, image, url, model FROM prompts WHERE id=?", (prompt_id,))
+            self.cursor.execute("SELECT name, prompt_values, workflow, image, url, model, comment FROM prompts WHERE id=?", (prompt_id,))
             row = self.cursor.fetchone()
             if row:
-                name, prompt_values, workflow, image, url, _model = row
+                name, prompt_values, workflow, image, url, _model, _comment = row
                 self.selected_prompt_id = prompt_id
                 self.name_var.set(name)
                 self.image_var.set(image or "")
                 self.url_var.set(url or "")
+                self.comment_var.set(_comment or "")
 
                 self.values_tree.delete(*self.values_tree.get_children())
                 self.values_data.clear()
@@ -747,14 +914,13 @@ class process_prompts_manager:
                         if not display_value and extras:
                             display_value = json.dumps(extras, ensure_ascii=False)
                             entry["__display_value"] = display_value
-                        
-                        # DÃ©finir l'action selon le type
+
                         action = ""
                         if type_val == "prompt":
                             action = "edit"
                         elif type_val == "image":
                             action = "image"
-                        
+
                         self.values_tree.insert("", "end", iid=key, values=(key, id_val, type_val, display_value, action))
                         entry.setdefault("id", id_val)
                         entry.setdefault("type", type_val)
@@ -786,9 +952,13 @@ class process_prompts_manager:
         finally:
             self.update_execution_controls(has_output_type)
 
+
+
     def clear_form(self):
         """Vider le formulaire"""
         self.selected_prompt_id = None
+        self._hide_status_editor()
+        self._hide_comment_editor()
         if hasattr(self, 'tree'):
             self.tree.selection_remove(self.tree.selection())
         if hasattr(self, 'delete_button'):
@@ -796,89 +966,79 @@ class process_prompts_manager:
         self.name_var.set("")
         self.url_var.set("")
         self.image_var.set("")
+        self.comment_var.set("")
         self.values_tree.delete(*self.values_tree.get_children())
         self.workflow_tree.delete(*self.workflow_tree.get_children())
         self.values_data.clear()
         self.value_row_counter = 0
         self.update_execution_controls(False)
 
+
     def new_prompt(self):
         """Ouvre une popup pour saisir les informations d'un nouveau prompt"""
         self.prompt_form(mode="new")
 
+
     def prompt_form(self, mode="new", prompt_id=None):
-        """
-        Affiche un formulaire pour ajouter ou modifier un prompt.
-        :param mode: "new" pour ajouter un nouveau prompt, "edit" pour modifier un prompt existant.
-        :param prompt_id: ID du prompt Ã  modifier (nÃ©cessaire pour le mode "edit").
-        """
-        # CrÃ©er une fenÃªtre popup
+        """Afficher un formulaire pour ajouter ou modifier un prompt."""
         popup = tk.Toplevel(self.root)
-        popup.title("CrÃ©er un nouveau prompt" if mode == "new" else "Modifier le prompt")
+        popup.title("Creer un nouveau prompt" if mode == "new" else "Modifier le prompt")
         popup.transient(self.root)
         popup.grab_set()
 
-        # Centrer la fenÃªtre
-        self.center_window(popup, width=700, height=500)
+        self.center_window(popup, width=700, height=520)
 
-        # Variables pour les champs
         name_var = tk.StringVar()
         url_var = tk.StringVar()
         prompt_values_var = "{}"
         workflow_var = "{}"
+        model_var = tk.StringVar()
+        comment_var = tk.StringVar()
 
-        # Si mode "edit", charger les donnÃ©es existantes
         if mode == "edit" and prompt_id:
-            self.cursor.execute("SELECT name, prompt_values, workflow, url, model FROM prompts WHERE id=?", (prompt_id,))
+            self.cursor.execute("SELECT name, prompt_values, workflow, url, model, comment FROM prompts WHERE id=?", (prompt_id,))
             row = self.cursor.fetchone()
             if row:
-                name, prompt_values, workflow, url, _model = row
+                name, prompt_values, workflow, url, _model, _comment = row
                 name_var.set(name)
                 url_var.set(url or "")
                 prompt_values_var = prompt_values or "{}"
                 workflow_var = workflow or "{}"
+                model_var.set(_model or "")
+                comment_var.set(_comment or "")
         else:
-            # Mode "new" : utiliser les valeurs par dÃ©faut de add_default_basic_prompt
             default_prompt_values = {
-                "1": {
-                    "id": "6",
-                    "type": "prompt",
-                    "value": "beautiful scenery nature glass bottle landscape, purple galaxy bottle"
-                },
-                "2": {
-                    "id": "7",
-                    "type": "prompt",
-                    "value": "text, watermark"
-                },
-                "3": {
-                    "id": "3",
-                    "type": "seed",
-                    "value": 1234567
-                },
-                "4": {
-                    "id": "9",
-                    "type": "SaveImage",
-                    "filename_prefix": "basic"
-                }
+                "1": {"id": "6", "type": "prompt", "value": "beautiful scenery nature glass bottle landscape, purple galaxy bottle"},
+                "2": {"id": "7", "type": "prompt", "value": "text, watermark"},
+                "3": {"id": "3", "type": "seed", "value": 1234567},
+                "4": {"id": "9", "type": "SaveImage", "filename_prefix": "basic"},
             }
             prompt_values_var = json.dumps(default_prompt_values, indent=2, ensure_ascii=False)
 
-        # Champs de saisie
+        if not model_var.get():
+            auto_model = self.derive_model_from_workflow(workflow_var)
+            if auto_model:
+                model_var.set(auto_model)
+
         ttk.Label(popup, text="Nom:").pack(anchor="w", padx=10, pady=5)
         ttk.Entry(popup, textvariable=name_var, width=60).pack(fill="x", padx=10, pady=5)
 
         ttk.Label(popup, text="URL:").pack(anchor="w", padx=10, pady=5)
         ttk.Entry(popup, textvariable=url_var, width=60).pack(fill="x", padx=10, pady=5)
 
-        # Champs pour le prompt_values JSON
+        ttk.Label(popup, text="Model:").pack(anchor="w", padx=10, pady=5)
+        ttk.Entry(popup, textvariable=model_var, width=60).pack(fill="x", padx=10, pady=5)
+
+        ttk.Label(popup, text="Commentaire:").pack(anchor="w", padx=10, pady=5)
+        ttk.Entry(popup, textvariable=comment_var, width=60).pack(fill="x", padx=10, pady=5)
+
         ttk.Label(popup, text="Prompt Values (JSON):").pack(anchor="w", padx=10, pady=5)
         prompt_values_frame = ttk.Frame(popup)
         prompt_values_frame.pack(fill="x", padx=10, pady=5)
 
         prompt_values_text = tk.Text(prompt_values_frame, height=5, wrap="word")
         prompt_values_text.pack(side="left", fill="both", expand=True)
-        
-        # InsÃ©rer le contenu initial
+
         try:
             if prompt_values_var != "{}":
                 formatted_json = json.dumps(json.loads(prompt_values_var), indent=2, ensure_ascii=False)
@@ -890,15 +1050,13 @@ class process_prompts_manager:
 
         ttk.Button(prompt_values_frame, text="...", command=lambda: self.load_json_to_text(prompt_values_text)).pack(side="left", padx=5)
 
-        # Champs pour le workflow JSON
         ttk.Label(popup, text="Workflow (JSON):").pack(anchor="w", padx=10, pady=5)
         workflow_frame = ttk.Frame(popup)
         workflow_frame.pack(fill="x", padx=10, pady=5)
 
         workflow_text = tk.Text(workflow_frame, height=5, wrap="word")
         workflow_text.pack(side="left", fill="both", expand=True)
-        
-        # InsÃ©rer le contenu initial du workflow
+
         try:
             if workflow_var != "{}":
                 formatted_json = json.dumps(json.loads(workflow_var), indent=2, ensure_ascii=False)
@@ -910,10 +1068,11 @@ class process_prompts_manager:
 
         ttk.Button(workflow_frame, text="...", command=lambda: self.load_json_to_text(workflow_text)).pack(side="left", padx=5)
 
-        # Bouton pour sauvegarder
         def save_prompt():
             name = name_var.get().strip()
             url = url_var.get().strip()
+            model_value = model_var.get().strip()
+            comment_value = comment_var.get().strip()
             prompt_values = prompt_values_text.get("1.0", "end-1c").strip()
             workflow = workflow_text.get("1.0", "end-1c").strip()
 
@@ -922,30 +1081,28 @@ class process_prompts_manager:
                 return
 
             try:
-                # VÃ©rifier si les JSON sont valides
                 prompt_values_dict = json.loads(prompt_values) if prompt_values else {}
                 workflow_dict = json.loads(workflow) if workflow else {}
                 derived_model = self.derive_model_from_workflow(workflow_dict)
+                model_to_store = model_value or derived_model
 
                 if mode == "new":
-                    # InsÃ©rer dans la base de donnÃ©es
                     self.cursor.execute(
-                        "INSERT INTO prompts (name, prompt_values, workflow, url, model) VALUES (?, ?, ?, ?, ?)",
-                        (name, json.dumps(prompt_values_dict, ensure_ascii=False), json.dumps(workflow_dict, ensure_ascii=False), url, derived_model)
+                        "INSERT INTO prompts (name, prompt_values, workflow, url, model, status, comment) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                        (name, json.dumps(prompt_values_dict, ensure_ascii=False), json.dumps(workflow_dict, ensure_ascii=False), url, model_to_store, self.status_options[0], comment_value),
                     )
                 elif mode == "edit" and prompt_id:
-                    # Mettre Ã  jour la base de donnÃ©es
                     self.cursor.execute(
-                        "UPDATE prompts SET name=?, prompt_values=?, workflow=?, url=?, model=? WHERE id=?",
-                        (name, json.dumps(prompt_values_dict, ensure_ascii=False), json.dumps(workflow_dict, ensure_ascii=False), url, derived_model, prompt_id)
+                        "UPDATE prompts SET name=?, prompt_values=?, workflow=?, url=?, model=?, comment=? WHERE id=?",
+                        (name, json.dumps(prompt_values_dict, ensure_ascii=False), json.dumps(workflow_dict, ensure_ascii=False), url, model_to_store, comment_value, prompt_id),
                     )
 
                 self.conn.commit()
                 self.load_prompts()
                 popup.destroy()
-                messagebox.showinfo("SuccÃ¨s", "Prompt sauvegardÃ© avec succÃ¨s.")
+                messagebox.showinfo("Succes", "Prompt sauvegarde avec succes.")
             except json.JSONDecodeError as e:
-                messagebox.showerror("Erreur", f"Les champs JSON contiennent des donnÃ©es invalides : {e}")
+                messagebox.showerror("Erreur", f"Les champs JSON contiennent des donnees invalides : {e}")
             except Exception as e:
                 messagebox.showerror("Erreur", f"Une erreur s'est produite : {e}")
 
@@ -987,10 +1144,11 @@ class process_prompts_manager:
             pass
         return '9'
 
+
     def inherit_prompt(self):
         """Duplicate the selected prompt without output entries."""
         if not self.selected_prompt_id:
-            messagebox.showwarning("Information", "Veuillez sélectionner un prompt avant d'hériter.")
+            messagebox.showwarning("Information", "Veuillez selectionner un prompt avant d'heriter.")
             return
 
         selected_id = self.selected_prompt_id
@@ -1000,17 +1158,17 @@ class process_prompts_manager:
             prompt_pk = selected_id
 
         try:
-            self.cursor.execute("SELECT name, prompt_values, workflow, image, url, model FROM prompts WHERE id=?", (prompt_pk,))
+            self.cursor.execute("SELECT name, prompt_values, workflow, image, url, model, comment FROM prompts WHERE id=?", (prompt_pk,))
             row = self.cursor.fetchone()
         except sqlite3.Error as exc:
-            messagebox.showerror("Erreur", f"Impossible de récupérer le prompt sélectionné : {exc}")
+            messagebox.showerror("Erreur", f"Impossible de recuperer le prompt selectionne : {exc}")
             return
 
         if not row:
             messagebox.showerror("Erreur", "Prompt introuvable.")
             return
 
-        name, prompt_values, workflow, image, url, model = row
+        name, prompt_values, workflow, image, url, model, comment = row
         try:
             values_dict = json.loads(prompt_values) if prompt_values else {}
         except (TypeError, json.JSONDecodeError) as exc:
@@ -1042,12 +1200,12 @@ class process_prompts_manager:
 
         try:
             self.cursor.execute(
-                "INSERT INTO prompts (name, prompt_values, workflow, image, url, parent, model) VALUES (?, ?, ?, ?, ?, ?, ?)",
-                (new_name, new_prompt_values, workflow, image, url, parent_value, model_value),
+                "INSERT INTO prompts (name, prompt_values, workflow, image, url, parent, model, status, comment) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                (new_name, new_prompt_values, workflow, image, url, parent_value, model_value, self.status_options[0], comment or ""),
             )
             self.conn.commit()
         except sqlite3.Error as exc:
-            messagebox.showerror("Erreur", f"Impossible de créer le prompt hérité : {exc}")
+            messagebox.showerror("Erreur", f"Impossible de creer le prompt herite : {exc}")
             return
 
         new_prompt_id = self.cursor.lastrowid
@@ -1094,10 +1252,10 @@ class process_prompts_manager:
             conn = sqlite3.connect(self.db_path)
             cursor = conn.cursor()
 
-            cursor.execute("SELECT workflow, prompt_values, name, image, url FROM prompts WHERE id=?", (prompt_id,))
+            cursor.execute("SELECT workflow, prompt_values, name, image, url, comment FROM prompts WHERE id=?", (prompt_id,))
             row = cursor.fetchone()
             if row:
-                workflow_json, prompt_values_json, name, image, url = row
+                workflow_json, prompt_values_json, name, image, url, comment = row
 
                 # Mettre Ã  jour le statut dans la pile d'exÃ©cution
                 self.update_execution_stack_status(execution_id, f"PrÃ©paration: {name}")
@@ -1172,8 +1330,8 @@ class process_prompts_manager:
 
                 try:
                     model_value = self.derive_model_from_workflow(new_workflow)
-                    cursor.execute("UPDATE prompts SET prompt_values=?, workflow=?, image=?, url=?, model=? WHERE id=?",
-                                   (new_prompt_values, new_workflow, image, url, model_value, prompt_pk))
+                    cursor.execute("UPDATE prompts SET prompt_values=?, workflow=?, image=?, url=?, model=?, comment=? WHERE id=?",
+                                   (new_prompt_values, new_workflow, image, url, model_value, comment or "", prompt_pk))
                     conn.commit()
                     self.root.after(0, lambda pid=prompt_pk: self._refresh_prompt_after_execution(pid))
                 except Exception as update_err:
@@ -1310,8 +1468,8 @@ class process_prompts_manager:
         url = ""
         default_model = self.derive_model_from_workflow(workflow)
         self.cursor.execute(
-            "INSERT INTO prompts (name, prompt_values, workflow, image, url, model) VALUES (?, ?, ?, ?, ?, ?)",
-            (name, prompt_values, workflow, image, url, default_model)
+            "INSERT INTO prompts (name, prompt_values, workflow, image, url, model, status, comment) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+            (name, prompt_values, workflow, image, url, default_model, self.status_options[0], "")
         )
         self.conn.commit()
 
@@ -1323,6 +1481,14 @@ class process_prompts_manager:
 
         prompt_id = str(self.selected_prompt_id)
 
+        load_dotenv()
+        db_path = os.getenv("PROMPTS_WORK_DB", "").strip()
+        if not db_path:
+            messagebox.showerror("Erreur", "La variable PROMPTS_WORK_DB est absente dans le fichier .env.")
+            return
+
+        prompt_origin = "COM"
+
         for item_id in self.values_tree.get_children():
             values = self.values_tree.item(item_id, "values")
             type_val = values[2]
@@ -1331,7 +1497,7 @@ class process_prompts_manager:
                 if prompt_value:
                     try:
                         from cy_venv_utils import run_python_script
-                        run_python_script('cy2_analyse_prompt', ['--prompt_id', prompt_id, '--prompt_text', f'"{prompt_value}"'])
+                        run_python_script('cy2_analyse_prompt', ['--prompt_id', prompt_id, '--prompt_origin', prompt_origin, '--db_path', f'"{db_path}"', '--prompt_text', f'"{prompt_value}"'])
                         return
                     except Exception as e:
                         messagebox.showerror("Erreur", f"Impossible de lancer l'analyse du prompt : {e}")
@@ -1452,6 +1618,7 @@ class process_prompts_manager:
             self.values_tree.delete(item)
             self.values_data.pop(item, None)
 
+
     def save_prompt(self):
         """Sauvegarder le prompt courant"""
         if not self.selected_prompt_id:
@@ -1461,6 +1628,7 @@ class process_prompts_manager:
         name = self.name_var.get().strip()
         url = self.url_var.get().strip()
         image = self.image_var.get().strip()
+        comment = self.comment_var.get().strip()
 
         if not name:
             messagebox.showerror("Erreur", "Le nom est obligatoire.")
@@ -1488,8 +1656,8 @@ class process_prompts_manager:
 
             derived_model = self.derive_model_from_workflow(self.get_workflow_json(self.selected_prompt_id))
             self.cursor.execute(
-                "UPDATE prompts SET name=?, prompt_values=?, image=?, url=?, model=? WHERE id=?",
-                (name, json.dumps(values_dict, ensure_ascii=False), image, url, derived_model, self.selected_prompt_id)
+                "UPDATE prompts SET name=?, prompt_values=?, image=?, url=?, model=?, comment=? WHERE id=?",
+                (name, json.dumps(values_dict, ensure_ascii=False), image, url, derived_model, comment, self.selected_prompt_id),
             )
             self.conn.commit()
 
@@ -1498,6 +1666,7 @@ class process_prompts_manager:
 
         except Exception as e:
             messagebox.showerror("Erreur", f"Erreur lors de la sauvegarde : {e}")
+
 
     def edit_prompt(self):
         """Ouvre une popup pour Ã©diter le prompt sÃ©lectionnÃ©"""
@@ -1571,6 +1740,28 @@ class process_prompts_manager:
         self.execution_stack_tree.delete(*self.execution_stack_tree.get_children())
         for item in self.execution_stack:
             self.execution_stack_tree.insert("", "end", values=(item["prompt_id"], item["status"]))
+
+    def configure_prompts_tree_columns(self):
+        """Configure column display options for le tableau des prompts."""
+        if not hasattr(self, "tree"):
+            return
+        column_config = {
+            "id": {"width": 80, "minwidth": 60, "stretch": False},
+            "name": {"width": 220, "minwidth": 120, "stretch": True},
+            "status": {"width": 110, "minwidth": 90, "stretch": False},
+            "model": {"width": 180, "minwidth": 140, "stretch": True},
+            "comment": {"width": 240, "minwidth": 160, "stretch": True},
+            "parent": {"width": 120, "minwidth": 90, "stretch": False},
+            "image": {"width": 220, "minwidth": 140, "stretch": True},
+        }
+        for col_name, config in column_config.items():
+            if col_name in self.tree["columns"]:
+                self.tree.column(
+                    col_name,
+                    width=config.get("width", 120),
+                    minwidth=config.get("minwidth", 40),
+                    stretch=config.get("stretch", True),
+                )
 
     def configure_values_tree_columns(self):
         """Configure les tailles des colonnes du tableau values"""

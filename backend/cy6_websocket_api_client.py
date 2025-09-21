@@ -126,6 +126,8 @@ def update_workflow(filevalues,fileworkflow):
            
             match typ: 
                 
+                case "image":
+                    jsonf[node]['inputs']['image'] =  values[val]['value']
                 case "CLIPTextEncode":
                     jsonf[node]['inputs']['text'] =  values[val]['value']
                     print (f"dbg-4515-1 = ok")
