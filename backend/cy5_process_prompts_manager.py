@@ -64,11 +64,12 @@ class process_prompts_manager:
                     workflow JSON,
                     image TEXT,
                     url TEXT,
-                    parent INTEGER
+                    parent INTEGER,
+                    model TEXT
                 )
             ''')
             self.conn.commit()
-            self.ensure_parent_column()
+            self.ensure_additional_columns()
             self.add_default_basic_prompt()
         else:  # mode == "dev"
             # Mode dev: CrÃ©e la base si elle n'existe pas
@@ -82,23 +83,57 @@ class process_prompts_manager:
                     workflow JSON,
                     image TEXT,
                     url TEXT,
-                    parent INTEGER
+                    parent INTEGER,
+                    model TEXT
                 )
             ''')
             self.conn.commit()
-            self.ensure_parent_column()
+            self.ensure_additional_columns()
 
 
-    def ensure_parent_column(self):
-        """Ensure the prompts table exposes the parent column even for legacy databases."""
+    def ensure_additional_columns(self):
+        """Ensure optional columns exist for backward compatibility."""
         try:
             self.cursor.execute("PRAGMA table_info(prompts)")
             columns = [row[1] for row in self.cursor.fetchall()]
+            alterations = []
             if "parent" not in columns:
-                self.cursor.execute("ALTER TABLE prompts ADD COLUMN parent INTEGER")
+                alterations.append("ALTER TABLE prompts ADD COLUMN parent INTEGER")
+            if "model" not in columns:
+                alterations.append("ALTER TABLE prompts ADD COLUMN model TEXT")
+            for statement in alterations:
+                self.cursor.execute(statement)
+            if alterations:
                 self.conn.commit()
         except sqlite3.OperationalError as exc:
-            print(f"Impossible d'ajouter la colonne parent : {exc}")
+            print(f"Impossible d'ajouter des colonnes optionnelles : {exc}")
+
+    def derive_model_from_workflow(self, workflow_data):
+        """Extract model name from workflow JSON content."""
+        if not workflow_data:
+            return ""
+        if isinstance(workflow_data, dict):
+            workflow_dict = workflow_data
+        else:
+            try:
+                workflow_dict = json.loads(workflow_data)
+            except (TypeError, json.JSONDecodeError):
+                return ""
+        if not isinstance(workflow_dict, dict):
+            return ""
+        for node in workflow_dict.values():
+            if not isinstance(node, dict):
+                continue
+            if node.get("class_type") == "CheckpointLoaderSimple":
+                inputs = node.get("inputs", {})
+                ckpt_name = inputs.get("ckpt_name")
+                if isinstance(ckpt_name, str):
+                    return ckpt_name
+                if isinstance(ckpt_name, (list, tuple)):
+                    for item in ckpt_name:
+                        if isinstance(item, str) and item:
+                            return item
+        return ""
 
     def setup_ui(self):
         """CrÃ©er l'interface utilisateur avec panneau divisÃ©"""
@@ -176,10 +211,10 @@ class process_prompts_manager:
         table_frame.pack(fill="both", expand=True, padx=(0, 5))
 
         # Configuration du tableau
-        columns = ("id", "name", "parent", "image")
+        columns = ("id", "name", "model", "parent", "image")
         self.tree = ttk.Treeview(table_frame, columns=columns, show="headings", height=20)
-        column_titles = {"id": "ID", "name": "Name", "parent": "Parent", "image": "Image"}
-        column_widths = {"id": 80, "name": 240, "parent": 120, "image": 240}
+        column_titles = {"id": "ID", "name": "Name", "model": "Model", "parent": "Parent", "image": "Image"}
+        column_widths = {"id": 80, "name": 220, "model": 180, "parent": 120, "image": 220}
         for col in columns:
             self.tree.heading(col, text=column_titles.get(col, col.capitalize()))
             self.tree.column(col, width=column_widths.get(col, 200))
@@ -627,20 +662,36 @@ class process_prompts_manager:
 
     def load_prompts(self):
         self.tree.delete(*self.tree.get_children())
-        self.cursor.execute("SELECT id, name, parent, image FROM prompts")
+        self.cursor.execute("SELECT id, name, parent, image, model, workflow FROM prompts")
+        pending_updates = []
         for row in self.cursor.fetchall():
-            id_, name, parent, image = row
+            id_, name, parent, image, model, workflow = row
+            model_to_use = model or self.derive_model_from_workflow(workflow)
+            if model_to_use and model != model_to_use:
+                pending_updates.append((model_to_use, id_))
             parent_display = "" if parent is None else str(parent)
-            self.tree.insert("", "end", iid=id_, values=(id_, name, parent_display, image))
+            self.tree.insert("", "end", iid=id_, values=(id_, name, model_to_use or "", parent_display, image))
+        if pending_updates:
+            self.cursor.executemany("UPDATE prompts SET model=? WHERE id=?", pending_updates)
+            self.conn.commit()
         self.toggle_selection_buttons(False)
+
+    def get_workflow_json(self, prompt_id):
+        """Utility to fetch workflow JSON for a prompt."""
+        try:
+            self.cursor.execute("SELECT workflow FROM prompts WHERE id=?", (prompt_id,))
+            row = self.cursor.fetchone()
+            return row[0] if row else None
+        except sqlite3.Error:
+            return None
 
     def load_prompt_details(self, prompt_id):
         """Charger les details d'un prompt dans le formulaire"""
         try:
-            self.cursor.execute("SELECT name, prompt_values, workflow, image, url FROM prompts WHERE id=?", (prompt_id,))
+            self.cursor.execute("SELECT name, prompt_values, workflow, image, url, model FROM prompts WHERE id=?", (prompt_id,))
             row = self.cursor.fetchone()
             if row:
-                name, prompt_values, workflow, image, url = row
+                name, prompt_values, workflow, image, url, _model = row
                 self.selected_prompt_id = prompt_id
                 self.name_var.set(name)
                 self.image_var.set(image or "")
@@ -740,10 +791,10 @@ class process_prompts_manager:
 
         # Si mode "edit", charger les donnÃ©es existantes
         if mode == "edit" and prompt_id:
-            self.cursor.execute("SELECT name, prompt_values, workflow, url FROM prompts WHERE id=?", (prompt_id,))
+            self.cursor.execute("SELECT name, prompt_values, workflow, url, model FROM prompts WHERE id=?", (prompt_id,))
             row = self.cursor.fetchone()
             if row:
-                name, prompt_values, workflow, url = row
+                name, prompt_values, workflow, url, _model = row
                 name_var.set(name)
                 url_var.set(url or "")
                 prompt_values_var = prompt_values or "{}"
@@ -836,18 +887,19 @@ class process_prompts_manager:
                 # VÃ©rifier si les JSON sont valides
                 prompt_values_dict = json.loads(prompt_values) if prompt_values else {}
                 workflow_dict = json.loads(workflow) if workflow else {}
+                derived_model = self.derive_model_from_workflow(workflow_dict)
 
                 if mode == "new":
                     # InsÃ©rer dans la base de donnÃ©es
                     self.cursor.execute(
-                        "INSERT INTO prompts (name, prompt_values, workflow, url) VALUES (?, ?, ?, ?)",
-                        (name, json.dumps(prompt_values_dict, ensure_ascii=False), json.dumps(workflow_dict, ensure_ascii=False), url)
+                        "INSERT INTO prompts (name, prompt_values, workflow, url, model) VALUES (?, ?, ?, ?, ?)",
+                        (name, json.dumps(prompt_values_dict, ensure_ascii=False), json.dumps(workflow_dict, ensure_ascii=False), url, derived_model)
                     )
                 elif mode == "edit" and prompt_id:
                     # Mettre Ã  jour la base de donnÃ©es
                     self.cursor.execute(
-                        "UPDATE prompts SET name=?, prompt_values=?, workflow=?, url=? WHERE id=?",
-                        (name, json.dumps(prompt_values_dict, ensure_ascii=False), json.dumps(workflow_dict, ensure_ascii=False), url, prompt_id)
+                        "UPDATE prompts SET name=?, prompt_values=?, workflow=?, url=?, model=? WHERE id=?",
+                        (name, json.dumps(prompt_values_dict, ensure_ascii=False), json.dumps(workflow_dict, ensure_ascii=False), url, derived_model, prompt_id)
                     )
 
                 self.conn.commit()
@@ -939,8 +991,9 @@ class process_prompts_manager:
                 new_workflow = json.dumps(updated_workflow, ensure_ascii=False) if updated_workflow is not None else workflow_json
 
                 try:
-                    cursor.execute("INSERT INTO prompts (name, prompt_values, workflow, image, url, parent) VALUES (?, ?, ?, ?, ?, ?)",
-                                   (name, new_prompt_values, new_workflow, image, url, parent_pk))
+                    model_value = self.derive_model_from_workflow(new_workflow)
+                    cursor.execute("INSERT INTO prompts (name, prompt_values, workflow, image, url, parent, model) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                                   (name, new_prompt_values, new_workflow, image, url, parent_pk, model_value))
                     conn.commit()
                     new_prompt_pk = cursor.lastrowid
                     self.root.after(0, lambda pid=new_prompt_pk: self._refresh_prompt_after_execution(pid))
@@ -1076,9 +1129,10 @@ class process_prompts_manager:
         }, ensure_ascii=False)
         image = ""
         url = ""
+        default_model = self.derive_model_from_workflow(workflow)
         self.cursor.execute(
-            "INSERT INTO prompts (name, prompt_values, workflow, image, url) VALUES (?, ?, ?, ?, ?)",
-            (name, prompt_values, workflow, image, url)
+            "INSERT INTO prompts (name, prompt_values, workflow, image, url, model) VALUES (?, ?, ?, ?, ?, ?)",
+            (name, prompt_values, workflow, image, url, default_model)
         )
         self.conn.commit()
 
@@ -1247,12 +1301,10 @@ class process_prompts_manager:
                 data.pop("__display_value", None)
                 values_dict[str(item_id)] = data
 
-            self.cursor.execute("SELECT workflow FROM prompts WHERE id=?", (self.selected_prompt_id,))
-            _ = self.cursor.fetchone()
-
+            derived_model = self.derive_model_from_workflow(self.get_workflow_json(self.selected_prompt_id))
             self.cursor.execute(
-                "UPDATE prompts SET name=?, prompt_values=?, image=?, url=? WHERE id=?",
-                (name, json.dumps(values_dict, ensure_ascii=False), image, url, self.selected_prompt_id)
+                "UPDATE prompts SET name=?, prompt_values=?, image=?, url=?, model=? WHERE id=?",
+                (name, json.dumps(values_dict, ensure_ascii=False), image, url, derived_model, self.selected_prompt_id)
             )
             self.conn.commit()
 
