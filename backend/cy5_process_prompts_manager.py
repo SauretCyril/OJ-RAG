@@ -602,16 +602,21 @@ class process_prompts_manager:
 
         values = self.values_tree.item(item_id, "values")
         type_val = values[2]
+        action_value = values[4] if len(values) > 4 else ""
+        action_normalized = action_value.strip().lower() if isinstance(action_value, str) else ""
+
         if type_val == "output_image":
             self._hide_status_editor()
             self._hide_comment_editor()
             self.show_output_images_window(item_id)
             return
 
+        if action_normalized == "multiloras":
+            self.open_multi_loras_popup(item_id)
+            return
+
         # Si c'est un clic sur la colonne "action" (#5)
         if col == "#5":
-            action_value = values[4]
-            action_normalized = action_value.strip().lower() if isinstance(action_value, str) else ""
             if action_normalized in {"edit", "edite"} or type_val == "prompt":
                 self.open_large_edit_window(item_id)
             elif type_val == "image":
@@ -640,11 +645,13 @@ class process_prompts_manager:
                 data["id"] = new_value
             elif col_idx == 2:
                 data["type"] = new_value
-                # Mettre Ã  jour l'action selon le nouveau type
+                # Mettre à jour l'action selon le nouveau type
                 if new_value == "prompt":
                     row_values[4] = "edit"
                 elif new_value == "image":
                     row_values[4] = "image"
+                elif new_value == "multiLoras":
+                    row_values[4] = "multiLoras"
                 else:
                     row_values[4] = ""
             elif col_idx == 3:
@@ -773,42 +780,74 @@ class process_prompts_manager:
         image_frame.pack(fill="both", expand=True, pady=(0, 10))
 
         # Label pour afficher l'image
-        image_label = ttk.Label(image_frame, text="Aucune image sÃ©lectionnÃ©e", anchor="center")
+        image_label = ttk.Label(image_frame, text="Aucune image selectionnee", anchor="center")
         image_label.pack(fill="both", expand=True, padx=10, pady=10)
+
+        image_info_var = tk.StringVar(value="")
+        info_label = ttk.Label(image_frame, textvariable=image_info_var, font=("Arial", 9))
+        info_label.pack(pady=(5, 0))
+
+        current_image_state = {"original": None, "size": (0, 0), "path": None}
+
+        def _render_loaded_image() -> None:
+            original = current_image_state["original"]
+            if original is None:
+                return
+            avail_width = max(1, image_label.winfo_width())
+            avail_height = max(1, image_label.winfo_height())
+            if avail_width <= 1 or avail_height <= 1:
+                return
+            orig_width, orig_height = current_image_state["size"]
+            if not orig_width or not orig_height:
+                return
+            ratio = min(avail_width / orig_width, avail_height / orig_height)
+            if ratio <= 0:
+                return
+            new_size = (
+                max(1, int(orig_width * ratio)),
+                max(1, int(orig_height * ratio)),
+            )
+            resized = original.resize(new_size, Image.Resampling.LANCZOS)
+            tk_image = ImageTk.PhotoImage(resized)
+            image_label.configure(image=tk_image, text="")
+            image_label.image = tk_image
+
+        image_label.bind("<Configure>", lambda _event: _render_loaded_image())
 
         def display_image(image_path):
             """Affiche l'image dans le label"""
             try:
                 if os.path.exists(image_path):
-                    # Ouvrir et redimensionner l'image
-                    pil_image = Image.open(image_path)
-                    
-                    # Calculer les dimensions pour maintenir le ratio
-                    max_width, max_height = 400, 300
-                    image_width, image_height = pil_image.size
-                    
-                    ratio = min(max_width / image_width, max_height / image_height)
-                    new_width = int(image_width * ratio)
-                    new_height = int(image_height * ratio)
-                    
-                    pil_image = pil_image.resize((new_width, new_height), Image.Resampling.LANCZOS)
-                    
-                    # Convertir pour Tkinter
-                    tk_image = ImageTk.PhotoImage(pil_image)
-                    
-                    # Afficher l'image
-                    image_label.configure(image=tk_image, text="")
-                    image_label.image = tk_image  # Garder une rÃ©fÃ©rence
-                    
-                    # Afficher les informations de l'image
-                    info_text = f"Dimensions: {image_width}x{image_height}\nTaille: {os.path.getsize(image_path)} bytes"
-                    ttk.Label(image_frame, text=info_text, font=("Arial", 9)).pack(pady=(5, 0))
+                    with Image.open(image_path) as pil_image:
+                        pil_image.load()
+                        original = pil_image.copy()
+                    current_image_state.update(
+                        {
+                            "original": original,
+                            "size": original.size,
+                            "path": image_path,
+                        }
+                    )
+                    file_size = os.path.getsize(image_path)
+                    image_info_var.set(
+                        f"Dimensions: {original.width}x{original.height} | Taille: {file_size} bytes"
+                    )
+                    image_label.configure(text="")
+                    image_label.after_idle(_render_loaded_image)
                 else:
+                    current_image_state.update(
+                        {"original": None, "size": (0, 0), "path": None}
+                    )
                     image_label.configure(image="", text="Fichier image introuvable")
                     image_label.image = None
-            except Exception as e:
-                image_label.configure(image="", text=f"Erreur lors du chargement:\n{str(e)}")
+                    image_info_var.set("")
+            except Exception as exc:
+                current_image_state.update(
+                    {"original": None, "size": (0, 0), "path": None}
+                )
+                image_label.configure(image="", text=f"Erreur lors du chargement:\n{exc}")
                 image_label.image = None
+                image_info_var.set("")
 
         # Afficher l'image actuelle si elle existe
         if current_image_path and os.path.exists(current_image_path):
@@ -820,7 +859,7 @@ class process_prompts_manager:
             if path and os.path.exists(path):
                 display_image(path)
             else:
-                image_label.configure(image="", text="Aucune image sÃ©lectionnÃ©e")
+                image_label.configure(image="", text="Aucune image selectionnee")
                 image_label.image = None
 
         image_path_var.trace('w', on_path_change)
@@ -1002,6 +1041,8 @@ class process_prompts_manager:
                             action = "edit"
                         elif type_val == "image":
                             action = "image"
+                        elif type_val == "multiLoras":
+                            action = "multiLoras"
 
                         self.values_tree.insert("", "end", iid=key, values=(key, id_val, type_val, display_value, action))
                         entry.setdefault("id", id_val)
@@ -1593,7 +1634,7 @@ class process_prompts_manager:
 
         images = self._normalize_image_list(raw_images)
         if not images:
-            messagebox.showinfo("Information", "Aucune image disponible pour cet élément.")
+            messagebox.showinfo("Information", "Aucune image disponible pour cet element.")
             return
 
         popup = tk.Toplevel(self.root)
@@ -1614,11 +1655,39 @@ class process_prompts_manager:
 
         image_frame = ttk.Frame(main_frame)
         image_frame.pack(fill="both", expand=True)
-        image_label = ttk.Label(image_frame, text="")
+        image_label = ttk.Label(image_frame, text="Aucune image", anchor="center")
         image_label.pack(fill="both", expand=True)
 
-        info_label = ttk.Label(main_frame, text="")
+        image_info_var = tk.StringVar(value="")
+        info_label = ttk.Label(main_frame, textvariable=image_info_var)
         info_label.pack(pady=(5, 10))
+
+        render_state = {"original": None, "size": (0, 0)}
+
+        def render_selected_image() -> None:
+            original = render_state["original"]
+            if original is None:
+                return
+            avail_width = max(1, image_label.winfo_width())
+            avail_height = max(1, image_label.winfo_height())
+            if avail_width <= 1 or avail_height <= 1:
+                return
+            orig_width, orig_height = render_state["size"]
+            if not orig_width or not orig_height:
+                return
+            ratio = min(avail_width / orig_width, avail_height / orig_height)
+            if ratio <= 0:
+                return
+            new_size = (
+                max(1, int(orig_width * ratio)),
+                max(1, int(orig_height * ratio)),
+            )
+            resized = original.resize(new_size, Image.Resampling.LANCZOS)
+            tk_image = ImageTk.PhotoImage(resized)
+            image_label.configure(image=tk_image, text="")
+            image_label.image = tk_image
+
+        image_label.bind("<Configure>", lambda _event: render_selected_image())
 
         nav_frame = ttk.Frame(main_frame)
         nav_frame.pack(fill="x")
@@ -1640,26 +1709,28 @@ class process_prompts_manager:
             index_label.configure(text=f"{index + 1} / {len(state['images'])}")
             try:
                 if os.path.exists(image_path):
-                    pil_image = Image.open(image_path)
-                    max_width, max_height = 500, 380
-                    ratio = min(max_width / pil_image.width, max_height / pil_image.height, 1)
-                    new_size = (int(pil_image.width * ratio), int(pil_image.height * ratio))
-                    if new_size[0] and new_size[1]:
-                        pil_image = pil_image.resize(new_size, Image.Resampling.LANCZOS)
-                    tk_image = ImageTk.PhotoImage(pil_image)
-                    image_label.configure(image=tk_image, text="")
-                    image_label.image = tk_image
-                    info_label.configure(text=f"{os.path.basename(image_path)} - {pil_image.width}x{pil_image.height}")
+                    with Image.open(image_path) as pil_image:
+                        pil_image.load()
+                        original = pil_image.copy()
+                    render_state.update({"original": original, "size": original.size})
+                    image_info_var.set(
+                        f"{os.path.basename(image_path)} - {original.width}x{original.height}"
+                    )
+                    image_label.configure(text="")
+                    image_label.after_idle(render_selected_image)
                 else:
+                    render_state.update({"original": None, "size": (0, 0)})
                     image_label.configure(image="", text="Fichier introuvable")
                     image_label.image = None
-                    info_label.configure(text="")
+                    image_info_var.set("")
             except Exception as exc:
+                render_state.update({"original": None, "size": (0, 0)})
                 image_label.configure(image="", text=f"Erreur : {exc}")
                 image_label.image = None
-                info_label.configure(text="")
+                image_info_var.set("")
             prev_button.state(["!disabled"] if index > 0 else ["disabled"])
             next_button.state(["!disabled"] if index < len(state["images"]) - 1 else ["disabled"])
+
 
         def show_prev():
             if state["index"] > 0:
@@ -1676,6 +1747,135 @@ class process_prompts_manager:
         popup.bind("<Right>", lambda _e: show_next())
         popup.bind("<Escape>", lambda _e: popup.destroy())
         display_image(0)
+
+    def _parse_multi_loras_entries(self, raw_value):
+        """Transforme la valeur multiLoras en liste (nom, poids)."""
+        entries = []
+        seen = set()
+
+        def add_entry(name, weight):
+            if name is None and weight is None:
+                return
+            name_str = str(name).strip() if name is not None else ""
+            weight_str = ""
+            if isinstance(weight, (int, float)):
+                weight_str = f"{weight:.4g}"
+            elif weight not in (None, ""):
+                weight_str = str(weight).strip()
+            if not name_str and weight_str and ":" in weight_str:
+                name_str, weight_str = weight_str.split(":", 1)
+            if not name_str:
+                return
+            base_name = os.path.basename(name_str) if name_str else ""
+            root, _ = os.path.splitext(base_name)
+            display_name = root or base_name or name_str.strip()
+            if not display_name and not weight_str:
+                return
+            key = (display_name, weight_str)
+            if key in seen:
+                return
+            seen.add(key)
+            entries.append(key)
+
+        def handle(value):
+            if value is None:
+                return
+            if isinstance(value, dict):
+                if "name" in value:
+                    weight_key = next((k for k in ("value", "weight", "strength", "ratio") if k in value), None)
+                    if weight_key is not None:
+                        add_entry(value.get("name"), value.get(weight_key))
+                        return
+                for key in ("value", "values"):
+                    if key in value and isinstance(value[key], (dict, list, tuple, set, str)):
+                        handle(value[key])
+                for key, val in value.items():
+                    if key in {"id", "type", "action", "__display_value", "value", "values"}:
+                        continue
+                    if isinstance(val, (dict, list, tuple, set)):
+                        handle(val)
+                    else:
+                        add_entry(key, val)
+                return
+            if isinstance(value, (list, tuple, set)):
+                for item in value:
+                    handle(item)
+                return
+            if isinstance(value, str):
+                text_val = value.strip()
+                if not text_val:
+                    return
+                try:
+                    parsed = json.loads(text_val)
+                except Exception:
+                    tokens = [text_val]
+                    separators = ["\n", "|", ";", ","]
+                    for sep in separators:
+                        temp = []
+                        for token in tokens:
+                            temp.extend(token.split(sep))
+                        tokens = temp
+                    for token in tokens:
+                        token = token.strip()
+                        if not token:
+                            continue
+                        if ":" in token:
+                            left, right = token.split(":", 1)
+                            add_entry(left, right)
+                        elif "=" in token:
+                            left, right = token.split("=", 1)
+                            add_entry(left, right)
+                        else:
+                            add_entry(token, "")
+                else:
+                    handle(parsed)
+                return
+            if isinstance(value, (int, float)):
+                add_entry("", value)
+                return
+
+        handle(raw_value)
+        return entries
+
+    def open_multi_loras_popup(self, item_id):
+        """Ouvre une fenetre listant les loras et leurs poids."""
+        row = self.values_tree.item(item_id, "values")
+        data = self.values_data.get(item_id, {})
+        raw_value = data.get("value") or data.get("values") or row[3]
+        entries = self._parse_multi_loras_entries(raw_value)
+        if not entries:
+            messagebox.showinfo("Information", "Aucune configuration multiLoras a afficher.")
+            return
+
+        popup = tk.Toplevel(self.root)
+        popup.title("MultiLoras")
+        popup.transient(self.root)
+        popup.grab_set()
+        self.center_window(popup, width=420, height=320)
+
+        container = ttk.Frame(popup, padding=10)
+        container.pack(fill="both", expand=True)
+
+        tree = ttk.Treeview(container, columns=("lora", "poids"), show="headings", height=8)
+        tree.heading("lora", text="Lora")
+        tree.heading("poids", text="Valeur")
+        tree.column("lora", anchor="w", width=260)
+        tree.column("poids", anchor="center", width=120)
+
+        y_scroll = ttk.Scrollbar(container, orient="vertical", command=tree.yview)
+        tree.configure(yscrollcommand=y_scroll.set)
+
+        tree.pack(side="left", fill="both", expand=True)
+        y_scroll.pack(side="right", fill="y")
+
+        for idx, (name, weight) in enumerate(entries, start=1):
+            tree.insert("", "end", iid=str(idx), values=(name, weight))
+
+        button_frame = ttk.Frame(popup)
+        button_frame.pack(fill="x", pady=(5, 10))
+        ttk.Button(button_frame, text="Fermer", command=popup.destroy).pack(side="right", padx=10)
+        popup.bind("<Escape>", lambda _e: popup.destroy())
+
 
     def add_values_row(self):
         """Ajouter une nouvelle ligne dans le tableau des values"""
@@ -1753,12 +1953,14 @@ class process_prompts_manager:
             new_key = str(self.value_row_counter)
             id_val = id_var.get().strip() or new_key
 
-            # DÃ©finir l'action selon le type
+            # Définir l'action selon le type
             action = ""
             if type_val == "prompt":
                 action = "edit"
             elif type_val == "image":
                 action = "image"
+            elif type_val == "multiLoras":
+                action = "multiLoras"
 
             self.values_tree.insert("", "end", iid=new_key, values=(new_key, id_val, type_val, value_val, action))
 
