@@ -16,6 +16,8 @@ import base64
 import time
 import sys
 
+from typing import List, Dict, Optional
+
 # Charger les variables d'environnement
 load_dotenv()
 
@@ -34,6 +36,157 @@ def extract_text_from_word(file_path):
     for para in doc.paragraphs:
         full_text.append(para.text)
     return '\n'.join(full_text)
+
+def _strip_code_fences(content: str) -> str:
+    """Supprime les balises de code Markdown pour faciliter le parsing JSON."""
+    cleaned = content.strip()
+    if cleaned.startswith("```") and cleaned.endswith("```"):
+        lines = cleaned.splitlines()
+        if len(lines) >= 2:
+            return "\n".join(lines[1:-1]).strip()
+    return cleaned
+
+def call_mistral_chat(
+    messages: List[Dict[str, str]],
+    model: str = "mistral-medium",
+    temperature: float = 0.3,
+    max_tokens: int = 4096,
+    max_retries: int = 3,
+    backoff_seconds: float = 5.0,
+) -> str:
+    """Wrapper pour appeler l'API chat Mistral avec gestion du rate limiting."""
+    api_key = os.getenv("MISTRAL_API_KEY")
+    if not api_key:
+        raise ValueError("La cle API Mistral n'est pas definie dans le fichier .env")
+
+    url = "https://api.mistral.ai/v1/chat/completions"
+    headers = {
+        "Authorization": f"Bearer {api_key}",
+        "Content-Type": "application/json"
+    }
+    payload = {
+        "model": model,
+        "messages": messages,
+        "temperature": temperature,
+        "max_tokens": max_tokens
+    }
+
+    last_exception: Optional[Exception] = None
+    for attempt in range(1, max_retries + 1):
+        try:
+            response = requests.post(url, headers=headers, json=payload, timeout=60)
+            response.raise_for_status()
+            response_json = response.json()
+            if "choices" in response_json and response_json["choices"]:
+                return response_json["choices"][0]["message"]["content"]
+            error_msg = response_json.get("error", "Reponse inattendue de l'API Mistral")
+            raise ValueError(str(error_msg))
+        except requests.exceptions.HTTPError as exc:
+            last_exception = exc
+            status_code = exc.response.status_code if exc.response is not None else None
+            if status_code == 429 and attempt < max_retries:
+                retry_after = exc.response.headers.get("Retry-After") if exc.response is not None else None
+                try:
+                    wait_delay = float(retry_after) if retry_after else backoff_seconds * attempt
+                except (TypeError, ValueError):
+                    wait_delay = backoff_seconds * attempt
+                wait_delay = max(1.0, min(wait_delay, 60.0))
+                logger.warning(
+                    "Mistral rate limit atteint (tentative %s/%s). Nouvelle tentative dans %.1f s.",
+                    attempt,
+                    max_retries,
+                    wait_delay,
+                )
+                time.sleep(wait_delay)
+                continue
+            logger.error(f"Erreur HTTP lors de l'appel a l'API Mistral (statut {status_code}): {exc}")
+            raise
+        except requests.exceptions.RequestException as exc:
+            last_exception = exc
+            logger.error(f"Erreur reseau lors de l'appel a l'API Mistral: {exc}")
+            raise
+        except Exception as exc:
+            last_exception = exc
+            logger.error(f"Erreur lors de l'appel a l'API Mistral: {exc}")
+            raise
+
+    if last_exception is not None:
+        if isinstance(last_exception, requests.exceptions.HTTPError):
+            response = last_exception.response
+            status_code = response.status_code if response is not None else None
+            if status_code == 429:
+                retry_after = response.headers.get('Retry-After') if response is not None else None
+                hint = ''
+                if retry_after:
+                    hint = f" Veuillez patienter environ {retry_after} seconde(s) avant de reessayer."
+                raise ValueError(
+                    "Mistral a limite le nombre de requetes. Reessayez dans un instant." + hint
+                ) from last_exception
+        raise last_exception
+    raise RuntimeError("Appel Mistral interrompu sans reponse ni exception.")
+
+
+def analyze_comfyui_log_with_mistral(log_text: str) -> List[Dict[str, Optional[str]]]:
+    """Analyse un log ComfyUI et renvoie une liste structurée d'erreurs."""
+    if not log_text or not log_text.strip():
+        return []
+
+    role = "Expert Python, comfyuil et génération d'image via IA"
+    instruction = (
+        "Analyse les extraits de log ComfyUI fournis et renvoie un JSON conforme au schéma suivant :\n\n"
+        "[\n"
+        "  {\n"
+        "    \"id\": \"identifiant court\",\n"
+        "    \"timestamp\": \"horodatage ou null\",\n"
+        "    \"resume\": \"description courte du problème\",\n"
+        "    \"gravite\": \"critique\"/\"majeur\"/\"mineur\"/\"info\",\n"
+        "    \"categorie\": \"type d'erreur ou module concerné\",\n"
+        "    \"details\": \"explication concise\",\n"
+        "    \"recommandation\": \"proposition d'action concrète\",\n"
+        "    \"extrait\": \"portion significative du log\"\n"
+        "  }\n"
+        "]\n\n"
+        "Ne renvoie que les anomalies pertinentes. Si aucune erreur n'est détectée, renvoie []."
+    )
+    messages = [
+        {"role": "system", "content": role},
+        {"role": "user", "content": f"{instruction}\n\nLOG:\n{log_text}"}
+    ]
+
+    raw_response = call_mistral_chat(messages, temperature=0.2, max_tokens=3000)
+    cleaned = _strip_code_fences(raw_response)
+    try:
+        parsed = json.loads(cleaned)
+    except json.JSONDecodeError as exc:
+        logger.error(f"Analyse ComfyUI: JSON invalide renvoyé par Mistral: {exc}")
+        raise ValueError("Impossible d'analyser la réponse de Mistral") from exc
+
+    if isinstance(parsed, dict) and "errors" in parsed:
+        parsed = parsed.get("errors", [])
+
+    if not isinstance(parsed, list):
+        raise ValueError("La réponse de Mistral n'est pas une liste d'erreurs.")
+
+    sanitized = []
+    for idx, item in enumerate(parsed, start=1):
+        if not isinstance(item, dict):
+            continue
+        sanitized.append({
+            "id": item.get("id") or f"ERR-{idx:03d}",
+            "timestamp": item.get("timestamp"),
+            "resume": item.get("resume") or item.get("error") or "",
+            "gravite": item.get("gravite") or item.get("severity"),
+            "categorie": item.get("categorie") or item.get("category"),
+            "details": item.get("details") or item.get("description"),
+            "recommandation": item.get("recommandation") or item.get("recommendation"),
+            "extrait": item.get("extrait") or item.get("snippet")
+        })
+    return sanitized
+
+def chat_with_mistral(messages: List[Dict[str, str]], role: str = "Expert Python, comfyuil et génération d'image via IA", temperature: float = 0.4, max_tokens: int = 2000) -> str:
+    """Délègue une conversation à Mistral avec un rôle spécifique."""
+    convo = [{"role": "system", "content": role}] + messages
+    return call_mistral_chat(convo, temperature=temperature, max_tokens=max_tokens)
 
 def get_mistral_answer(question, role, texte):
     try:
