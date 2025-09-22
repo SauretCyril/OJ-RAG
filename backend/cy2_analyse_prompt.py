@@ -330,14 +330,14 @@ class cy2_analyse_prompt(tk.Tk):
             return
         texte_concat = ", ".join(lignes)
         question = (
-            "RAAcris le texte suivant en un prompt cohArent, fluide et naturel pour dAcrire une image. "
-            "Utilise toutes les informations, sans rApAtition. "
-            "Texte a reformuler :\n"
+            "Réécris le texte suivant en un prompt cohérent, fluide et naturel pour décrire une image. "
+            "Utilise toutes les informations, sans répétition. "
+            "Texte à reformuler :\n"
             f"{texte_concat}"
         )
         prompt_fr = self.mistral_translate(question, src_lang="fr", tgt_lang="fr")
 
-        # Afficher dans la zone de texte franAaise
+        # Afficher dans la zone de texte française
         self.prompt_textbox_fr.delete("1.0", tk.END)
         self.prompt_textbox_fr.insert("1.0", prompt_fr)
 
@@ -435,11 +435,13 @@ class cy2_analyse_prompt(tk.Tk):
                 resultat TEXT,
                 resultat_eng TEXT,
                 decomposition TEXT,
-                question_decomposer TEXT
+                question_decomposer TEXT,
+                model TEXT
             )
         """)
         self.db_conn.commit()
-        #self.prompt_text = positive_en
+        # Appeler la méthode pour s'assurer que la colonne model existe
+        self._ensure_model_column()
 
     def _ensure_model_column(self):
         if not self.db_conn:
@@ -461,12 +463,24 @@ class cy2_analyse_prompt(tk.Tk):
         if not self.db_conn or not self.record_id:
             return
         cursor = self.db_conn.cursor()
-        cursor.execute("""
-            SELECT positive_prompt_en, prompt_positif_fr, question_reformuler, resultat, resultat_eng, decomposition, question_decomposer, model
-            FROM prompts_working
-            WHERE id_prompt=?
-        """, (self.record_id,))
+        
+        # Vérifier d'abord quelles colonnes existent dans la table
+        cursor.execute("PRAGMA table_info(prompts_working)")
+        columns = {row[1] for row in cursor.fetchall()}
+        
+        # Construire la requête en fonction des colonnes disponibles
+        base_columns = ["positive_prompt_en", "prompt_positif_fr", "question_reformuler", 
+                       "resultat", "resultat_eng", "decomposition", "question_decomposer"]
+        
+        if "model" in columns:
+            select_columns = base_columns + ["model"]
+        else:
+            select_columns = base_columns
+            
+        query = f"SELECT {', '.join(select_columns)} FROM prompts_working WHERE id_prompt=?"
+        cursor.execute(query, (self.record_id,))
         row = cursor.fetchone()
+        
         if not row:
             return
 
@@ -479,7 +493,12 @@ class cy2_analyse_prompt(tk.Tk):
         self._set_text(self.question_textbox, row["question_reformuler"] or "")
         self._set_text(self.result_textbox, row["resultat"] or "")
         self._set_text(self.result_textbox_en, row["resultat_eng"] or "")
-        self.model_var.set(row["model"] or "")
+        
+        # Gérer la colonne model seulement si elle existe
+        if "model" in columns:
+            self.model_var.set(row["model"] or "")
+        else:
+            self.model_var.set("")
 
         decomposition_data = row["decomposition"] or ""
         prompts = []
@@ -528,23 +547,55 @@ class cy2_analyse_prompt(tk.Tk):
         question_template = self.decompose_question or DEFAULT_DECOMPOSE_QUESTION
         model_value = self.model_var.get().strip()
 
-        payload = (positive_en, prompt_fr, question_reformuler, result_fr, result_en, decomposition_json, question_template, model_value)
-
         try:
             cursor = self.db_conn.cursor()
+            
+            # Vérifier quelles colonnes existent
+            cursor.execute("PRAGMA table_info(prompts_working)")
+            columns = {row[1] for row in cursor.fetchall()}
+            
             cursor.execute("SELECT 1 FROM prompts_working WHERE id_prompt=?", (self.record_id,))
             exists = cursor.fetchone() is not None
-            if exists:
-                cursor.execute("""
-                    UPDATE prompts_working
-                    SET positive_prompt_en=?, prompt_positif_fr=?, question_reformuler=?, resultat=?, resultat_eng=?, decomposition=?, question_decomposer=?, model=?
-                    WHERE id_prompt=?
-                """, payload + (self.record_id,))
+            
+            if "model" in columns:
+                # Utiliser la version complète avec model
+                payload = (positive_en, prompt_fr, question_reformuler, result_fr, result_en, 
+                          decomposition_json, question_template, model_value)
+                
+                if exists:
+                    cursor.execute("""
+                        UPDATE prompts_working
+                        SET positive_prompt_en=?, prompt_positif_fr=?, question_reformuler=?, 
+                            resultat=?, resultat_eng=?, decomposition=?, question_decomposer=?, model=?
+                        WHERE id_prompt=?
+                    """, payload + (self.record_id,))
+                else:
+                    cursor.execute("""
+                        INSERT INTO prompts_working 
+                        (id_prompt, positive_prompt_en, prompt_positif_fr, question_reformuler, 
+                         resultat, resultat_eng, decomposition, question_decomposer, model)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    """, (self.record_id,) + payload)
             else:
-                cursor.execute("""
-                    INSERT INTO prompts_working (id_prompt, positive_prompt_en, prompt_positif_fr, question_reformuler, resultat, resultat_eng, decomposition, question_decomposer, model)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-                """, (self.record_id,) + payload)
+                # Utiliser la version sans model
+                payload = (positive_en, prompt_fr, question_reformuler, result_fr, result_en, 
+                          decomposition_json, question_template)
+                
+                if exists:
+                    cursor.execute("""
+                        UPDATE prompts_working
+                        SET positive_prompt_en=?, prompt_positif_fr=?, question_reformuler=?, 
+                            resultat=?, resultat_eng=?, decomposition=?, question_decomposer=?
+                        WHERE id_prompt=?
+                    """, payload + (self.record_id,))
+                else:
+                    cursor.execute("""
+                        INSERT INTO prompts_working 
+                        (id_prompt, positive_prompt_en, prompt_positif_fr, question_reformuler, 
+                         resultat, resultat_eng, decomposition, question_decomposer)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                    """, (self.record_id,) + payload)
+                    
             self.db_conn.commit()
         except sqlite3.Error as exc:
             messagebox.showerror("Erreur", f"Impossible d'enregistrer le travail : {exc}")
