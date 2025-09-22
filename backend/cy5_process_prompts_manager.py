@@ -179,18 +179,18 @@ class process_prompts_manager:
         return ""
 
     def setup_ui(self):
-        """CrÃ©er l'interface utilisateur avec panneau divisÃ©"""
+        """Créer l'interface utilisateur avec panneau divisé"""
         # Frame principal
         main_frame = ttk.Frame(self.root)
         main_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
 
         # Titre
         title_label = ttk.Label(main_frame, text="Gestionnaire de Prompts", font=("Arial", 16, "bold"))
-        title_label.pack(pady=(10, 5))  # RÃ©duit l'espace sous le titre
+        title_label.pack(pady=(10, 5))
 
-        # Affichage du chemin de la base de donnÃ©es
-        db_path_label = ttk.Label(main_frame, text=f"Base de donnÃ©es : {self.db_path}", font=("Arial", 10, "italic"))
-        db_path_label.pack(pady=(0, 15))  # Ajoute un espace sous le label
+        # Affichage du chemin de la base de données
+        db_path_label = ttk.Label(main_frame, text=f"Base de données : {self.db_path}", font=("Arial", 10, "italic"))
+        db_path_label.pack(pady=(0, 15))
 
         # Boutons d'action
         btn_frame = ttk.Frame(main_frame)
@@ -202,20 +202,21 @@ class process_prompts_manager:
         self.delete_button = ttk.Button(btn_frame, text="Delete", command=self.delete_prompt)
         self.toggle_selection_buttons(False)
 
-        # PanedWindow pour diviser en deux parties
+        # PanedWindow pour diviser en deux parties avec ratio modifié
         paned_window = ttk.PanedWindow(main_frame, orient=tk.HORIZONTAL)
         paned_window.pack(fill=tk.BOTH, expand=True)
 
-        # Frame gauche : tableau des prompts
+        # Frame gauche : tableau des prompts (réduction du poids)
         left_frame = ttk.Frame(paned_window)
-        paned_window.add(left_frame, weight=3)
+        paned_window.add(left_frame, weight=2)  # Réduit de 3 à 2
 
-        # Frame droite : formulaire de dÃ©tails
+        # Frame droite : formulaire de détails (augmentation du poids)
         right_frame = ttk.Frame(paned_window)
-        paned_window.add(right_frame, weight=2)
+        paned_window.add(right_frame, weight=3)  # Augmenté de 2 à 3
 
         self.create_table_frame(left_frame)
         self.create_form_frame(right_frame)
+
         # Zone de configuration du rÃ©pertoire des images
         dir_frame = ttk.Frame(self.root)
         dir_frame.pack(fill="x", padx=10, pady=5)
@@ -250,12 +251,17 @@ class process_prompts_manager:
 
 
     def create_table_frame(self, parent):
-        """Creer le tableau des prompts"""
+        """Créer le tableau des prompts avec scrollbar horizontal"""
         table_frame = ttk.LabelFrame(parent, text="Liste des Prompts")
         table_frame.pack(fill="both", expand=True, padx=(0, 5))
 
+        # Container pour le tableau et les scrollbars
+        table_container = ttk.Frame(table_frame)
+        table_container.pack(fill="both", expand=True)
+
         columns = ("id", "name", "status", "model", "comment", "parent", "image")
-        self.tree = ttk.Treeview(table_frame, columns=columns, show="headings", height=20)
+        self.tree = ttk.Treeview(table_container, columns=columns, show="headings", height=20)
+        
         column_titles = {
             "id": "ID",
             "name": "Name",
@@ -273,12 +279,24 @@ class process_prompts_manager:
         self.status_column_identifier = f"#{columns.index('status') + 1}"
         self.comment_column_identifier = f"#{columns.index('comment') + 1}"
 
-        scrollbar = ttk.Scrollbar(table_frame, orient="vertical", command=self.tree.yview)
-        self.tree.configure(yscrollcommand=scrollbar.set)
+        # Scrollbar vertical
+        v_scrollbar = ttk.Scrollbar(table_container, orient="vertical", command=self.tree.yview)
+        self.tree.configure(yscrollcommand=v_scrollbar.set)
 
-        self.tree.pack(side="left", fill="both", expand=True)
-        scrollbar.pack(side="right", fill="y")
+        # Scrollbar horizontal
+        h_scrollbar = ttk.Scrollbar(table_container, orient="horizontal", command=self.tree.xview)
+        self.tree.configure(xscrollcommand=h_scrollbar.set)
 
+        # Placement du tableau et des scrollbars
+        self.tree.grid(row=0, column=0, sticky="nsew")
+        v_scrollbar.grid(row=0, column=1, sticky="ns")
+        h_scrollbar.grid(row=1, column=0, sticky="ew")
+
+        # Configuration du redimensionnement
+        table_container.grid_rowconfigure(0, weight=1)
+        table_container.grid_columnconfigure(0, weight=1)
+
+        # Événements
         self.tree.bind("<<TreeviewSelect>>", self.on_select_prompt)
         self.tree.bind("<Double-1>", self.on_double_click)
 
@@ -526,17 +544,25 @@ class process_prompts_manager:
         if not item_id:
             return
 
+        values = self.values_tree.item(item_id, "values")
+        type_val = values[2]
+        if type_val == "output_image":
+            self._hide_status_editor()
+            self._hide_comment_editor()
+            self.show_output_images_window(item_id)
+            return
+
         # Si c'est un clic sur la colonne "action" (#5)
         if col == "#5":
-            values = self.values_tree.item(item_id, "values")
-            type_val = values[2]
-            if type_val == "prompt":
+            action_value = values[4]
+            action_normalized = action_value.strip().lower() if isinstance(action_value, str) else ""
+            if action_normalized in {"edit", "edite"} or type_val == "prompt":
                 self.open_large_edit_window(item_id)
             elif type_val == "image":
                 self.open_image_selector_window(item_id)
             return
 
-        if col == "#1":
+        if col == "#1": 
             return
 
         col_idx = int(col.replace("#", "")) - 1
@@ -1504,6 +1530,99 @@ class process_prompts_manager:
                         return
         messagebox.showerror("Erreur", "Aucun prompt positif trouve dans le tableau des values.")
 
+    def show_output_images_window(self, item_id):
+        """Affiche les images générées pour un noeud output_image."""
+        row_data = self.values_data.get(item_id, {})
+        raw_images = row_data.get("value")
+        if raw_images is None:
+            raw_images = self.values_tree.item(item_id, "values")[3]
+
+        images = self._normalize_image_list(raw_images)
+        if not images:
+            messagebox.showinfo("Information", "Aucune image disponible pour cet élément.")
+            return
+
+        popup = tk.Toplevel(self.root)
+        popup.title("Images générées")
+        popup.transient(self.root)
+        popup.grab_set()
+        self.center_window(popup, width=650, height=520)
+
+        main_frame = ttk.Frame(popup)
+        main_frame.pack(fill="both", expand=True, padx=10, pady=10)
+
+        header = ttk.Frame(main_frame)
+        header.pack(fill="x", pady=(0, 10))
+        ttk.Label(header, text="Chemin :").pack(side="left")
+        path_var = tk.StringVar()
+        path_entry = ttk.Entry(header, textvariable=path_var, state="readonly")
+        path_entry.pack(side="left", fill="x", expand=True, padx=5)
+
+        image_frame = ttk.Frame(main_frame)
+        image_frame.pack(fill="both", expand=True)
+        image_label = ttk.Label(image_frame, text="")
+        image_label.pack(fill="both", expand=True)
+
+        info_label = ttk.Label(main_frame, text="")
+        info_label.pack(pady=(5, 10))
+
+        nav_frame = ttk.Frame(main_frame)
+        nav_frame.pack(fill="x")
+        prev_button = ttk.Button(nav_frame, text="<")
+        prev_button.pack(side="left")
+        index_label = ttk.Label(nav_frame, text="")
+        index_label.pack(side="left", expand=True)
+        next_button = ttk.Button(nav_frame, text=">")
+        next_button.pack(side="right")
+
+        state = {"index": 0, "images": images}
+
+        def display_image(index):
+            if not (0 <= index < len(state["images"])):
+                return
+            state["index"] = index
+            image_path = state["images"][index]
+            path_var.set(image_path)
+            index_label.configure(text=f"{index + 1} / {len(state['images'])}")
+            try:
+                if os.path.exists(image_path):
+                    pil_image = Image.open(image_path)
+                    max_width, max_height = 500, 380
+                    ratio = min(max_width / pil_image.width, max_height / pil_image.height, 1)
+                    new_size = (int(pil_image.width * ratio), int(pil_image.height * ratio))
+                    if new_size[0] and new_size[1]:
+                        pil_image = pil_image.resize(new_size, Image.Resampling.LANCZOS)
+                    tk_image = ImageTk.PhotoImage(pil_image)
+                    image_label.configure(image=tk_image, text="")
+                    image_label.image = tk_image
+                    info_label.configure(text=f"{os.path.basename(image_path)} - {pil_image.width}x{pil_image.height}")
+                else:
+                    image_label.configure(image="", text="Fichier introuvable")
+                    image_label.image = None
+                    info_label.configure(text="")
+            except Exception as exc:
+                image_label.configure(image="", text=f"Erreur : {exc}")
+                image_label.image = None
+                info_label.configure(text="")
+            prev_button.state(["!disabled"] if index > 0 else ["disabled"])
+            next_button.state(["!disabled"] if index < len(state["images"]) - 1 else ["disabled"])
+
+        def show_prev():
+            if state["index"] > 0:
+                display_image(state["index"] - 1)
+
+        def show_next():
+            if state["index"] < len(state["images"]) - 1:
+                display_image(state["index"] + 1)
+
+        prev_button.configure(command=show_prev)
+        next_button.configure(command=show_next)
+
+        popup.bind("<Left>", lambda _e: show_prev())
+        popup.bind("<Right>", lambda _e: show_next())
+        popup.bind("<Escape>", lambda _e: popup.destroy())
+        display_image(0)
+
     def add_values_row(self):
         """Ajouter une nouvelle ligne dans le tableau des values"""
         popup = tk.Toplevel(self.root)
@@ -1626,6 +1745,7 @@ class process_prompts_manager:
             return
 
         name = self.name_var.get().strip()
+       
         url = self.url_var.get().strip()
         image = self.image_var.get().strip()
         comment = self.comment_var.get().strip()
@@ -1742,26 +1862,62 @@ class process_prompts_manager:
             self.execution_stack_tree.insert("", "end", values=(item["prompt_id"], item["status"]))
 
     def configure_prompts_tree_columns(self):
-        """Configure column display options for le tableau des prompts."""
+        """Configure column display options avec largeurs réduites"""
         if not hasattr(self, "tree"):
             return
         column_config = {
-            "id": {"width": 80, "minwidth": 60, "stretch": False},
-            "name": {"width": 220, "minwidth": 120, "stretch": True},
-            "status": {"width": 110, "minwidth": 90, "stretch": False},
-            "model": {"width": 180, "minwidth": 140, "stretch": True},
-            "comment": {"width": 240, "minwidth": 160, "stretch": True},
-            "parent": {"width": 120, "minwidth": 90, "stretch": False},
-            "image": {"width": 220, "minwidth": 140, "stretch": True},
+            "id": {"width": 40, "minwidth": 30, "stretch": False},
+            "name": {"width": 100, "minwidth": 80, "stretch": True},
+            "status": {"width": 60, "minwidth": 50, "stretch": False},
+            "model": {"width": 80, "minwidth": 60, "stretch": True},
+            "comment": {"width": 100, "minwidth": 80, "stretch": True},
+            "parent": {"width": 50, "minwidth": 40, "stretch": False},
+            "image": {"width": 80, "minwidth": 60, "stretch": True},
         }
         for col_name, config in column_config.items():
             if col_name in self.tree["columns"]:
                 self.tree.column(
                     col_name,
-                    width=config.get("width", 120),
-                    minwidth=config.get("minwidth", 40),
+                    width=config.get("width", 80),
+                    minwidth=config.get("minwidth", 30),
                     stretch=config.get("stretch", True),
                 )
+
+    def _normalize_image_list(self, raw_value):
+        """Convertit une valeur brute en liste de chemins d'images."""
+        if not raw_value:
+            return []
+        images = []
+        def add_candidate(candidate):
+            if isinstance(candidate, str) and candidate:
+                images.append(candidate)
+        if isinstance(raw_value, str):
+            candidate = raw_value.strip()
+            if candidate.startswith('[') and candidate.endswith(']'):
+                try:
+                    parsed = json.loads(candidate)
+                    return self._normalize_image_list(parsed)
+                except json.JSONDecodeError:
+                    pass
+            if candidate:
+                for segment in candidate.split(','):
+                    add_candidate(segment.strip())
+            return images
+        if isinstance(raw_value, dict):
+            for key in ("path", "image", "file", "filename"):
+                value = raw_value.get(key)
+                if isinstance(value, str) and value:
+                    add_candidate(value)
+            return images
+        if isinstance(raw_value, (list, tuple, set)):
+            for item in raw_value:
+                if isinstance(item, dict):
+                    images.extend(self._normalize_image_list(item))
+                else:
+                    images.extend(self._normalize_image_list(item))
+            return images
+        add_candidate(str(raw_value))
+        return images
 
     def configure_values_tree_columns(self):
         """Configure les tailles des colonnes du tableau values"""
@@ -1799,6 +1955,9 @@ class process_prompts_manager:
                 minwidth=config["minwidth"],
                 stretch=config.get("stretch", True)
             )
+
+# AJOUT : Lier l'événement de double-clic au tableau values_tree
+        self.values_tree.bind("<Double-1>", self.on_double_click_values)
 
 def main(db_path="g:/tmp/prompts_manager.db", DirCollecte=None):
     root = tk.Tk()
