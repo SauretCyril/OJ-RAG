@@ -217,6 +217,12 @@ class cy8_prompts_manager:
         notebook.add(info_tab, text="Informations")
         
         self.setup_info_tab(info_tab)
+        
+        # Onglet Data - Gestion de la base de données
+        data_tab = ttk.Frame(notebook)
+        notebook.add(data_tab, text="Data")
+        
+        self.setup_data_tab(data_tab)
     
     def setup_info_tab(self, parent):
         """Configuration de l'onglet informations générales"""
@@ -261,6 +267,51 @@ class cy8_prompts_manager:
         # Bouton de sauvegarde
         ttk.Button(info_frame, text="Sauvegarder les informations", 
                   command=self.save_current_info).grid(row=row, column=0, columnspan=2, pady=20)
+    
+    def setup_data_tab(self, parent):
+        """Configuration de l'onglet gestion des données"""
+        data_frame = ttk.Frame(parent, padding="10")
+        data_frame.pack(fill="both", expand=True)
+        
+        # Titre
+        ttk.Label(data_frame, text="Gestion de la Base de Données", 
+                 font=("TkDefaultFont", 12, "bold")).pack(pady=(0, 20))
+        
+        # Localisation actuelle de la base
+        location_frame = ttk.LabelFrame(data_frame, text="Base de données actuelle", padding="10")
+        location_frame.pack(fill="x", pady=(0, 20))
+        
+        # Affichage du chemin
+        ttk.Label(location_frame, text="Chemin:").grid(row=0, column=0, sticky="w", pady=5)
+        
+        self.db_path_var = tk.StringVar(value=self.db_path)
+        db_path_entry = ttk.Entry(location_frame, textvariable=self.db_path_var, 
+                                 state="readonly", width=60)
+        db_path_entry.grid(row=0, column=1, sticky="ew", padx=(10, 0))
+        
+        location_frame.grid_columnconfigure(1, weight=1)
+        
+        # Boutons d'action
+        actions_frame = ttk.LabelFrame(data_frame, text="Actions", padding="10")
+        actions_frame.pack(fill="x", pady=(0, 20))
+        
+        # Bouton changer de base
+        ttk.Button(actions_frame, text="Changer de base...", 
+                  command=self.change_database).pack(side="left", padx=(0, 10))
+        
+        # Bouton créer nouvelle base
+        ttk.Button(actions_frame, text="Créer nouvelle base...", 
+                  command=self.create_new_database).pack(side="left")
+        
+        # Statistiques
+        stats_frame = ttk.LabelFrame(data_frame, text="Statistiques", padding="10")
+        stats_frame.pack(fill="x")
+        
+        self.stats_text = tk.StringVar()
+        ttk.Label(stats_frame, textvariable=self.stats_text).pack(anchor="w")
+        
+        # Mettre à jour les statistiques
+        self.update_database_stats()
     
     def setup_status_bar(self):
         """Configuration de la barre de statut"""
@@ -547,14 +598,15 @@ class cy8_prompts_manager:
     def open_prompt_analysis(self):
         """
         0.7) Analyser le prompt - Fonction initiale: open_prompt_analysis
+        POPUP-ID: CY8-POPUP-009
         """
         if not self.selected_prompt_id:
             messagebox.showwarning("Attention", "Sélectionnez un prompt à analyser.")
             return
         
-        # Popup d'analyse (implémentation de base)
+        # CY8-POPUP-009: Popup d'analyse
         popup = tk.Toplevel(self.root)
-        popup.title("Analyse du Prompt")
+        popup.title("CY8-POPUP-009 | Analyse du Prompt")
         popup.transient(self.root)
         popup.grab_set()
         
@@ -562,6 +614,10 @@ class cy8_prompts_manager:
         
         main_frame = ttk.Frame(popup, padding="10")
         main_frame.pack(fill="both", expand=True)
+        
+        # Identifiant popup en haut
+        ttk.Label(main_frame, text="CY8-POPUP-009", font=("TkDefaultFont", 8, "bold"), 
+                 foreground="blue").pack(anchor="e", pady=(0, 5))
         
         ttk.Label(main_frame, text="Analyse du Prompt", 
                  style='Title.TLabel').pack(pady=10)

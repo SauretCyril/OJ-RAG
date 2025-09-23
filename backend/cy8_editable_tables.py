@@ -10,7 +10,15 @@ class cy8_editable_tables:
         self.popup_manager = popup_manager
         self.values_data = {}
         self.workflow_data = {}
-        self.value_row_counter = 0
+    def edit_inputs_popup(self, node_id, inputs_str, workflow_tree, on_change_callback):
+        """
+        Popup pour éditer les inputs du workflow
+        1.2.2) Clic sur inputs -> tableau éditable attribut:valeur
+        POPUP-ID: CY8-POPUP-007
+        """
+        popup = tk.Toplevel(self.root)
+        popup.title(f"CY8-POPUP-007 | Édition Inputs - Node {node_id}")
+        
         
     def create_prompt_values_table(self, parent_frame, on_change_callback=None):
         """
@@ -315,16 +323,22 @@ class cy8_editable_tables:
         self.popup_manager.open_multi_loras_popup(item_id, current_value, on_save)
     
     def edit_value_popup(self, item_id, key, type_val, current_value, tree, on_change_callback):
-        """Popup d'édition plus grande - 1.1.3)"""
+        """Popup d'édition plus grande - 1.1.3)
+        POPUP-ID: CY8-POPUP-006
+        """
         popup = tk.Toplevel(self.root)
-        popup.title(f"Édition - {key} ({type_val})")
+        popup.title(f"CY8-POPUP-006 | Édition - {key} ({type_val})")
         popup.transient(self.root)
         popup.grab_set()
         
-        self.popup_manager.center_window(popup, 500, 300)
+        self.popup_manager.center_window(popup, 500, 600)
         
         main_frame = ttk.Frame(popup, padding="10")
         main_frame.pack(fill="both", expand=True)
+        
+        # Identifiant popup en haut
+        ttk.Label(main_frame, text="CY8-POPUP-006", font=("TkDefaultFont", 8, "bold"), 
+                 foreground="blue").pack(anchor="e", pady=(0, 5))
         
         # Informations
         info_frame = ttk.Frame(main_frame)
@@ -385,10 +399,14 @@ class cy8_editable_tables:
         popup.transient(self.root)
         popup.grab_set()
         
-        self.popup_manager.center_window(popup, 600, 400)
+        self.popup_manager.center_window(popup, 600, 600)
         
         main_frame = ttk.Frame(popup, padding="10")
         main_frame.pack(fill="both", expand=True)
+        
+        # Identifiant popup en haut
+        ttk.Label(main_frame, text="CY8-POPUP-007", font=("TkDefaultFont", 8, "bold"), 
+            foreground="blue").pack(anchor="e", pady=(0, 5))
         
         # Titre
         ttk.Label(main_frame, text=f"Inputs du nœud {node_id}", 
@@ -458,15 +476,19 @@ class cy8_editable_tables:
             attr = selection[0]
             current_value = inputs_data.get(attr, "")
             
-            # Popup d'édition de valeur
+            # CY8-POPUP-008: Popup d'édition de valeur
             edit_popup = tk.Toplevel(popup)
-            edit_popup.title(f"Éditer {attr}")
+            edit_popup.title(f"CY8-POPUP-008 | Éditer {attr}")
             edit_popup.transient(popup)
             edit_popup.grab_set()
-            self.popup_manager.center_window(edit_popup, 400, 300)
+            self.popup_manager.center_window(edit_popup, 400, 600)
             
             frame = ttk.Frame(edit_popup, padding="10")
             frame.pack(fill="both", expand=True)
+            
+            # Identifiant popup
+            ttk.Label(frame, text="CY8-POPUP-008", font=("TkDefaultFont", 8, "bold"), 
+                     foreground="blue").pack(anchor="e", pady=(0, 5))
             
             ttk.Label(frame, text=f"Attribut: {attr}").pack(anchor="w", pady=5)
             ttk.Label(frame, text="Valeur:").pack(anchor="w", pady=2)

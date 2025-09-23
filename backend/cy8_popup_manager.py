@@ -16,7 +16,7 @@ class cy8_popup_manager:
         screen_width = window.winfo_screenwidth()
         screen_height = window.winfo_screenheight()
         x = (screen_width - width) // 2
-        y = (screen_height - height) // 2
+        y = ((screen_height - height) // 2) 
         window.geometry(f"{width}x{height}+{x}+{y}")
     
     def load_json_to_text(self, text_widget):
@@ -40,13 +40,14 @@ class cy8_popup_manager:
         """
         Afficher un formulaire pour ajouter ou modifier un prompt.
         Fonction initiale: prompt_form
+        POPUP-ID: CY8-POPUP-001
         """
         popup = tk.Toplevel(self.root)
-        popup.title("Créer un nouveau prompt" if mode == "new" else "Modifier le prompt")
+        popup.title("CY8-POPUP-001 | " + ("Créer un nouveau prompt" if mode == "new" else "Modifier le prompt"))
         popup.transient(self.root)
         popup.grab_set()
 
-        self.center_window(popup, width=700, height=600)
+        self.center_window(popup, width=700, height=700)
 
         name_var = tk.StringVar()
         url_var = tk.StringVar()
@@ -79,6 +80,12 @@ class cy8_popup_manager:
         # Interface utilisateur avec style professionnel
         main_frame = ttk.Frame(popup, padding="10")
         main_frame.pack(fill="both", expand=True)
+        
+        # Identifiant popup en haut
+        id_frame = ttk.Frame(main_frame, style='Header.TFrame')
+        id_frame.pack(fill="x", pady=(0, 10))
+        ttk.Label(id_frame, text="CY8-POPUP-001", font=("TkDefaultFont", 8, "bold"), 
+                 foreground="blue").pack(anchor="e")
 
         # Informations générales
         info_frame = ttk.LabelFrame(main_frame, text="Informations générales", padding="10")
@@ -153,8 +160,8 @@ class cy8_popup_manager:
         workflow_text.pack(side="left", fill="both", expand=True)
         wf_scrollbar.pack(side="right", fill="y")
 
-        # Bouton pour charger JSON
-        ttk.Button(workflow_frame, text="Charger JSON...", 
+        # Bouton pour importer JSON
+        ttk.Button(workflow_frame, text="...", width=4,
                   command=lambda: self.load_json_to_text(workflow_text)).pack(anchor="w", pady=5)
 
         # Remplir les textes
@@ -251,9 +258,10 @@ class cy8_popup_manager:
         """
         Popup pour éditer les multiloras
         Fonction initiale: open_multi_loras_popup
+        POPUP-ID: CY8-POPUP-002
         """
         popup = tk.Toplevel(self.root)
-        popup.title("Gestionnaire Multiloras")
+        popup.title("CY8-POPUP-002 | Gestionnaire Multiloras")
         popup.transient(self.root)
         popup.grab_set()
         
@@ -261,6 +269,12 @@ class cy8_popup_manager:
         
         main_frame = ttk.Frame(popup, padding="10")
         main_frame.pack(fill="both", expand=True)
+        
+        # Identifiant popup en haut
+        id_frame = ttk.Frame(main_frame)
+        id_frame.pack(fill="x", pady=(0, 5))
+        ttk.Label(id_frame, text="CY8-POPUP-002", font=("TkDefaultFont", 8, "bold"), 
+                 foreground="blue").pack(anchor="e")
         
         # Titre
         ttk.Label(main_frame, text="Configuration Multiloras", 
@@ -318,15 +332,19 @@ class cy8_popup_manager:
         edit_frame.pack(fill="x", pady=(0, 10))
         
         def add_lora():
-            # Popup pour ajouter un lora
+            # CY8-POPUP-003: Popup pour ajouter un lora
             add_popup = tk.Toplevel(popup)
-            add_popup.title("Ajouter Lora")
+            add_popup.title("CY8-POPUP-003 | Ajouter Lora")
             add_popup.transient(popup)
             add_popup.grab_set()
             self.center_window(add_popup, 400, 200)
             
             frame = ttk.Frame(add_popup, padding="10")
             frame.pack(fill="both", expand=True)
+            
+            # Identifiant popup
+            ttk.Label(frame, text="CY8-POPUP-003", font=("TkDefaultFont", 8, "bold"), 
+                     foreground="blue").pack(anchor="e", pady=(0, 5))
             
             ttk.Label(frame, text="Nom du Lora:").pack(anchor="w", pady=2)
             name_var = tk.StringVar()
@@ -361,15 +379,19 @@ class cy8_popup_manager:
             values = tree.item(item, "values")
             current_name, current_value = values
             
-            # Popup pour éditer
+            # CY8-POPUP-004: Popup pour éditer
             edit_popup = tk.Toplevel(popup)
-            edit_popup.title("Modifier Lora")
+            edit_popup.title("CY8-POPUP-004 | Modifier Lora")
             edit_popup.transient(popup)
             edit_popup.grab_set()
             self.center_window(edit_popup, 400, 200)
             
             frame = ttk.Frame(edit_popup, padding="10")
             frame.pack(fill="both", expand=True)
+            
+            # Identifiant popup
+            ttk.Label(frame, text="CY8-POPUP-004", font=("TkDefaultFont", 8, "bold"), 
+                     foreground="blue").pack(anchor="e", pady=(0, 5))
             
             ttk.Label(frame, text="Nom du Lora:").pack(anchor="w", pady=2)
             name_var = tk.StringVar(value=current_name)
@@ -436,9 +458,11 @@ class cy8_popup_manager:
         ttk.Button(button_frame, text="Annuler", command=cancel).pack(side="right")
     
     def show_output_images_popup(self, images_paths, title="Images générées"):
-        """Afficher une popup avec les images de sortie"""
+        """Afficher une popup avec les images de sortie
+        POPUP-ID: CY8-POPUP-005
+        """
         popup = tk.Toplevel(self.root)
-        popup.title(title)
+        popup.title(f"CY8-POPUP-005 | {title}")
         popup.transient(self.root)
         popup.grab_set()
         
@@ -446,6 +470,10 @@ class cy8_popup_manager:
         
         main_frame = ttk.Frame(popup, padding="10")
         main_frame.pack(fill="both", expand=True)
+        
+        # Identifiant popup en haut
+        ttk.Label(main_frame, text="CY8-POPUP-005", font=("TkDefaultFont", 8, "bold"), 
+                 foreground="blue").pack(anchor="e", pady=(0, 5))
         
         # Canvas avec scrollbar pour les images
         canvas = tk.Canvas(main_frame)
