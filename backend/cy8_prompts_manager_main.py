@@ -7,16 +7,33 @@ import json
 from cy8_database_manager import cy8_database_manager
 from cy8_popup_manager import cy8_popup_manager
 from cy8_editable_tables import cy8_editable_tables
+from cy8_user_preferences import cy8_user_preferences
+from cy8_paths import normalize_path, ensure_dir, get_default_db_path, cy8_paths_manager
 
 class cy8_prompts_manager:
     """Gestionnaire principal des prompts - Version cy8 refactorisée"""
     
-    def __init__(self, root=None, db_path="g:/tmp/prompts_manager.db", mode="dev"):
+    def __init__(self, root=None, db_path=None, mode="dev"):
         self.root = root or tk.Tk()
-        self.db_path = db_path
+        
+        # Gestionnaire des préférences utilisateur
+        self.user_prefs = cy8_user_preferences()
+        
+        # Déterminer le chemin de la base de données
+        if db_path is None:
+            # Utiliser la dernière base utilisée ou le chemin par défaut
+            last_db = self.user_prefs.get_last_database_path()
+            if last_db and os.path.exists(last_db):
+                self.db_path = normalize_path(last_db)
+                print(f"Utilisation de la dernière base: {self.db_path}")
+            else:
+                self.db_path = get_default_db_path()
+                print(f"Utilisation de la base par défaut: {self.db_path}")
+        else:
+            self.db_path = normalize_path(db_path)
         
         # Gestionnaires
-        self.db_manager = cy8_database_manager(db_path)
+        self.db_manager = cy8_database_manager(self.db_path)
         self.popup_manager = cy8_popup_manager(self.root, self.db_manager)
         self.table_manager = cy8_editable_tables(self.root, self.popup_manager)
         
@@ -33,11 +50,23 @@ class cy8_prompts_manager:
         # Initialisation
         self.db_manager.init_database(mode)
         self.load_prompts()
+        self.update_database_stats()
     
     def setup_main_window(self):
         """Configuration de la fenêtre principale"""
         self.root.title("Gestionnaire de Prompts ComfyUI - Version cy8")
-        self.root.geometry("1400x900")
+        
+        # Restaurer la géométrie de la fenêtre ou utiliser par défaut
+        saved_geometry = self.user_prefs.get_window_geometry()
+        if saved_geometry:
+            try:
+                self.root.geometry(saved_geometry)
+                print(f"Géométrie restaurée: {saved_geometry}")
+            except:
+                self.root.geometry("1400x900")
+        else:
+            self.root.geometry("1400x900")
+            
         self.root.minsize(1200, 800)
         
         # Style professionnel
@@ -81,6 +110,21 @@ class cy8_prompts_manager:
         file_menu = tk.Menu(menubar, tearoff=0)
         menubar.add_cascade(label="Fichier", menu=file_menu)
         file_menu.add_command(label="Nouveau prompt", command=self.new_prompt)
+        file_menu.add_separator()
+        
+        # Sous-menu Base de données
+        db_menu = tk.Menu(file_menu, tearoff=0)
+        file_menu.add_cascade(label="Base de données", menu=db_menu)
+        db_menu.add_command(label="Changer de base...", command=self.change_database)
+        db_menu.add_command(label="Créer nouvelle base...", command=self.create_new_database)
+        db_menu.add_separator()
+        
+        # Bases récentes
+        self.recent_db_menu = tk.Menu(db_menu, tearoff=0)
+        db_menu.add_cascade(label="Bases récentes", menu=self.recent_db_menu)
+        self.update_recent_databases_menu()
+        
+        file_menu.add_separator()
         file_menu.add_command(label="Importer JSON", command=self.import_json)
         file_menu.add_command(label="Exporter JSON", command=self.export_json)
         file_menu.add_separator()
@@ -303,6 +347,29 @@ class cy8_prompts_manager:
         ttk.Button(actions_frame, text="Créer nouvelle base...", 
                   command=self.create_new_database).pack(side="left")
         
+        # Bases récentes
+        recent_frame = ttk.LabelFrame(data_frame, text="Bases récentes", padding="10")
+        recent_frame.pack(fill="both", expand=True, pady=(0, 20))
+        
+        # Liste des bases récentes
+        self.recent_listbox = tk.Listbox(recent_frame, height=6)
+        recent_scroll = ttk.Scrollbar(recent_frame, orient="vertical", command=self.recent_listbox.yview)
+        self.recent_listbox.configure(yscrollcommand=recent_scroll.set)
+        
+        self.recent_listbox.pack(side="left", fill="both", expand=True)
+        recent_scroll.pack(side="right", fill="y")
+        
+        # Boutons pour les bases récentes
+        recent_btn_frame = ttk.Frame(recent_frame)
+        recent_btn_frame.pack(fill="x", pady=(10, 0))
+        
+        ttk.Button(recent_btn_frame, text="Ouvrir sélectionnée", 
+                  command=self.open_selected_recent).pack(side="left", padx=(0, 5))
+        ttk.Button(recent_btn_frame, text="Actualiser", 
+                  command=self.refresh_recent_list).pack(side="left", padx=(0, 5))
+        ttk.Button(recent_btn_frame, text="Effacer liste", 
+                  command=self.clear_recent_databases).pack(side="right")
+        
         # Statistiques
         stats_frame = ttk.LabelFrame(data_frame, text="Statistiques", padding="10")
         stats_frame.pack(fill="x")
@@ -310,8 +377,9 @@ class cy8_prompts_manager:
         self.stats_text = tk.StringVar()
         ttk.Label(stats_frame, textvariable=self.stats_text).pack(anchor="w")
         
-        # Mettre à jour les statistiques
+        # Mettre à jour les données
         self.update_database_stats()
+        self.refresh_recent_list()
     
     def setup_status_bar(self):
         """Configuration de la barre de statut"""
@@ -340,6 +408,9 @@ class cy8_prompts_manager:
                                        values=(prompt_id, name, status, model, comment, parent or ""))
             
             self.update_status(f"{len(prompts)} prompts chargés")
+            # Mettre à jour les statistiques après chargement
+            if hasattr(self, 'stats_text'):
+                self.update_database_stats()
         except Exception as e:
             messagebox.showerror("Erreur", f"Impossible de charger les prompts: {e}")
     
@@ -728,6 +799,180 @@ WORKFLOW:
         self.status_text.set(message)
         self.root.update_idletasks()
     
+    def update_database_stats(self):
+        """Mettre à jour les statistiques de la base de données"""
+        try:
+            prompts = self.db_manager.get_all_prompts()
+            total_prompts = len(prompts)
+            
+            # Statistiques par statut
+            status_counts = {}
+            for _, _, _, _, _, status, _ in prompts:
+                status_counts[status] = status_counts.get(status, 0) + 1
+            
+            stats_text = f"Total prompts: {total_prompts}"
+            if status_counts:
+                stats_text += "\n" + " | ".join([f"{status}: {count}" for status, count in status_counts.items()])
+            
+            self.stats_text.set(stats_text)
+        except Exception as e:
+            self.stats_text.set(f"Erreur lors du calcul des statistiques: {e}")
+    
+    def change_database(self):
+        """Changer de base de données existante"""
+        from tkinter import filedialog
+        
+        file_path = filedialog.askopenfilename(
+            title="Sélectionner une base de données",
+            filetypes=[("SQLite Database", "*.db"), ("All files", "*.*")],
+            initialdir=cy8_paths_manager.get_directory_from_path(self.db_path)
+        )
+        
+        if file_path:
+            self.switch_to_database(normalize_path(file_path))
+    
+    def create_new_database(self):
+        """Créer une nouvelle base de données
+        POPUP-ID: CY8-POPUP-010
+        """
+        # CY8-POPUP-010: Popup création nouvelle base
+        popup = tk.Toplevel(self.root)
+        popup.title("CY8-POPUP-010 | Créer nouvelle base de données")
+        popup.transient(self.root)
+        popup.grab_set()
+        
+        self.popup_manager.center_window(popup, 500, 300)
+        
+        main_frame = ttk.Frame(popup, padding="20")
+        main_frame.pack(fill="both", expand=True)
+        
+        # Identifiant popup en haut
+        ttk.Label(main_frame, text="CY8-POPUP-010", font=("TkDefaultFont", 8, "bold"), 
+                 foreground="blue").pack(anchor="e", pady=(0, 10))
+        
+        # Titre
+        ttk.Label(main_frame, text="Créer une nouvelle base de données", 
+                 font=("TkDefaultFont", 12, "bold")).pack(pady=(0, 20))
+        
+        # Nom de la base
+        ttk.Label(main_frame, text="Nom de la base:").pack(anchor="w", pady=(0, 5))
+        name_var = tk.StringVar()
+        name_entry = ttk.Entry(main_frame, textvariable=name_var, width=50)
+        name_entry.pack(fill="x", pady=(0, 15))
+        name_entry.focus_set()
+        
+        # Chemin de destination
+        ttk.Label(main_frame, text="Répertoire de destination:").pack(anchor="w", pady=(0, 5))
+        
+        path_frame = ttk.Frame(main_frame)
+        path_frame.pack(fill="x", pady=(0, 20))
+        
+        path_var = tk.StringVar(value=cy8_paths_manager.get_directory_from_path(self.db_path))
+        path_entry = ttk.Entry(path_frame, textvariable=path_var, width=40)
+        path_entry.pack(side="left", fill="x", expand=True)
+        
+        def browse_directory():
+            from tkinter import filedialog
+            directory = filedialog.askdirectory(
+                title="Sélectionner le répertoire",
+                initialdir=path_var.get()
+            )
+            if directory:
+                path_var.set(directory)
+        
+        ttk.Button(path_frame, text="Parcourir...", 
+                  command=browse_directory).pack(side="right", padx=(5, 0))
+        
+        # Boutons d'action
+        button_frame = ttk.Frame(main_frame)
+        button_frame.pack(fill="x", pady=20)
+        
+        def create_database():
+            name = name_var.get().strip()
+            path = path_var.get().strip()
+            
+            if not name:
+                messagebox.showerror("Erreur", "Le nom de la base est obligatoire.")
+                return
+            
+            if not path or not os.path.isdir(path):
+                messagebox.showerror("Erreur", "Le chemin spécifié n'est pas valide.")
+                return
+            
+            # Construire le chemin complet
+            if not name.endswith('.db'):
+                name += '.db'
+            
+            # Nettoyer le nom de fichier et construire le chemin
+            clean_name = cy8_paths_manager.sanitize_filename(name)
+            full_path = normalize_path(cy8_paths_manager.join_path(path, clean_name))
+            
+            if os.path.exists(full_path):
+                if not messagebox.askyesno("Confirmer", 
+                                         f"Le fichier {full_path} existe déjà. L'écraser ?"):
+                    return
+            
+            try:
+                # S'assurer que le répertoire existe
+                ensure_dir(full_path)
+                
+                # Créer et basculer vers la nouvelle base
+                self.switch_to_database(full_path, create_new=True)
+                popup.destroy()
+                messagebox.showinfo("Succès", f"Base de données créée avec succès: {full_path}")
+            except Exception as e:
+                messagebox.showerror("Erreur", f"Erreur lors de la création: {e}")
+        
+        def cancel():
+            popup.destroy()
+        
+        ttk.Button(button_frame, text="Créer", command=create_database).pack(side="right", padx=(5, 0))
+        ttk.Button(button_frame, text="Annuler", command=cancel).pack(side="right")
+    
+    def switch_to_database(self, new_db_path, create_new=False):
+        """Basculer vers une nouvelle base de données"""
+        try:
+            # Normaliser le chemin
+            normalized_path = normalize_path(new_db_path)
+            
+            # Fermer l'ancienne connexion
+            if hasattr(self, 'db_manager') and self.db_manager:
+                self.db_manager.close()
+            
+            # Créer le nouveau gestionnaire de base
+            self.db_path = normalized_path
+            self.db_manager = cy8_database_manager(normalized_path)
+            
+            # Initialiser la base (créer les tables si nécessaire)
+            if create_new:
+                self.db_manager.init_database("init")  # Mode init pour créer avec prompt par défaut
+            else:
+                self.db_manager.init_database("dev")   # Mode dev pour ouvrir existante
+            
+            # Recréer le popup_manager avec le nouveau db_manager
+            self.popup_manager = cy8_popup_manager(self.root, self.db_manager)
+            
+            # Sauvegarder la nouvelle base dans les cookies
+            self.user_prefs.set_last_database_path(normalized_path)
+            print(f"Base sauvegardée dans les cookies: {normalized_path}")
+            
+            # Mettre à jour l'affichage
+            self.db_path_var.set(normalized_path)
+            self.clear_details()
+            self.load_prompts()
+            self.update_database_stats()
+            
+            # Mettre à jour les menus et listes
+            if hasattr(self, 'recent_db_menu'):
+                self.update_recent_databases_menu()
+            if hasattr(self, 'recent_listbox'):
+                self.refresh_recent_list()
+            
+            self.update_status(f"Base de données changée: {cy8_paths_manager.get_filename_from_path(normalized_path)}")
+            
+        except Exception as e:
+            messagebox.showerror("Erreur", f"Impossible de changer de base de données: {e}")
+    
     def import_json(self):
         """Importer des données JSON"""
         messagebox.showinfo("Import", "Fonctionnalité d'import à implémenter")
@@ -736,6 +981,90 @@ WORKFLOW:
         """Exporter des données JSON"""
         messagebox.showinfo("Export", "Fonctionnalité d'export à implémenter")
     
+    def update_recent_databases_menu(self):
+        """Mettre à jour le menu des bases récentes"""
+        # Effacer le menu
+        self.recent_db_menu.delete(0, 'end')
+        
+        recent_dbs = self.user_prefs.get_recent_databases()
+        
+        if not recent_dbs:
+            self.recent_db_menu.add_command(label="(Aucune base récente)", state="disabled")
+        else:
+            for db_path in recent_dbs:
+                db_name = os.path.basename(db_path)
+                # Limiter la longueur du nom affiché
+                display_name = db_name if len(db_name) <= 30 else db_name[:27] + "..."
+                
+                self.recent_db_menu.add_command(
+                    label=f"{display_name} ({os.path.dirname(db_path)})",
+                    command=lambda path=db_path: self.open_recent_database(path)
+                )
+            
+            # Séparateur et option pour effacer
+            self.recent_db_menu.add_separator()
+            self.recent_db_menu.add_command(
+                label="Effacer la liste",
+                command=self.clear_recent_databases
+            )
+    
+    def open_recent_database(self, db_path):
+        """Ouvrir une base de données récente"""
+        if os.path.exists(db_path):
+            self.switch_to_database(db_path)
+        else:
+            if messagebox.askyesno("Base introuvable", 
+                                 f"La base {db_path} n'existe plus.\nLa retirer de la liste ?"):
+                self.user_prefs.remove_recent_database(db_path)
+                self.update_recent_databases_menu()
+    
+    def clear_recent_databases(self):
+        """Effacer la liste des bases récentes"""
+        if messagebox.askyesno("Confirmer", "Effacer la liste des bases récentes ?"):
+            self.user_prefs.clear_recent_databases()
+            self.update_recent_databases_menu()
+            if hasattr(self, 'recent_listbox'):
+                self.refresh_recent_list()
+    
+    def refresh_recent_list(self):
+        """Actualiser la liste des bases récentes dans l'onglet Data"""
+        if hasattr(self, 'recent_listbox'):
+            # Effacer la liste
+            self.recent_listbox.delete(0, tk.END)
+            
+            # Ajouter les bases récentes
+            recent_dbs = self.user_prefs.get_recent_databases()
+            for db_path in recent_dbs:
+                # Marquer la base actuelle en comparant les chemins normalisés
+                is_current = cy8_paths_manager.compare_paths(db_path, self.db_path)
+                marker = " (ACTUELLE)" if is_current else ""
+                display_text = f"{cy8_paths_manager.get_filename_from_path(db_path)} - {db_path}{marker}"
+                self.recent_listbox.insert(tk.END, display_text)
+    
+    def open_selected_recent(self):
+        """Ouvrir la base sélectionnée dans la liste des récentes"""
+        if hasattr(self, 'recent_listbox'):
+            selection = self.recent_listbox.curselection()
+            if selection:
+                index = selection[0]
+                recent_dbs = self.user_prefs.get_recent_databases()
+                if index < len(recent_dbs):
+                    db_path = recent_dbs[index]
+                    if os.path.exists(db_path):
+                        # Comparer les chemins normalisés
+                        if not cy8_paths_manager.compare_paths(db_path, self.db_path):
+                            self.switch_to_database(db_path)
+                        else:
+                            messagebox.showinfo("Information", "Cette base est déjà ouverte.")
+                    else:
+                        if messagebox.askyesno("Base introuvable", 
+                                             f"La base {db_path} n'existe plus.\nLa retirer de la liste ?"):
+                            self.user_prefs.remove_recent_database(db_path)
+                            self.refresh_recent_list()
+                            self.update_recent_databases_menu()
+            else:
+                messagebox.showwarning("Sélection", "Sélectionnez une base dans la liste.")
+    
     def run(self):
         """Démarrer l'application"""
         self.root.mainloop()
@@ -743,9 +1072,21 @@ WORKFLOW:
     def on_closing(self):
         """Gestionnaire de fermeture"""
         try:
-            self.db_manager.close()
-        except:
-            pass
+            # Sauvegarder la géométrie de la fenêtre
+            geometry = self.root.geometry()
+            self.user_prefs.set_window_geometry(geometry)
+            print(f"Géométrie sauvegardée: {geometry}")
+            
+            # Sauvegarder la base actuelle
+            if hasattr(self, 'db_path') and self.db_path:
+                self.user_prefs.set_last_database_path(self.db_path)
+            
+            # Fermer la base de données
+            if hasattr(self, 'db_manager') and self.db_manager:
+                self.db_manager.close()
+        except Exception as e:
+            print(f"Erreur lors de la fermeture: {e}")
+        
         self.root.destroy()
 
 def main():

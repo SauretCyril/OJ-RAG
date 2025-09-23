@@ -1,12 +1,19 @@
 import os
 import sqlite3
 import json
+from cy8_paths import normalize_path, ensure_dir, get_default_db_path
 
 class cy8_database_manager:
     """Gestionnaire de base de données pour les prompts - Version cy8"""
     
-    def __init__(self, db_path="g:/tmp/prompts_manager.db"):
-        self.db_path = db_path
+    def __init__(self, db_path=None):
+        # Utiliser le chemin par défaut si aucun chemin n'est fourni
+        if db_path is None:
+            db_path = get_default_db_path()
+        
+        # Normaliser et s'assurer que le répertoire existe
+        self.db_path = normalize_path(db_path)
+        ensure_dir(self.db_path)
         self.conn = None
         self.cursor = None
         self.status_options = ("new", "test", "ok", "nok")
