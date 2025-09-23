@@ -299,6 +299,9 @@ class process_prompts_manager:
         self.execution_stack_tree.pack(side="left", fill="both", expand=True)
         scrollbar.pack(side="right", fill="y")
 
+         # AJOUT : Lier l'événement de double-clic au tableau values_tree
+        self.values_tree.bind("<Double-1>", self.on_double_click_values)
+
     def toggle_selection_buttons(self, show):
         buttons = [self.edit_button, self.delete_button]
         for button in buttons:
@@ -1838,54 +1841,288 @@ class process_prompts_manager:
         return entries
 
     def open_multi_loras_popup(self, item_id):
-        """Ouvre une fenetre listant les loras et leurs poids."""
+        """Ouvre une fenetre listant les loras et leurs poids avec édition."""
         row = self.values_tree.item(item_id, "values")
         data = self.values_data.get(item_id, {})
         raw_value = data.get("value") or data.get("values") or row[3]
         entries = self._parse_multi_loras_entries(raw_value)
+        
+        # Si pas d'entrées, créer une liste vide avec une entrée par défaut
         if not entries:
-            messagebox.showinfo("Information", "Aucune configuration multiLoras a afficher.")
-            return
+            entries = [("", "")]
 
         popup = tk.Toplevel(self.root)
-        popup.title("MultiLoras")
+        popup.title("MultiLoras Editor")
         popup.transient(self.root)
         popup.grab_set()
-        self.center_window(popup, width=420, height=320)
+        self.center_window(popup, width=520, height=420)
 
         container = ttk.Frame(popup, padding=10)
         container.pack(fill="both", expand=True)
 
-        tree = ttk.Treeview(container, columns=("lora", "poids"), show="headings", height=8)
-        tree.heading("lora", text="Lora")
-        tree.heading("poids", text="Valeur")
-        tree.column("lora", anchor="w", width=260)
+        # Label d'information
+        info_label = ttk.Label(container, text="Éditeur MultiLoras - Double-clic pour éditer", font=("Arial", 10))
+        info_label.pack(anchor="w", pady=(0, 10))
+
+        # Frame pour le tableau
+        tree_frame = ttk.Frame(container)
+        tree_frame.pack(fill="both", expand=True)
+
+        tree = ttk.Treeview(tree_frame, columns=("lora", "poids"), show="headings", height=10)
+        tree.heading("lora", text="Nom LoRA")
+        tree.heading("poids", text="Poids/Force")
+        tree.column("lora", anchor="w", width=300)
         tree.column("poids", anchor="center", width=120)
 
-        y_scroll = ttk.Scrollbar(container, orient="vertical", command=tree.yview)
+        y_scroll = ttk.Scrollbar(tree_frame, orient="vertical", command=tree.yview)
         tree.configure(yscrollcommand=y_scroll.set)
 
         tree.pack(side="left", fill="both", expand=True)
         y_scroll.pack(side="right", fill="y")
 
+        # Remplir le tableau avec les entrées existantes
+        current_entries = {}
         for idx, (name, weight) in enumerate(entries, start=1):
-            tree.insert("", "end", iid=str(idx), values=(name, weight))
+            item_id = str(idx)
+            tree.insert("", "end", iid=item_id, values=(name, weight))
+            current_entries[item_id] = {"name": name, "weight": weight}
 
-        button_frame = ttk.Frame(popup)
-        button_frame.pack(fill="x", pady=(5, 10))
-        ttk.Button(button_frame, text="Fermer", command=popup.destroy).pack(side="right", padx=10)
-        popup.bind("<Escape>", lambda _e: popup.destroy())
+        # Variable pour gérer l'édition inline
+        current_editor = {"widget": None, "item_id": None, "column": None}
 
+        def on_double_click(event):
+            """Gérer le double-clic pour éditer les cellules"""
+            if current_editor["widget"]:
+                return  # Un éditeur est déjà ouvert
+                
+            item_id = tree.identify_row(event.y)
+            column = tree.identify_column(event.x)
+            
+            if not item_id or not column:
+                return
+                
+            # Déterminer quelle colonne (0=lora, 1=poids)
+            col_idx = int(column.replace("#", "")) - 1
+            col_name = "name" if col_idx == 0 else "weight"
+            
+            # Obtenir la position de la cellule
+            bbox = tree.bbox(item_id, column)
+            if not bbox:
+                return
+                
+            x, y, width, height = bbox
+            
+            # Créer l'éditeur
+            editor = tk.Entry(tree)
+            editor.place(x=x, y=y, width=width, height=height)
+            
+            # Obtenir la valeur actuelle
+            current_value = current_entries.get(item_id, {}).get(col_name, "")
+            editor.insert(0, current_value)
+            editor.focus_set()
+            editor.select_range(0, tk.END)
+            
+            # Stocker les informations de l'éditeur
+            current_editor["widget"] = editor
+            current_editor["item_id"] = item_id
+            current_editor["column"] = col_name
+
+            def save_edit():
+                new_value = editor.get().strip()
+                current_entries[item_id][col_name] = new_value
+                
+                # Mettre à jour l'affichage du tableau
+                name = current_entries[item_id]["name"]
+                weight = current_entries[item_id]["weight"]
+                tree.item(item_id, values=(name, weight))
+                
+                # Nettoyer l'éditeur
+                editor.destroy()
+                current_editor["widget"] = None
+                current_editor["item_id"] = None
+                current_editor["column"] = None
+
+            def cancel_edit():
+                editor.destroy()
+                current_editor["widget"] = None
+                current_editor["item_id"] = None
+                current_editor["column"] = None
+
+            # Événements de l'éditeur
+            editor.bind("<Return>", lambda e: save_edit())
+            editor.bind("<Escape>", lambda e: cancel_edit())
+            editor.bind("<FocusOut>", lambda e: save_edit())
+
+        tree.bind("<Double-1>", on_double_click)
+
+        # Boutons d'action
+        button_frame = ttk.Frame(container)
+        button_frame.pack(fill="x", pady=(10, 0))
+
+        def add_entry():
+            """Ajouter une nouvelle entrée"""
+            # Trouver le prochain ID disponible
+            existing_ids = [int(child) for child in tree.get_children()]
+            new_id = str(max(existing_ids) + 1) if existing_ids else "1"
+            
+            tree.insert("", "end", iid=new_id, values=("", ""))
+            current_entries[new_id] = {"name": "", "weight": ""}
+
+        def delete_entry():
+            """Supprimer l'entrée sélectionnée"""
+            selection = tree.selection()
+            if not selection:
+                messagebox.showinfo("Info", "Veuillez sélectionner une entrée à supprimer.")
+                return
+            
+            for item_id in selection:
+                tree.delete(item_id)
+                current_entries.pop(item_id, None)
+
+        def save_multiloras():
+            """Sauvegarder les modifications au format 'name':'value'\\n"""
+            # Construire la chaîne de sortie
+            output_lines = []
+            for item_id in tree.get_children():
+                entry = current_entries.get(item_id, {})
+                name = entry.get("name", "").strip()
+                weight = entry.get("weight", "").strip()
+                
+                # Ignorer les entrées vides
+                if not name and not weight:
+                    continue
+                    
+                if name and weight:
+                    output_lines.append(f"'{name}':'{weight}'")
+                elif name:
+                    output_lines.append(f"'{name}':''")
+            
+            # Joindre avec des retours à la ligne
+            final_value = "\n".join(output_lines)
+            
+            # Mettre à jour les données dans le tableau principal
+            row_values = list(tree_parent.values_tree.item(item_id_parent, "values"))
+            row_values[3] = final_value
+            tree_parent.values_tree.item(item_id_parent, values=row_values)
+            
+            # Mettre à jour self.values_data
+            data = tree_parent.values_data.setdefault(item_id_parent, {})
+            data["value"] = final_value
+            data.pop("__display_value", None)
+            
+            popup.destroy()
+            messagebox.showinfo("Succès", "Modifications sauvegardées.")
+
+        def cancel_changes():
+            popup.destroy()
+
+        # Variables pour accéder au contexte parent
+        tree_parent = self
+        item_id_parent = item_id
+
+        # Disposition des boutons
+        ttk.Button(button_frame, text="Ajouter", command=add_entry).pack(side="left", padx=(0, 5))
+        ttk.Button(button_frame, text="Supprimer", command=delete_entry).pack(side="left", padx=(0, 10))
+        ttk.Button(button_frame, text="Sauvegarder", command=save_multiloras).pack(side="right", padx=(5, 0))
+        ttk.Button(button_frame, text="Annuler", command=cancel_changes).pack(side="right")
+
+        # Raccourcis clavier
+        popup.bind("<Escape>", lambda e: cancel_changes())
+        popup.bind("<Control-s>", lambda e: save_multiloras)
+        
+        # Focus sur le tableau
+        tree.focus_set()
+
+
+
+    def open_url_in_browser(self, event):
+        """Ouvre l'URL dans le navigateur par défaut"""
+        url = self.url_var.get().strip()
+        if not url:
+            messagebox.showinfo("Information", "Aucune URL spécifiée.")
+            return
+        
+        # Ajouter http:// si le protocole n'est pas spécifié
+        if not url.startswith(('http://', 'https://', 'ftp://', 'file://')):
+            url = 'http://' + url
+        
+        try:
+            import webbrowser
+            webbrowser.open(url)
+        except Exception as e:
+            messagebox.showerror("Erreur", f"Impossible d'ouvrir l'URL dans le navigateur : {e}")
+
+    def center_window(self, window, width, height):
+        """Centre une fenêtre sur l'écran"""
+        screen_width = window.winfo_screenwidth()
+        screen_height = window.winfo_screenheight()
+        x = (screen_width - width) // 2
+        y = (screen_height - height) // 2
+        window.geometry(f"{width}x{height}+{x}+{y}")
+
+    def configure_prompts_tree_columns(self):
+        """Configure column display options avec largeurs réduites"""
+        if not hasattr(self, "tree"):
+            return
+        column_config = {
+            "id": {"width": 40, "minwidth": 30, "stretch": False},
+            "name": {"width": 100, "minwidth": 80, "stretch": True},
+            "status": {"width": 60, "minwidth": 50, "stretch": False},
+            "model": {"width": 80, "minwidth": 60, "stretch": True},
+            "comment": {"width": 100, "minwidth": 80, "stretch": True},
+            "parent": {"width": 50, "minwidth": 40, "stretch": False},
+        }
+        for col_name, config in column_config.items():
+            if col_name in self.tree["columns"]:
+                self.tree.column(
+                    col_name,
+                    width=config.get("width", 80),
+                    minwidth=config.get("minwidth", 30),
+                    stretch=config.get("stretch", True),
+                )
+
+    def configure_values_tree_columns(self):
+        """Configure les tailles des colonnes du tableau values"""
+        column_config = {
+            "key": {"width": 60, "minwidth": 50, "stretch": False},
+            "id": {"width": 120, "minwidth": 80, "stretch": True},
+            "type": {"width": 80, "minwidth": 60, "stretch": False},
+            "value": {"width": 350, "minwidth": 250, "stretch": True},
+            "action": {"width": 80, "minwidth": 60, "stretch": False}
+        }
+        
+        for col_name, config in column_config.items():
+            self.values_tree.column(
+                col_name, 
+                width=config["width"],
+                minwidth=config["minwidth"],
+                stretch=config.get("stretch", True)
+            )
+
+    def configure_workflow_tree_columns(self):
+        """Configure les tailles des colonnes du tableau workflow"""
+        column_config = {
+            "id": {"width": 60, "minwidth": 50, "stretch": False},
+            "class_type": {"width": 150, "minwidth": 120, "stretch": True},
+            "input": {"width": 200, "minwidth": 150, "stretch": True},
+            "title": {"width": 120, "minwidth": 100, "stretch": True}
+        }
+        
+        for col_name, config in column_config.items():
+            self.workflow_tree.column(
+                col_name, 
+                width=config["width"],
+                minwidth=config["minwidth"],
+                stretch=config.get("stretch", True)
+            )
 
     def add_values_row(self):
         """Ajouter une nouvelle ligne dans le tableau des values"""
         popup = tk.Toplevel(self.root)
         popup.title("Ajouter une valeur")
-        popup.geometry("400x300")
         popup.transient(self.root)
         popup.grab_set()
 
-        # Centrer la fenÃªtre
         self.center_window(popup, width=400, height=300)
 
         id_var = tk.StringVar()
@@ -1895,51 +2132,12 @@ class process_prompts_manager:
         ttk.Entry(popup, textvariable=id_var, width=40).pack(fill="x", padx=10, pady=5)
 
         ttk.Label(popup, text="Type:").pack(anchor="w", padx=10, pady=5)
-        type_combo = ttk.Combobox(popup, textvariable=type_var, values=["prompt", "image", "seed", "SaveImage", "steps", "cfg"], width=37)
+        type_combo = ttk.Combobox(popup, textvariable=type_var, values=["prompt", "image", "seed", "SaveImage", "steps", "cfg", "multiLoras"], width=37)
         type_combo.pack(fill="x", padx=10, pady=5)
 
         ttk.Label(popup, text="Valeur:").pack(anchor="w", padx=10, pady=5)
         value_text = tk.Text(popup, height=5, wrap="word")
         value_text.pack(fill="both", expand=True, padx=10, pady=5)
-
-        # InsÃ©rer les valeurs par dÃ©faut Ã  l'ouverture
-        default_values = self.get_default_prompt_values()
-        default_text = json.dumps(default_values, indent=2, ensure_ascii=False)
-        value_text.insert("1.0", default_text)
-
-        def on_type_change(*args):
-            """Fonction appelÃ©e quand le type change"""
-            current_type = type_var.get().strip()
-            if current_type == "prompt":
-                # Obtenir les valeurs par dÃ©faut des prompts
-                default_values = self.get_default_prompt_values()
-                
-                # Si c'est le premier prompt, utiliser le prompt positif par dÃ©faut
-                prompt_count = sum(1 for item_id in self.values_tree.get_children() 
-                                 if self.values_tree.item(item_id, "values")[2] == "prompt")
-                
-                if prompt_count == 0:
-                    # Premier prompt = prompt positif
-                    default_text = default_values.get("positive_prompt", "beautiful scenery nature glass bottle landscape, purple galaxy bottle")
-                    if not id_var.get().strip():
-                        id_var.set("6")  # ID par dÃ©faut du prompt positif
-                elif prompt_count == 1:
-                    # DeuxiÃ¨me prompt = prompt nÃ©gatif
-                    default_text = default_values.get("negative_prompt", "text, watermark")
-                    if not id_var.get().strip():
-                        id_var.set("7")  # ID par dÃ©faut du prompt nÃ©gatif
-                else:
-                    # Autres prompts
-                    default_text = ""
-                
-                # Mettre Ã  jour le texte seulement s'il contient les valeurs par dÃ©faut
-                current_content = value_text.get("1.0", "end-1c").strip()
-                if current_content == json.dumps(default_values, indent=2, ensure_ascii=False) or not current_content:
-                    value_text.delete("1.0", "end")
-                    value_text.insert("1.0", default_text)
-
-        # Lier l'Ã©vÃ©nement de changement de type
-        type_var.trace('w', on_type_change)
 
         def save_value():
             type_val = type_var.get().strip()
@@ -1971,267 +2169,171 @@ class process_prompts_manager:
 
             popup.destroy()
 
-
-
         ttk.Button(popup, text="Ajouter", command=save_value).pack(pady=10)
 
-    def get_default_prompt_values(self):
-        """Retourne les valeurs par dÃ©faut des prompts depuis add_default_basic_prompt"""
-        return {
-            "positive_prompt": "beautiful scenery nature glass bottle landscape, purple galaxy bottle",
-            "negative_prompt": "text, watermark",
-            "seed": 1234567,
-            "filename_prefix": "basic"
-        }
-
     def delete_values_row(self):
-        """Supprimer la ligne selectionnee du tableau des values"""
+        """Supprimer la ligne sélectionnée du tableau des values"""
         selection = self.values_tree.selection()
         if not selection:
-            messagebox.showinfo("Info", "Veuillez selectionner une ligne a supprimer.")
+            messagebox.showinfo("Info", "Veuillez sélectionner une ligne à supprimer.")
             return
+        
+        for item_id in selection:
+            self.values_tree.delete(item_id)
+            self.values_data.pop(item_id, None)
 
-        for item in selection:
-            self.values_tree.delete(item)
-            self.values_data.pop(item, None)
+    def edit_prompt_form(self):
+        """Ouvre le formulaire d'édition pour le prompt sélectionné"""
+        selection = self.tree.selection()
+        if not selection:
+            messagebox.showinfo("Info", "Veuillez sélectionner un prompt à modifier.")
+            return
+        
+        prompt_id = selection[0]
+        self.prompt_form(mode="edit", prompt_id=prompt_id)
 
+    def edit_prompt(self):
+        """Alias pour edit_prompt_form"""
+        self.edit_prompt_form()
 
     def save_prompt(self):
-        """Sauvegarder le prompt courant"""
+        """Sauvegarder les modifications du prompt depuis le formulaire permanent"""
         if not self.selected_prompt_id:
-            messagebox.showwarning("Attention", "Aucun prompt selectionne a sauvegarder.")
+            messagebox.showwarning("Attention", "Aucun prompt sélectionné.")
             return
 
         name = self.name_var.get().strip()
-
         url = self.url_var.get().strip()
         comment = self.comment_var.get().strip()
 
         if not name:
-            messagebox.showerror("Erreur", "Le nom est obligatoire.")
+            messagebox.showerror("Erreur", "Le champ 'Nom' est obligatoire.")
             return
+
+        # Construire les prompt_values depuis self.values_data
+        prompt_values_dict = {}
+        for key, data in self.values_data.items():
+            prompt_values_dict[key] = data
 
         try:
-            values_dict = {}
-            for item_id in self.values_tree.get_children():
-                row_values = list(self.values_tree.item(item_id, "values"))
-                data = dict(self.values_data.get(item_id, {}))
-                data["id"] = row_values[1]
-                data["type"] = row_values[2]
-
-                display_only = data.get("__display_value")
-                if "value" in data:
-                    if row_values[3]:
-                        data["value"] = row_values[3]
-                    else:
-                        data.pop("value", None)
-                elif row_values[3] and row_values[3] != display_only:
-                    data["value"] = row_values[3]
-
-                data.pop("__display_value", None)
-                values_dict[str(item_id)] = data
-
-            derived_model = self.derive_model_from_workflow(self.get_workflow_json(self.selected_prompt_id))
             self.cursor.execute(
-                "UPDATE prompts SET name=?, prompt_values=?, url=?, model=?, comment=? WHERE id=?",
-                (name, json.dumps(values_dict, ensure_ascii=False), url, derived_model, comment, self.selected_prompt_id),
+                "UPDATE prompts SET name=?, prompt_values=?, url=?, comment=? WHERE id=?",
+                (name, json.dumps(prompt_values_dict, ensure_ascii=False), url, comment, self.selected_prompt_id)
             )
             self.conn.commit()
-
             self.load_prompts()
-            messagebox.showinfo("Succes", "Prompt sauvegarde avec succes.")
-
+            messagebox.showinfo("Succès", "Prompt sauvegardé avec succès.")
         except Exception as e:
-            messagebox.showerror("Erreur", f"Erreur lors de la sauvegarde : {e}")
-
-
-    def edit_prompt(self):
-        """Ouvre une popup pour Ã©diter le prompt sÃ©lectionnÃ©"""
-        selection = self.tree.selection()
-        if not selection:
-            messagebox.showinfo("Info", "Veuillez sÃ©lectionner un prompt Ã  modifier.")
-            return
-
-        prompt_id = selection[0]  # RÃ©cupÃ©rer l'ID du prompt sÃ©lectionnÃ©
-        self.prompt_form(mode="edit", prompt_id=prompt_id)
-
-
-
-    def edit_prompt_form(self):
-        """Ouvre le formulaire de creation/modification de prompt"""
-        self.edit_prompt()  # Reutilise la methode `new_prompt` pour ouvrir le formulaire
+            messagebox.showerror("Erreur", f"Une erreur s'est produite : {e}")
 
     def load_json_to_text(self, text_widget):
-        """Charger un fichier JSON et insÃ©rer son contenu dans une zone de texte"""
+        """Charger un fichier JSON dans un widget Text"""
         file_path = filedialog.askopenfilename(
-            title="Ouvrir un fichier JSON",
-            filetypes=[("Fichiers JSON", "*.json"), ("Tous les fichiers", "*.*")]
+            title="Sélectionner un fichier JSON",
+            filetypes=[("JSON files", "*.json"), ("All files", "*.*")]
         )
         if file_path:
             try:
-                with open(file_path, "r", encoding="utf-8") as f:
-                    json_data = json.load(f)
-                    formatted_json = json.dumps(json_data, indent=2, ensure_ascii=False)
-                    text_widget.delete("1.0", "end")  # Effacer le contenu existant
-                    text_widget.insert("1.0", formatted_json)  # InsÃ©rer le JSON formatÃ©
+                with open(file_path, 'r', encoding='utf-8') as f:
+                    content = f.read()
+                    formatted_json = json.dumps(json.loads(content), indent=2, ensure_ascii=False)
+                    text_widget.delete("1.0", "end")
+                    text_widget.insert("1.0", formatted_json)
             except Exception as e:
-                messagebox.showerror("Erreur", f"Impossible de charger le fichier JSON : {e}")
+                messagebox.showerror("Erreur", f"Erreur lors du chargement du fichier : {e}")
 
-    def center_window(self, window, width=600, height=400):
-        """Centre une fenÃªtre popup par rapport Ã  la fenÃªtre principale"""
-        # RÃ©cupÃ©rer les dimensions de la fenÃªtre principale
-        root_x = self.root.winfo_x()
-        root_y = self.root.winfo_y()
-        root_width = self.root.winfo_width()
-        root_height = self.root.winfo_height()
+    def add_to_execution_stack(self, execution_id, status):
+        """Ajouter un workflow à la pile d'exécution"""
+        self.execution_stack.append({"prompt_id": execution_id, "status": status})
+        self.update_execution_stack_ui()
 
-        # Calculer la position pour centrer la fenÃªtre
-        x = root_x + (root_width // 2) - (width // 2)
-        y = root_y + (root_height // 2) - (height // 2)
-
-        # Appliquer la gÃ©omÃ©trie
-        window.geometry(f"{width}x{height}+{x}+{y}")
-
-    def add_to_execution_stack(self, prompt_id, status):
-        """Ajouter un workflow Ã  la pile d'exÃ©cution"""
-        # VÃ©rifier si l'ID est dÃ©jÃ  dans la pile
-        for item in self.execution_stack:
-            if item["prompt_id"] == prompt_id:
-                item["status"] = status
-                self.root.after(0, self.update_execution_stack_ui)
-                return
-            
-        # Sinon, ajouter un nouvel Ã©lÃ©ment
-        self.execution_stack.append({"prompt_id": prompt_id, "status": status})
-        self.root.after(0, self.update_execution_stack_ui)  # Mettre Ã  jour l'UI dans le thread principal
-    
     def update_execution_stack_ui(self):
-        """Mettre Ã  jour l'affichage de la pile d'exÃ©cution"""
-        self.execution_stack_tree.delete(*self.execution_stack_tree.get_children())
+        """Mettre à jour l'interface de la pile d'exécution"""
+        for item in self.execution_stack_tree.get_children():
+            self.execution_stack_tree.delete(item)
+        
         for item in self.execution_stack:
             self.execution_stack_tree.insert("", "end", values=(item["prompt_id"], item["status"]))
 
-    def configure_prompts_tree_columns(self):
-        """Configure column display options avec largeurs réduites"""
-        if not hasattr(self, "tree"):
-            return
-        column_config = {
-            "id": {"width": 40, "minwidth": 30, "stretch": False},
-            "name": {"width": 100, "minwidth": 80, "stretch": True},
-            "status": {"width": 60, "minwidth": 50, "stretch": False},
-            "model": {"width": 80, "minwidth": 60, "stretch": True},
-            "comment": {"width": 100, "minwidth": 80, "stretch": True},
-            "parent": {"width": 50, "minwidth": 40, "stretch": False},
-        }
-        for col_name, config in column_config.items():
-            if col_name in self.tree["columns"]:
-                self.tree.column(
-                    col_name,
-                    width=config.get("width", 80),
-                    minwidth=config.get("minwidth", 30),
-                    stretch=config.get("stretch", True),
-                )
-
-    def _normalize_image_list(self, raw_value):
-        """Convertit une valeur brute en liste de chemins d'images."""
-        if not raw_value:
+    def _normalize_image_list(self, raw_images):
+        """Normalise une liste d'images en format uniforme"""
+        if not raw_images:
             return []
-        images = []
-        def add_candidate(candidate):
-            if isinstance(candidate, str) and candidate:
-                images.append(candidate)
-        if isinstance(raw_value, str):
-            candidate = raw_value.strip()
-            if candidate.startswith('[') and candidate.endswith(']'):
-                try:
-                    parsed = json.loads(candidate)
-                    return self._normalize_image_list(parsed)
-                except json.JSONDecodeError:
-                    pass
-            if candidate:
-                for segment in candidate.split(','):
-                    add_candidate(segment.strip())
-            return images
-        if isinstance(raw_value, dict):
-            for key in ("path", "image", "file", "filename"):
-                value = raw_value.get(key)
-                if isinstance(value, str) and value:
-                    add_candidate(value)
-            return images
-        if isinstance(raw_value, (list, tuple, set)):
-            for item in raw_value:
-                if isinstance(item, dict):
-                    images.extend(self._normalize_image_list(item))
+        
+        if isinstance(raw_images, str):
+            try:
+                parsed = json.loads(raw_images)
+                if isinstance(parsed, list):
+                    return [str(img) for img in parsed if img]
                 else:
-                    images.extend(self._normalize_image_list(item))
-            return images
-        add_candidate(str(raw_value))
-        return images
-
-    def configure_values_tree_columns(self):
-        """Configure les tailles des colonnes du tableau values"""
-        # Configuration personnalisÃ©e des colonnes
-        column_config = {
-            "key": {"width": 20, "minwidth": 20, "stretch": False},
-            "id": {"width": 20, "minwidth": 20, "stretch": True},
-            "type": {"width": 80, "minwidth": 60, "stretch": False},
-            "value": {"width": 200, "minwidth": 250, "stretch": True},
-            "action": {"width": 50, "minwidth": 60, "stretch": False}
-        }
+                    return [str(parsed)] if parsed else []
+            except json.JSONDecodeError:
+                return [raw_images.strip()] if raw_images.strip() else []
         
-        for col_name, config in column_config.items():
-            self.values_tree.column(
-                col_name, 
-                width=config["width"],
-                minwidth=config["minwidth"],
-                stretch=config.get("stretch", True)
-            )
-
-    def configure_workflow_tree_columns(self):
-        """Configure les tailles des colonnes du tableau workflow"""
-        # Configuration personnalisÃ©e des colonnes
-        column_config = {
-            "id": {"width": 20, "minwidth": 50, "stretch": False},
-            "class_type": {"width": 150, "minwidth": 120, "stretch": True},
-            "input": {"width": 200, "minwidth": 150, "stretch": True},
-            "title": {"width": 120, "minwidth": 100, "stretch": True}
-        }
+        if isinstance(raw_images, list):
+            return [str(img) for img in raw_images if img]
         
-        for col_name, config in column_config.items():
-            self.workflow_tree.column(
-                col_name, 
-                width=config["width"],
-                minwidth=config["minwidth"],
-                stretch=config.get("stretch", True)
-            )
+        return [str(raw_images)] if raw_images else []
 
-# AJOUT : Lier l'événement de double-clic au tableau values_tree
-        self.values_tree.bind("<Double-1>", self.on_double_click_values)
 
-    def open_url_in_browser(self, event):
-        """Ouvre l'URL dans le navigateur par défaut"""
-        url = self.url_var.get().strip()
-        if not url:
-            messagebox.showinfo("Information", "Aucune URL spécifiée.")
-            return
-        
-        # Ajouter http:// si le protocole n'est pas spécifié
-        if not url.startswith(('http://', 'https://', 'ftp://', 'file://')):
-            url = 'http://' + url
-        
-        try:
-            import webbrowser
-            webbrowser.open(url)
-        except Exception as e:
-            messagebox.showerror("Erreur", f"Impossible d'ouvrir l'URL dans le navigateur : {e}")
-def main(db_path="g:/tmp/prompts_manager.db", DirCollecte=None):
+
+def main(db_path=None, DirCollecte=None):
+    """Fonction principale pour lancer l'application"""
+    # Charger les variables d'environnement depuis le fichier .env
+    load_dotenv()
+    
+    # Déterminer le chemin de la base de données
+    if db_path is None:
+        db_path = os.getenv("PROMPTS_DB", "g:/tmp/prompts_manager.db")
+    
+    # Déterminer le répertoire de collecte des images
+    if DirCollecte is None:
+        DirCollecte = os.getenv("IMAGES_COLLECTE", "./output")
+    
+    # Créer la fenêtre principale
     root = tk.Tk()
-    app = process_prompts_manager(root, db_path=db_path, mode="dev", DirCollecte=DirCollecte)  # Passer DirCollecte
-    root.mainloop()
+    
+    # Créer l'application
+    app = process_prompts_manager(root, db_path=db_path, mode="dev", DirCollecte=DirCollecte)
+    
+    # Boucle principale
+    try:
+        root.mainloop()
+    except KeyboardInterrupt:
+        print("\nFermeture de l'application...")
+    finally:
+        # Fermer la connexion à la base de données
+        if hasattr(app, 'conn') and app.conn:
+            app.conn.close()
 
 if __name__ == "__main__":
-    load_dotenv()
-    db_path = os.getenv("PROMPTS_DB", "g:/tmp/prompts_manager.db")
-    images_dir_env = os.getenv("IMAGES_COLLECTE", "./output")
+    import sys
+    
+    # Variables par défaut
+    db_path = None
+    images_dir_env = None
+    
+    # Traitement des arguments en ligne de commande
+    i = 1
+    while i < len(sys.argv):
+        arg = sys.argv[i]
+        if arg == "--db" and i + 1 < len(sys.argv):
+            db_path = sys.argv[i + 1]
+            i += 2
+        elif arg == "--images-dir" and i + 1 < len(sys.argv):
+            images_dir_env = sys.argv[i + 1]
+            i += 2
+        elif arg in ["--help", "-h"]:
+            print("Usage: python cy5_process_prompts_manager.py [options]")
+            print("Options:")
+            print("  --db PATH           Chemin vers la base de données SQLite")
+            print("  --images-dir PATH   Répertoire de collecte des images")
+            print("  --help, -h          Afficher cette aide")
+            sys.exit(0)
+        else:
+            print(f"Argument inconnu: {arg}")
+            print("Utilisez --help pour voir les options disponibles.")
+            sys.exit(1)
+    
+    # Lancer l'application
     main(db_path=db_path, DirCollecte=images_dir_env)
-
