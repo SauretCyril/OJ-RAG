@@ -10,6 +10,7 @@ class cy8_editable_tables:
         self.popup_manager = popup_manager
         self.values_data = {}
         self.workflow_data = {}
+        self.save_callback = None  # Callback pour la sauvegarde
     def edit_inputs_popup(self, node_id, inputs_str, workflow_tree, on_change_callback):
         """
         Popup pour éditer les inputs du workflow
@@ -67,6 +68,11 @@ class cy8_editable_tables:
         ttk.Button(btn_frame, text="Supprimer", 
                   command=lambda: self.delete_prompt_value(values_tree, on_change_callback)).pack(side="left", padx=5)
         
+        # Bouton de sauvegarde
+        ttk.Button(btn_frame, text="💾 Sauvegarder", 
+                  command=lambda: self._save_current_prompt(on_change_callback),
+                  style='Accent.TButton').pack(side="right", padx=5)
+        
         # Événements
         values_tree.bind("<Double-1>", lambda e: self.on_values_double_click(e, values_tree, on_change_callback))
         
@@ -116,6 +122,11 @@ class cy8_editable_tables:
                   command=lambda: self.add_workflow_node(workflow_tree, on_change_callback)).pack(side="left", padx=5)
         ttk.Button(btn_frame, text="Supprimer", 
                   command=lambda: self.delete_workflow_node(workflow_tree, on_change_callback)).pack(side="left", padx=5)
+        
+        # Bouton de sauvegarde
+        ttk.Button(btn_frame, text="💾 Sauvegarder", 
+                  command=lambda: self._save_current_prompt(on_change_callback),
+                  style='Accent.TButton').pack(side="right", padx=5)
         
         # Événements
         workflow_tree.bind("<Double-1>", lambda e: self.on_workflow_double_click(e, workflow_tree, on_change_callback))
@@ -677,3 +688,27 @@ class cy8_editable_tables:
     def get_workflow_json(self):
         """Récupérer les données workflow au format JSON"""
         return json.dumps(self.workflow_data, ensure_ascii=False)
+    
+    def _save_current_prompt(self, on_change_callback):
+        """Méthode pour sauvegarder le prompt courant"""
+        if self.save_callback:
+            # Utiliser le callback de sauvegarde défini
+            try:
+                self.save_callback()
+            except Exception as e:
+                messagebox.showerror("Erreur de sauvegarde", f"Erreur lors de la sauvegarde: {e}")
+        else:
+            # Si pas de callback, appeler on_change_callback et afficher un message d'aide
+            if on_change_callback:
+                on_change_callback()
+            
+            messagebox.showinfo("Sauvegarde", 
+                "💡 Modifications enregistrées en mémoire\n\n"
+                "Pour sauvegarder définitivement :\n"
+                "• Allez dans l'onglet 'Informations'\n"
+                "• Cliquez sur '💾 Sauvegarder les informations'\n\n"
+                "Ou utilisez Ctrl+S")
+    
+    def set_save_callback(self, callback):
+        """Définir le callback pour la sauvegarde"""
+        self.save_callback = callback

@@ -50,6 +50,8 @@ class cy8_database_manager:
             # Mode dev: Crée la base si elle n'existe pas
             self.conn = sqlite3.connect(self.db_path, check_same_thread=False)
             self.cursor = self.conn.cursor()
+            
+            # Créer la table si elle n'existe pas
             self.cursor.execute('''
                 CREATE TABLE IF NOT EXISTS prompts (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -64,6 +66,21 @@ class cy8_database_manager:
                 )
             ''')
             self.conn.commit()
+            
+            # Valider la structure existante
+            is_valid, message = self.validate_database_structure()
+            if not is_valid:
+                print(f"Structure invalide détectée: {message}")
+                # Corriger automatiquement la structure
+                fix_success, fix_message = self.fix_database_structure()
+                if fix_success:
+                    print(f"Structure corrigée: {fix_message}")
+                else:
+                    print(f"Erreur lors de la correction: {fix_message}")
+                    raise Exception(f"Impossible de corriger la structure de la base: {fix_message}")
+            else:
+                print(f"Structure de la base validée: {message}")
+            
             self.ensure_additional_columns()
     
     def ensure_additional_columns(self):
@@ -282,6 +299,123 @@ class cy8_database_manager:
         """Vérifier si un nom de prompt existe"""
         self.cursor.execute("SELECT 1 FROM prompts WHERE name=? LIMIT 1", (name,))
         return self.cursor.fetchone() is not None
+    
+    def validate_database_structure(self):
+        """Valider la structure de la base de données"""
+        try:
+            # Vérifier que la table prompts existe
+            self.cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='prompts'")
+            if not self.cursor.fetchone():
+                return False, "Table 'prompts' manquante"
+            
+            # Vérifier les colonnes obligatoires
+            self.cursor.execute("PRAGMA table_info(prompts)")
+            columns_info = self.cursor.fetchall()
+            existing_columns = {col[1]: col[2] for col in columns_info}  # {nom: type}
+            
+            required_columns = {
+                'id': 'INTEGER',
+                'name': 'TEXT',
+                'prompt_values': 'JSON',
+                'workflow': 'JSON',
+                'url': 'TEXT',
+                'model': 'TEXT',
+                'comment': 'TEXT',
+                'status': 'TEXT'
+            }
+            
+            missing_columns = []
+            for col_name, col_type in required_columns.items():
+                if col_name not in existing_columns:
+                    missing_columns.append(f"{col_name} ({col_type})")
+            
+            if missing_columns:
+                return False, f"Colonnes manquantes: {', '.join(missing_columns)}"
+            
+            # Vérifier la contrainte PRIMARY KEY sur id
+            primary_key_found = False
+            for col_info in columns_info:
+                if col_info[1] == 'id' and col_info[5] == 1:  # col_info[5] est pk
+                    primary_key_found = True
+                    break
+            
+            if not primary_key_found:
+                return False, "Clé primaire manquante sur la colonne 'id'"
+            
+            return True, "Structure valide"
+            
+        except Exception as e:
+            return False, f"Erreur lors de la validation: {e}"
+    
+    def fix_database_structure(self):
+        """Tenter de corriger la structure de la base de données"""
+        try:
+            print("Tentative de correction de la structure de la base...")
+            
+            # Sauvegarder les données existantes si la table existe
+            backup_data = []
+            try:
+                self.cursor.execute("SELECT * FROM prompts")
+                backup_data = self.cursor.fetchall()
+                print(f"Sauvegarde de {len(backup_data)} prompts existants")
+            except:
+                print("Aucune donnée existante à sauvegarder")
+            
+            # Supprimer l'ancienne table si elle existe
+            self.cursor.execute("DROP TABLE IF EXISTS prompts")
+            
+            # Recréer la table avec la bonne structure
+            self.cursor.execute('''
+                CREATE TABLE prompts (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    name TEXT NOT NULL,
+                    prompt_values JSON,
+                    workflow JSON,
+                    url TEXT,
+                    parent INTEGER,
+                    model TEXT,
+                    comment TEXT,
+                    status TEXT DEFAULT 'new'
+                )
+            ''')
+            
+            # Restaurer les données si possible
+            if backup_data:
+                for row in backup_data:
+                    try:
+                        # Adapter selon le nombre de colonnes dans la sauvegarde
+                        if len(row) >= 8:
+                            self.cursor.execute('''
+                                INSERT INTO prompts (id, name, prompt_values, workflow, url, parent, model, comment, status)
+                                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                            ''', row[:9])  # Prendre les 9 premières colonnes
+                        else:
+                            # Structure ancienne, adapter
+                            name = row[1] if len(row) > 1 else 'Prompt sans nom'
+                            prompt_values = row[2] if len(row) > 2 else '{}'
+                            workflow = row[3] if len(row) > 3 else '{}'
+                            url = row[4] if len(row) > 4 else ''
+                            model = row[5] if len(row) > 5 else ''
+                            comment = row[6] if len(row) > 6 else ''
+                            status = row[7] if len(row) > 7 else 'new'
+                            
+                            self.cursor.execute('''
+                                INSERT INTO prompts (name, prompt_values, workflow, url, model, comment, status)
+                                VALUES (?, ?, ?, ?, ?, ?, ?)
+                            ''', (name, prompt_values, workflow, url, model, comment, status))
+                    except Exception as e:
+                        print(f"Erreur lors de la restauration du prompt {row}: {e}")
+                        continue
+                
+                print(f"Restauration terminée")
+            
+            self.conn.commit()
+            self.ensure_additional_columns()
+            
+            return True, "Structure corrigée avec succès"
+            
+        except Exception as e:
+            return False, f"Erreur lors de la correction: {e}"
     
     def close(self):
         """Fermer la connexion"""

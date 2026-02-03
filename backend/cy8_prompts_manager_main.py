@@ -9,6 +9,7 @@ from cy8_popup_manager import cy8_popup_manager
 from cy8_editable_tables import cy8_editable_tables
 from cy8_user_preferences import cy8_user_preferences
 from cy8_paths import normalize_path, ensure_dir, get_default_db_path, cy8_paths_manager
+from cy6_wkf001_Basic import comfyui_basic_task
 
 class cy8_prompts_manager:
     """Gestionnaire principal des prompts - Version cy8 refactorisée"""
@@ -37,6 +38,9 @@ class cy8_prompts_manager:
         self.popup_manager = cy8_popup_manager(self.root, self.db_manager)
         self.table_manager = cy8_editable_tables(self.root, self.popup_manager)
         
+        # Connecter le callback de sauvegarde
+        self.table_manager.set_save_callback(self.save_current_info)
+        
         # Variables d'état
         self.selected_prompt_id = None
         self.execution_stack = []
@@ -46,6 +50,9 @@ class cy8_prompts_manager:
         # Configuration de l'interface
         self.setup_main_window()
         self.setup_ui()
+        
+        # Raccourcis clavier
+        self.root.bind('<Control-s>', lambda e: self.save_current_info())
         
         # Initialisation
         self.db_manager.init_database(mode)
@@ -347,28 +354,50 @@ class cy8_prompts_manager:
         ttk.Button(actions_frame, text="Créer nouvelle base...", 
                   command=self.create_new_database).pack(side="left")
         
-        # Bases récentes
+        # Bases récentes avec mise en page améliorée
         recent_frame = ttk.LabelFrame(data_frame, text="Bases récentes", padding="10")
         recent_frame.pack(fill="both", expand=True, pady=(0, 20))
         
+        # Frame principal avec grille pour la liste et les boutons
+        recent_main_frame = ttk.Frame(recent_frame)
+        recent_main_frame.pack(fill="both", expand=True)
+        recent_main_frame.grid_columnconfigure(0, weight=1)
+        recent_main_frame.grid_rowconfigure(0, weight=1)
+        
+        # Frame pour la liste avec scrollbar
+        list_frame = ttk.Frame(recent_main_frame)
+        list_frame.grid(row=0, column=0, sticky="nsew", padx=(0, 10))
+        list_frame.grid_columnconfigure(0, weight=1)
+        list_frame.grid_rowconfigure(0, weight=1)
+        
         # Liste des bases récentes
-        self.recent_listbox = tk.Listbox(recent_frame, height=6)
-        recent_scroll = ttk.Scrollbar(recent_frame, orient="vertical", command=self.recent_listbox.yview)
+        self.recent_listbox = tk.Listbox(list_frame, height=8)
+        recent_scroll = ttk.Scrollbar(list_frame, orient="vertical", command=self.recent_listbox.yview)
         self.recent_listbox.configure(yscrollcommand=recent_scroll.set)
         
-        self.recent_listbox.pack(side="left", fill="both", expand=True)
-        recent_scroll.pack(side="right", fill="y")
+        self.recent_listbox.grid(row=0, column=0, sticky="nsew")
+        recent_scroll.grid(row=0, column=1, sticky="ns")
         
-        # Boutons pour les bases récentes
-        recent_btn_frame = ttk.Frame(recent_frame)
-        recent_btn_frame.pack(fill="x", pady=(10, 0))
+        # Frame pour les boutons (vertical à droite)
+        buttons_frame = ttk.Frame(recent_main_frame)
+        buttons_frame.grid(row=0, column=1, sticky="ns", padx=(10, 0))
         
-        ttk.Button(recent_btn_frame, text="Ouvrir sélectionnée", 
-                  command=self.open_selected_recent).pack(side="left", padx=(0, 5))
-        ttk.Button(recent_btn_frame, text="Actualiser", 
-                  command=self.refresh_recent_list).pack(side="left", padx=(0, 5))
-        ttk.Button(recent_btn_frame, text="Effacer liste", 
-                  command=self.clear_recent_databases).pack(side="right")
+        # Boutons empilés verticalement
+        ttk.Button(buttons_frame, text="Ouvrir\nsélectionnée", 
+                  command=self.open_selected_recent, width=12).pack(pady=(0, 5))
+        
+        ttk.Button(buttons_frame, text="Actualiser", 
+                  command=self.refresh_recent_list, width=12).pack(pady=(0, 5))
+        
+        ttk.Button(buttons_frame, text="Effacer\nliste", 
+                  command=self.clear_recent_databases, width=12).pack(pady=(0, 5))
+        
+        # Séparateur
+        ttk.Separator(buttons_frame, orient="horizontal").pack(fill="x", pady=10)
+        
+        # Bouton pour retirer une base sélectionnée
+        ttk.Button(buttons_frame, text="Retirer\nsélectionnée", 
+                  command=self.remove_selected_recent, width=12).pack(pady=(5, 0))
         
         # Statistiques
         stats_frame = ttk.LabelFrame(data_frame, text="Statistiques", padding="10")
@@ -622,21 +651,57 @@ class cy8_prompts_manager:
     def _execute_workflow_task(self, prompt_id, execution_id):
         """Tâche d'exécution du workflow (en thread séparé)"""
         try:
-            # Simuler l'exécution
-            self.update_execution_stack_status(execution_id, "Préparation...")
-            time.sleep(2)
+            # Récupérer les données du prompt
+            data = self.db_manager.get_prompt_by_id(prompt_id)
+            if not data:
+                self.update_execution_stack_status(execution_id, "Erreur: Prompt introuvable")
+                self.root.after(0, lambda: self.update_prompt_status_after_execution(prompt_id, "nok"))
+                return
+                
+            name, prompt_values_json, workflow_json, url, model, comment, status = data
             
-            self.update_execution_stack_status(execution_id, "Exécution en cours...")
-            time.sleep(5)
+            # Mettre à jour le statut
+            self.update_execution_stack_status(execution_id, f"Préparation: {name}")
             
-            self.update_execution_stack_status(execution_id, "Terminé avec succès")
+            # Créer le répertoire data/Workflows s'il n'existe pas
+            os.makedirs("data/Workflows", exist_ok=True)
             
-            # Mettre à jour le statut du prompt
-            self.root.after(0, lambda: self.update_prompt_status_after_execution(prompt_id, "ok"))
+            # Générer des noms de fichiers uniques dans data/Workflows
+            timestamp = int(time.time())
+            workflow_file_path = f"data/Workflows/{name}_workflow_{timestamp}.json"
+            prompt_values_file_path = f"data/Workflows/{name}_values_{timestamp}.json"
+            
+            # Écrire les fichiers directement dans data/Workflows
+            with open(workflow_file_path, "w", encoding="utf-8") as wf_file:
+                wf_file.write(workflow_json)
+                
+            with open(prompt_values_file_path, "w", encoding="utf-8") as pv_file:
+                pv_file.write(prompt_values_json)
+            
+            # Mettre à jour le statut
+            self.update_execution_stack_status(execution_id, f"Connexion ComfyUI: {name}")
+            
+            # Exécuter le workflow avec ComfyUI
+            tsk1 = comfyui_basic_task()
+            comfyui_prompt_id = tsk1.addToQueue(workflow_file_path, prompt_values_file_path)
+            
+            self.update_execution_stack_status(execution_id, f"Génération: {comfyui_prompt_id}")
+            
+            # Récupérer les images générées
+            output_images = tsk1.GetImages(comfyui_prompt_id)
+            
+            if output_images:
+                self.update_execution_stack_status(execution_id, f"Terminé avec succès - Images: {len(output_images)}")
+                self.root.after(0, lambda: self.update_prompt_status_after_execution(prompt_id, "ok"))
+            else:
+                self.update_execution_stack_status(execution_id, "Terminé - Aucune image générée")
+                self.root.after(0, lambda: self.update_prompt_status_after_execution(prompt_id, "ok"))
             
         except Exception as e:
-            self.update_execution_stack_status(execution_id, f"Erreur: {e}")
+            error_msg = f"Erreur ComfyUI: {str(e)}"
+            self.update_execution_stack_status(execution_id, error_msg)
             self.root.after(0, lambda: self.update_prompt_status_after_execution(prompt_id, "nok"))
+            print(f"Erreur dans _execute_workflow_task: {e}")
     
     def update_prompt_status_after_execution(self, prompt_id, status):
         """Mettre à jour le statut du prompt après exécution"""
@@ -949,8 +1014,18 @@ WORKFLOW:
             else:
                 self.db_manager.init_database("dev")   # Mode dev pour ouvrir existante
             
-            # Recréer le popup_manager avec le nouveau db_manager
+            # Recréer tous les gestionnaires avec le nouveau db_manager  
             self.popup_manager = cy8_popup_manager(self.root, self.db_manager)
+            self.table_manager = cy8_editable_tables(self.root, self.popup_manager)
+            
+            # Reconnector le callback de sauvegarde
+            self.table_manager.set_save_callback(self.save_current_info)
+            
+            # Reconnecter les références vers les arbres dans table_manager
+            if hasattr(self, 'values_tree'):
+                self.table_manager._current_values_tree = self.values_tree
+            if hasattr(self, 'workflow_tree'):
+                self.table_manager._current_workflow_tree = self.workflow_tree
             
             # Sauvegarder la nouvelle base dans les cookies
             self.user_prefs.set_last_database_path(normalized_path)
@@ -1064,6 +1139,26 @@ WORKFLOW:
                             self.update_recent_databases_menu()
             else:
                 messagebox.showwarning("Sélection", "Sélectionnez une base dans la liste.")
+    
+    def remove_selected_recent(self):
+        """Retirer la base sélectionnée de la liste des récentes"""
+        if hasattr(self, 'recent_listbox'):
+            selection = self.recent_listbox.curselection()
+            if selection:
+                index = selection[0]
+                recent_dbs = self.user_prefs.get_recent_databases()
+                if index < len(recent_dbs):
+                    db_path = recent_dbs[index]
+                    db_name = cy8_paths_manager.get_filename_from_path(db_path)
+                    
+                    if messagebox.askyesno("Confirmer", 
+                                         f"Retirer '{db_name}' de la liste des bases récentes ?"):
+                        self.user_prefs.remove_recent_database(db_path)
+                        self.refresh_recent_list()
+                        self.update_recent_databases_menu()
+                        messagebox.showinfo("Succès", f"'{db_name}' retiré de la liste.")
+            else:
+                messagebox.showwarning("Sélection", "Sélectionnez une base à retirer de la liste.")
     
     def run(self):
         """Démarrer l'application"""

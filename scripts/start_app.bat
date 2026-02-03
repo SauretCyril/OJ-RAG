@@ -14,4 +14,4 @@ echo Démarrage de l'application...
 python launcher.py
 
 REM Pour arrêter le launcher, vous pouvez fermer la fenêtre ou utiliser taskkill si besoin.
-rem taskkill /F /IM python.exe /T
+rem taskkill /F /IM python.exe /T 
