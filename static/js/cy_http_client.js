@@ -1,46 +1,93 @@
 /**
- * Module client HTTP pour centraliser les requêtes réseau
- * Permet d'éviter les duplications de code dans les appels fetch
+ * Module client HTTP — IACAS OTA
+ * Centralise les requêtes vers le VPS et l'agent local.
  */
 
-/**
- * Effectue une requête HTTP générique
- * @param {string} url - URL de la requête
- * @param {string} method - Méthode HTTP (GET, POST, etc.)
- * @param {Object|null} body - Corps de la requête pour POST, PUT, etc.
- * @returns {Promise} - Promise contenant le résultat de la requête
- */
+// ---------------------------------------------------------------------------
+// Gestion du TOKEN agent
+// ---------------------------------------------------------------------------
+const Auth = {
+    getToken: () => sessionStorage.getItem('agent_token') || '',
+    getUser:  () => {
+        try { return JSON.parse(sessionStorage.getItem('current_user') || 'null'); }
+        catch { return null; }
+    },
+    setToken: (t) => sessionStorage.setItem('agent_token', t),
+    setUser:  (u) => sessionStorage.setItem('current_user', JSON.stringify(u)),
+    clear:    () => { sessionStorage.removeItem('agent_token'); sessionStorage.removeItem('current_user'); },
+    isLoggedIn: () => !!sessionStorage.getItem('agent_token'),
+};
+
+window.Auth = Auth;
+
+// ---------------------------------------------------------------------------
+// Requête vers le VPS Flask (session cookie)
+// ---------------------------------------------------------------------------
 async function httpRequest(url, method = 'GET', body = null) {
     try {
         const options = {
             method,
-            headers: {
-                'Content-Type': 'application/json'
-            }
+            credentials: 'same-origin',   // envoie le cookie de session
+            headers: { 'Content-Type': 'application/json' }
         };
-
-        if (body) {
-            options.body = JSON.stringify(body);
-        }
+        if (body) options.body = JSON.stringify(body);
 
         const response = await fetch(url, options);
-        
-        if (!response.ok) {
-            throw new Error(`Erreur HTTP: ${response.status}`);
+
+        // Session expirée → redirect login
+        if (response.status === 401) {
+            Auth.clear();
+            window.location.href = '/login';
+            return null;
         }
-        
-        // Vérifier si la réponse est du JSON
+
+        if (!response.ok) throw new Error(`Erreur HTTP: ${response.status}`);
+
         const contentType = response.headers.get('content-type');
         if (contentType && contentType.includes('application/json')) {
             return await response.json();
         }
-        
         return await response.text();
     } catch (error) {
-        console.error(`Erreur dans la requête HTTP (${url}):`, error);
+        console.error(`Erreur requête VPS (${url}):`, error);
         throw error;
     }
 }
+
+// ---------------------------------------------------------------------------
+// Requête vers l'agent local (localhost:5005) avec token Bearer
+// ---------------------------------------------------------------------------
+const AGENT_BASE = 'http://127.0.0.1:5005';
+
+async function agentRequest(path, method = 'GET', body = null) {
+    const token = Auth.getToken();
+    try {
+        const options = {
+            method,
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`,
+            }
+        };
+        if (body) options.body = JSON.stringify(body);
+
+        const response = await fetch(AGENT_BASE + path, options);
+
+        if (response.status === 401) {
+            console.warn('[Agent] Token invalide ou expiré.');
+            return { error: 'Agent : token invalide', agent_offline: false };
+        }
+        if (!response.ok) throw new Error(`Agent HTTP: ${response.status}`);
+
+        return await response.json();
+    } catch (error) {
+        // L'agent n'est pas démarré
+        console.warn(`[Agent] Inaccessible (${path}):`, error.message);
+        return { error: 'Agent local non disponible', agent_offline: true };
+    }
+}
+
+window.agentRequest = agentRequest;
 
 /**
  * Effectue une requête GET

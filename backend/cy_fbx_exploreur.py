@@ -1,9 +1,18 @@
 #blender --background --python ton_script.py
 from flask import Blueprint, request, jsonify
 import os
-import tkinter as tk
-from tkinter import ttk, filedialog, messagebox
+import platform
 import subprocess
+
+# Tkinter uniquement disponible sur Windows avec affichage (non utilisé côté serveur)
+_tk_available = False
+if platform.system() == "Windows":
+    try:
+        import tkinter as tk
+        from tkinter import ttk, filedialog, messagebox
+        _tk_available = True
+    except ImportError:
+        pass
 cy_fbx = Blueprint('cy_fbx', __name__)
 FBX_ICON = "🗂️"
 

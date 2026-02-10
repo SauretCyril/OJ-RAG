@@ -1,13 +1,8 @@
 from flask import Blueprint, request, jsonify
 import logging
 import os
-import platform
-if platform.system() == "Windows":
-    import pythoncom
-else:
-    pythoncom = None
-from docx2pdf import convert
 from docx import Document
+from cy_convert import convert_docx_to_pdf
 from bs4 import BeautifulSoup
 from PyPDF2 import PdfReader
 import requests
@@ -149,32 +144,14 @@ def save_answer():
 
             pdf_file_path = file_path_docx.replace('.docx', '.pdf')
        
-        # Gérer la conversion de façon plus robuste
-            pythoncom.CoInitialize()  # Initialize COM library
+        # Conversion DOCX → PDF (cross-platform via LibreOffice headless)
             try:
-                # Ajouter un timeout pour éviter que Word reste bloqué
-                import time
-                start_time = time.time()
-                
-                # Convertir le fichier
-                convert(file_path_docx, pdf_file_path)
-                
-                # Si la conversion a réussi et que le fichier PDF existe, supprimer le DOCX
+                convert_docx_to_pdf(file_path_docx, pdf_file_path)
                 if os.path.exists(pdf_file_path):
                     os.remove(file_path_docx)
-                    
             except Exception as convert_error:
                 logger.error(f"Er009a.Error during conversion: {str(convert_error)}")
-                # Essayer de tuer toutes les instances de Word qui pourraient être bloquées
-                try:
-                    import subprocess
-                    subprocess.run(['taskkill', '/f', '/im', 'WINWORD.EXE'], shell=True)
-                except:
-                    pass
                 raise convert_error
-            finally:
-                # S'assurer que COM est bien désinitializé
-                pythoncom.CoUninitialize()
 
             # Sauvegarder la requête dans un fichier texte
             save_rq_to_text_file(file_path_RQ, rq)

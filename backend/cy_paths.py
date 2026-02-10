@@ -1,14 +1,7 @@
 from cy_cookies import *
+from cy_security import safe_absolute_path, safe_path
 import os
-import tkinter as tk
-from tkinter import filedialog
 import shutil
-
-import platform
-if platform.system() == "Windows":
-    import pythoncom
-else:
-    pythoncom = None
 
 
 paths = Blueprint('cookies', __name__)
@@ -163,9 +156,12 @@ def check_dossier_exist():
     try:
         directory_path = GetRoot()
         dossier = request.json.get('dossier')
-        dossier_path = os.path.join(directory_path, dossier)
-        if not dossier_path:
+        if not dossier:
             return jsonify({'error': 'Missing dossier path'}), 400
+        try:
+            dossier_path = safe_path(dossier, directory_path)
+        except ValueError:
+            return jsonify({'error': 'Chemin non autorisé'}), 403
 
         exists = os.path.exists(dossier_path)
         return jsonify({'exists': exists}), 200
@@ -177,47 +173,15 @@ def check_dossier_exist():
 @paths.route('/select_directory', methods=['POST'])
 def select_directory():
     """
-    Ouvre une boîte de dialogue pour sélectionner un répertoire
+    La sélection de répertoire se fait via l'agent local (localhost:5005/directories/tree).
+    Cette route indique au frontend d'utiliser le sélecteur web.
     """
-    try:
-        if pythoncom:
-            pythoncom.CoInitialize()  # Initialisation COM pour Windows
-
-        # Créer une fenêtre Tkinter cachée
-        root = tk.Tk()
-        root.withdraw()  # Cacher la fenêtre principale
-        root.attributes('-topmost', True)  # Placer au premier plan
-
-        # Ouvrir la boîte de dialogue de sélection de répertoire
-        selected_directory = filedialog.askdirectory(
-            title="Sélectionner un répertoire de travail",
-            initialdir=GetRoot()  # Commencer par le répertoire racine actuel
-        )
-
-        # Nettoyer
-        root.destroy()
-        if pythoncom:
-            pythoncom.CoUninitialize()
-
-        if selected_directory:
-            # Normaliser le chemin
-            selected_directory = selected_directory.replace('\\', '/')
-            return jsonify({
-                'success': True,
-                'selected_directory': selected_directory
-            }), 200
-        else:
-            return jsonify({
-                'success': False,
-                'message': 'Aucun répertoire sélectionné'
-            }), 200
-
-    except Exception as e:
-        logger.error(f"Error selecting directory: {str(e)}")
-        return jsonify({
-            'success': False,
-            'error': str(e)
-        }), 500
+    return jsonify({
+        'success': False,
+        'use_agent': True,
+        'message': 'Utilisez le sélecteur de répertoire de l\'interface web',
+        'agent_route': '/directories/tree'
+    }), 200
 
 @paths.route('/move_current_dossier', methods=['POST'])
 def move_current_dossier():
@@ -231,6 +195,12 @@ def move_current_dossier():
         # Normalisation des chemins
         source = source.replace('\\', '/')
         target = target.replace('\\', '/')
+        root_dir = GetRoot()
+        try:
+            source = safe_absolute_path(source, root_dir)
+            target = safe_absolute_path(target, root_dir)
+        except ValueError:
+            return jsonify({'success': False, 'error': 'Chemin non autorisé'}), 403
 
         # Annule si le dossier cible existe déjà
         if os.path.exists(target):

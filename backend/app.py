@@ -1,68 +1,179 @@
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request, jsonify, redirect, url_for
 import os
 import json
-import numpy as np
-from werkzeug.serving import run_simple
 import sys
-import psutil
-import subprocess
-import requests  # Ajoutez cette ligne avec les autres imports
-# Définir le chemin de PYTHONPATH pour inclure le dossier actuel
+import logging
+from logging.handlers import RotatingFileHandler
+from datetime import timedelta
+
+import numpy as np
+from dotenv import load_dotenv
+load_dotenv()
+
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-# Import de la configuration centralisée
 from cy_app_config import app_config
 
+# ---------------------------------------------------------------------------
+# Création de l'app
+# ---------------------------------------------------------------------------
 app = Flask(__name__, template_folder='../templates', static_folder='../static')
 
-# Configuration de l'application avec app_config
-app.config['MAX_CONTENT_LENGTH'] = app_config.max_file_size
-app.config['UPLOAD_FOLDER'] = str(app_config.uploads_dir)
+# Configuration de sécurité
+app.config.update(
+    SECRET_KEY=os.getenv("SECRET_KEY", "dev-secret-change-me-in-production"),
+    SESSION_COOKIE_HTTPONLY=True,
+    SESSION_COOKIE_SECURE=os.getenv("FLASK_ENV") == "production",
+    SESSION_COOKIE_SAMESITE="Lax",
+    SESSION_COOKIE_NAME="iacas_session",
+    PERMANENT_SESSION_LIFETIME=timedelta(hours=8),
+    MAX_CONTENT_LENGTH=app_config.max_file_size,
+    UPLOAD_FOLDER=str(app_config.uploads_dir),
+)
 
+# Validation config production
+_secret = app.config["SECRET_KEY"]
+if _secret == "dev-secret-change-me-in-production":
+    logging.warning("[SECURITE] SECRET_KEY non définie — utilisez une clé forte en production !")
+if os.getenv("FLASK_ENV") == "production" and _secret in ("dev-secret-change-me-in-production", ""):
+    logging.critical("[SECURITE] SECRET_KEY invalide en production — arrêt.")
+    sys.exit(1)
+
+
+# ---------------------------------------------------------------------------
+# Logs rotatifs
+# ---------------------------------------------------------------------------
+_log_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "logs")
+os.makedirs(_log_dir, exist_ok=True)
+_log_handler = RotatingFileHandler(
+    os.path.join(_log_dir, "iacas.log"),
+    maxBytes=5 * 1024 * 1024,
+    backupCount=3,
+    encoding="utf-8",
+)
+_log_handler.setLevel(logging.INFO)
+_log_handler.setFormatter(logging.Formatter("%(asctime)s [%(levelname)s] %(name)s: %(message)s"))
+app.logger.addHandler(_log_handler)
+logging.getLogger().addHandler(_log_handler)
+
+
+# ---------------------------------------------------------------------------
+# NumpyEncoder
+# ---------------------------------------------------------------------------
 class NumpyEncoder(json.JSONEncoder):
     def default(self, obj):
         if isinstance(obj, np.ndarray):
             return obj.tolist()
         if isinstance(obj, np.float32):
             return float(obj)
-        return super(NumpyEncoder, self).default(obj)
+        return super().default(obj)
 
-app.json_encoder = NumpyEncoder  # Ajouter cette ligne après la création de l'app
+app.json_encoder = NumpyEncoder
+
+
+# ---------------------------------------------------------------------------
+# Flask-Limiter (rate limiting)
+# ---------------------------------------------------------------------------
+from cy_limiter import limiter
+limiter.init_app(app)
+
+
+# ---------------------------------------------------------------------------
+# Headers de sécurité HTTP
+# ---------------------------------------------------------------------------
+@app.after_request
+def add_security_headers(response):
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "SAMEORIGIN"
+    response.headers["X-XSS-Protection"] = "1; mode=block"
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    if os.getenv("FLASK_ENV") == "production":
+        response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+    response.headers["Content-Security-Policy"] = (
+        "default-src 'self'; "
+        "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
+        "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
+        "font-src 'self' https://cdn.jsdelivr.net https://use.fontawesome.com; "
+        "img-src 'self' data:; "
+        "connect-src 'self' http://127.0.0.1:5005; "
+        "frame-src 'none'; "
+        "object-src 'none';"
+    )
+    return response
+
+
+# ---------------------------------------------------------------------------
+# Flask-Login
+# ---------------------------------------------------------------------------
+from flask_login import LoginManager, current_user
+from cy_users import find_by_id, ensure_admin_exists
+
+login_manager = LoginManager()
+login_manager.init_app(app)
+login_manager.login_view = "auth.login_page"
+login_manager.login_message = ""
+
+@login_manager.user_loader
+def load_user(user_id):
+    return find_by_id(user_id)
+
+# Crée le compte admin au premier démarrage si nécessaire
+ensure_admin_exists()
+
+
+# ---------------------------------------------------------------------------
+# Protection globale : toutes les routes nécessitent d'être connecté
+# sauf /login et /static
+# ---------------------------------------------------------------------------
+PUBLIC_ENDPOINTS = {"auth.login_page", "auth.login_post", "static"}
+
+@app.before_request
+def require_login():
+    if request.endpoint in PUBLIC_ENDPOINTS:
+        return
+    if current_user.is_authenticated:
+        return
+    # Requête API → JSON 401
+    if request.is_json or (request.path.startswith("/api/") or request.path.startswith("/admin/")):
+        return jsonify({"error": "Non authentifié", "redirect": "/login"}), 401
+    # Requête page → redirect login
+    return redirect(url_for("auth.login_page"))
+
+
+# ---------------------------------------------------------------------------
+# Enregistrement des blueprints
+# ---------------------------------------------------------------------------
+from cy_auth import cy_auth
+app.register_blueprint(cy_auth)
 
 from cy_paths import paths
-app.register_blueprint(paths)  # Register the blueprint
+app.register_blueprint(paths)
 
-from cy_routes import cy_routes 
-app.register_blueprint(cy_routes)  # Register the blueprint
+from cy_routes import cy_routes
+app.register_blueprint(cy_routes)
 
 from cy_cookies import cy_cookies
-app.register_blueprint(cy_cookies)  # Register the blueprint
+app.register_blueprint(cy_cookies)
 
 from cy_requests import cy_requests
-app.register_blueprint(cy_requests)  # Register the blueprint
+app.register_blueprint(cy_requests)
 
 from cy_columns import cy_columns
-app.register_blueprint(cy_columns)  # Register the new columns blueprint
+app.register_blueprint(cy_columns)
 
 from cy_fbx_exploreur import cy_fbx
-app.register_blueprint(cy_fbx)  
-# Register the new FBX explorer blueprint
-# Ajout du module de gestion des répertoires
+app.register_blueprint(cy_fbx)
+
 from cy_directories import register_directories_routes
-register_directories_routes(app)  # Enregistrer les routes de gestion des répertoires
+register_directories_routes(app)
 
 from cy_file_picker import file_picker
-app.register_blueprint(file_picker)  # Register the file picker blueprint
+app.register_blueprint(file_picker)
 
-# from cy_analyse_prompt import cy_analyse_prompt
-# app.register_blueprint(cy_analyse_prompt)  # Register the blueprint
 
-# Ajoutez ce code dans votre app.py après avoir enregistré le Blueprint
-""" print("Routes disponibles:")
-for rule in app.url_map.iter_rules():
-    print(f"{rule} - {rule.endpoint}") """
-
-# Utilisation de app_config au lieu de BASE_DIR
+# ---------------------------------------------------------------------------
+# Routes principales
+# ---------------------------------------------------------------------------
 BASE_DIR = str(app_config.base_dir)
 
 @app.route('/')
@@ -71,60 +182,24 @@ def index():
 
 @app.route("/columns_manager")
 def columns_manager():
-    return render_template("columns_manager.html")
+    return render_template("column_manager.html")
 
 
-
-# Route Flask pour ouvrir l'explorateur
+# Ces fonctionnalités sont gérées par l'agent local (localhost:5005).
 @app.route('/get_local_FileExplorer', methods=['POST'])
 def get_local_FileExplorer():
-    data = request.get_json()
-    dir_path = data.get('path')
-    if not dir_path or not os.path.exists(dir_path):
-        return {"status": "error", "message": "Le répertoire spécifié est invalide ou n'existe pas."}, 400
-
-    try:
-        response = requests.post(
-            "http://127.0.0.1:5005/local_FileExplorer",
-            json=data,
-            timeout=2
-        )
-        if response.ok:
-            return {"status": "success", "message": "Commande envoyée au serveur local."}, 200
-        else:
-            return {"status": "error", "message": "Erreur lors de l'appel au serveur local."}, 500
-    except Exception as e:
-        print(f"Erreur lors de l'appel à 5005: {e}")  # Ajoutez ceci pour voir l'erreur exacte
-        return {"status": "error", "message": f"Impossible de contacter le serveur local: {e}"}, 500
+    return jsonify({"status": "use_agent", "message": "Utilisez l'agent local via localhost:5005/directories/tree"}), 200
 
 @app.route('/get_local_PromptTable', methods=['POST'])
 def prompt_table_open():
-    print("dbg-667a : Received request to open prompt table")
-    data = request.json
-    try:
-        response = requests.post(
-            "http://127.0.0.1:5005/local_PromptTable",
-            json=data,
-            timeout=2
-        )
-        if response.ok:
-            return {"status": "success", "message": "Commande envoyée au serveur local."}, 200
-        else:
-            return {"status": "error", "message": "Erreur lors de l'appel au serveur local."}, 500
-    except Exception as e:
-        print(f"Erreur lors de l'appel à 5005: {e}")
-        return {"status": "error", "message": f"Impossible de contacter le serveur local: {e}"}, 500
+    return jsonify({"status": "use_agent", "message": "Fonctionnalité disponible dans l'interface web"}), 200
 
 
-
-
-
+# ---------------------------------------------------------------------------
+# Démarrage
+# ---------------------------------------------------------------------------
 if __name__ == '__main__':
-    # Initialiser le logging avec app_config
     app_config.setup_logging()
-    
-    # Utiliser les constantes de app_config si disponibles
     port = app_config.constants.get('port', 5001)
     debug = app_config.constants.get('debug', True)
-    
     app.run(debug=debug, port=port)

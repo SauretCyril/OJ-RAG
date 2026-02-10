@@ -28,11 +28,15 @@
 
         </ul>
       </nav>
-      <div style="float: right">
+      <div style="display:flex;align-items:center;gap:12px;margin-left:auto;">
         <select id="Excluded" title="Filtrer les dossiers">
           <option value="En cours">En cours</option>
           <option value="Done">Done</option>
         </select>
+        <span id="user-badge" style="font-size:0.8rem;color:#64748b;white-space:nowrap;"></span>
+        <a href="/logout" id="logout-btn"
+           style="font-size:0.8rem;color:#dc2626;text-decoration:none;white-space:nowrap;"
+           onclick="return confirmLogout()">Déconnexion</a>
       </div>
     </header>
     <div id="settings-bar-container">
@@ -209,8 +213,34 @@
   <!-- Nouveau module pour la gestion des fiches -->
   <script src="{{ url_for('static', filename='js/cy_Panel.js') }}"></script>
   <script src="{{ url_for('static', filename='js/cy_Directories.js') }}"></script>
-  <!-- Ajoutez ceci avant </body> -->
-  
+  <!-- Initialisation auth : affiche l'utilisateur connecté -->
+  <script>
+    (function () {
+      const user = Auth ? Auth.getUser() : null;
+      const badge = document.getElementById('user-badge');
+      if (badge && user) badge.textContent = user.username;
+
+      // Récupère le profil complet (token agent + config) au chargement
+      fetch('/api/me', { credentials: 'same-origin' })
+        .then(r => {
+          if (r.status === 401) { window.location.href = '/login'; return null; }
+          return r.json();
+        })
+        .then(data => {
+          if (!data) return;
+          if (data.token) Auth.setToken(data.token);
+          if (data.user) Auth.setUser(data.user);
+          if (badge && data.user) badge.textContent = data.user.username;
+        })
+        .catch(() => {});
+    })();
+
+    function confirmLogout() {
+      if (!confirm('Voulez-vous vous déconnecter ?')) return false;
+      Auth.clear();
+      return true;
+    }
+  </script>
 </body>
 
 </html>

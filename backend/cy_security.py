@@ -18,27 +18,21 @@ class SecurityValidator:
     @staticmethod
     def sanitize_path(path: str, base_dir: str) -> Optional[str]:
         """
-        Sanitize and validate file paths to prevent directory traversal
+        Sanitize and validate file paths to prevent directory traversal.
+        Uses os.path.realpath to resolve symlinks.
         """
         try:
-            # Normalize the path
-            clean_path = os.path.normpath(path)
-            base_path = os.path.normpath(base_dir)
-            
-            # Convert to absolute paths
-            abs_clean_path = os.path.abspath(os.path.join(base_path, clean_path))
-            abs_base_path = os.path.abspath(base_path)
-            
-            # Check if the path is within the allowed base directory
-            if not abs_clean_path.startswith(abs_base_path + os.sep):
+            base = os.path.realpath(base_dir)
+            target = os.path.realpath(os.path.join(base, path))
+
+            if target != base and not target.startswith(base + os.sep):
                 return None
-                
-            # Check path length
-            if len(abs_clean_path) > SecurityValidator.MAX_PATH_LENGTH:
+
+            if len(target) > SecurityValidator.MAX_PATH_LENGTH:
                 return None
-                
-            return abs_clean_path
-            
+
+            return target
+
         except (ValueError, OSError):
             return None
     
@@ -82,7 +76,7 @@ class SecurityValidator:
             return True
         except subprocess.CalledProcessError:
             return False
-    
+
     @staticmethod
     def safe_open_directory(directory_path: str, base_dir: str) -> bool:
         """Safely open directory in file explorer"""
@@ -100,3 +94,39 @@ class SecurityValidator:
             return True
         except subprocess.CalledProcessError:
             return False
+
+
+# ---------------------------------------------------------------------------
+# Fonctions standalone — importables directement dans les routes
+# ---------------------------------------------------------------------------
+
+def safe_path(user_input: str, base_dir: str) -> str:
+    """
+    Résout un chemin relatif dans base_dir et vérifie qu'il ne sort pas.
+    Utilise os.path.realpath pour résoudre les symlinks.
+    Lève ValueError si tentative de path traversal.
+    Retourne le chemin absolu résolu.
+    """
+    if not base_dir:
+        raise ValueError("Répertoire de base non configuré")
+    base = os.path.realpath(base_dir)
+    target = os.path.realpath(os.path.join(base, user_input))
+    if target != base and not target.startswith(base + os.sep):
+        raise ValueError(f"Chemin non autorisé : {user_input!r}")
+    return target
+
+
+def safe_absolute_path(absolute_path: str, base_dir: str) -> str:
+    """
+    Vérifie qu'un chemin absolu fourni par le client reste dans base_dir.
+    Utilise os.path.realpath pour résoudre les symlinks.
+    Lève ValueError si tentative de path traversal.
+    Retourne le chemin absolu résolu.
+    """
+    if not base_dir:
+        raise ValueError("Répertoire de base non configuré")
+    base = os.path.realpath(base_dir)
+    target = os.path.realpath(absolute_path)
+    if target != base and not target.startswith(base + os.sep):
+        raise ValueError(f"Chemin non autorisé : {absolute_path!r}")
+    return target

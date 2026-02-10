@@ -9,12 +9,8 @@ from datetime import datetime
 # Import de la configuration centralisée
 from cy_app_config import app_config
 
-import tkinter as tk
-from tkinter import filedialog
-
-from docx2pdf import convert
-import pythoncom
 from docx import Document
+from cy_convert import convert_docx_to_pdf
 
 import json
 from tqdm import tqdm
@@ -29,6 +25,7 @@ from cy_paths import *
 from cy_cookies import *
 from cy_requests import extract_text_from_pdf
 from cy_mistral import get_mistral_answer
+from cy_security import safe_absolute_path, SecurityValidator
 
 import os
 import shutil
@@ -515,9 +512,10 @@ def open_url():
         url = data.get("url")
         # print ("##3-------------------------------",url)
         if url:
-            # Logic to open the URL
-            os.system(f"start {url}")
-            return jsonify({"status": "success"}), 200
+            if not SecurityValidator.validate_url(url):
+                return jsonify({"status": "error", "message": "URL invalide"}), 400
+            # L'ouverture dans le navigateur se fait côté client (agent local)
+            return jsonify({"status": "use_agent", "url": url}), 200
         else:
             return jsonify({"status": "error", "message": "URL not provided"}), 400
     except Exception as e:
@@ -576,9 +574,14 @@ def read_filters_json():
 def save_annonces_json():
     try:
         data = request.get_json()
+        root_dir = GetRoot()
         for item in data:
             for file_path, content in item.items():
                 file_path = file_path.replace("\\", "/")  # Normalize path
+                try:
+                    file_path = safe_absolute_path(file_path, root_dir)
+                except ValueError:
+                    return jsonify({"status": "error", "message": "Chemin non autorisé"}), 403
 
                 # Vérifier si le répertoire parent existe
                 parent_dir_path = os.path.dirname(file_path)
@@ -666,9 +669,13 @@ def load_config_col():
 def read_csv_file():
     try:
         data = request.get_json()
-        file_path = data.get("file_path")
-        file_path = os.path.join(os.getenv("SUIVI_DIR"), file_path)
+        suivi_dir = os.getenv("SUIVI_DIR", "")
+        file_path = os.path.join(suivi_dir, data.get("file_path", ""))
         file_path = file_path.replace("\\", "/")  # Normalize path
+        try:
+            file_path = safe_absolute_path(file_path, suivi_dir)
+        except ValueError:
+            return jsonify({"status": "error", "message": "Chemin non autorisé"}), 403
         # print(f"file path: {file_path}")
         if not os.path.exists(file_path):
             return jsonify([])
@@ -686,10 +693,14 @@ def read_csv_file():
 def save_csv_file():
     try:
         data = request.get_json()
-        file_path = data.get("file_path")
         csv_data = data.get("data")
-        file_path = os.path.join(os.getenv("SUIVI_DIR"), file_path)
+        suivi_dir = os.getenv("SUIVI_DIR", "")
+        file_path = os.path.join(suivi_dir, data.get("file_path", ""))
         file_path = file_path.replace("\\", "/")  # Normalize path
+        try:
+            file_path = safe_absolute_path(file_path, suivi_dir)
+        except ValueError:
+            return jsonify({"status": "error", "message": "Chemin non autorisé"}), 403
         # print(f"Saving CSV to {file_path}")
         if not os.path.exists(file_path):
             return (
@@ -713,18 +724,17 @@ def save_csv_file():
 
 @cy_routes.route("/open_parent_directory", methods=["POST"])
 def open_parent_directory():
+    """
+    Retourne le chemin du dossier parent.
+    L'ouverture dans l'explorateur OS n'est pas possible côté serveur —
+    c'est à l'agent local ou au frontend de le gérer.
+    """
     try:
         data = request.get_json()
         file_path = data.get("file_path")
         parent_directory = os.path.dirname(file_path)
-        parent_directory = parent_directory.replace("\\", "/")  # Normalize path
-        if platform.system() == "Windows":
-            os.startfile(parent_directory)
-        elif platform.system() == "Darwin":  # macOS
-            subprocess.run(["open", parent_directory])
-        else:  # Linux
-            subprocess.run(["xdg-open", parent_directory])
-        return jsonify({"status": "success"}), 200
+        parent_directory = parent_directory.replace("\\", "/")
+        return jsonify({"status": "success", "path": parent_directory}), 200
     except Exception as e:
         print(f"Cyr_error_359 opening parent directory: {e}")
         return jsonify({"status": "error", "message": "359>" + str(e)}), 500
@@ -739,6 +749,12 @@ def convert_cv():
     data = request.get_json()
     file_path = data.get("repertoire_annonces")
     num_dossier = data.get("num_dossier")
+    if not file_path or not num_dossier:
+        return jsonify({"status": "error", "message": "Paramètres manquants"}), 400
+    try:
+        file_path = safe_absolute_path(file_path, GetRoot())
+    except ValueError:
+        return jsonify({"status": "error", "message": "Chemin non autorisé"}), 403
     filename = secure_filename(f"{num_dossier}_CyrilSauret.docx")
     target_path = os.path.join(file_path, filename)
     target_path_pdf = os.path.join(file_path, filename.replace(".docx", ".pdf"))
@@ -776,12 +792,11 @@ def select_cv():
 
         # Valider le nom de fichier avec SecurityValidator
         try:
-            target_path = app_config.get_upload_path(filename)
-            # Utiliser le répertoire cible au lieu du dossier uploads par défaut
-            target_path = os.path.join(target_directory, filename)
+            safe_target_dir = safe_absolute_path(target_directory, GetRoot())
+            target_path = os.path.join(safe_target_dir, filename)
             target_path = target_path.replace("\\", "/")
         except ValueError as e:
-            return jsonify({"status": "error", "message": str(e)}), 400
+            return jsonify({"status": "error", "message": str(e)}), 403
 
         # print("##3-------------------------------", target_path)
         pdf_file_path = target_path.replace(".docx", ".pdf")
@@ -818,13 +833,7 @@ def select_cv():
 def convert_to_pdf(target_path, pdf_file_path):
     if os.path.exists(pdf_file_path):
         os.remove(pdf_file_path)
-    if pythoncom:
-        pythoncom.CoInitialize()
-    try:
-        convert(target_path, pdf_file_path)
-    finally:
-        if pythoncom:
-            pythoncom.CoUninitialize()
+    convert_docx_to_pdf(target_path, pdf_file_path)
 
 
 def define_default_data():
@@ -887,25 +896,19 @@ def save_announcement():
         docx_file_path = os.path.join(directory_path, f"{num_dossier}{sufix}.docx")
         pdf_file_path = os.path.join(directory_path, f"{num_dossier}{sufix}.pdf")
 
-        if pythoncom:
-            pythoncom.CoInitialize()
-        try:
-            if not url:
-                url = "Pas d'URL"
-            if not content:
-                content = "Pas de contenu"
-            doc = Document()
-            doc.add_paragraph("<-")
-            doc.add_paragraph(url)
-            doc.add_paragraph("->")
-            doc.add_paragraph(content)
-            doc.save(docx_file_path)
-            print(f"dbg-5434 : Converting {docx_file_path} to {pdf_file_path}")
-            convert(docx_file_path, pdf_file_path)
-        finally:
-            if pythoncom:
-                pythoncom.CoUninitialize()
-            print("dbg-5434-c : Conversion terminée")
+        if not url:
+            url = "Pas d'URL"
+        if not content:
+            content = "Pas de contenu"
+        doc = Document()
+        doc.add_paragraph("<-")
+        doc.add_paragraph(url)
+        doc.add_paragraph("->")
+        doc.add_paragraph(content)
+        doc.save(docx_file_path)
+        print(f"dbg-5434 : Converting {docx_file_path} to {pdf_file_path}")
+        convert_docx_to_pdf(docx_file_path, pdf_file_path)
+        print("dbg-5434-c : Conversion terminée")
         return jsonify({
             "status": "success",
             "message": f"Announcement saved as {pdf_file_path}",
@@ -929,6 +932,10 @@ def read_notes():
                 jsonify({"status": "error", "message": "File path not provided"}),
                 400,
             )
+        try:
+            file_path = safe_absolute_path(file_path, GetRoot())
+        except ValueError:
+            return jsonify({"status": "error", "message": "Chemin non autorisé"}), 403
 
         if not os.path.exists(file_path):
             # Create the file if it does not exist
@@ -955,6 +962,10 @@ def save_notes():
         content = data.get("content")
         if not file_path or content is None:
             return jsonify({"status": "error", "message": "Missing parameters"}), 400
+        try:
+            file_path = safe_absolute_path(file_path, GetRoot())
+        except ValueError:
+            return jsonify({"status": "error", "message": "Chemin non autorisé"}), 403
 
         # Vérifier si le répertoire parent existe
         parent_dir_path = os.path.dirname(file_path)
@@ -1090,12 +1101,16 @@ async def load_Instruction_classement():
 
 
 @cy_routes.route("/select_dir", methods=["GET"])
-async def SelectDirectory():
-    root = tk.Tk()
-    root.withdraw()  # Hide the main window
-    selected_dir = filedialog.askdirectory()
-    root.destroy()
-    return selected_dir
+def SelectDirectory():
+    """
+    La sélection de répertoire se fait via l'agent local (localhost:5005/directories/tree).
+    Cette route retourne une instruction au frontend.
+    """
+    return jsonify({
+        "status": "use_agent",
+        "message": "Utilisez l'agent local pour sélectionner un répertoire",
+        "agent_route": "/directories/tree"
+    }), 200
 
 
 @cy_routes.route("/generate_html_index", methods=["POST"])
@@ -1163,10 +1178,7 @@ def generate_html_index():
 
             index_file.write("</table></body></html>")
 
-        # Open the index_path in the file explorer
-        os.startfile(index_path)
-
-        return jsonify({"status": "success"}), 200
+        return jsonify({"status": "success", "index_path": index_path.replace("\\", "/")}), 200
     except Exception as e:
         print(f"Error generating HTML index: {e}")
         return jsonify({"status": "error", "message": str(e)}), 500
@@ -1182,14 +1194,14 @@ def move_and_rename_directory():
     dest_dir = data.get("dest_dir")
     old_prefix = data.get("old_prefix")
     new_prefix = data.get("new_prefix")
-    """
-    Déplace un répertoire entier avec tous ses fichiers et remplace les fichiers
-    commençant par 'XXXX' par un nouveau préfixe.
-
-    :param src_dir: Chemin du répertoire source à déplacer.
-    :param dest_dir: Chemin du répertoire de destination.
-    :param new_prefix: Nouveau préfixe pour remplacer 'XXXX' dans les noms de fichiers.
-    """
+    if not src_dir or not dest_dir:
+        return jsonify({"status": "error", "message": "Paramètres manquants"}), 400
+    try:
+        root_dir = GetRoot()
+        src_dir = safe_absolute_path(src_dir, root_dir)
+        dest_dir = safe_absolute_path(dest_dir, root_dir)
+    except ValueError:
+        return jsonify({"status": "error", "message": "Chemin non autorisé"}), 403
     try:
         if not os.path.exists(src_dir):
             print(f"Le répertoire source '{src_dir}' n'existe pas.")
@@ -1400,7 +1412,11 @@ def preview_pdf_with_filename(folder_name, filename):
         # Construire le chemin vers le fichier PDF
         root_dir = GetRoot()
         pdf_path = os.path.join(root_dir, folder_name, filename)
-        
+        try:
+            pdf_path = safe_absolute_path(pdf_path, root_dir)
+        except ValueError:
+            return jsonify({"error": "Accès refusé"}), 403
+
         # Vérifier si le fichier existe
         if not os.path.exists(pdf_path):
             return jsonify({"error": f"Fichier {filename} non trouvé dans {folder_name}"}), 404
@@ -1424,7 +1440,11 @@ def serve_local_file():
         # Décoder le chemin URL
         import urllib.parse
         file_path = urllib.parse.unquote(file_path)
-        
+        try:
+            file_path = safe_absolute_path(file_path, GetRoot())
+        except ValueError:
+            return jsonify({"error": "Accès refusé"}), 403
+
         # Vérifier que le fichier existe
         if not os.path.exists(file_path):
             return jsonify({"error": f"Fichier non trouvé : {file_path}"}), 404

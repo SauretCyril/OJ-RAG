@@ -7,6 +7,10 @@
 # ============================================
 flask[async]
 werkzeug
+flask-login>=0.6
+bcrypt>=4.0
+flask-cors>=4.0
+Flask-Limiter>=3.5
 
 # ============================================
 # Traitement de données
@@ -35,7 +39,7 @@ python-dotenv    # Variables d'environnement (.env)
 # Système de fichiers
 # ============================================
 aiofiles         # Opérations fichiers asynchrones
-pywin32          # Intégration Windows
+flask-cors       # CORS pour l'app principale
 psutil           # Informations système et processus
 
 # ============================================
