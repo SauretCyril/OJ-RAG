@@ -70,38 +70,6 @@ def get_constants():
 from datetime import datetime
 
 
-def calculate_delay(data):
-    try:
-        today = datetime.today()
-        date_from = data.get("date_from", "")
-        date_rep = data.get("date_rep", "")
-        todo = data.get("todo", "")
-
-        if "refus" in todo.lower():
-            return "dead"
-
-        if date_rep:
-            try:
-                date_rep_c = datetime.strptime(date_rep, "%d-%m-%Y")
-                # print("dbg778 => date_from_c = "+date_from_c)
-                return (today - date_rep_c).days
-            except ValueError:
-                print("err dbg456= " + ValueError)
-                pass
-
-        if date_from:
-            try:
-                date_from_c = datetime.strptime(date_from, "%d-%m-%Y")
-                # print("dbg778 => date_from_c = "+date_from_c)
-                return (today - date_from_c).days
-            except ValueError:
-                print("err dbg457= " + ValueError)
-                pass
-
-        return "N/A"
-    except Exception as e:
-        print(f"Error calculating delay: {e}")
-        return "N/A"
 
 
 @cy_routes.route("/read_annonces_json", methods=["POST"])

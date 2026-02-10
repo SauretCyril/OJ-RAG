@@ -1,0 +1,64 @@
+# Requirements Optimisés - OJ-RAG
+# Date: 2026-02-03
+# Gain: ~2.8 GB et 15-25 minutes d'installation
+
+# ============================================
+# Framework Web
+# ============================================
+flask[async]
+werkzeug
+
+# ============================================
+# Traitement de données
+# ============================================
+numpy
+pandas
+openpyxl  # Nécessaire pour pandas.to_excel()
+
+# ============================================
+# Documents - Manipulation
+# ============================================
+python-docx      # Lecture de fichiers Word (.docx)
+docx2pdf         # Conversion Word vers PDF
+fpdf             # Génération PDF simple
+PyPDF2           # Lecture/manipulation PDF
+reportlab        # Génération PDF avancée
+
+# ============================================
+# Web et API
+# ============================================
+requests         # Requêtes HTTP (API Mistral, etc.)
+beautifulsoup4   # Parsing HTML/XML
+python-dotenv    # Variables d'environnement (.env)
+
+# ============================================
+# Système de fichiers
+# ============================================
+aiofiles         # Opérations fichiers asynchrones
+pywin32          # Intégration Windows
+
+# ============================================
+# Images et UI
+# ============================================
+Pillow           # Traitement d'images
+
+# ============================================
+# Utilitaires
+# ============================================
+tqdm             # Barres de progression
+
+# ============================================
+# APIs IA (optionnel selon utilisation)
+# ============================================
+# openai         # Décommenter si API OpenAI utilisée
+
+# ============================================
+# SUPPRIMÉ (non utilisé dans le code)
+# ============================================
+# torch            # ~2 GB - Aucun import trouvé
+# transformers     # ~500 MB - Aucun import trouvé
+# langchain        # ~100 MB - Aucun import trouvé
+# mistralai        # ~20 MB - API REST utilisée directement
+# scikit-learn     # ~50 MB - Aucun import trouvé
+# nudenet          # ~100 MB - Aucun import trouvé
+# watchdog         # ~5 MB - Aucun import trouvé
